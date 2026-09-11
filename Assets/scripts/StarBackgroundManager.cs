@@ -14,7 +14,7 @@ namespace GalaxyExplorer
 
         private void Start()
         {
-            gameObject.SetActive(GalaxyExplorerManager.IsImmersiveHMD);
+            gameObject.SetActive(ExperienceModeManager.ShowsVRScenery);
             //TransitionManager.Instance.ViewVolume.GetComponent<PlacementControl>().ContentPlaced += UpdateShaderProperties;
             GalaxyExplorerManager.Instance.ViewLoaderScript.OnSceneIsLoaded += UpdateShaderProperties;
             //ToolManager.Instance.ContentZoomChanged += UpdateShaderProperties;
@@ -46,6 +46,12 @@ namespace GalaxyExplorer
 
         public void FadeInOut(bool fadeIn)
         {
+            // The star background belongs to VR; never bring it up over passthrough.
+            if (fadeIn && !ExperienceModeManager.ShowsVRScenery)
+            {
+                return;
+            }
+
             if (fadeIn)
             {
                 gameObject.SetActive(true);

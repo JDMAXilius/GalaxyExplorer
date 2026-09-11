@@ -240,8 +240,12 @@
 				float3 ro = _WorldSpaceCameraPos;
 
 				fixed4 col = gravityRayMarch(ro, rayDirection, i.massCentre, i.orientation, i.scale);
+				col *= (1 - _Fade);
 
-				return col * (1 - _Fade);
+				// Additive glow: alpha follows brightness so, over passthrough, only the glowing disc covers the
+				// room instead of the whole quad (the ray march's alpha is always >= 1).
+				col.a = saturate(max(col.r, max(col.g, col.b)));
+				return col;
 			}
 			ENDCG
 		}

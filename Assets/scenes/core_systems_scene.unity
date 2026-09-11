@@ -1079,6 +1079,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7697546817199788551, guid: 5bf3e80ceb200cd418107348c786b308, type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
+    - targetCorrespondingSourceObject: {fileID: 8637775013952887927, guid: 5bf3e80ceb200cd418107348c786b308, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: 5bf3e80ceb200cd418107348c786b308, type: 3}
 --- !u!1 &830273680
 GameObject:
@@ -3673,6 +3676,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3790832520520132850, guid: 77a9f4e253bc90d4a85e0fcbb4f2f538, type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
+    - targetCorrespondingSourceObject: {fileID: 2996893246339163778, guid: 77a9f4e253bc90d4a85e0fcbb4f2f538, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: 77a9f4e253bc90d4a85e0fcbb4f2f538, type: 3}
 --- !u!1 &2011258646
 GameObject:
@@ -4322,6 +4328,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 6944885341285769312, guid: bb946edf9f6f5c64bbc551fbc007e9d2, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6944885341061952592}
+    - targetCorrespondingSourceObject: {fileID: 6944885341285769312, guid: bb946edf9f6f5c64bbc551fbc007e9d2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6944885341061952594}
   m_SourcePrefab: {fileID: 100100000, guid: bb946edf9f6f5c64bbc551fbc007e9d2, type: 3}
 --- !u!1 &6944885341061952591 stripped
 GameObject:
@@ -4475,6 +4484,25 @@ MonoBehaviour:
       m_Flags: 0
     m_Flags: 0
     m_Priority: 0
+--- !u!114 &6944885341061952594
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6944885341061952591}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4966719baa26e4b0e8231a24d9bd491a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.XR.ARFoundation::UnityEngine.XR.ARFoundation.ARCameraManager
+  m_FocusMode: 1
+  m_LightEstimationMode: 0
+  m_AutoFocus: 1
+  m_ImageStabilization: 0
+  m_LightEstimation: 0
+  m_FacingDirection: 1
+  m_RenderMode: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
