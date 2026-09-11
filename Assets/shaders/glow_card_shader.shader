@@ -1,4 +1,4 @@
-﻿// Copyright Microsoft Corporation. All rights reserved.
+// Copyright Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 Shader "Sun/GlowCard"
 {
@@ -27,7 +27,7 @@ Shader "Sun/GlowCard"
 		Pass
 		{
 			CGPROGRAM
-			#pragma target 5.0
+			#pragma target 4.5
 			#pragma fragmentoption ARB_precision_hint_fastest
 
 			#pragma vertex vert

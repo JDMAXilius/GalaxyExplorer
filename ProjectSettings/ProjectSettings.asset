@@ -867,10 +867,10 @@ PlayerSettings:
       PointOfService: False
       RecordedCallsFolder: False
       Contacts: False
-      Proximity: False
       InternetClient: False
       CodeGeneration: False
       BackgroundMediaPlayback: False
+      Proximity: False
     XboxOne:
       enus: true
   metroTargetDeviceFamilies:

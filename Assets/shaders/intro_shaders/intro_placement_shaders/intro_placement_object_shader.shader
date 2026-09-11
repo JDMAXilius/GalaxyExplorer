@@ -29,15 +29,12 @@ Shader "GalaxyExplorer/Placement"
 
             CGPROGRAM
             #pragma vertex vert
-            #pragma geometry geom
             #pragma fragment frag
 
             #pragma multi_compile_fwdbase
             #pragma multi_compile_instancing
 
-            // We only target the HoloLens (and the Unity editor), so take advantage of shader model 5.
-            #pragma target 5.0
-            #pragma only_renderers d3d11
+            #pragma target 3.5
 
             #include "UnityCG.cginc"
             #include "AutoLight.cginc"
@@ -60,22 +57,12 @@ Shader "GalaxyExplorer/Placement"
             {
                 float4 vertex : POSITION;
                 float4 randoms : TEXCOORD0;
+                float corner : TEXCOORD1; // 0 bottom, 1 right, 2 left, 3 top
 //                float3 normal : NORMAL;
 //                float3 randBlend : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
-            struct v2g
-            {
-                float4 clipPos : SV_POSITION;
-                float4 randoms : TEXCOORD0;
-                float4 color : COLOR;
-                float2 proximity_size: TEXCOORD2;
-//                float3 normal : NORMAL;
-//                float3 randBlend : TEXCOORD0;
-//                float clip : TEXCOORD1;
-                UNITY_VERTEX_OUTPUT_STEREO
-            };
             
             // inverseW is to counteract the effect of perspective-correct interpolation so that the lines
             // look the same thickness regardless of their depth in the scene.
@@ -95,6 +82,11 @@ Shader "GalaxyExplorer/Placement"
                 UNITY_VERTEX_OUTPUT_STEREO
             };
             
+            // Quad corner offsets and UVs, matching the geometry shader this replaces (Meta Quest's driver doesn't
+            // support geometry shaders with multiview stereo).
+            static const float2 SparkleOffsets[4] = { float2(0, -1), float2(1, 0), float2(-1, 0), float2(0, 1) };
+            static const float2 SparkleUVs[4] = { float2(-1, -1), float2(1, -1), float2(-1, 1), float2(1, 1) };
+
             float4x4 rotationMatrix(float3 axis, float angle)
             {
                 axis = normalize(axis);
@@ -107,11 +99,11 @@ Shader "GalaxyExplorer/Placement"
                                 0.0,                                                         0.0,                                0.0,                                1.0);
             }
 
-            v2g vert(appdata v)
+            g2f vert(appdata v)
             {
                 UNITY_SETUP_INSTANCE_ID(v);
 
-                v2g o;
+                g2f o;
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
 //                float3 axis = v.randoms.xyz*2-1;
@@ -130,6 +122,13 @@ Shader "GalaxyExplorer/Placement"
 				
                 o.clipPos = UnityObjectToClipPos(rotated);
                 o.randoms = v.randoms;
+
+                // Camera-facing sparkle: offset this vertex to its quad corner in clip space.
+                uint corner = (uint)v.corner;
+                float quadSize = o.proximity_size.y * o.clipPos.w;
+                o.clipPos.x += SparkleOffsets[corner].x * quadSize * UNITY_MATRIX_P._11;
+                o.clipPos.y += SparkleOffsets[corner].y * quadSize * UNITY_MATRIX_P._22;
+                o.uv = SparkleUVs[corner];
 //                o.normal = UnityObjectToWorldNormal(v.normal);
 //                o.randBlend = float3(v.randBlend.xy, step(v.randBlend.z, _Blend));
 //                o.clip = saturate((-UnityObjectToViewPos(v.vertex).z-_ProjectionParams.y)/_ClipFadeDistance);
@@ -160,46 +159,6 @@ Shader "GalaxyExplorer/Placement"
             }
 
 
-            [maxvertexcount(4)]
-            void geom(point v2g i[1], inout TriangleStream<g2f> triStream)
-            {
-                g2f o;
-                o.randoms = i[0].randoms;
-                o.color = i[0].color;
-                o.proximity_size = i[0].proximity_size;
-                
-                float4 center = i[0].clipPos;
-//                float4 stepper = step(float4(.5,.5,.5,.5), i[0].randoms);
-                float4 stepper = step(float4(.5,.5,.5,.5), i[0].randoms);
-                
-				float4 up = float4(0, 1, 0, 0) * UNITY_MATRIX_P._22;
-				float4 right = float4(1, 0, 0, 0) * UNITY_MATRIX_P._11;
-				float size = o.proximity_size.y*center.w;
-                
-				float4 v[4];
-				v[0] = center - size * up;
-				v[1] = center + size * right;
-				v[2] = center - size * right;
-				v[3] = center + size * up;
-				float2 uv[4];
-//				uv[0] = float2(0,0);
-//				uv[1] = float2(.5,0);
-//				uv[2] = float2(0,.5);
-//				uv[3] = float2(.5,.5);
-				uv[0] = float2(-1,-1);
-				uv[1] = float2(1,-1);
-				uv[2] = float2(-1,1);
-				uv[3] = float2(1,1);
-				
-				[unroll]
-				for(uint idx = 0; idx < 4; idx++){
-				    o.clipPos = v[idx];
-//				    o.uv = uv[idx]+float2(.5*stepper.x, .5*stepper.y);
-				    o.uv = uv[idx];
-                    UNITY_TRANSFER_VERTEX_OUTPUT_STEREO(i[0], o);
-				    triStream.Append(o);
-				}
-            }
 
             float4 frag(g2f i) : COLOR
             {

@@ -1,4 +1,4 @@
-﻿Shader "GalaxyExplorer/PlacementRimShader"
+Shader "GalaxyExplorer/PlacementRimShader"
 {
 	Properties
 	{
@@ -27,8 +27,7 @@
 
 			#pragma multi_compile_fwdbase
 
-			#pragma target 5.0
-			#pragma only_renderers d3d11
+			#pragma target 4.5
 
 			#include "UnityCG.cginc"
 

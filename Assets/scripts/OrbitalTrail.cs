@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace GalaxyExplorer
 {
@@ -14,35 +15,6 @@ namespace GalaxyExplorer
     {
         public class OrbitsRenderer : SingleInstance<OrbitsRenderer>
         {
-            public class OrbitsRendererCameraProxy : MonoBehaviour
-            {
-                public OrbitsRenderer owner;
-
-                public void Update()
-                {
-                    if (!owner)
-                    {
-                        Destroy(this);
-                    }
-                }
-
-                private void OnPostRender()
-                {
-                    if (owner)
-                    {
-                        owner.RenderOrbits();
-                    }
-                }
-
-                private void OnDrawGizmos()
-                {
-                    if (owner)
-                    {
-                        owner.RenderOrbits();
-                    }
-                }
-            }
-
             [StructLayout(LayoutKind.Sequential)]
             private struct OrbitDataPoint
             {
@@ -100,7 +72,11 @@ namespace GalaxyExplorer
             private ComputeBuffer orbitsBuffer;
             private bool dataInvalidated = true;
 
-            private OrbitsRendererCameraProxy cameraProxy;
+            // Orbits are drawn by a command buffer on the main camera after transparent objects, which renders
+            // correctly into both eyes on headsets (the old OnPostRender immediate-mode draw did not).
+            private CommandBuffer commandBuffer;
+            private Camera commandBufferCamera;
+            private const CameraEvent OrbitsCameraEvent = CameraEvent.AfterForwardAlpha;
 
             private float previousTruthfulness = -1;
 
@@ -146,9 +122,39 @@ namespace GalaxyExplorer
 
             protected override void OnDestroy()
             {
+                RemoveCommandBuffer();
                 DestroyBuffers();
                 isInitialized = false;
                 base.OnDestroy();
+            }
+
+            private void EnsureCommandBuffer()
+            {
+                var camera = Camera.main;
+                if (camera == commandBufferCamera && commandBuffer != null)
+                {
+                    return;
+                }
+
+                RemoveCommandBuffer();
+                if (camera != null)
+                {
+                    commandBuffer = new CommandBuffer { name = "Orbital trails" };
+                    camera.AddCommandBuffer(OrbitsCameraEvent, commandBuffer);
+                    commandBufferCamera = camera;
+                }
+            }
+
+            private void RemoveCommandBuffer()
+            {
+                if (commandBuffer != null && commandBufferCamera != null)
+                {
+                    commandBufferCamera.RemoveCommandBuffer(OrbitsCameraEvent, commandBuffer);
+                }
+
+                commandBuffer?.Release();
+                commandBuffer = null;
+                commandBufferCamera = null;
             }
 
             private void DestroyBuffers()
@@ -210,23 +216,26 @@ namespace GalaxyExplorer
                     ReCreateData();
                 }
 
-                if (!cameraProxy && Camera.main)
-                {
-                    cameraProxy = Camera.main.gameObject.AddComponent<OrbitsRendererCameraProxy>();
-                    cameraProxy.owner = this;
-                }
+                EnsureCommandBuffer();
+                RenderOrbits();
             }
 
-            public void RenderOrbits()
+            private void RenderOrbits()
             {
+                if (commandBuffer == null)
+                {
+                    return;
+                }
+
+                commandBuffer.Clear();
                 if (orbitsMaterial && orbitsBuffer != null && orbitsWorld && orbitsWorld.gameObject.activeInHierarchy)
                 {
-                    orbitsMaterial.SetPass(0);
                     orbitsMaterial.SetBuffer("_OrbitsData", orbitsBuffer);
                     orbitsMaterial.SetMatrix("_Orbits2World", orbitsWorld.transform.localToWorldMatrix);
                     orbitsMaterial.SetFloat("_GlobalScale", orbitsWorld.lossyScale.x);
 
-                    Graphics.DrawProceduralNow(MeshTopology.Points, orbitsData.Count);
+                    // Each orbit point draws one segment quad: two triangles, six vertices (see the shader).
+                    commandBuffer.DrawProcedural(Matrix4x4.identity, orbitsMaterial, 0, MeshTopology.Triangles, orbitsData.Count * 6);
                 }
             }
         }

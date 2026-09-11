@@ -1,4 +1,4 @@
-﻿// Copyright Microsoft Corporation. All rights reserved.
+// Copyright Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 Shader "Galaxy/Stars"
@@ -26,19 +26,12 @@ Shader "Galaxy/Stars"
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
-			#pragma geometry geo
+			#pragma target 4.5
 			
 			#include "UnityCG.cginc"
 			#include "cginc/StarVertDescriptor.cginc"
 			#include "cginc/StarPositionCompute.cginc"
-
-			struct v2g
-			{
-				float4 vertex : SV_POSITION;
-				float2 uv : TEXCOORD0;
-				float size : TEXCOORD1;
-				float4 color : COLOR0;
-			};
+			#include "cginc/StarQuad.cginc"
 
 			struct v2f
 			{
@@ -58,57 +51,21 @@ Shader "Galaxy/Stars"
 
 			StructuredBuffer<StarVertDescriptor> _Stars;
 
-			v2g vert (uint id : SV_VertexID, uint inst : SV_InstanceID)
+			v2f vert (uint vid : SV_VertexID)
 			{
-				StarVertDescriptor star = _Stars[id];
+				uint starIndex, corner;
+				StarQuadCorner(vid, starIndex, corner);
+				StarVertDescriptor star = _Stars[starIndex];
 
-				v2g o;
-
-                o.vertex = UnityObjectToClipPos(float4(ComputeStarPosition(star), 1));
+				v2f o;
+				float4 clipPos = UnityObjectToClipPos(float4(ComputeStarPosition(star), 1));
+				o.vertex = StarQuadOffset(clipPos, corner, star.size * _WSScale);
 				o.color = float4(star.color, 1) * _TransitionAlpha * _Color;
-				o.uv = star.uv + float2(0, .5);
-				o.size = star.size * _WSScale;
+				o.uv = StarQuadUVs[corner] * 0.5 + star.uv + float2(0, .5);
 
 				return o;
 			}
 
-			[maxvertexcount(4)]
-			void geo(point v2g p[1], inout TriangleStream<v2f> triStream)
-			{
-				float4 mvPos = p[0].vertex;
-
-				float4 up = float4(0, 1, 0, 0) * UNITY_MATRIX_P._22;
-				float4 right = float4(1, 0, 0, 0) * UNITY_MATRIX_P._11;
-				float halfS = p[0].size;
-
-				float4 v[4];
-				v[0] = mvPos - halfS * up;
-				v[1] = mvPos + halfS * right;
-				v[2] = mvPos - halfS * right;
-				v[3] = mvPos + halfS * up;
-
-				v2f pIn;
-				pIn.color = p[0].color;
-
-				pIn.vertex = v[0];
-				pIn.uv = float2(1.0f, 0.0f) * 0.5 + p[0].uv;
-				triStream.Append(pIn);
-
-				pIn.vertex = v[1];
-				pIn.uv = float2(1.0f, 1.0f) * 0.5 + p[0].uv;
-				triStream.Append(pIn);
-
-				pIn.vertex = v[2];
-				pIn.uv = float2(0.0f, 0.0f) * 0.5 + p[0].uv;
-				triStream.Append(pIn);
-
-				pIn.vertex = v[3];
-				pIn.uv = float2(0.0f, 1.0f) * 0.5 + p[0].uv;
-				triStream.Append(pIn);
-
-				triStream.RestartStrip();
-			}
-			
 			fixed4 frag (v2f i) : SV_Target
 			{
 				float4 color = tex2D(_MainTex, i.uv).a * float4(i.color.xyz, 1.0);

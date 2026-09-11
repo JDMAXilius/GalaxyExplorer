@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 Shader "Mixed Reality Toolkit/Standard"
@@ -182,7 +182,7 @@ Shader "Mixed Reality Toolkit/Standard"
             CGPROGRAM
 
 #if defined(SHADER_API_D3D11)
-            #pragma target 5.0
+            #pragma target 4.5
 #endif
             #pragma vertex vert
             #pragma fragment frag

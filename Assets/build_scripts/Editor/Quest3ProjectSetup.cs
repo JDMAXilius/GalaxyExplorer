@@ -52,14 +52,14 @@ namespace GalaxyExplorer.Build
             EnableFeatures(BuildTargetGroup.Standalone, CommonFeatures, log);
             EnableFeatures(BuildTargetGroup.Android, CommonFeatures.Concat(AndroidOnlyFeatures), log);
 
-            // Most app shaders lack single-pass stereo macros until the rendering phase; multi-pass renders
-            // each eye separately and works with them as-is.
-            foreach (var group in new[] { BuildTargetGroup.Standalone, BuildTargetGroup.Android })
-            {
-                OpenXRSettings.GetSettingsForBuildTargetGroup(group).renderMode = OpenXRSettings.RenderMode.MultiPass;
-            }
+            // Quest (Vulkan): multiview. The vertex stage gets each eye's matrices from the view index, so the app's
+            // shaders need no stereo macros. Windows over Link (D3D11): multi-pass, because single-pass instanced
+            // there would need instancing macros in every custom shader; the PC has headroom for it.
+            OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android).renderMode = OpenXRSettings.RenderMode.SinglePassInstanced;
+            OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Standalone).renderMode = OpenXRSettings.RenderMode.MultiPass;
 
             ConfigureAndroidPlayer(log);
+            ConfigureQuality(log);
 
             // "MS HRTF Spatializer" is a Windows-only plugin; Unity's built-in 3D panning is used instead.
             var audioManagerAsset = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/AudioManager.asset")[0];
@@ -106,6 +106,88 @@ namespace GalaxyExplorer.Build
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.Vulkan });
             log.AppendLine($"[Android] IL2CPP, ARM64, API {PlayerSettings.Android.minSdkVersion}-{PlayerSettings.Android.targetSdkVersion}, Vulkan, ASTC, id {AndroidPackageId}");
+        }
+
+        private static void ConfigureQuality(StringBuilder log)
+        {
+            // Meta recommends 4x MSAA on Quest; the project has a single quality level, shared with desktop.
+            var qualityAsset = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/QualitySettings.asset")[0];
+            var quality = new SerializedObject(qualityAsset);
+            var levels = quality.FindProperty("m_QualitySettings");
+            for (var i = 0; i < levels.arraySize; i++)
+            {
+                levels.GetArrayElementAtIndex(i).FindPropertyRelative("antiAliasing").intValue = 4;
+            }
+            quality.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(qualityAsset);
+            log.AppendLine($"Quality: 4x MSAA on {levels.arraySize} level(s)");
+        }
+
+        [MenuItem("Galaxy Explorer/Quest 3/Apply Android Asset Overrides")]
+        public static void ApplyAndroidAssetOverrides()
+        {
+            var log = new StringBuilder("Android asset overrides\n");
+            const string android = "Android";
+
+            AssetDatabase.StartAssetEditing();
+            try
+            {
+                // Quest 3 has memory for 2048 ASTC textures; only the 4096 maps are capped.
+                foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Textures", "Assets/models", "Assets/materials", "Assets/SolarSystem", "Assets/UI" }))
+                {
+                    var path = AssetDatabase.GUIDToAssetPath(guid);
+                    if (!(AssetImporter.GetAtPath(path) is TextureImporter importer) || importer.maxTextureSize <= 2048)
+                    {
+                        continue;
+                    }
+
+                    var settings = importer.GetPlatformTextureSettings(android);
+                    if (settings.overridden && settings.maxTextureSize <= 2048)
+                    {
+                        continue;
+                    }
+
+                    settings.overridden = true;
+                    settings.maxTextureSize = 2048;
+                    settings.format = importer.textureType == TextureImporterType.NormalMap
+                        ? TextureImporterFormat.ASTC_4x4
+                        : TextureImporterFormat.ASTC_6x6;
+                    importer.SetPlatformTextureSettings(settings);
+                    importer.SaveAndReimport();
+                    log.AppendLine($"  texture {path}: Android 2048 {settings.format}");
+                }
+
+                // Clips loaded fully decompressed cost tens of MB each on Android; stream the long ones instead.
+                foreach (var guid in AssetDatabase.FindAssets("t:AudioClip", new[] { "Assets/audio" }))
+                {
+                    var path = AssetDatabase.GUIDToAssetPath(guid);
+                    if (!(AssetImporter.GetAtPath(path) is AudioImporter importer))
+                    {
+                        continue;
+                    }
+
+                    var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+                    var defaults = importer.defaultSampleSettings;
+                    if (clip == null || clip.length < 20f || defaults.loadType != AudioClipLoadType.DecompressOnLoad)
+                    {
+                        continue;
+                    }
+
+                    var settings = importer.GetOverrideSampleSettings(android);
+                    settings.loadType = AudioClipLoadType.Streaming;
+                    settings.compressionFormat = AudioCompressionFormat.Vorbis;
+                    settings.quality = 0.7f;
+                    importer.SetOverrideSampleSettings(android, settings);
+                    importer.SaveAndReimport();
+                    log.AppendLine($"  audio {path} ({clip.length:F0}s): Android streaming");
+                }
+            }
+            finally
+            {
+                AssetDatabase.StopAssetEditing();
+            }
+
+            Debug.Log(log.ToString());
         }
 
         private static void AppendValidationIssues(BuildTargetGroup group, StringBuilder log)

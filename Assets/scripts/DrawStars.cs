@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.XR;
 
 namespace GalaxyExplorer
 {
@@ -26,6 +27,7 @@ namespace GalaxyExplorer
 
         private ComputeBuffer starsData;
         private bool isFirst;
+        private bool _useDownscaledTarget;
 
         [SerializeField]
         private CameraEvent cameraEvent = CameraEvent.BeforeForwardOpaque;
@@ -78,14 +80,16 @@ namespace GalaxyExplorer
 
         public void CreateBuffers(StarVertDescriptor[] stars)
         {
-            if (renderIntoDownscaledTarget)
+            // On a headset the camera renders to stereo eye textures, which the plain 2D downscaled targets
+            // can't feed, so every layer draws straight into the eye buffer (also cheaper on a mobile GPU).
+            _useDownscaledTarget = renderIntoDownscaledTarget && !XRSettings.isDeviceActive;
+            if (_useDownscaledTarget)
             {
                 isFirst = RenderTexturesBucket.CreateIfNeeded(galaxy.gameObject);
+                _downRezId = new RenderTargetIdentifier(RenderTexturesBucket.Instance.downRez);
+                _medRezId = new RenderTargetIdentifier(RenderTexturesBucket.Instance.downRezMed);
+                _highRezId = new RenderTargetIdentifier(RenderTexturesBucket.Instance.downRezHigh);
             }
-
-            _downRezId = new RenderTargetIdentifier(RenderTexturesBucket.Instance.downRez);
-            _medRezId = new RenderTargetIdentifier(RenderTexturesBucket.Instance.downRezMed);
-            _highRezId = new RenderTargetIdentifier(RenderTexturesBucket.Instance.downRezHigh);
 
             starsData = new ComputeBuffer(stars.Length, StarVertDescriptor.StructSize);
             starsData.SetData(stars);
@@ -174,7 +178,7 @@ namespace GalaxyExplorer
 
         private void UpdateCommandBuffer(CommandBuffer commandBuffer, bool isSceneView = false)
         {
-            if (renderIntoDownscaledTarget)
+            if (_useDownscaledTarget)
             {
                 commandBuffer.SetRenderTarget(_downRezId);
 
@@ -184,9 +188,10 @@ namespace GalaxyExplorer
                 }
             }
 
-            commandBuffer.DrawProcedural(galaxy.transform.localToWorldMatrix, starsMaterial, 0, MeshTopology.Points, starCount);
+            // Each star is a quad expanded by the vertex shader: two triangles, six vertices (see StarQuad.cginc).
+            commandBuffer.DrawProcedural(galaxy.transform.localToWorldMatrix, starsMaterial, 0, MeshTopology.Triangles, starCount * 6);
 
-            if (!renderIntoDownscaledTarget) return;
+            if (!_useDownscaledTarget) return;
             commandBuffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
 
             if (isFirst) return;

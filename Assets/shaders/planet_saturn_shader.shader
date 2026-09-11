@@ -1,4 +1,4 @@
-﻿// Copyright Microsoft Corporation. All rights reserved.
+// Copyright Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 Shader "Planets/Saturn"
 {
@@ -43,7 +43,7 @@ Shader "Planets/Saturn"
 				Blend [_SRCBLEND] [_DSTBLEND]
 
 				CGPROGRAM
-				#pragma target 5.0
+				#pragma target 4.5
 				#pragma fragmentoption ARB_precision_hint_fastest
 				#pragma multi_compile _ LOD_FADE_CROSSFADE
 

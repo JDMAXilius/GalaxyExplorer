@@ -30,8 +30,7 @@ Shader "GalaxyExplorer/TractorBeam"
             #pragma multi_compile_instancing
 
             // We only target the HoloLens (and the Unity editor), so take advantage of shader model 5.
-            #pragma target 5.0
-            #pragma only_renderers d3d11
+            #pragma target 4.5
 
             #include "UnityCG.cginc"
             #include "AutoLight.cginc"

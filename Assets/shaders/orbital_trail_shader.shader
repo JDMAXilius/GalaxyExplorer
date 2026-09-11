@@ -1,4 +1,4 @@
-﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
+// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 
 Shader "Planets/OrbitalTrail" 
 {
@@ -34,8 +34,7 @@ Shader "Planets/OrbitalTrail"
 				CGPROGRAM
 				#pragma vertex vert
 				#pragma fragment frag
-				#pragma geometry geo
-				#pragma target 5.0
+				#pragma target 4.5
 				#pragma fragmentoption ARB_precision_hint_fastest
 				#pragma multi_compile _ IN_TRANSITION REALSCALE SCHEMATIC
 
@@ -53,13 +52,6 @@ Shader "Planets/OrbitalTrail"
 					uint orbitStartIndex;
 					uint orbitEntryCount;
 					uint orbitIndex;
-				};
-
-				struct v2g 
-				{
-					float4 planetPosAndRadius : TEXCOORD0;
-					float3 wPos[2] : TEXCOORD1;
-					float4 points[4] : TEXCOORD3;
 				};
 
 				struct v2f 
@@ -124,29 +116,21 @@ Shader "Planets/OrbitalTrail"
 					}
 				}
 
-				v2g vert(uint id : SV_VertexID)
+				// Each orbit point draws the segment to the next point as a quad (two triangles, six vertices),
+				// mitred with the neighbouring segments. This used to be a geometry shader, which Meta Quest's GPU
+				// driver does not support together with multiview stereo.
+				static const uint SegmentStripIndex[6] = { 0, 1, 2, 2, 1, 3 };
+
+				v2f vert(uint vid : SV_VertexID)
 				{
+					uint id = vid / 6;
+					uint corner = SegmentStripIndex[vid % 6];
+
 					OrbitDataPoint p1 = _OrbitsData[id];
 
 					OrbitDataPoint p0 = _OrbitsData[tIndex(p1.globalIndex - 1, p1)];
 					OrbitDataPoint p2 = _OrbitsData[tIndex(p1.globalIndex + 1, p1)];
 					OrbitDataPoint p3 = _OrbitsData[tIndex(p1.globalIndex + 2, p1)];
-
-					float3 realPoints[4] = 
-					{
-						p0.realPos,
-						p1.realPos,
-						p2.realPos,
-						p3.realPos,
-					};
-
-					float3 schematicPoints[4] =
-					{
-						p0.schematicPos,
-						p1.schematicPos,
-						p2.schematicPos,
-						p3.schematicPos,
-					};
 
 					float4x4 mvp = mul(UNITY_MATRIX_VP, _Orbits2World);
 
@@ -158,95 +142,52 @@ Shader "Planets/OrbitalTrail"
 					const float truthfulness = 0;
 #endif
 
-					v2g o;
+					float3 pos0 = lerp(p0.schematicPos, p0.realPos, truthfulness);
+					float3 pos1 = lerp(p1.schematicPos, p1.realPos, truthfulness);
+					float3 pos2 = lerp(p2.schematicPos, p2.realPos, truthfulness);
+					float3 pos3 = lerp(p3.schematicPos, p3.realPos, truthfulness);
 
-					float3 wPos[2];
-					wPos[0] = mul(_Orbits2World, float4(lerp(schematicPoints[1], realPoints[1], truthfulness), 1)).xyz;
-					wPos[1] = mul(_Orbits2World, float4(lerp(schematicPoints[2], realPoints[2], truthfulness), 1)).xyz;
+					float3 wPos0 = mul(_Orbits2World, float4(pos1, 1)).xyz;
+					float3 wPos1 = mul(_Orbits2World, float4(pos2, 1)).xyz;
 
 					float4 points[4];
-					points[0] = mul(mvp, float4(lerp(schematicPoints[0], realPoints[0], truthfulness), 1));
-					points[1] = mul(mvp, float4(lerp(schematicPoints[1], realPoints[1], truthfulness), 1));
-					points[2] = mul(mvp, float4(lerp(schematicPoints[2], realPoints[2], truthfulness), 1));
-					points[3] = mul(mvp, float4(lerp(schematicPoints[3], realPoints[3], truthfulness), 1));
-					
-					o.points = points;
+					points[0] = mul(mvp, float4(pos0, 1));
+					points[1] = mul(mvp, float4(pos1, 1));
+					points[2] = mul(mvp, float4(pos2, 1));
+					points[3] = mul(mvp, float4(pos3, 1));
 
-					o.planetPosAndRadius = selectPlanet(p1.orbitIndex);
-					o.wPos = wPos;
-
-					return o;
-				}
-
-				[maxvertexcount(4)]
-				void geo(point v2g input[1], inout TriangleStream<v2f> triStream)
-				{
-					v2g p = input[0];
-					float4 points[4] = p.points;
-					float4 correctPoints[4];
-
+					float2 correctPoints[4];
 					[unroll]
 					for (int i = 0; i < 4; i++)
 					{
-						correctPoints[i] = points[i] / abs(points[i].w);
+						correctPoints[i] = points[i].xy / abs(points[i].w);
 					}
 
-					float3 directions3D[3];
-					directions3D[0] = (correctPoints[1] - correctPoints[0]);
-					directions3D[1] = (correctPoints[2] - correctPoints[1]);
-					directions3D[2] = (correctPoints[3] - correctPoints[2]);
+					float2 direction0 = normalize(correctPoints[1] - correctPoints[0]);
+					float2 direction1 = normalize(correctPoints[2] - correctPoints[1]);
+					float2 direction2 = normalize(correctPoints[3] - correctPoints[2]);
 
-					float2 directions[3];
-					directions[0] = normalize(directions3D[0].xy);
-					directions[1] = normalize(directions3D[1].xy);
-					directions[2] = normalize(directions3D[2].xy);
-					
-					float2 spTangents[2];
-					spTangents[0] = normalize(directions[1] + directions[0]);
-					spTangents[1] = normalize(directions[2] + directions[1]);
+					// Screen-space sides (perpendicular to the averaged tangent) at the segment's start and end.
+					float2 tangentStart = normalize(direction1 + direction0);
+					float2 tangentEnd = normalize(direction2 + direction1);
+					float2 sideStart = float2(tangentStart.y, -tangentStart.x);
+					float2 sideEnd = float2(tangentEnd.y, -tangentEnd.x);
 
-					float2 sides[2];
-					sides[0] = cross(float3(spTangents[0].xy, 0), float3(0, 0, 1)).xy;
-					sides[1] = cross(float3(spTangents[1].xy, 0), float3(0, 0, 1)).xy;
+					// Corners 0/1 sit at the segment start, 2/3 at its end; even corners on the negative side.
+					bool atEnd = corner >= 2;
+					float sign = (corner == 0 || corner == 2) ? -1 : 1;
+					float4 basePoint = atEnd ? points[2] : points[1];
+					float2 side = atEnd ? sideEnd : sideStart;
 
-					float4 v[4];
-					v[0] = float4(p.points[1] - _Width * float3(sides[0], 0) * p.points[1].w, p.points[1].w);
-					v[1] = float4(p.points[1] + _Width * float3(sides[0], 0) * p.points[1].w, p.points[1].w);
-					v[2] = float4(p.points[2] - _Width * float3(sides[1], 0) * p.points[2].w, p.points[2].w);
-					v[3] = float4(p.points[2] + _Width * float3(sides[1], 0) * p.points[2].w, p.points[2].w);
-					
-					float clipAmount = CalcVertClipAmount(p.wPos[0]);
+					v2f o = (v2f)0;
+					o.vertex = float4(basePoint.xyz + sign * _Width * float3(side, 0) * basePoint.w, basePoint.w);
+					o.texCoord = float2(sign < 0 ? 0 : 1, 1);
+					o.wPos = atEnd ? wPos1 : wPos0;
+					o.planetPosAndRadius = selectPlanet(p1.orbitIndex);
+					o.nextDirection = normalize(wPos1 - wPos0);
+					o.clipAmount = CalcVertClipAmount(wPos0);
 
-
-					v2f pIn = (v2f)0;
-					pIn.planetPosAndRadius = p.planetPosAndRadius;
-					pIn.nextDirection = normalize(p.wPos[1] - p.wPos[0]);
-					
-					pIn.vertex = v[0];
-					pIn.texCoord = float2(0, 1);
-					pIn.wPos = p.wPos[0];
-					pIn.clipAmount = clipAmount;
-					triStream.Append(pIn);
-
-					pIn.vertex = v[1];
-					pIn.texCoord = float2(1, 1);
-					pIn.wPos = p.wPos[0];
-					pIn.clipAmount = clipAmount;
-					triStream.Append(pIn);
-
-					pIn.vertex = v[2];
-					pIn.texCoord = float2(0, 1);
-					pIn.wPos = p.wPos[1];
-					pIn.clipAmount = clipAmount;
-					triStream.Append(pIn);
-
-					pIn.vertex = v[3];
-					pIn.texCoord = float2(1, 1);
-					pIn.wPos = p.wPos[1];
-					pIn.clipAmount = clipAmount;
-					triStream.Append(pIn);
-
-					return;
+					return o;
 				}
 
 				fixed4 frag(v2f i) : COLOR

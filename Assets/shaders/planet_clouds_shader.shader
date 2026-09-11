@@ -1,4 +1,4 @@
-﻿// Copyright Microsoft Corporation. All rights reserved.
+// Copyright Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 Shader "Planets/Clouds"
 {
@@ -30,7 +30,7 @@ Shader "Planets/Clouds"
 		Pass
 		{
 			CGPROGRAM
-			#pragma target 5.0
+			#pragma target 4.5
 			#pragma vertex vert
 			#pragma fragment frag
 			#pragma fragmentoption ARB_precision_hint_fastest
