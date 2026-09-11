@@ -1,22 +1,22 @@
-﻿// Copyright Microsoft Corporation. All rights reserved.
+// Copyright Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 //using HoloToolkit.Unity.InputModule;
 
-using Microsoft.MixedReality.Toolkit.Input;
 using UnityEngine;
+using GalaxyExplorer.XR;
 
 /// <summary>
 /// Planet script is attached to every planet gameobject, the actual sphere of the planet so user is able to aitap, mouse click or touch the planet
 /// </summary>
 namespace GalaxyExplorer
 {
-    public class Planet : MonoBehaviour, IMixedRealityPointerHandler, IMixedRealityFocusHandler//, IInputClickHandler, IFocusable, IControllerTouchpadHandler
+    public class Planet : MonoBehaviour, IGEPointerHandler, IGEFocusHandler//, IInputClickHandler, IFocusable, IControllerTouchpadHandler
     {
         [SerializeField]
         private PointOfInterest POI = null;
 
-        public void OnPointerUp(MixedRealityPointerEventData eventData)
+        public void OnPointerUp(GEPointerEventData eventData)
         {
             if (POI != null && POI.isActiveAndEnabled)
             {
@@ -24,7 +24,7 @@ namespace GalaxyExplorer
             }
         }
 
-        public void OnPointerDown(MixedRealityPointerEventData eventData)
+        public void OnPointerDown(GEPointerEventData eventData)
         {
             if (POI != null && POI.isActiveAndEnabled)
             {
@@ -32,7 +32,7 @@ namespace GalaxyExplorer
             }
         }
 
-        public void OnPointerClicked(MixedRealityPointerEventData eventData)
+        public void OnPointerClicked(GEPointerEventData eventData)
         {
             if (POI != null && POI.isActiveAndEnabled)
             {
@@ -40,7 +40,7 @@ namespace GalaxyExplorer
             }
         }
 
-        public void OnBeforeFocusChange(FocusEventData eventData)
+        public void OnBeforeFocusChange(GEFocusEventData eventData)
         {
             if (POI != null && POI.isActiveAndEnabled)
             {
@@ -48,7 +48,7 @@ namespace GalaxyExplorer
             }
         }
 
-        public void OnFocusChanged(FocusEventData eventData)
+        public void OnFocusChanged(GEFocusEventData eventData)
         {
             if (POI != null && POI.isActiveAndEnabled)
             {
@@ -56,7 +56,7 @@ namespace GalaxyExplorer
             }
         }
 
-        public void OnFocusEnter(FocusEventData eventData)
+        public void OnFocusEnter(GEFocusEventData eventData)
         {
             if (POI != null && POI.isActiveAndEnabled)
             {
@@ -64,7 +64,7 @@ namespace GalaxyExplorer
             }
         }
 
-        public void OnFocusExit(FocusEventData eventData)
+        public void OnFocusExit(GEFocusEventData eventData)
         {
             if (POI != null && POI.isActiveAndEnabled)
             {

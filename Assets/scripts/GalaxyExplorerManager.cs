@@ -1,16 +1,11 @@
-﻿// Copyright Microsoft Corporation. All rights reserved.
+// Copyright Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.MixedReality.Toolkit;
-using Microsoft.MixedReality.Toolkit.Input;
 using MRS.FlowManager;
 using System.Collections;
 using TouchScript.Examples.CameraControl;
 using UnityEngine;
 using UnityEngine.XR;
-#if WINDOWS_UWP
-using Windows.Security.ExchangeActiveSyncProvisioning;
-#endif
 
 namespace GalaxyExplorer
 {
@@ -22,7 +17,10 @@ namespace GalaxyExplorer
             ArticulatedHandsPlatform,
             ImmersiveHMD,
             Desktop,
-            Phone
+            Phone,
+            // Meta Quest 3 (OpenXR): VR-headset scale factors, hand menus and hand/controller interaction.
+            // Appended so values serialized in PlatformGameObjectEnabler lists keep their meaning.
+            Quest3
         };
 
         public static PlatformId Platform { get; set; }
@@ -108,12 +106,21 @@ namespace GalaxyExplorer
             }
         }
 
+        public static bool IsQuest3
+        {
+            get
+            {
+                return Platform == PlatformId.Quest3;
+            }
+        }
+
         public static float GalaxyScaleFactor
         {
             get
             {
                 switch (Platform)
                 {
+                    case PlatformId.Quest3:
                     case PlatformId.ImmersiveHMD:
                         return 2.0f;
 
@@ -138,6 +145,7 @@ namespace GalaxyExplorer
             {
                 switch (Platform)
                 {
+                    case PlatformId.Quest3:
                     case PlatformId.ImmersiveHMD:
                     case PlatformId.HoloLensGen1:
                         return 1.0f;
@@ -160,6 +168,7 @@ namespace GalaxyExplorer
             {
                 switch (Platform)
                 {
+                    case PlatformId.Quest3:
                     case PlatformId.ImmersiveHMD:
                         return 0.0035f;
 
@@ -179,6 +188,7 @@ namespace GalaxyExplorer
             {
                 switch (Platform)
                 {
+                    case PlatformId.Quest3:
                     case PlatformId.ImmersiveHMD:
                         return 3.0f;
 
@@ -200,6 +210,7 @@ namespace GalaxyExplorer
             {
                 switch (Platform)
                 {
+                    case PlatformId.Quest3:
                     case PlatformId.ImmersiveHMD:
                         return 3.0f;
 
@@ -221,7 +232,7 @@ namespace GalaxyExplorer
             get
             {
                 float moveFactor = 1f;
-                float MRFactor = (Platform == PlatformId.ImmersiveHMD) ? 2.0f : 1.0f;
+                float MRFactor = (Platform == PlatformId.ImmersiveHMD || Platform == PlatformId.Quest3) ? 2.0f : 1.0f;
 
                 if (ViewLoader.CurrentView != null && ViewLoader.CurrentView.Equals("solar_system_view_scene"))
                 {
@@ -246,7 +257,7 @@ namespace GalaxyExplorer
             get
             {
                 float moveFactor = 1f;
-                float MRFactor = (Platform == PlatformId.ImmersiveHMD) ? 1.25f : 1.0f;
+                float MRFactor = (Platform == PlatformId.ImmersiveHMD || Platform == PlatformId.Quest3) ? 1.25f : 1.0f;
 
                 if (ViewLoader.CurrentView != null && ViewLoader.CurrentView.Equals("solar_system_view_scene"))
                 {
@@ -263,6 +274,7 @@ namespace GalaxyExplorer
             {
                 switch (Platform)
                 {
+                    case PlatformId.Quest3:
                     case PlatformId.ImmersiveHMD:
                         return 1.5f;
 
@@ -288,6 +300,7 @@ namespace GalaxyExplorer
             {
                 switch (Platform)
                 {
+                    case PlatformId.Quest3:
                     case PlatformId.ImmersiveHMD:
                         return 0.22f;
 
@@ -310,6 +323,7 @@ namespace GalaxyExplorer
             {
                 switch (Platform)
                 {
+                    case PlatformId.Quest3:
                     case PlatformId.ImmersiveHMD:
                         return 2.0f;
 
@@ -335,6 +349,7 @@ namespace GalaxyExplorer
             {
                 switch (Platform)
                 {
+                    case PlatformId.Quest3:
                     case PlatformId.ImmersiveHMD:
                         return 1.0f;
 
@@ -354,45 +369,13 @@ namespace GalaxyExplorer
             }
         }
 
-        private void HideGazeCursor()
-        {
-            var meshRenderers = MixedRealityToolkit.InputSystem.GazeProvider.GazeCursor.GameObjectReference
-                .GetComponentsInChildren<SkinnedMeshRenderer>(true);
-            foreach (var meshRenderer in meshRenderers)
-            {
-                meshRenderer.enabled = false;
-            }
-        }
-
         protected override void Awake()
         {
             base.Awake();
 
-            var isHoloLens2 = false;
-
-#if WINDOWS_UWP
-            var info = new EasClientDeviceInformation();
-            isHoloLens2 = info.SystemSku.ToString() == "HL_2";
-#endif
-            if (isHoloLens2)
-            {
-                Platform = PlatformId.ArticulatedHandsPlatform;
-
-                HideGazeCursor();
-
-            }
-            else if (XRSettings.isDeviceActive)
-            {
-                // Unity 6: XRDevice.isPresent and HolographicSettings (HoloLens) are gone. Without the
-                // legacy WSA display query, any active XR device is treated as an opaque headset.
-                Platform = PlatformId.ImmersiveHMD;
-                HideGazeCursor();
-            }
-            else
-            {
-                Platform = PlatformId.Desktop;
-                MixedRealityToolkit.InputSystem.GazeProvider.Enabled = false;
-            }
+            // OpenXR starts before the first scene loads, so a running headset (Quest 3 standalone, or over
+            // Quest Link in the editor/Windows player) is already active here; otherwise run as desktop.
+            Platform = XRSettings.isDeviceActive ? PlatformId.Quest3 : PlatformId.Desktop;
 
             if (MyAppPlatformManagerInitialized != null)
             {

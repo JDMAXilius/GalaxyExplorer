@@ -284,7 +284,7 @@ namespace GalaxyExplorer
             orbitsRenderer.AddOrbit(this, realPositions, schematicPositions);
             originalGlobalScale = orbitMaterial.GetFloat("_GlobalScale");
             originalWidth = orbitMaterial.GetFloat("_Width");
-            if (GalaxyExplorerManager.IsImmersiveHMD)
+            if (GalaxyExplorerManager.IsImmersiveHMD || GalaxyExplorerManager.IsQuest3)
             {
                 orbitMaterial.SetFloat("_Width", GalaxyExplorerManager.OrbitalTrailFixedWidth);
             }

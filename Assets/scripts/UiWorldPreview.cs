@@ -1,6 +1,5 @@
-﻿using System.Collections;
+using System.Collections;
 using GalaxyExplorer;
-using Microsoft.MixedReality.Toolkit;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

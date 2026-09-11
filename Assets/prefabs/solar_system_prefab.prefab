@@ -9,7 +9,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 998223106}
-  - component: {fileID: 998223105}
   - component: {fileID: 998223104}
   m_Layer: 0
   m_Name: controller_tracker
@@ -32,18 +31,6 @@ Transform:
   m_Father: {fileID: 4268015018981783677}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &998223105
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 998223103}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d7c0ed14f8e447db0062b3d549e3a4e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &998223104
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -73,19 +60,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 0.017207205, y: 0.017207205, z: 0.017210469}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &5308469369681746201
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2679029404772655596}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5afd5316c63705643b3daba5a6e923bd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTetherWhenManipulating: 0
 --- !u!1 &3364187942598769595
 GameObject:
   m_ObjectHideFlags: 0

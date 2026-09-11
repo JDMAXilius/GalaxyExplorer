@@ -236,12 +236,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1594571593}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b55691ad5b034fe6966763a6e23818d2, type: 3}
+  m_Script: {fileID: 11500000, guid: 4ae9c624c175492ebad2603eea1163dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  handedness: 0
   trackedObjectToReference: 0
-  trackedHandJoint: 2
   additionalOffset: {x: 0, y: 0, z: 0}
   additionalRotation: {x: 0, y: 0, z: 0}
   transformTarget: {fileID: 0}
@@ -515,6 +513,7 @@ GameObject:
   - component: {fileID: 4727954714938874}
   - component: {fileID: 114872882149826588}
   - component: {fileID: 135195412795913108}
+  - component: {fileID: 3371018018044590506}
   m_Layer: 5
   m_Name: PlanetWideCollider
   m_TagString: Untagged
@@ -571,6 +570,80 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.03
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &3371018018044590506
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1170898313429006}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7f5765fca0146ac9781c6ff1ae72a86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GalaxyExplorer.XR.GEInteractable
+  m_InteractionManager: {fileID: 0}
+  m_Colliders: []
+  m_InteractionLayers:
+    m_Bits: 1
+  m_DistanceCalculationMode: 1
+  m_SelectMode: 0
+  m_FocusMode: 1
+  m_CustomReticle: {fileID: 0}
+  m_AllowGazeInteraction: 0
+  m_AllowGazeSelect: 0
+  m_OverrideGazeTimeToSelect: 0
+  m_GazeTimeToSelect: 0.5
+  m_OverrideTimeToAutoDeselectGaze: 0
+  m_TimeToAutoDeselectGaze: 3
+  m_AllowGazeAssistance: 0
+  m_FirstHoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastHoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstSelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastSelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstFocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastFocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Activated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Deactivated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_StartingHoverFilters: []
+  m_StartingSelectFilters: []
+  m_StartingInteractionStrengthFilters: []
+  m_AutoFindParentInteractableInHierarchy: 0
+  m_ParentInteractableObject: {fileID: 0}
 --- !u!1 &1199902912862228
 GameObject:
   m_ObjectHideFlags: 0
@@ -913,6 +986,7 @@ GameObject:
   - component: {fileID: 33748019953013176}
   - component: {fileID: 23990973098866856}
   - component: {fileID: 65857790994734820}
+  - component: {fileID: 2073746054120636514}
   m_Layer: 5
   m_Name: UI_POI
   m_TagString: Untagged
@@ -1013,6 +1087,80 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2, y: 2, z: 0.01}
   m_Center: {x: 0.0000009536743, y: -0.00000029802322, z: -0.0000019073486}
+--- !u!114 &2073746054120636514
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1521035371720092}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7f5765fca0146ac9781c6ff1ae72a86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GalaxyExplorer.XR.GEInteractable
+  m_InteractionManager: {fileID: 0}
+  m_Colliders: []
+  m_InteractionLayers:
+    m_Bits: 1
+  m_DistanceCalculationMode: 1
+  m_SelectMode: 0
+  m_FocusMode: 1
+  m_CustomReticle: {fileID: 0}
+  m_AllowGazeInteraction: 0
+  m_AllowGazeSelect: 0
+  m_OverrideGazeTimeToSelect: 0
+  m_GazeTimeToSelect: 0.5
+  m_OverrideTimeToAutoDeselectGaze: 0
+  m_TimeToAutoDeselectGaze: 3
+  m_AllowGazeAssistance: 0
+  m_FirstHoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastHoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstSelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastSelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstFocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastFocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Activated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Deactivated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_StartingHoverFilters: []
+  m_StartingSelectFilters: []
+  m_StartingInteractionStrengthFilters: []
+  m_AutoFindParentInteractableInHierarchy: 0
+  m_ParentInteractableObject: {fileID: 0}
 --- !u!1 &1533815404975494
 GameObject:
   m_ObjectHideFlags: 0
@@ -1028,6 +1176,7 @@ GameObject:
   - component: {fileID: 95620760798559904}
   - component: {fileID: 65509017294747190}
   - component: {fileID: 114020535634637054}
+  - component: {fileID: 7099417735351203651}
   m_Layer: 8
   m_Name: DescriptionCard_Card
   m_TagString: Untagged
@@ -1175,6 +1324,80 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   POI: {fileID: 114533383574295448}
+--- !u!114 &7099417735351203651
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1533815404975494}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7f5765fca0146ac9781c6ff1ae72a86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GalaxyExplorer.XR.GEInteractable
+  m_InteractionManager: {fileID: 0}
+  m_Colliders: []
+  m_InteractionLayers:
+    m_Bits: 1
+  m_DistanceCalculationMode: 1
+  m_SelectMode: 0
+  m_FocusMode: 1
+  m_CustomReticle: {fileID: 0}
+  m_AllowGazeInteraction: 0
+  m_AllowGazeSelect: 0
+  m_OverrideGazeTimeToSelect: 0
+  m_GazeTimeToSelect: 0.5
+  m_OverrideTimeToAutoDeselectGaze: 0
+  m_TimeToAutoDeselectGaze: 3
+  m_AllowGazeAssistance: 0
+  m_FirstHoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastHoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstSelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastSelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstFocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastFocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Activated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Deactivated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_StartingHoverFilters: []
+  m_StartingSelectFilters: []
+  m_StartingInteractionStrengthFilters: []
+  m_AutoFindParentInteractableInHierarchy: 0
+  m_ParentInteractableObject: {fileID: 0}
 --- !u!1 &1548216630011656
 GameObject:
   m_ObjectHideFlags: 0
@@ -2139,9 +2362,9 @@ GameObject:
   - component: {fileID: 8726719832628218361}
   - component: {fileID: 1157354235}
   - component: {fileID: 1157354236}
-  - component: {fileID: 1157354237}
   - component: {fileID: 1157354239}
   - component: {fileID: 1157354240}
+  - component: {fileID: 4917870545944213569}
   m_Layer: 0
   m_Name: Sphere
   m_TagString: Untagged
@@ -2264,20 +2487,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 2556851936110193883}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03daa81ea5f685f4ebf6e32038d058ca, type: 3}
+  m_Script: {fileID: 11500000, guid: cf879fb2713f4a4aa4c29d1c31af451b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   hostTransform: {fileID: 1594571594}
   manipulationType: 2
   twoHandedManipulationType: 5
   allowFarManipulation: 1
-  oneHandRotationModeNear: 6
-  oneHandRotationModeFar: 6
-  releaseBehavior: 3
-  constraintOnRotation: 0
-  constraintOnMovement: 0
   smoothingActive: 1
-  smoothingAmountOneHandManip: 0.001
+  smoothingTime: 0.05
   OnManipulationStarted:
     m_PersistentCalls:
       m_Calls: []
@@ -2330,19 +2548,6 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   ResetDuration: 2
---- !u!114 &1157354237
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2556851936110193883}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5afd5316c63705643b3daba5a6e923bd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTetherWhenManipulating: 0
 --- !u!114 &1157354239
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2370,20 +2575,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 2556851936110193883}
   m_Enabled: 0
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03daa81ea5f685f4ebf6e32038d058ca, type: 3}
+  m_Script: {fileID: 11500000, guid: cf879fb2713f4a4aa4c29d1c31af451b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   hostTransform: {fileID: 0}
   manipulationType: 2
   twoHandedManipulationType: 5
   allowFarManipulation: 1
-  oneHandRotationModeNear: 6
-  oneHandRotationModeFar: 6
-  releaseBehavior: 3
-  constraintOnRotation: 0
-  constraintOnMovement: 0
   smoothingActive: 1
-  smoothingAmountOneHandManip: 0.001
+  smoothingTime: 0.05
   OnManipulationStarted:
     m_PersistentCalls:
       m_Calls: []
@@ -2396,6 +2596,80 @@ MonoBehaviour:
   OnHoverExited:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &4917870545944213569
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2556851936110193883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7f5765fca0146ac9781c6ff1ae72a86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GalaxyExplorer.XR.GEInteractable
+  m_InteractionManager: {fileID: 0}
+  m_Colliders: []
+  m_InteractionLayers:
+    m_Bits: 1
+  m_DistanceCalculationMode: 1
+  m_SelectMode: 0
+  m_FocusMode: 1
+  m_CustomReticle: {fileID: 0}
+  m_AllowGazeInteraction: 0
+  m_AllowGazeSelect: 0
+  m_OverrideGazeTimeToSelect: 0
+  m_GazeTimeToSelect: 0.5
+  m_OverrideTimeToAutoDeselectGaze: 0
+  m_TimeToAutoDeselectGaze: 3
+  m_AllowGazeAssistance: 0
+  m_FirstHoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastHoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstSelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastSelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstFocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastFocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Activated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Deactivated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_StartingHoverFilters: []
+  m_StartingSelectFilters: []
+  m_StartingInteractionStrengthFilters: []
+  m_AutoFindParentInteractableInHierarchy: 0
+  m_ParentInteractableObject: {fileID: 0}
 --- !u!1 &2556944861433405810
 GameObject:
   m_ObjectHideFlags: 0
@@ -3653,9 +3927,9 @@ GameObject:
   - component: {fileID: 5075220639750908252}
   - component: {fileID: 3021737281144806350}
   - component: {fileID: 3394670608310966744}
-  - component: {fileID: 7681363949290190822}
   - component: {fileID: 4496994103688879363}
   - component: {fileID: 911416595362055973}
+  - component: {fileID: 5593411260852642423}
   m_Layer: 12
   m_Name: mercury_sphere_mesh (1)
   m_TagString: Untagged
@@ -3744,20 +4018,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 7250878895932099939}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03daa81ea5f685f4ebf6e32038d058ca, type: 3}
+  m_Script: {fileID: 11500000, guid: cf879fb2713f4a4aa4c29d1c31af451b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   hostTransform: {fileID: 1594571594}
   manipulationType: 2
   twoHandedManipulationType: 5
   allowFarManipulation: 1
-  oneHandRotationModeNear: 6
-  oneHandRotationModeFar: 6
-  releaseBehavior: 3
-  constraintOnRotation: 0
-  constraintOnMovement: 0
   smoothingActive: 1
-  smoothingAmountOneHandManip: 0.001
+  smoothingTime: 0.05
   OnManipulationStarted:
     m_PersistentCalls:
       m_Calls: []
@@ -3824,19 +4093,6 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   ResetDuration: 2
---- !u!114 &7681363949290190822
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7250878895932099939}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5afd5316c63705643b3daba5a6e923bd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTetherWhenManipulating: 0
 --- !u!135 &4496994103688879363
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -3876,6 +4132,80 @@ MonoBehaviour:
   initialRotation: {x: 0, y: 0, z: 0, w: 0}
   initialFov: 16
   forceSolver: {fileID: 1594571595}
+--- !u!114 &5593411260852642423
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7250878895932099939}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7f5765fca0146ac9781c6ff1ae72a86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GalaxyExplorer.XR.GEInteractable
+  m_InteractionManager: {fileID: 0}
+  m_Colliders: []
+  m_InteractionLayers:
+    m_Bits: 1
+  m_DistanceCalculationMode: 1
+  m_SelectMode: 0
+  m_FocusMode: 1
+  m_CustomReticle: {fileID: 0}
+  m_AllowGazeInteraction: 0
+  m_AllowGazeSelect: 0
+  m_OverrideGazeTimeToSelect: 0
+  m_GazeTimeToSelect: 0.5
+  m_OverrideTimeToAutoDeselectGaze: 0
+  m_TimeToAutoDeselectGaze: 3
+  m_AllowGazeAssistance: 0
+  m_FirstHoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastHoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstSelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastSelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstFocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastFocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Activated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Deactivated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_StartingHoverFilters: []
+  m_StartingSelectFilters: []
+  m_StartingInteractionStrengthFilters: []
+  m_AutoFindParentInteractableInHierarchy: 0
+  m_ParentInteractableObject: {fileID: 0}
 --- !u!1 &7593350159562873503
 GameObject:
   m_ObjectHideFlags: 0
@@ -4412,6 +4742,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 311045955212260655, guid: 1feb7da4c9edf9441ae1c3b2433ebc93, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1380601796}
+    - targetCorrespondingSourceObject: {fileID: 311045955212260655, guid: 1feb7da4c9edf9441ae1c3b2433ebc93, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3424635206125311058}
   m_SourcePrefab: {fileID: 100100000, guid: 1feb7da4c9edf9441ae1c3b2433ebc93, type: 3}
 --- !u!1 &311045953429222716 stripped
 GameObject:
@@ -4446,6 +4779,80 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!114 &3424635206125311058
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 311045953429222716}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7f5765fca0146ac9781c6ff1ae72a86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GalaxyExplorer.XR.GEInteractable
+  m_InteractionManager: {fileID: 0}
+  m_Colliders: []
+  m_InteractionLayers:
+    m_Bits: 1
+  m_DistanceCalculationMode: 1
+  m_SelectMode: 0
+  m_FocusMode: 1
+  m_CustomReticle: {fileID: 0}
+  m_AllowGazeInteraction: 0
+  m_AllowGazeSelect: 0
+  m_OverrideGazeTimeToSelect: 0
+  m_GazeTimeToSelect: 0.5
+  m_OverrideTimeToAutoDeselectGaze: 0
+  m_TimeToAutoDeselectGaze: 3
+  m_AllowGazeAssistance: 0
+  m_FirstHoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastHoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstSelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastSelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstFocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastFocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Activated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Deactivated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_StartingHoverFilters: []
+  m_StartingSelectFilters: []
+  m_StartingInteractionStrengthFilters: []
+  m_AutoFindParentInteractableInHierarchy: 0
+  m_ParentInteractableObject: {fileID: 0}
 --- !u!4 &311045953989367839 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 311045954647939084, guid: 1feb7da4c9edf9441ae1c3b2433ebc93, type: 3}

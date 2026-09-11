@@ -1,8 +1,7 @@
-﻿using Microsoft.MixedReality.Toolkit;
-using Microsoft.MixedReality.Toolkit.Input;
 using UnityEngine;
+using GalaxyExplorer.XR;
 
-public class AudioClipPlayer : MonoBehaviour, IMixedRealityPointerHandler, IMixedRealityFocusHandler
+public class AudioClipPlayer : MonoBehaviour, IGEPointerHandler, IGEFocusHandler
 {
     [SerializeField] private AudioId onFocus;
     [SerializeField] private AudioId onClick;
@@ -11,40 +10,39 @@ public class AudioClipPlayer : MonoBehaviour, IMixedRealityPointerHandler, IMixe
     
     void Awake()
     {
-        audioService = MixedRealityToolkit.Instance.GetService<IAudioService>();
-        audioService = MixedRealityToolkit.Instance.GetService<IAudioService>();
+        audioService = AudioService.Instance;
     }
 
-    #region IMixedRealityPointerHandlerFunctions
-    public void OnPointerUp(MixedRealityPointerEventData eventData)
+    #region IGEPointerHandler
+    public void OnPointerUp(GEPointerEventData eventData)
     {
     }
 
-    public void OnPointerDown(MixedRealityPointerEventData eventData)
+    public void OnPointerDown(GEPointerEventData eventData)
     {
         audioService.PlayClip(onClick);
     }
 
-    public void OnPointerClicked(MixedRealityPointerEventData eventData)
+    public void OnPointerClicked(GEPointerEventData eventData)
     {
     }
     #endregion
 
-    #region IMixedRealityFocusHandlerFunctions
-    public void OnBeforeFocusChange(FocusEventData eventData)
+    #region IGEFocusHandler
+    public void OnBeforeFocusChange(GEFocusEventData eventData)
     {
     }
 
-    public void OnFocusChanged(FocusEventData eventData)
+    public void OnFocusChanged(GEFocusEventData eventData)
     {
     }
 
-    public void OnFocusEnter(FocusEventData eventData)
+    public void OnFocusEnter(GEFocusEventData eventData)
     {
         audioService.PlayClip(onFocus);
     }
 
-    public void OnFocusExit(FocusEventData eventData)
+    public void OnFocusExit(GEFocusEventData eventData)
     {
     }
     #endregion

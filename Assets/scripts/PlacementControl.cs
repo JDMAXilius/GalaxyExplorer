@@ -1,11 +1,10 @@
-﻿// Copyright Microsoft Corporation. All rights reserved.
+// Copyright Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using Microsoft.MixedReality.Toolkit.Physics;
 using System.Collections;
-using Microsoft.MixedReality.Toolkit.UI;
 using UnityEngine;
+using GalaxyExplorer.XR;
 
 namespace GalaxyExplorer
 {
@@ -26,7 +25,7 @@ namespace GalaxyExplorer
         public delegate void ContentPlacedCallback(Vector3 position);
 
         public ContentPlacedCallback OnContentPlaced;
-        public Interactable PlacementConfirmationButton;
+        public GEButton PlacementConfirmationButton;
         public Transform ConfirmationButtonOffsetTransform;
 
         private void Awake()
@@ -60,6 +59,7 @@ namespace GalaxyExplorer
                 
                 case GalaxyExplorerManager.PlatformId.ArticulatedHandsPlatform:
                 case GalaxyExplorerManager.PlatformId.ImmersiveHMD:
+                case GalaxyExplorerManager.PlatformId.Quest3:
                     buttonOffset.z = -_placementRing.Diameter * .5f;
                     break;
                 
@@ -83,8 +83,8 @@ namespace GalaxyExplorer
                 return;
             }
 
-            // Position earth pin in front of camera and a bit lower in VR
-            var offset = GalaxyExplorerManager.IsImmersiveHMD ? Vector3.down * .5f : Vector3.zero;
+            // Position earth pin in front of camera and a bit lower on headsets where the user stands at full height
+            var offset = GalaxyExplorerManager.IsImmersiveHMD || GalaxyExplorerManager.IsQuest3 ? Vector3.down * .5f : Vector3.zero;
 
             gameObject.transform.position =
                 _cameraMain.transform.position + _cameraMain.transform.forward * 2f + offset;

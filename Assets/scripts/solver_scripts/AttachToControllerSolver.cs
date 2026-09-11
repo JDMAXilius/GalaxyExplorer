@@ -1,17 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using Microsoft.MixedReality.Toolkit;
-using Microsoft.MixedReality.Toolkit.Input;
-using Microsoft.MixedReality.Toolkit.Utilities;
-using Microsoft.MixedReality.Toolkit.Utilities.Solvers;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Serialization;
-
-[Serializable]
-public class UnityIMixedRealityControllerEvent : UnityEvent<IMixedRealityController>{}
+using GalaxyExplorer.XR;
 
 [RequireComponent(typeof(SolverHandler))]
 public class AttachToControllerSolver : Solver

@@ -1,12 +1,12 @@
-﻿// Copyright Microsoft Corporation. All rights reserved.
+// Copyright Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 //using HoloToolkit.Unity.InputModule;
-using Microsoft.MixedReality.Toolkit.Input;
 using System;
 using System.Collections;
 using System.Linq;
 using UnityEngine;
+using GalaxyExplorer.XR;
 
 namespace GalaxyExplorer
 {
@@ -76,7 +76,7 @@ namespace GalaxyExplorer
             IsAnimating = false;
         }
 
-        public override void OnPointerDown(MixedRealityPointerEventData eventData)
+        public override void OnPointerDown(GEPointerEventData eventData)
         {
             base.OnPointerDown(eventData);
 

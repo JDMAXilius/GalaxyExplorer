@@ -197,6 +197,15 @@ public class OnboardingManager : MonoBehaviour
         DisableForcePull();
         _placementForceSolver.SetToFree.AddListener(OnForcePullFree);
         _platformId = GalaxyExplorerManager.Platform;
+        if (_platformId == GalaxyExplorerManager.PlatformId.Quest3)
+        {
+            // Quest 3 supports both hands and controllers: use the HoloLens 2 hand tutorial (voice-over and
+            // hand animations) when hands are tracked, and the VR controller voice-over otherwise.
+            var rig = GalaxyExplorer.XR.XRInputRig.Instance;
+            _platformId = rig != null && rig.IsHandTrackingActive
+                ? GalaxyExplorerManager.PlatformId.ArticulatedHandsPlatform
+                : GalaxyExplorerManager.PlatformId.ImmersiveHMD;
+        }
         VoManager.PlayClip(Intro_01);
         if (!skipPlacement)
         {

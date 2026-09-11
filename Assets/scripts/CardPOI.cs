@@ -1,10 +1,10 @@
-﻿// Copyright Microsoft Corporation. All rights reserved.
+// Copyright Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 //using HoloToolkit.Unity.InputModule;
-using Microsoft.MixedReality.Toolkit.Input;
 using System.Collections;
 using UnityEngine;
+using GalaxyExplorer.XR;
 
 /// <summary>
 /// Its attached to the poi if the poi is supposed to launch a card when selected
@@ -79,7 +79,7 @@ namespace GalaxyExplorer
             }
         }
 
-        public override void OnPointerDown(MixedRealityPointerEventData eventData)
+        public override void OnPointerDown(GEPointerEventData eventData)
         {
             if (isCoolingDown)
             {

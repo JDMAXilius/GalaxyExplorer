@@ -15,7 +15,7 @@ namespace GalaxyExplorer
         private void Start()
         {
             // position the logo and orient it towards the user in MR devices
-            if (GalaxyExplorerManager.IsHoloLensGen1 || GalaxyExplorerManager.IsHoloLens2 || GalaxyExplorerManager.IsImmersiveHMD)
+            if (GalaxyExplorerManager.IsHoloLensGen1 || GalaxyExplorerManager.IsHoloLens2 || GalaxyExplorerManager.IsImmersiveHMD || GalaxyExplorerManager.IsQuest3)
             {
                 gameObject.transform.position = Camera.main.transform.position + (Camera.main.transform.forward * LogoDistanceMR);
 

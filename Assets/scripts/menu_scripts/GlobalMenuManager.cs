@@ -137,6 +137,8 @@ public class GlobalMenuManager : MonoBehaviour
                 break;
 
             case GalaxyExplorerManager.PlatformId.ArticulatedHandsPlatform:
+            case GalaxyExplorerManager.PlatformId.Quest3:
+                // The hand menu follows the palm, or the controller when controllers are in use.
                 _handMenuManager.SetMenuAvailability(MenuIsAvailable, ResetButtonNeedsShowing, BackButtonNeedsShowing);
                 break;
 

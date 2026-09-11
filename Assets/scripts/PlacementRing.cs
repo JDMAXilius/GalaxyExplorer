@@ -2,8 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Microsoft.MixedReality.Toolkit;
-using Microsoft.MixedReality.Toolkit.Input;
 using UnityEngine;
 
 [RequireComponent(typeof(MeshFilter))]
@@ -18,7 +16,7 @@ public class PlacementRing : MonoBehaviour
     private Vector4[] _controllers = {Vector4.zero, Vector4.zero};
     private bool _pointerDown;
     private AudioSource _ambientAudioSource;
-    private AudioService _audioService;
+    private IAudioService _audioService;
     private Coroutine _audioBlendCoroutine;
     private bool _blendingAmbientAudio;
 
@@ -48,16 +46,15 @@ public class PlacementRing : MonoBehaviour
 
     private IEnumerator GetAudioServiceCoroutine()
     {
-        if (_audioService != null)
+        if (_audioService != null || !Application.isPlaying)
         {
             yield break;
         }
-        while (!MixedRealityToolkit.IsInitialized)
-        {
-            yield return null;
-        }
 
-        _audioService = MixedRealityToolkit.Instance.GetService<AudioService>();
+        // wait a frame so the camera the audio service parents sources to exists
+        yield return null;
+
+        _audioService = AudioService.Instance;
         _audioService.PlayClip(RingAmbientAudioClip, out _ambientAudioSource, transform, 0, PlayOptions.Loop);
     }
 

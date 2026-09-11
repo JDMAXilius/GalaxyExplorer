@@ -3,7 +3,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using Microsoft.MixedReality.Toolkit;
 using UnityEngine;
 
 namespace MRS.FlowManager
@@ -63,10 +62,8 @@ namespace MRS.FlowManager
 
         private IEnumerator WaitForPrerequisitesThenEnter()
         {
-            while (MixedRealityToolkit.InputSystem == null)
-            {
-                yield return null;
-            }
+            // Let every other system run its Start before the first stage's events fire.
+            yield return null;
             EnterStage(0);
         }
 
@@ -178,10 +175,6 @@ namespace MRS.FlowManager
             m_currentStage = newStageIdx;
             m_currentStageName = newStage.Name;
 
-            if (newStage.clickToAdvance)
-            {
-                ReceiveTaps(true);
-            }
             m_timeAtTap = Time.time;
 
             newStage.autoTransitionCounter = 0.0f;
@@ -231,11 +224,6 @@ namespace MRS.FlowManager
             }
 
             // Clear input reception if we used it
-            if (m_stages[m_currentStage].clickToAdvance)
-            {
-                ReceiveTaps(false);
-            }
-
             // Trigger exit events for the stage we are leaving
             TriggerExitEvents(m_currentStage);
         }
@@ -259,18 +247,6 @@ namespace MRS.FlowManager
             yield return new WaitForSeconds(_event.Delay);
             _event.Triggered = true;
             _event.Event.Invoke();
-        }
-
-        private void ReceiveTaps(bool receive)
-        {
-            if (receive)
-            {
-                MixedRealityToolkit.InputSystem.PushModalInputHandler(gameObject);
-            }
-            else
-            {
-                MixedRealityToolkit.InputSystem.PopModalInputHandler();
-            }
         }
 
         /// <summary>

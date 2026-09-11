@@ -3,14 +3,14 @@
 
 using System;
 using System.Collections;
-using Microsoft.MixedReality.Toolkit.UI;
 using UnityEngine;
 using UnityEngine.Events;
+using GalaxyExplorer.XR;
 
 public class MouseInputEventRouter : MonoBehaviour
     {
-        [Tooltip("Interactable to which the press events are being routed. Defaults to the object of the component.")]
-        public Interactable routingTarget;
+        [Tooltip("GEButton to which the press events are being routed. Defaults to the object of the component.")]
+        public GEButton routingTarget;
 
         public UnityEvent OnClick;
 
@@ -23,7 +23,7 @@ public class MouseInputEventRouter : MonoBehaviour
         {
             if (routingTarget == null)
             {
-                routingTarget = GetComponent<Interactable>();
+                routingTarget = GetComponent<GEButton>();
             }
         }
 
@@ -35,10 +35,7 @@ public class MouseInputEventRouter : MonoBehaviour
             }
             if (routingTarget != null)
             {
-                routingTarget.SetPhysicalTouch(true);
-                routingTarget.SetPress(true);
-                routingTarget.OnPointerClicked(null);
-                routingTarget.SetPress(false);
+                routingTarget.Click();
             }
             else
             {

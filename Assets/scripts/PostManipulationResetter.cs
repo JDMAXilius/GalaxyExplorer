@@ -1,6 +1,6 @@
-﻿using System.Collections;
-using Microsoft.MixedReality.Toolkit.UI;
+using System.Collections;
 using UnityEngine;
+using GalaxyExplorer.XR;
 
 [RequireComponent(typeof(ManipulationHandler))]
 public class PostManipulationResetter : MonoBehaviour

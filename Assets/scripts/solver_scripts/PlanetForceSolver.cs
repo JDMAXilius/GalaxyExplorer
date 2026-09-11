@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using GalaxyExplorer;
-using Microsoft.MixedReality.Toolkit;
-using Microsoft.MixedReality.Toolkit.Input;
+using GalaxyExplorer.XR;
 using UnityEngine;
 
 public class PlanetForceSolver : ForceSolver
@@ -35,7 +34,7 @@ public class PlanetForceSolver : ForceSolver
         }
 
         _planetHighlighter = GetComponentInChildren<PlanetHighlighter>();
-        _audioService = MixedRealityToolkit.Instance.GetService<IAudioService>();
+        _audioService = AudioService.Instance;
 
         _moons = GetComponentsInChildren<Moon>().ToList();
     }
@@ -138,13 +137,13 @@ public class PlanetForceSolver : ForceSolver
         }
     }
 
-    public override void OnFocusExit(FocusEventData eventData)
+    public override void OnFocusExit(GEFocusEventData eventData)
     {
         base.OnFocusExit(eventData);
         _planetHighlighter.SetFocused(false);
     }
 
-    public override void OnFocusEnter(FocusEventData eventData)
+    public override void OnFocusEnter(GEFocusEventData eventData)
     {
         base.OnFocusEnter(eventData);
         _planetHighlighter.SetFocused(true);

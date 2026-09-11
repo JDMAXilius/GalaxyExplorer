@@ -1,13 +1,16 @@
-﻿// Copyright Microsoft Corporation. All rights reserved.
+// Copyright Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.MixedReality.Toolkit.Input;
 using System.Collections;
+using GalaxyExplorer.XR;
 using UnityEngine;
 
 namespace GalaxyExplorer
 {
-    public class Hyperlink : MonoBehaviour, IMixedRealityInputHandler
+    /// <summary>
+    /// Opens <see cref="URL"/> in the system browser when selected.
+    /// </summary>
+    public class Hyperlink : MonoBehaviour, IGEPointerHandler
     {
         [SerializeField]
         private string URL;
@@ -21,24 +24,23 @@ namespace GalaxyExplorer
             {
                 Application.OpenURL(URL);
 
-                // Since events are currently fired twice, enforce a cooldown before another link can be clicked
+                // Selection can arrive from several interactors at once; ignore repeats for a moment.
                 StartCoroutine(CoolDown());
             }
         }
 
-        public void OnInputDown(InputEventData eventData = null)
+        public void OnPointerDown(GEPointerEventData eventData)
         {
-#if NETFX_CORE
-                UnityEngine.WSA.Application.InvokeOnUIThread(() =>
-                {
-                    var uri = new System.Uri(URL);
-                    var unused = Windows.System.Launcher.LaunchUriAsync(uri);
-                }, false);
-#else
-            Application.OpenURL(URL);
-#endif
+            OpenURL();
+            eventData?.Use();
+        }
 
-            eventData.Use();
+        public void OnPointerUp(GEPointerEventData eventData)
+        {
+        }
+
+        public void OnPointerClicked(GEPointerEventData eventData)
+        {
         }
 
         private IEnumerator CoolDown()
@@ -53,10 +55,6 @@ namespace GalaxyExplorer
         private void OnDisable()
         {
             _inCoolDown = false;
-        }
-
-        public void OnInputUp(InputEventData eventData)
-        {
         }
     }
 }

@@ -1,14 +1,14 @@
-﻿// Copyright Microsoft Corporation. All rights reserved.
+// Copyright Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.MixedReality.Toolkit.Input;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using GalaxyExplorer.XR;
 
 namespace GalaxyExplorer
 {
-    public class CardPOIManager : MonoBehaviour, IMixedRealityPointerHandler
+    public class CardPOIManager : MonoBehaviour, IGEPointerHandler
     {
         [Header("Galaxy Card POI Fading")]
         [Tooltip("The time it takes for all points of interest to completely fade out when a card point of interest is selected.")]
@@ -21,6 +21,17 @@ namespace GalaxyExplorer
 
         private SpiralGalaxy[] spiralGalaxies;
         private PoiAnimator poiAnimator;
+
+        // Every select anywhere (including on nothing) re-evaluates which POI colliders are active.
+        private void OnEnable()
+        {
+            GEInputEvents.GlobalPointerDown += OnPointerDown;
+        }
+
+        private void OnDisable()
+        {
+            GEInputEvents.GlobalPointerDown -= OnPointerDown;
+        }
 
         public void RegisterPOI(PointOfInterest poi)
         {
@@ -141,16 +152,16 @@ namespace GalaxyExplorer
             }
         }
 
-        public void OnPointerUp(MixedRealityPointerEventData eventData)
+        public void OnPointerUp(GEPointerEventData eventData)
         {
         }
 
-        public virtual void OnPointerDown(MixedRealityPointerEventData eventData)
+        public virtual void OnPointerDown(GEPointerEventData eventData)
         {
             StartCoroutine(UpdateActivationOfPOIColliders());
         }
 
-        public void OnPointerClicked(MixedRealityPointerEventData eventData)
+        public void OnPointerClicked(GEPointerEventData eventData)
         {
         }
     }

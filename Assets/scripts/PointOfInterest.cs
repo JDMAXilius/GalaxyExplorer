@@ -1,16 +1,15 @@
-﻿// Copyright Microsoft Corporation. All rights reserved.
+// Copyright Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 //using HoloToolkit.Unity.InputModule;
-using Microsoft.MixedReality.Toolkit;
-using Microsoft.MixedReality.Toolkit.Input;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using GalaxyExplorer.XR;
 
 namespace GalaxyExplorer
 {
-    public class PointOfInterest : MonoBehaviour, IMixedRealityPointerHandler, IMixedRealityFocusHandler
+    public class PointOfInterest : MonoBehaviour, IGEPointerHandler, IGEFocusHandler
     {
         [SerializeField]
         protected GameObject Indicator = null;
@@ -102,7 +101,7 @@ namespace GalaxyExplorer
 
         protected virtual void Start()
         {
-            audioService = MixedRealityToolkit.Instance.GetService<IAudioService>();
+            audioService = AudioService.Instance;
             
             if (Indicator)
             {
@@ -232,7 +231,7 @@ namespace GalaxyExplorer
             }
         }
 
-        public virtual void OnPointerUp(MixedRealityPointerEventData eventData)
+        public virtual void OnPointerUp(GEPointerEventData eventData)
         {
         }
 
@@ -241,7 +240,7 @@ namespace GalaxyExplorer
             OnPointerDown(null);
         }
 
-        public virtual void OnPointerDown(MixedRealityPointerEventData eventData)
+        public virtual void OnPointerDown(GEPointerEventData eventData)
         {
             if (isCoolingDown)
             {
@@ -268,19 +267,19 @@ namespace GalaxyExplorer
             isCoolingDown = false;
         }
 
-        public virtual void OnPointerClicked(MixedRealityPointerEventData eventData)
+        public virtual void OnPointerClicked(GEPointerEventData eventData)
         {
         }
 
-        public void OnBeforeFocusChange(FocusEventData eventData)
+        public void OnBeforeFocusChange(GEFocusEventData eventData)
         {
         }
 
-        public void OnFocusChanged(FocusEventData eventData)
+        public void OnFocusChanged(GEFocusEventData eventData)
         {
         }
 
-        public virtual void OnFocusEnter(FocusEventData eventData)
+        public virtual void OnFocusEnter(GEFocusEventData eventData)
         {
             currentState = POIState.kOnFocusEnter;
             timer = 0.0f;
@@ -288,7 +287,7 @@ namespace GalaxyExplorer
             audioService.PlayClip(AudioId.Focus);
         }
 
-        public virtual void OnFocusExit(FocusEventData eventData)
+        public virtual void OnFocusExit(GEFocusEventData eventData)
         {
             currentState = POIState.kOnFocusExit;
             timer = 0.0f;

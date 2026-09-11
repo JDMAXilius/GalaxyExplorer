@@ -1,7 +1,6 @@
 ﻿// Copyright Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.MixedReality.Toolkit;
 using System.Collections;
 using UnityEngine;
 
@@ -30,8 +29,6 @@ namespace GalaxyExplorer
             _zoomInOut = FindObjectOfType<ZoomInOut>();
 
             transform.localScale = transform.localScale * GalaxyExplorerManager.SlateScaleFactor;
-
-            MixedRealityToolkit.InputSystem.Register(gameObject);
         }
 
         private void SceneManager_sceneLoaded(UnityEngine.SceneManagement.Scene arg0, UnityEngine.SceneManagement.LoadSceneMode arg1)

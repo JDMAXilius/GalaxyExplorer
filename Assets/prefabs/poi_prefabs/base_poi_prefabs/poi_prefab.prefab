@@ -714,10 +714,10 @@ GameObject:
   - component: {fileID: 12153746064391303}
   - component: {fileID: 1104342159010081121}
   - component: {fileID: 7770107803711193496}
-  - component: {fileID: 2792107836904778079}
   - component: {fileID: 2156282389908855756}
   - component: {fileID: 7488790146228443782}
-  - component: {fileID: 1714595911777038891}
+  - component: {fileID: 1391793492116505884}
+  - component: {fileID: 7770349587286010879}
   m_Layer: 0
   m_Name: Pressable Button
   m_TagString: Untagged
@@ -773,19 +773,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 1365485748620341035}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 63c897c097799da4a900032ad3471c47, type: 3}
+  m_Script: {fileID: 11500000, guid: e5d4b0546bd94f1ab4e8a09e9a21d130, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   movingButtonVisuals: {fileID: 3827867446843448678}
-  maxPushDistance: 0.01
-  pressDistance: 0.006
-  releaseDistanceDelta: 0.001
+  pressDepth: 0.006
   returnRate: 25
-  initialTransform: {fileID: 1006914042459951701}
   TouchBegin:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2792107836904778079}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: 
         m_MethodName: OnHandPressTouched
         m_Mode: 1
@@ -800,7 +797,7 @@ MonoBehaviour:
   TouchEnd:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2792107836904778079}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: 
         m_MethodName: OnHandPressUntouched
         m_Mode: 1
@@ -815,7 +812,7 @@ MonoBehaviour:
   ButtonPressed:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2792107836904778079}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: 
         m_MethodName: OnHandPressTriggered
         m_Mode: 1
@@ -842,7 +839,7 @@ MonoBehaviour:
   ButtonReleased:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2792107836904778079}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: 
         m_MethodName: OnHandPressCompleted
         m_Mode: 1
@@ -866,22 +863,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-  isTouching: 0
-  isPressing: 0
---- !u!114 &2792107836904778079
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1365485748620341035}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 881d1ff8f009f5148b9f192e6ba31223, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  routingTarget: {fileID: 2156282389908855756}
-  InteractableOnClick: 2
 --- !u!114 &2156282389908855756
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -891,31 +872,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1365485748620341035}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1410eac1ae94b4d4492a09cc368e152c, type: 3}
+  m_Script: {fileID: 11500000, guid: b2487be934a74fa2828a1e5d67bfc839, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   Enabled: 1
-  States: {fileID: 11400000, guid: 5eac1712038236e4b8ffdb3893804fe1, type: 2}
-  InputAction:
-    id: 0
-    description: 
-    axisConstraint: 0
-  InputActionId: 0
-  IsGlobal: 0
-  Dimensions: 1
-  CanSelect: 0
-  CanDeselect: 0
-  VoiceCommand: Select
-  RequiresFocus: 1
-  Profiles:
-  - Target: {fileID: 0}
-    Themes:
-    - {fileID: 11400000, guid: 0c4c73f326f602744bdcfff481fd6f20, type: 2}
-    HadDefaultTheme: 1
-  - Target: {fileID: 3501436918127835274}
-    Themes:
-    - {fileID: 11400000, guid: 8f8cfb3041153fa45bccb6d664a563ec, type: 2}
-    HadDefaultTheme: 1
   OnClick:
     m_PersistentCalls:
       m_Calls:
@@ -931,7 +891,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-  Events: []
+  clickSound: {fileID: 0}
 --- !u!82 &7488790146228443782
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1029,7 +989,7 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
---- !u!114 &1714595911777038891
+--- !u!114 &1391793492116505884
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1038,16 +998,93 @@ MonoBehaviour:
   m_GameObject: {fileID: 1365485748620341035}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 98c748f3768ab714a8449b60fb9edc5c, type: 3}
+  m_Script: {fileID: 11500000, guid: d7f5765fca0146ac9781c6ff1ae72a86, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
-  localForward: {x: 0, y: 0, z: -1}
-  localUp: {x: 0, y: 1, z: 0}
-  localCenter: {x: 0, y: 0, z: -0.008}
-  eventsToReceive: 0
-  touchableSurface: 0
-  bounds: {x: 0.032, y: 0.032}
-  touchableCollider: {fileID: 1104342159010081121}
+  m_EditorClassIdentifier: Assembly-CSharp::GalaxyExplorer.XR.GEInteractable
+  m_InteractionManager: {fileID: 0}
+  m_Colliders: []
+  m_InteractionLayers:
+    m_Bits: 1
+  m_DistanceCalculationMode: 1
+  m_SelectMode: 0
+  m_FocusMode: 1
+  m_CustomReticle: {fileID: 0}
+  m_AllowGazeInteraction: 0
+  m_AllowGazeSelect: 0
+  m_OverrideGazeTimeToSelect: 0
+  m_GazeTimeToSelect: 0.5
+  m_OverrideTimeToAutoDeselectGaze: 0
+  m_TimeToAutoDeselectGaze: 3
+  m_AllowGazeAssistance: 0
+  m_FirstHoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastHoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstSelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastSelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstFocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastFocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Activated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Deactivated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_StartingHoverFilters: []
+  m_StartingSelectFilters: []
+  m_StartingInteractionStrengthFilters: []
+  m_AutoFindParentInteractableInHierarchy: 0
+  m_ParentInteractableObject: {fileID: 0}
+--- !u!114 &7770349587286010879
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1365485748620341035}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 115f1a2a50d85cd4b9d6dad4c95622be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit::UnityEngine.XR.Interaction.Toolkit.Filtering.XRPokeFilter
+  m_Interactable: {fileID: 0}
+  m_PokeCollider: {fileID: 1104342159010081121}
+  m_PokeConfiguration:
+    m_UseConstant: 1
+    m_ConstantValue:
+      m_PokeDirection: 3
+      m_InteractionDepthOffset: 0
+      m_EnablePokeAngleThreshold: 1
+      m_PokeAngleThreshold: 45
+    m_Variable: {fileID: 0}
 --- !u!1 &1446717205299231447
 GameObject:
   m_ObjectHideFlags: 0
@@ -1383,6 +1420,7 @@ GameObject:
   - component: {fileID: 3116684367240761999}
   - component: {fileID: 3124980988377230931}
   - component: {fileID: 5961469593804789380}
+  - component: {fileID: 8690325202648651889}
   m_Layer: 11
   m_Name: TextArea
   m_TagString: Untagged
@@ -1474,6 +1512,80 @@ MonoBehaviour:
   scale: 0.4
   offset: {x: 0.13, y: 0}
   pressableButton: {fileID: 5994954606316266911}
+--- !u!114 &8690325202648651889
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1856193645296261163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7f5765fca0146ac9781c6ff1ae72a86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GalaxyExplorer.XR.GEInteractable
+  m_InteractionManager: {fileID: 0}
+  m_Colliders: []
+  m_InteractionLayers:
+    m_Bits: 1
+  m_DistanceCalculationMode: 1
+  m_SelectMode: 0
+  m_FocusMode: 1
+  m_CustomReticle: {fileID: 0}
+  m_AllowGazeInteraction: 0
+  m_AllowGazeSelect: 0
+  m_OverrideGazeTimeToSelect: 0
+  m_GazeTimeToSelect: 0.5
+  m_OverrideTimeToAutoDeselectGaze: 0
+  m_TimeToAutoDeselectGaze: 3
+  m_AllowGazeAssistance: 0
+  m_FirstHoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastHoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstSelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastSelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstFocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastFocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Activated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Deactivated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_StartingHoverFilters: []
+  m_StartingSelectFilters: []
+  m_StartingInteractionStrengthFilters: []
+  m_AutoFindParentInteractableInHierarchy: 0
+  m_ParentInteractableObject: {fileID: 0}
 --- !u!1 &1926764412728379335
 GameObject:
   m_ObjectHideFlags: 0
@@ -3317,11 +3429,11 @@ GameObject:
   - component: {fileID: 5994954606870438753}
   - component: {fileID: 5994954606316266908}
   - component: {fileID: 5994954606316266911}
-  - component: {fileID: 5994954606316266910}
   - component: {fileID: 304551936890474501}
   - component: {fileID: 3778893916704738083}
   - component: {fileID: 5994954606316266881}
-  - component: {fileID: 5697019495922056488}
+  - component: {fileID: 5191375948599071222}
+  - component: {fileID: 2780853301672930091}
   m_Layer: 0
   m_Name: Pressable Button
   m_TagString: Untagged
@@ -3378,19 +3490,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 5994954606316266880}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 63c897c097799da4a900032ad3471c47, type: 3}
+  m_Script: {fileID: 11500000, guid: e5d4b0546bd94f1ab4e8a09e9a21d130, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   movingButtonVisuals: {fileID: 5994954605681315581}
-  maxPushDistance: 0.01
-  pressDistance: 0.006
-  releaseDistanceDelta: 0.001
+  pressDepth: 0.006
   returnRate: 25
-  initialTransform: {fileID: 1677077462653866463}
   TouchBegin:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5994954606316266910}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: 
         m_MethodName: OnHandPressTouched
         m_Mode: 1
@@ -3405,7 +3514,7 @@ MonoBehaviour:
   TouchEnd:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5994954606316266910}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: 
         m_MethodName: OnHandPressUntouched
         m_Mode: 1
@@ -3420,7 +3529,7 @@ MonoBehaviour:
   ButtonPressed:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5994954606316266910}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: 
         m_MethodName: OnHandPressTriggered
         m_Mode: 1
@@ -3447,7 +3556,7 @@ MonoBehaviour:
   ButtonReleased:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5994954606316266910}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: 
         m_MethodName: OnHandPressCompleted
         m_Mode: 1
@@ -3471,22 +3580,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-  isTouching: 0
-  isPressing: 0
---- !u!114 &5994954606316266910
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5994954606316266880}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 881d1ff8f009f5148b9f192e6ba31223, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  routingTarget: {fileID: 3778893916704738083}
-  InteractableOnClick: 2
 --- !u!114 &304551936890474501
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3512,31 +3605,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 5994954606316266880}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1410eac1ae94b4d4492a09cc368e152c, type: 3}
+  m_Script: {fileID: 11500000, guid: b2487be934a74fa2828a1e5d67bfc839, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   Enabled: 1
-  States: {fileID: 11400000, guid: 5eac1712038236e4b8ffdb3893804fe1, type: 2}
-  InputAction:
-    id: 0
-    description: 
-    axisConstraint: 0
-  InputActionId: 0
-  IsGlobal: 0
-  Dimensions: 1
-  CanSelect: 0
-  CanDeselect: 0
-  VoiceCommand: Select
-  RequiresFocus: 1
-  Profiles:
-  - Target: {fileID: 0}
-    Themes:
-    - {fileID: 11400000, guid: 0c4c73f326f602744bdcfff481fd6f20, type: 2}
-    HadDefaultTheme: 1
-  - Target: {fileID: 5994954606753212928}
-    Themes:
-    - {fileID: 11400000, guid: 8f8cfb3041153fa45bccb6d664a563ec, type: 2}
-    HadDefaultTheme: 1
   OnClick:
     m_PersistentCalls:
       m_Calls:
@@ -3552,7 +3624,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-  Events: []
+  clickSound: {fileID: 0}
 --- !u!82 &5994954606316266881
 AudioSource:
   m_ObjectHideFlags: 0
@@ -3650,7 +3722,7 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
---- !u!114 &5697019495922056488
+--- !u!114 &5191375948599071222
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -3659,16 +3731,93 @@ MonoBehaviour:
   m_GameObject: {fileID: 5994954606316266880}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 98c748f3768ab714a8449b60fb9edc5c, type: 3}
+  m_Script: {fileID: 11500000, guid: d7f5765fca0146ac9781c6ff1ae72a86, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
-  localForward: {x: 0, y: 0, z: -1}
-  localUp: {x: 0, y: 1, z: 0}
-  localCenter: {x: 0, y: 0, z: -0.008}
-  eventsToReceive: 0
-  touchableSurface: 0
-  bounds: {x: 0.032, y: 0.032}
-  touchableCollider: {fileID: 5994954606316266908}
+  m_EditorClassIdentifier: Assembly-CSharp::GalaxyExplorer.XR.GEInteractable
+  m_InteractionManager: {fileID: 0}
+  m_Colliders: []
+  m_InteractionLayers:
+    m_Bits: 1
+  m_DistanceCalculationMode: 1
+  m_SelectMode: 0
+  m_FocusMode: 1
+  m_CustomReticle: {fileID: 0}
+  m_AllowGazeInteraction: 0
+  m_AllowGazeSelect: 0
+  m_OverrideGazeTimeToSelect: 0
+  m_GazeTimeToSelect: 0.5
+  m_OverrideTimeToAutoDeselectGaze: 0
+  m_TimeToAutoDeselectGaze: 3
+  m_AllowGazeAssistance: 0
+  m_FirstHoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastHoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstSelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastSelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstFocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastFocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Activated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Deactivated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_StartingHoverFilters: []
+  m_StartingSelectFilters: []
+  m_StartingInteractionStrengthFilters: []
+  m_AutoFindParentInteractableInHierarchy: 0
+  m_ParentInteractableObject: {fileID: 0}
+--- !u!114 &2780853301672930091
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5994954606316266880}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 115f1a2a50d85cd4b9d6dad4c95622be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit::UnityEngine.XR.Interaction.Toolkit.Filtering.XRPokeFilter
+  m_Interactable: {fileID: 5191375948599071222}
+  m_PokeCollider: {fileID: 5994954606316266908}
+  m_PokeConfiguration:
+    m_UseConstant: 1
+    m_ConstantValue:
+      m_PokeDirection: 3
+      m_InteractionDepthOffset: 0
+      m_EnablePokeAngleThreshold: 1
+      m_PokeAngleThreshold: 45
+    m_Variable: {fileID: 0}
 --- !u!1 &5994954606502059736
 GameObject:
   m_ObjectHideFlags: 0
@@ -4158,11 +4307,11 @@ GameObject:
   - component: {fileID: 5267154368059976844}
   - component: {fileID: 2913693496041265936}
   - component: {fileID: 1978239436329380199}
-  - component: {fileID: 1695970494037047959}
   - component: {fileID: 406165487477158745}
   - component: {fileID: 4336020257633234403}
-  - component: {fileID: 7600404884400323124}
   - component: {fileID: 5440032327422754045}
+  - component: {fileID: 4911619307217426624}
+  - component: {fileID: 7722456446115702129}
   m_Layer: 0
   m_Name: CloseButton
   m_TagString: Untagged
@@ -4219,19 +4368,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 6442832416281861548}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 63c897c097799da4a900032ad3471c47, type: 3}
+  m_Script: {fileID: 11500000, guid: e5d4b0546bd94f1ab4e8a09e9a21d130, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   movingButtonVisuals: {fileID: 1926764412728379335}
-  maxPushDistance: 0.01
-  pressDistance: 0.006
-  releaseDistanceDelta: 0.001
+  pressDepth: 0.006
   returnRate: 25
-  initialTransform: {fileID: 1970985492417728165}
   TouchBegin:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1695970494037047959}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: 
         m_MethodName: OnHandPressTouched
         m_Mode: 1
@@ -4246,7 +4392,7 @@ MonoBehaviour:
   TouchEnd:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1695970494037047959}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: 
         m_MethodName: OnHandPressUntouched
         m_Mode: 1
@@ -4261,7 +4407,7 @@ MonoBehaviour:
   ButtonPressed:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1695970494037047959}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: 
         m_MethodName: OnHandPressTriggered
         m_Mode: 1
@@ -4288,7 +4434,7 @@ MonoBehaviour:
   ButtonReleased:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1695970494037047959}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: 
         m_MethodName: OnHandPressCompleted
         m_Mode: 1
@@ -4312,22 +4458,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-  isTouching: 0
-  isPressing: 0
---- !u!114 &1695970494037047959
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6442832416281861548}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 881d1ff8f009f5148b9f192e6ba31223, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  routingTarget: {fileID: 406165487477158745}
-  InteractableOnClick: 0
 --- !u!114 &406165487477158745
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4337,31 +4467,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 6442832416281861548}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1410eac1ae94b4d4492a09cc368e152c, type: 3}
+  m_Script: {fileID: 11500000, guid: b2487be934a74fa2828a1e5d67bfc839, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   Enabled: 1
-  States: {fileID: 11400000, guid: 5eac1712038236e4b8ffdb3893804fe1, type: 2}
-  InputAction:
-    id: 0
-    description: 
-    axisConstraint: 0
-  InputActionId: 0
-  IsGlobal: 0
-  Dimensions: 1
-  CanSelect: 0
-  CanDeselect: 0
-  VoiceCommand: Select
-  RequiresFocus: 1
-  Profiles:
-  - Target: {fileID: 0}
-    Themes:
-    - {fileID: 11400000, guid: 8f8cfb3041153fa45bccb6d664a563ec, type: 2}
-    HadDefaultTheme: 1
-  - Target: {fileID: 8237093982372797671}
-    Themes:
-    - {fileID: 11400000, guid: 8f8cfb3041153fa45bccb6d664a563ec, type: 2}
-    HadDefaultTheme: 1
   OnClick:
     m_PersistentCalls:
       m_Calls:
@@ -4377,7 +4486,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-  Events: []
+  clickSound: {fileID: 0}
 --- !u!82 &4336020257633234403
 AudioSource:
   m_ObjectHideFlags: 0
@@ -4475,25 +4584,6 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
---- !u!114 &7600404884400323124
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6442832416281861548}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 98c748f3768ab714a8449b60fb9edc5c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  localForward: {x: 0, y: 0, z: -1}
-  localUp: {x: 0, y: 1, z: 0}
-  localCenter: {x: 0, y: 0, z: -0.008}
-  eventsToReceive: 0
-  touchableSurface: 0
-  bounds: {x: 0.032, y: 0.032}
-  touchableCollider: {fileID: 2913693496041265936}
 --- !u!114 &5440032327422754045
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4510,6 +4600,102 @@ MonoBehaviour:
   OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &4911619307217426624
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6442832416281861548}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7f5765fca0146ac9781c6ff1ae72a86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GalaxyExplorer.XR.GEInteractable
+  m_InteractionManager: {fileID: 0}
+  m_Colliders: []
+  m_InteractionLayers:
+    m_Bits: 1
+  m_DistanceCalculationMode: 1
+  m_SelectMode: 0
+  m_FocusMode: 1
+  m_CustomReticle: {fileID: 0}
+  m_AllowGazeInteraction: 0
+  m_AllowGazeSelect: 0
+  m_OverrideGazeTimeToSelect: 0
+  m_GazeTimeToSelect: 0.5
+  m_OverrideTimeToAutoDeselectGaze: 0
+  m_TimeToAutoDeselectGaze: 3
+  m_AllowGazeAssistance: 0
+  m_FirstHoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastHoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstSelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastSelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstFocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastFocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Activated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Deactivated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_StartingHoverFilters: []
+  m_StartingSelectFilters: []
+  m_StartingInteractionStrengthFilters: []
+  m_AutoFindParentInteractableInHierarchy: 0
+  m_ParentInteractableObject: {fileID: 0}
+--- !u!114 &7722456446115702129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6442832416281861548}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 115f1a2a50d85cd4b9d6dad4c95622be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit::UnityEngine.XR.Interaction.Toolkit.Filtering.XRPokeFilter
+  m_Interactable: {fileID: 0}
+  m_PokeCollider: {fileID: 2913693496041265936}
+  m_PokeConfiguration:
+    m_UseConstant: 1
+    m_ConstantValue:
+      m_PokeDirection: 3
+      m_InteractionDepthOffset: 0
+      m_EnablePokeAngleThreshold: 1
+      m_PokeAngleThreshold: 45
+    m_Variable: {fileID: 0}
 --- !u!1 &6580514847161336806
 GameObject:
   m_ObjectHideFlags: 0
@@ -6292,6 +6478,7 @@ GameObject:
   - component: {fileID: 8327311728594888850}
   - component: {fileID: 8296252789147516156}
   - component: {fileID: 8281824952183690758}
+  - component: {fileID: 3562351384239663820}
   m_Layer: 8
   m_Name: LineBase
   m_TagString: Untagged
@@ -6408,6 +6595,80 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   type: LineBase
   material: {fileID: 0}
+--- !u!114 &3562351384239663820
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8318213537334899788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7f5765fca0146ac9781c6ff1ae72a86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GalaxyExplorer.XR.GEInteractable
+  m_InteractionManager: {fileID: 0}
+  m_Colliders: []
+  m_InteractionLayers:
+    m_Bits: 1
+  m_DistanceCalculationMode: 1
+  m_SelectMode: 0
+  m_FocusMode: 1
+  m_CustomReticle: {fileID: 0}
+  m_AllowGazeInteraction: 0
+  m_AllowGazeSelect: 0
+  m_OverrideGazeTimeToSelect: 0
+  m_GazeTimeToSelect: 0.5
+  m_OverrideTimeToAutoDeselectGaze: 0
+  m_TimeToAutoDeselectGaze: 3
+  m_AllowGazeAssistance: 0
+  m_FirstHoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastHoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstSelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastSelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstFocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastFocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Activated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Deactivated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_StartingHoverFilters: []
+  m_StartingSelectFilters: []
+  m_StartingInteractionStrengthFilters: []
+  m_AutoFindParentInteractableInHierarchy: 0
+  m_ParentInteractableObject: {fileID: 0}
 --- !u!1 &8318258547731970954
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,9 +1,9 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using GalaxyExplorer;
-using Microsoft.MixedReality.Toolkit.UI;
 using TMPro;
 using UnityEngine;
+using GalaxyExplorer.XR;
 
 [RequireComponent(typeof(BoxCollider))]
 public class POIBehavior : MonoBehaviour
@@ -16,7 +16,7 @@ public class POIBehavior : MonoBehaviour
     [SerializeField] private float alphaColor = .2f;
     [SerializeField] private float scale = 1f;
     [SerializeField] private Vector2 offset = Vector2.zero;
-    [SerializeField] private PressableButton pressableButton;
+    [SerializeField] private GEPressVisual pressableButton;
     
     
     private BoxCollider boxCollider;

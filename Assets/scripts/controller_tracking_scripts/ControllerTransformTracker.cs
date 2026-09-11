@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections;
-using System.Linq;
-using Microsoft.MixedReality.Toolkit;
-using Microsoft.MixedReality.Toolkit.Input;
-using Microsoft.MixedReality.Toolkit.Utilities;
+using System;
+using GalaxyExplorer.XR;
 using UnityEngine;
 
-[RequireComponent(typeof(InputSystemGlobalListener))]
-public class ControllerTransformTracker : MonoBehaviour, IMixedRealitySourceStateHandler
+/// <summary>
+/// Tracks the user's hands (palm joint) or motion controllers and exposes a resolved pose: one side's pose while
+/// a single side is tracked, or the midpoint of both sides. Consumers (hand menus, force-pull) listen to the
+/// tracking events. Data comes from <see cref="XRInputRig"/>; without an XR rig (desktop) nothing is tracked.
+/// </summary>
+public class ControllerTransformTracker : MonoBehaviour
 {
     public event Action<TrackedObjectType, Transform> NewControllerTrackingStarted;
 
@@ -24,12 +24,7 @@ public class ControllerTransformTracker : MonoBehaviour, IMixedRealitySourceStat
         RightController = 8,
         Left = LeftHand | LeftController,
         Right = RightHand | RightController,
-        //        Hand = LeftHand|RightHand,
-        //        Controller = LeftController|RightController
     }
-
-    private static readonly InputSourceType[] TypesToCheckAgainst =
-        {InputSourceType.Other, InputSourceType.Controller, InputSourceType.Hand};
 
     private Transform
         _leftHandTr,
@@ -38,7 +33,6 @@ public class ControllerTransformTracker : MonoBehaviour, IMixedRealitySourceStat
         _rightControllerTr;
 
     private Controllers _trackedControllers;
-    private IMixedRealityController _leftController, _rightController, _leftHandController, _rightHandController;
 
     [SerializeField]
     private Vector3 handOffsetRotation;
@@ -48,24 +42,12 @@ public class ControllerTransformTracker : MonoBehaviour, IMixedRealitySourceStat
 
     private Quaternion _handOffsetRotationQuaternion, _controllerOffsetRotationQuaternion;
 
-    private IMixedRealityHandJointService HandJointService => _handJointService ??
-                                                              (_handJointService = MixedRealityToolkit.Instance.GetService<IMixedRealityHandJointService>());
-
-    private IMixedRealityHandJointService _handJointService;
-
     private Vector3 _twoHandRotationVector = Vector3.zero;
-
-    #region public unity fields
-
-    public TrackedHandJoint handJointToTrack = TrackedHandJoint.Palm;
-    public DeviceInputType controllerInputActionType = DeviceInputType.SpatialPointer;
-
-    #endregion public unity fields
 
     #region public accessors
 
     public bool IsTracking => _trackedControllers != 0;
-    public bool BothSides => LeftSide && RightSide; 
+    public bool BothSides => LeftSide && RightSide;
     public bool RightSide => (_trackedControllers & Controllers.Right) > 0;
     public bool LeftSide => (_trackedControllers & Controllers.Left) > 0;
     public Controllers TrackedControlles => _trackedControllers;
@@ -115,37 +97,60 @@ public class ControllerTransformTracker : MonoBehaviour, IMixedRealitySourceStat
         _controllerOffsetRotationQuaternion = Quaternion.Euler(controllerOffsetRotation);
     }
 
-    private void Start()
-    {
-        _leftHandTr = HandJointService?.RequestJointTransform(handJointToTrack, Handedness.Left);
-        _rightHandTr = HandJointService?.RequestJointTransform(handJointToTrack, Handedness.Right);
-
-        StartCoroutine(CheckForWMRControllers());
-    }
-
-    private IEnumerator CheckForWMRControllers()
-    {
-        while (MixedRealityToolkit.InputSystem.DetectedControllers == null || MixedRealityToolkit.InputSystem.DetectedControllers.Count == 0)
-        {
-            yield return null;
-        }
-
-        foreach (var detectedController in MixedRealityToolkit.InputSystem.DetectedControllers)
-        {
-            // hands are present any way, we only have to monitor controllers
-            if (detectedController != null && !(detectedController is IMixedRealityHand))
-            {
-                if (CheckController(detectedController))
-                {
-                    AttachController(detectedController);
-                }
-            }
-        }
-    }
-
     private void Update()
     {
+        PollTrackingState();
         CalculateTrackingTransform();
+    }
+
+    private void PollTrackingState()
+    {
+        var rig = XRInputRig.Instance;
+        Controllers now = 0;
+        if (rig != null)
+        {
+            _leftHandTr = rig.LeftPalm;
+            _rightHandTr = rig.RightPalm;
+            _leftControllerTr = rig.LeftControllerTransform;
+            _rightControllerTr = rig.RightControllerTransform;
+
+            if (rig.LeftHandTracked) now |= Controllers.LeftHand;
+            if (rig.RightHandTracked) now |= Controllers.RightHand;
+            if (rig.LeftControllerTracked) now |= Controllers.LeftController;
+            if (rig.RightControllerTracked) now |= Controllers.RightController;
+        }
+
+        var before = _trackedControllers;
+        if (before == now)
+        {
+            return;
+        }
+
+        _trackedControllers = now;
+        RaiseDeviceEvents(before, now);
+        CheckBeforeAfter(before, now);
+    }
+
+    private void RaiseDeviceEvents(Controllers before, Controllers after)
+    {
+        RaiseDeviceEvent(before, after, Controllers.LeftHand, TrackedObjectType.HandJointLeft, _leftHandTr);
+        RaiseDeviceEvent(before, after, Controllers.RightHand, TrackedObjectType.HandJointRight, _rightHandTr);
+        RaiseDeviceEvent(before, after, Controllers.LeftController, TrackedObjectType.MotionControllerLeft, _leftControllerTr);
+        RaiseDeviceEvent(before, after, Controllers.RightController, TrackedObjectType.MotionControllerRight, _rightControllerTr);
+    }
+
+    private void RaiseDeviceEvent(Controllers before, Controllers after, Controllers device, TrackedObjectType type, Transform deviceTransform)
+    {
+        bool wasTracked = (before & device) != 0;
+        bool isTracked = (after & device) != 0;
+        if (!wasTracked && isTracked)
+        {
+            NewControllerTrackingStarted?.Invoke(type, deviceTransform);
+        }
+        else if (wasTracked && !isTracked)
+        {
+            ControllerTrackingEnded?.Invoke(type);
+        }
     }
 
     private void CalculateTrackingTransform()
@@ -175,114 +180,6 @@ public class ControllerTransformTracker : MonoBehaviour, IMixedRealitySourceStat
             }
             _twoHandRotationVector = newRotationVector;
         }
-    }
-
-    private static bool CheckController(IMixedRealityController controller)
-    {
-        return controller != null && TypesToCheckAgainst.Contains(controller.InputSource.SourceType);
-    }
-
-    private static bool TryGetControllerVisualizerTransform(IMixedRealityController controller, out Transform transform)
-    {
-        if (controller?.Visualizer != null && controller.Visualizer.GameObjectProxy != null)
-        {
-            transform = controller.Visualizer.GameObjectProxy.transform;
-            return true;
-        }
-
-        transform = null;
-        return false;
-    }
-
-    private void DetachController(IMixedRealityController controller)
-    {
-        var before = _trackedControllers;
-
-        if (controller == _leftController)
-        {
-            _leftController = null;
-            _leftControllerTr = null;
-            _trackedControllers &= ~Controllers.LeftController;
-            ControllerTrackingEnded?.Invoke(TrackedObjectType.MotionControllerLeft);
-        }
-        else if (controller == _rightController)
-        {
-            _rightController = null;
-            _rightControllerTr = null;
-            _trackedControllers &= ~Controllers.RightController;
-            ControllerTrackingEnded?.Invoke(TrackedObjectType.MotionControllerRight);
-        }
-        else if (controller == _leftHandController)
-        {
-            _trackedControllers &= ~Controllers.LeftHand;
-            _leftHandController = null;
-            ControllerTrackingEnded?.Invoke(TrackedObjectType.HandJointLeft);
-        }
-        else if (controller == _rightHandController)
-        {
-            _trackedControllers &= ~Controllers.RightHand;
-            _rightHandController = null;
-            ControllerTrackingEnded?.Invoke(TrackedObjectType.HandJointRight);
-        }
-
-        var after = _trackedControllers;
-        CheckBeforeAfter(before, after);
-    }
-
-    private void AttachController(IMixedRealityController controller)
-    {
-        var before = _trackedControllers;
-        // if hand controller we already have the transforms from the service
-        if (controller is IMixedRealityHand handController)
-        {
-            switch (handController.ControllerHandedness)
-            {
-                case Handedness.Left:
-                    Debug.Assert(!_trackedControllers.HasFlag(Controllers.LeftHand) && _leftHandController == null);
-                    _leftHandController = controller;
-                    _trackedControllers |= Controllers.LeftHand;
-                    NewControllerTrackingStarted?.Invoke(TrackedObjectType.HandJointLeft, _leftHandTr);
-                    break;
-
-                case Handedness.Right:
-                    Debug.Assert(!_trackedControllers.HasFlag(Controllers.RightHand) && _rightHandController == null);
-                    _rightHandController = controller;
-                    _trackedControllers |= Controllers.RightHand;
-                    NewControllerTrackingStarted?.Invoke(TrackedObjectType.HandJointRight, _rightHandTr);
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-        else if (TryGetControllerVisualizerTransform(controller, out var transform))
-        {
-            // if regular controller then get the transform
-            switch (controller.ControllerHandedness)
-            {
-                case Handedness.Left:
-                    Debug.Assert(!_trackedControllers.HasFlag(Controllers.LeftController) && _leftController == null);
-                    _leftController = controller;
-                    _leftControllerTr = transform;
-                    _trackedControllers |= Controllers.LeftController;
-                    NewControllerTrackingStarted?.Invoke(TrackedObjectType.MotionControllerLeft, _leftControllerTr);
-                    break;
-
-                case Handedness.Right:
-                    Debug.Assert(!_trackedControllers.HasFlag(Controllers.RightController) && _rightController == null);
-                    _rightController = controller;
-                    _rightControllerTr = transform;
-                    _trackedControllers |= Controllers.RightController;
-                    NewControllerTrackingStarted?.Invoke(TrackedObjectType.MotionControllerRight, _rightControllerTr);
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        var after = _trackedControllers;
-        CheckBeforeAfter(before, after);
     }
 
     private void CheckBeforeAfter(Controllers before, Controllers after)
@@ -332,21 +229,5 @@ public class ControllerTransformTracker : MonoBehaviour, IMixedRealitySourceStat
         {
             RightTrackingUpdated?.Invoke();
         }
-    }
-
-    public void OnSourceDetected(SourceStateEventData eventData)
-    {
-        var controller = eventData.Controller;
-        if (!CheckController(controller)) return;
-
-        AttachController(controller);
-    }
-
-    public void OnSourceLost(SourceStateEventData eventData)
-    {
-        var controller = eventData.Controller;
-        if (!CheckController(controller)) return;
-
-        DetachController(controller);
     }
 }

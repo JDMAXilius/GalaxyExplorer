@@ -1,40 +1,61 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.MixedReality.Toolkit;
 using Pools;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 using UnityEngine;
 using UnityEngine.Audio;
 
-public class AudioService : BaseExtensionService, IAudioService
+/// <summary>
+/// Plays the app's UI and effect sounds (by <see cref="AudioId"/> or clip) from pooled audio sources and drives the
+/// music mixer snapshots. Created on first use from the "AudioServiceProfile" asset in a Resources folder.
+/// </summary>
+public class AudioService : IAudioService
 {
+    private const string ProfileResourceName = "AudioServiceProfile";
+
     private static float SameClipCoolDownTime = .05f;
-    
+    private static AudioService instance;
+
     private Dictionary<AudioId, AudioInfo> audioClipCache;
     private Dictionary<Transform, List<PoolableAudioSource>> playingCache;
     private Dictionary<string, DateTime> lastPlayedTimes;
     private ObjectPooler objectPooler;
     private Transform mainCameraTransform;
     private AudioServiceProfile audioProfile;
-    
-    public AudioService(IMixedRealityServiceRegistrar registrar, string name, uint priority, BaseMixedRealityProfile profile) : base(registrar, name, priority, profile)
-    {
-#if UNITY_EDITOR
-        if (!EditorApplication.isPlaying)
-        {
-            return;
-        }
-        
-#endif
 
-        audioProfile = ConfigurationProfile as AudioServiceProfile;
+    /// <summary>The app-wide audio service; null outside play mode.</summary>
+    public static IAudioService Instance
+    {
+        get
+        {
+            if (instance == null && Application.isPlaying)
+            {
+                instance = new AudioService(Resources.Load<AudioServiceProfile>(ProfileResourceName));
+            }
+
+            return instance;
+        }
+    }
+
+    // Play mode can start without a domain reload; drop the service from the previous session.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStatics()
+    {
+        instance = null;
+    }
+
+    private AudioService(AudioServiceProfile profile)
+    {
+        audioProfile = profile;
+        if (audioProfile == null)
+        {
+            Debug.LogError($"AudioService: no {ProfileResourceName} asset found in a Resources folder; sounds are disabled.");
+        }
+
+        playingCache = new Dictionary<Transform, List<PoolableAudioSource>>();
+        lastPlayedTimes = new Dictionary<string, DateTime>();
         if (audioProfile != null)
         {
             audioClipCache = new Dictionary<AudioId, AudioInfo>();
-            playingCache = new Dictionary<Transform, List<PoolableAudioSource>>();
-            lastPlayedTimes = new Dictionary<string, DateTime>();
             foreach (var audioInfo in audioProfile.audioClips)
             {
                 if (!audioClipCache.ContainsKey(audioInfo.audioId))
@@ -77,6 +98,12 @@ public class AudioService : BaseExtensionService, IAudioService
 
     public void PlayClip(AudioClip clip, out AudioSource playedSource, Transform target, float volume, PlayOptions playOptions)
     {
+        if (clip == null)
+        {
+            playedSource = null;
+            return;
+        }
+
         if (lastPlayedTimes.ContainsKey(clip.name))
         {
             var lastPlayTime = lastPlayedTimes[clip.name];
@@ -97,7 +124,7 @@ public class AudioService : BaseExtensionService, IAudioService
     {
         bool transitioned = false;
 
-        if (audioProfile.musicAudioMixer)
+        if (audioProfile != null && audioProfile.musicAudioMixer)
         {
             AudioMixerSnapshot snapshot = audioProfile.musicAudioMixer.FindSnapshot(name);
 

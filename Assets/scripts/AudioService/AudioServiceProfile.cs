@@ -1,12 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using Microsoft.MixedReality.Toolkit;
-using Microsoft.MixedReality.Toolkit.Utilities;
 using UnityEngine;
 using UnityEngine.Audio;
 
-[CreateAssetMenu(menuName = "Mixed Reality Toolkit/Audio Service Profile", fileName = "AudioServiceProfile", order = (int)CreateProfileMenuItemIndices.RegisteredServiceProviders)]
-public class AudioServiceProfile : BaseMixedRealityProfile
+/// <summary>
+/// Sound settings for <see cref="AudioService"/>. The asset must be named "AudioServiceProfile" and live in a
+/// Resources folder so the service can load it on first use.
+/// </summary>
+[CreateAssetMenu(menuName = "Galaxy Explorer/Audio Service Profile", fileName = "AudioServiceProfile")]
+public class AudioServiceProfile : ScriptableObject
 {
     [SerializeField] public AudioMixer musicAudioMixer;
     [SerializeField] public List<AudioInfo> audioClips;
@@ -24,7 +26,7 @@ public class AudioInfo
 public enum AudioId
 {
     // Don't reorder or insert new items into enum, always add them to the end.
-    // Unity Serializes enums as ints which would result in a 
+    // Unity Serializes enums as ints which would result in a
     // different sound being played if order is changed.
     None = 0,
     Focus,
