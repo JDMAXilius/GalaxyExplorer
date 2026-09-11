@@ -18,6 +18,11 @@ namespace GalaxyExplorer
 
         private Camera _mainCamera;
         private readonly Dictionary<Camera, CommandBuffer> _cameraToCommandBuffer = new Dictionary<Camera, CommandBuffer>();
+        private readonly HashSet<Camera> _attachedCameras = new HashSet<Camera>();
+
+        // Layers must execute in creation order (clouds -> shadow -> stars): the clouds layer clears the
+        // downscaled target and the shadow layer's final copy overwrites the camera target.
+        private static readonly List<DrawStars> Instances = new List<DrawStars>();
 
         private ComputeBuffer starsData;
         private bool isFirst;
@@ -47,6 +52,12 @@ namespace GalaxyExplorer
         private static readonly int CamForward = Shader.PropertyToID("_CamForward");
         private static readonly int PAge = Shader.PropertyToID("_Age");
         private static readonly int TransitionAlpha = Shader.PropertyToID("_TransitionAlpha");
+
+        private void Awake()
+        {
+            // SpiralGalaxy creates its drawers one frame apart in layer order, so Awake order is layer order.
+            Instances.Add(this);
+        }
 
         private IEnumerator Start()
         {
@@ -96,17 +107,21 @@ namespace GalaxyExplorer
             }
 
             DisposeBuffer(ref starsData);
+            Instances.Remove(this);
         }
 
         private void OnDisable()
         {
-            foreach (var camera in _cameraToCommandBuffer)
+            foreach (var cam in _attachedCameras)
             {
-                if (camera.Key)
+                if (cam)
                 {
-                    camera.Key.RemoveCommandBuffer(cameraEvent, camera.Value);
+                    cam.RemoveCommandBuffer(cameraEvent, _cameraToCommandBuffer[cam]);
                 }
             }
+
+            // Forget attachment so the buffers are re-added when the galaxy is shown again.
+            _attachedCameras.Clear();
         }
 
         private void OnDrawGizmos()
@@ -116,19 +131,45 @@ namespace GalaxyExplorer
 
         private void UpdateCamera(bool isSceneView = false)
         {
-            var cam = Camera.current;
+            // Camera.current is only valid inside render callbacks (null during Update in Unity 6),
+            // so the game view uses the cached main camera and only the Scene view uses Camera.current.
+            var cam = isSceneView ? Camera.current : _mainCamera;
             if (cam == null) return;
             if (!_cameraToCommandBuffer.TryGetValue(cam, out var cb))
             {
-                cb = new CommandBuffer();
+                cb = new CommandBuffer { name = "Galaxy stars" };
                 _cameraToCommandBuffer.Add(cam, cb);
-                cam.AddCommandBuffer(cameraEvent, cb);
             }
             else
             {
                 cb.Clear();
             }
             UpdateCommandBuffer(cb, isSceneView);
+
+            if (!_attachedCameras.Contains(cam))
+            {
+                AttachAllInOrder(cam);
+            }
+        }
+
+        private static void AttachAllInOrder(Camera cam)
+        {
+            foreach (var drawer in Instances)
+            {
+                if (drawer._attachedCameras.Remove(cam))
+                {
+                    cam.RemoveCommandBuffer(drawer.cameraEvent, drawer._cameraToCommandBuffer[cam]);
+                }
+            }
+
+            foreach (var drawer in Instances)
+            {
+                if (drawer.isActiveAndEnabled && drawer._cameraToCommandBuffer.TryGetValue(cam, out var buffer))
+                {
+                    cam.AddCommandBuffer(drawer.cameraEvent, buffer);
+                    drawer._attachedCameras.Add(cam);
+                }
+            }
         }
 
         private void UpdateCommandBuffer(CommandBuffer commandBuffer, bool isSceneView = false)
@@ -159,7 +200,7 @@ namespace GalaxyExplorer
 
         private void Update()
         {
-            if (!enabled || !galaxy.gameObject.activeInHierarchy)
+            if (!enabled || !galaxy.gameObject.activeInHierarchy || !_mainCamera)
             {
                 OnDisable();
                 return;
