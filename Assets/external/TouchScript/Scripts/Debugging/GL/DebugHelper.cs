@@ -15,7 +15,8 @@ namespace TouchScript.Debugging.GL
     {
         public static int GetDebugId(Object obj)
         {
-            return int.MinValue + (obj.GetInstanceID() << 10);
+            // GetInstanceID() is a compile error in Unity 6.6+; GetHashCode() is also unique per live object.
+            return int.MinValue + (obj.GetHashCode() << 10);
         }
     }
 }
