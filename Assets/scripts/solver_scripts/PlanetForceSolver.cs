@@ -111,10 +111,16 @@ public class PlanetForceSolver : ForceSolver
         ShowMoons();
     }
 
+    /// <summary>Local scale this body grows to when pulled out of its orbit.</summary>
+    public float EditScale => _editScaleTarget.x;
+
     public override void SolverUpdate()
     {
+        // Use the state from before the base update: a long frame can finish the attraction (and leave the state)
+        // in one step, which would otherwise skip the scale-up and leave the body at its orbit size.
+        var state = ForceState;
         base.SolverUpdate();
-        switch (ForceState)
+        switch (state)
         {
             case State.Root:
                 GoalScale = Vector3.one;

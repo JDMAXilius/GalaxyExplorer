@@ -14,6 +14,8 @@ public class UiWorldPreview : MonoBehaviour
     [SerializeField] private Button button;
     [SerializeField] private TextMeshProUGUI displayNameArea;
     [SerializeField] private PlanetPreviewController planetPreviewController;
+    [Tooltip("Shown instead of a live render; for targets that are not always visible (the Moon hides in its orbit).")]
+    [SerializeField] private Texture staticPreview;
 
     private UiPreviewTarget target;
     private Camera targetCamera;
@@ -35,6 +37,15 @@ public class UiWorldPreview : MonoBehaviour
     void Initialize()
     {
         button.onClick.AddListener(HandleClick);
+        if (staticPreview != null)
+        {
+            image.texture = staticPreview;
+            image.enabled = true;
+            displayNameArea.gameObject.SetActive(true);
+            displayNameArea.text = target.displayName;
+            return;
+        }
+
         var cameraObject = new GameObject("UIViewCamera");
         targetCamera = cameraObject.AddComponent<Camera>();
         renderTexture = new RenderTexture(256,256, 24, RenderTextureFormat.ARGB32);

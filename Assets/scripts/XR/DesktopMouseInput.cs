@@ -26,8 +26,9 @@ namespace GalaxyExplorer.XR
         [SerializeField] private float zoomMetersPerNotch = 0.1f;
         [SerializeField] private float planetSpinDegreesPerScreen = 360f;
         [SerializeField] private float planetScalePerNotch = 1.1f;
-        [SerializeField] private float minPlanetScale = 0.2f;
-        [SerializeField] private float maxPlanetScale = 6f;
+        [Tooltip("Wheel scale limits, relative to the size a planet grows to when pulled.")]
+        [SerializeField] private float minPlanetScale = 0.1f;
+        [SerializeField] private float maxPlanetScale = 3f;
 
         private Camera _camera;
         private Transform _grabPoint;
@@ -226,8 +227,10 @@ namespace GalaxyExplorer.XR
             var solver = target != null ? target.GetComponentInParent<ForceSolver>() : null;
             if (solver != null && solver.ForceState != ForceSolver.State.Root)
             {
+                // Bodies differ a lot in base scale (the Moon's is small), so clamp relative to the pulled size.
+                var pulledScale = solver is PlanetForceSolver planet ? planet.EditScale : 1f;
                 var scale = solver.transform.localScale.x * Mathf.Pow(planetScalePerNotch, notches);
-                solver.transform.localScale = Vector3.one * Mathf.Clamp(scale, minPlanetScale, maxPlanetScale);
+                solver.transform.localScale = Vector3.one * Mathf.Clamp(scale, minPlanetScale * pulledScale, maxPlanetScale * pulledScale);
             }
             else
             {
