@@ -114,6 +114,18 @@ namespace GalaxyExplorer
             }
         }
 
+        /// <summary>
+        /// Records a view as visited without loading it, so Back can return to it. Used when a view is opened
+        /// directly (editor quick start) instead of being reached through its parent view.
+        /// </summary>
+        public void AddToBackStack(string viewName)
+        {
+            if (!string.IsNullOrEmpty(viewName) && !IsIntroFlowScene(viewName))
+            {
+                viewBackStack.Push(viewName);
+            }
+        }
+
         public bool IsTherePreviousScene()
         {
             return viewBackStack.Count >= 2;

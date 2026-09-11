@@ -14,6 +14,7 @@ namespace GalaxyExplorer
         /// (see PlayFromViewScene).
         /// </summary>
         public const string QuickStartViewKey = "GalaxyExplorer.QuickStartView";
+        private const string GalaxyViewScene = "galaxy_view_scene";
 
         [SerializeField]
         [Tooltip("Duration of Logo stage")]
@@ -173,6 +174,12 @@ namespace GalaxyExplorer
                 position += Vector3.down * .5f;
             }
             FindObjectOfType<WorldAnchorHandler>().CreateWorldAnchor(position);
+
+            // The solar system and the galactic center are reached from the galaxy, so Back should lead there.
+            if (view != GalaxyViewScene)
+            {
+                GalaxyExplorerManager.Instance.ViewLoaderScript.AddToBackStack(GalaxyViewScene);
+            }
 
             GalaxyExplorerManager.Instance.TransitionManager.OnIntroFinished();
             GalaxyExplorerManager.Instance.TransitionManager.LoadNextScene(view);
