@@ -42,7 +42,7 @@ namespace TouchScript.Gestures.TransformGestures
 
         protected void Start()
         {
-            if (!XRDevice.isPresent)
+            if (!XRSettings.isDeviceActive) // Unity 6: XRDevice.isPresent removed
             {
                 this.enabled = false;
             }

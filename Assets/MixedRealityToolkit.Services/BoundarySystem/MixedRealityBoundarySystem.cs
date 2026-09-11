@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.XR;
-using UnityBoundary = UnityEngine.Experimental.XR.Boundary;
+using UnityBoundary = Microsoft.MixedReality.Toolkit.Utilities.LegacyBoundary; // Unity 6: Experimental.XR.Boundary removed
 
 namespace Microsoft.MixedReality.Toolkit.Boundary
 {
@@ -895,7 +895,7 @@ namespace Microsoft.MixedReality.Toolkit.Boundary
             rectangularBounds = null;
 
             // Boundaries are supported for Room Scale experiences only.
-            if (XRDevice.GetTrackingSpaceType() != TrackingSpaceType.RoomScale)
+            if (!LegacyXRDevice.IsRoomScale())
             {
                 return;
             }
@@ -944,30 +944,30 @@ namespace Microsoft.MixedReality.Toolkit.Boundary
         /// </summary>
         private void SetTrackingSpace()
         {
-            TrackingSpaceType trackingSpace;
+            // Unity 6: TrackingSpaceType / XRDevice.SetTrackingSpaceType are gone; room scale now means
+            // the Floor tracking origin, stationary means Device.
+            bool roomScale;
 
-            // In current versions of Unity, there are two types of tracking spaces. For boundaries, if the scale
-            // is not Room or Standing, it currently maps to TrackingSpaceType.Stationary.
             switch (Scale)
             {
                 case ExperienceScale.Standing:
                 case ExperienceScale.Room:
-                    trackingSpace = TrackingSpaceType.RoomScale;
+                    roomScale = true;
                     break;
 
                 case ExperienceScale.OrientationOnly:
                 case ExperienceScale.Seated:
                 case ExperienceScale.World:
-                    trackingSpace = TrackingSpaceType.Stationary;
+                    roomScale = false;
                     break;
 
                 default:
-                    trackingSpace = TrackingSpaceType.Stationary;
+                    roomScale = false;
                     Debug.LogWarning("Unknown / unsupported ExperienceScale. Defaulting to Stationary tracking space.");
                     break;
             }
 
-            bool trackingSpaceSet = XRDevice.SetTrackingSpaceType(trackingSpace);
+            bool trackingSpaceSet = LegacyXRDevice.TrySetRoomScale(roomScale);
 
             if (!trackingSpaceSet)
             {

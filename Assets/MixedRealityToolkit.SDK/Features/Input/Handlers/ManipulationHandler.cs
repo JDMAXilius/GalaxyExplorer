@@ -424,7 +424,7 @@ namespace Microsoft.MixedReality.Toolkit.UI
 
                     if (releaseBehavior.HasFlag(ReleaseBehaviorType.KeepVelocity))
                     {
-                        rigidBody.velocity = GetPointersVelocity();
+                        rigidBody.linearVelocity = GetPointersVelocity();
                     }
 
                     if (releaseBehavior.HasFlag(ReleaseBehaviorType.KeepAngularVelocity))

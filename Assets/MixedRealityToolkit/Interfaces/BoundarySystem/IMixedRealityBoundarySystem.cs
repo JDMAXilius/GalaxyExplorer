@@ -3,7 +3,7 @@
 
 using Microsoft.MixedReality.Toolkit.Utilities;
 using UnityEngine;
-using UnityBoundary = UnityEngine.Experimental.XR.Boundary;
+using UnityBoundary = Microsoft.MixedReality.Toolkit.Utilities.LegacyBoundary; // Unity 6: Experimental.XR.Boundary removed
 
 namespace Microsoft.MixedReality.Toolkit.Boundary
 {

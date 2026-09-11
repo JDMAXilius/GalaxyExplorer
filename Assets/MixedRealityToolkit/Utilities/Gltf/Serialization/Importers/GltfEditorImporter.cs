@@ -4,14 +4,14 @@
 using Microsoft.MixedReality.Toolkit.Utilities.Gltf.Schema;
 using System.IO;
 using UnityEditor;
-using UnityEditor.Experimental.AssetImporters;
+
 using UnityEngine;
 
 namespace Microsoft.MixedReality.Toolkit.Utilities.Gltf.Serialization.Editor
 {
     public static class GltfEditorImporter
     {
-        public static async void OnImportGltfAsset(AssetImportContext context)
+        public static async void OnImportGltfAsset(UnityEditor.AssetImporters.AssetImportContext context)
         {
             var importedObject = await GltfUtility.ImportGltfObjectFromPathAsync(context.assetPath);
 

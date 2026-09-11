@@ -80,7 +80,7 @@ namespace MRS.FlowManager
 
                 if (GUILayout.Button("Open Flow Window", GUILayout.Height(50)))
                 {
-                    FlowEditorWindow.OpenWindow(target.GetInstanceID());
+                    FlowEditorWindow.OpenWindow((FlowManager)target);
                 }
 
                 serializedObject.ApplyModifiedProperties();

@@ -76,10 +76,12 @@ namespace Microsoft.MixedReality.Toolkit.Utilities
             return GetAwaiterReturnVoid(instruction);
         }
 
+#if !UNITY_2023_1_OR_NEWER // Unity 2023.1+ ships UnityEngine.AsyncOperationAwaitableExtensions.GetAwaiter
         public static SimpleCoroutineAwaiter<AsyncOperation> GetAwaiter(this AsyncOperation instruction)
         {
             return GetAwaiterReturnSelf(instruction);
         }
+#endif
 
         public static SimpleCoroutineAwaiter<Object> GetAwaiter(this ResourceRequest instruction)
         {

@@ -89,7 +89,7 @@ namespace MRS.Layers
                     if (!Application.isPlaying)
                     {
                         var isMainSceneLoaded = false;
-                        for (int i = 0; i < EditorSceneManager.loadedSceneCount; i++)
+                        for (int i = 0; i < SceneManager.loadedSceneCount; i++)
                         {
                             if (SceneManager.GetSceneAt(i).name == "main_scene")
                             {

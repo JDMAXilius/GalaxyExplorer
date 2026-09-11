@@ -9,7 +9,11 @@ using Microsoft.MixedReality.Toolkit.Input.UnityInput;
 using Microsoft.MixedReality.Toolkit.UI;
 using Microsoft.MixedReality.Toolkit.Utilities;
 using Microsoft.MixedReality.Toolkit.Utilities.Solvers;
+// Unity 6 upgrade: the WMR provider assembly only compiles for Editor and WSA, so it is absent
+// from Windows standalone players.
+#if UNITY_EDITOR || UNITY_WSA
 using Microsoft.MixedReality.Toolkit.WindowsMixedReality.Input;
+#endif
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -454,11 +458,15 @@ public class ForceSolver : Solver, IMixedRealityFocusChangedHandler, IMixedReali
             return false;
         }
         var controller = pointer.Controller;
+#if UNITY_EDITOR || UNITY_WSA
         return controller != null &&
                !(controller is WindowsMixedRealityGGVHand) &&
                (controller is IMixedRealityHand ||
                controller is WindowsMixedRealityController)
             ;
+#else
+        return controller is IMixedRealityHand;
+#endif
     }
 
     private ForceTractorBeam AttachTractorBeamToPointer(ShellHandRayPointer pointer)
@@ -477,7 +485,10 @@ public class ForceSolver : Solver, IMixedRealityFocusChangedHandler, IMixedReali
 
     private static bool IsGgvOrDesktopController(IMixedRealityController controller)
     {
-                return  controller is WindowsMixedRealityGGVHand ||
+                return
+#if UNITY_EDITOR || UNITY_WSA
+                        controller is WindowsMixedRealityGGVHand ||
+#endif
                         controller is MouseController
 # if UNITY_EDITOR
 //                        || controller is SimulatedArticulatedHand

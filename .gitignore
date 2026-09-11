@@ -45,3 +45,7 @@ sysinfo.txt
 
 WSATestCertificate.pfx
 WSATestCertificate.pfx.meta
+
+# Unity 6: per-machine editor state
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/

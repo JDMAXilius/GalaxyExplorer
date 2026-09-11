@@ -10,7 +10,20 @@ namespace MRS.FlowManager
     public class FlowEditorWindow : EditorWindow
     {
 
-        private static int m_flowManageInstanceID;
+        // Unity 6.6: instance IDs (GetInstanceID / InstanceIDToObject) are errors, so the target is
+        // cached directly and persisted across play mode as a GlobalObjectId string.
+        private const string TargetPrefKey = "FlowManagerGlobalObjectId";
+        private static FlowManager s_target;
+
+        private static FlowManager LoadTarget()
+        {
+            if (s_target == null && EditorPrefs.HasKey(TargetPrefKey)
+                && GlobalObjectId.TryParse(EditorPrefs.GetString(TargetPrefKey), out var id))
+            {
+                s_target = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(id) as FlowManager;
+            }
+            return s_target;
+        }
 
         private SerializedObject m_flowManager;
         private Vector2 m_scrollPosition;
@@ -24,13 +37,13 @@ namespace MRS.FlowManager
         private Texture m_arrowTex;
         private Texture m_loopbackTex;
 
-        public static void OpenWindow(int _flowManagerInstanceID)
+        public static void OpenWindow(FlowManager flowManager)
         {
             FlowEditorWindow window = (FlowEditorWindow)EditorWindow.GetWindow(typeof(FlowEditorWindow), false, "Flow");
-            m_flowManageInstanceID = _flowManagerInstanceID;
+            s_target = flowManager;
 
             // Save this so it persists after entering playmode
-            EditorPrefs.SetInt("FlowManagerInstanceID", m_flowManageInstanceID);
+            EditorPrefs.SetString(TargetPrefKey, GlobalObjectId.GetGlobalObjectIdSlow(flowManager).ToString());
 
             window.Init();
             window.Show();
@@ -38,16 +51,16 @@ namespace MRS.FlowManager
 
         public void Init()
         {
-            if (EditorPrefs.HasKey("FlowManagerInstanceID"))
+            if (EditorPrefs.HasKey(TargetPrefKey))
             {
-                FlowManager flowManager = EditorUtility.InstanceIDToObject(EditorPrefs.GetInt("FlowManagerInstanceID")) as FlowManager;
+                FlowManager flowManager = LoadTarget();
                 if (flowManager)
                 {
                     m_flowManager = new SerializedObject(flowManager);
                 }
                 else
                 {
-                    EditorPrefs.DeleteKey("FlowManagerInstanceID");
+                    EditorPrefs.DeleteKey(TargetPrefKey);
                 }
             }
 
@@ -89,7 +102,7 @@ namespace MRS.FlowManager
             Rect uvDrawRect = new Rect(0, 0, 50 * (position.width / position.height), 50);
             GUI.DrawTextureWithTexCoords(new Rect(0, 0, position.width, position.height), m_backgroundTex, uvDrawRect);
 
-            FlowManager flowManager = EditorUtility.InstanceIDToObject(EditorPrefs.GetInt("FlowManagerInstanceID")) as FlowManager;
+            FlowManager flowManager = LoadTarget();
 
             if ((flowManager == null) || (m_flowManager == null))
             {

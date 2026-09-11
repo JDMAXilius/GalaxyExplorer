@@ -67,7 +67,8 @@ namespace TouchScript.Layers.UI
         private static TouchScriptInputModule instance;
         private static FieldInfo raycastersProp = null;
         private static PropertyInfo canvasProp;
-        private static Dictionary<int, Canvas> raycasterCanvasCache = new Dictionary<int, Canvas>(10);
+        // Unity 6.6: GetInstanceID() is an error, so the cache is keyed by the raycaster itself.
+        private static Dictionary<BaseRaycaster, Canvas> raycasterCanvasCache = new Dictionary<BaseRaycaster, Canvas>(10);
 
         private int refCount = 0;
         private UIStandardInputModule ui;
@@ -134,7 +135,7 @@ namespace TouchScript.Layers.UI
         /// <returns> The Canvas this raycaster is on. </returns>
         public Canvas GetCanvasForRaycaster(BaseRaycaster raycaster)
         {
-            var id = raycaster.GetInstanceID();
+            var id = raycaster;
             Canvas canvas;
             if (!raycasterCanvasCache.TryGetValue(id, out canvas))
             {

@@ -82,14 +82,12 @@ namespace Microsoft.MixedReality.Toolkit.Utilities.Editor
                     message += "- Visible meta files\n";
                 }
 
-                if (!PlayerSettings.virtualRealitySupported)
-                {
-                    message += "- Enable XR Settings for your current platform\n";
-                }
+                // Unity 6 upgrade: PlayerSettings.virtualRealitySupported was removed with legacy XR,
+                // so the "Enable XR Settings" check and fix are gone (XR is now XR Plug-in Management).
 
                 message += "\nWould you like to make this change?";
 
-                if (!forceTextSerialization || !il2Cpp || !visibleMetaFiles || !PlayerSettings.virtualRealitySupported)
+                if (!forceTextSerialization || !il2Cpp || !visibleMetaFiles)
                 {
                     var choice = EditorUtility.DisplayDialogComplex("Apply Mixed Reality Toolkit Default Settings?", message, "Apply", "Ignore", "Later");
 
@@ -99,7 +97,6 @@ namespace Microsoft.MixedReality.Toolkit.Utilities.Editor
                             EditorSettings.serializationMode = SerializationMode.ForceText;
                             EditorSettings.externalVersionControl = "Visible Meta Files";
                             PlayerSettings.SetScriptingBackend(EditorUserBuildSettings.selectedBuildTargetGroup, ScriptingImplementation.IL2CPP);
-                            PlayerSettings.virtualRealitySupported = true;
                             refresh = true;
                             break;
                         case 1:

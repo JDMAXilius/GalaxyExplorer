@@ -206,7 +206,7 @@ namespace Microsoft.MixedReality.Toolkit.Editor
 
             if (editingEnabled)
             {
-                position = Handles.FreeMoveHandle(plane[1], Quaternion.identity, handleSize, Vector3.zero, Handles.SphereHandleCap);
+                var fmh_209_61_639246509429322308 = Quaternion.identity; position = Handles.FreeMoveHandle(plane[1], handleSize, Vector3.zero, Handles.SphereHandleCap);
                 // Draw forward / backward arrows so people know they can drag
                 Handles.ArrowHandleCap(0, plane[1], Quaternion.LookRotation(transform.forward, Vector3.up), handleSize * 2, EventType.Repaint);
                 Handles.ArrowHandleCap(0, plane[1], Quaternion.LookRotation(-transform.forward, Vector3.up), handleSize * 2, EventType.Repaint);

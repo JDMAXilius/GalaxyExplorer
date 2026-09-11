@@ -8,7 +8,6 @@ using System.Collections;
 using TouchScript.Examples.CameraControl;
 using UnityEngine;
 using UnityEngine.XR;
-using UnityEngine.XR.WSA;
 #if WINDOWS_UWP
 using Windows.Security.ExchangeActiveSyncProvisioning;
 #endif
@@ -382,17 +381,12 @@ namespace GalaxyExplorer
                 HideGazeCursor();
 
             }
-            else if (XRDevice.isPresent)
+            else if (XRSettings.isDeviceActive)
             {
-                if (HolographicSettings.IsDisplayOpaque)
-                {
-                    Platform = PlatformId.ImmersiveHMD;
-                    HideGazeCursor();
-                }
-                else
-                {
-                    Platform = PlatformId.HoloLensGen1;
-                }
+                // Unity 6: XRDevice.isPresent and HolographicSettings (HoloLens) are gone. Without the
+                // legacy WSA display query, any active XR device is treated as an opaque headset.
+                Platform = PlatformId.ImmersiveHMD;
+                HideGazeCursor();
             }
             else
             {

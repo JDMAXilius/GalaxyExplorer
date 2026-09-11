@@ -1,0 +1,26 @@
+﻿<Solution>
+  <Project Path="Microsoft.MixedReality.Toolkit.SDK.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Services.InputSystem.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Core.Inspectors.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Utilities.Gltf.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Services.InputSystem.Inspectors.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.SDK.Inspectors.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Core.Utilities.Editor.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Core.Build.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Core.Utilities.Async.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Services.InputSimulation.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Providers.OpenVR.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Utilities.Gltf.Importers.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Core.Definitions.Utilities.Editor.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Providers.WindowsVoiceInput.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Services.DiagnosticsSystem.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Core.Extensions.EditorClassExtensions.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Services.BoundarySystem.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Services.InputSimulation.Inspectors.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Services.TeleportSystem.csproj" />
+  <Project Path="Microsoft.MixedReality.Toolkit.Services.SpatialAwarenessSystem.csproj" />
+</Solution>
