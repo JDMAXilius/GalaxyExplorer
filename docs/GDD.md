@@ -304,10 +304,10 @@ All UI is designed in Figma (file *Cosmic Simulation XR — UI*) and exported; s
 
 ### 8.1 Dock
 - **Placement:** 0.75 m in front of the player, 0.9 m above the floor, curved (radius 1.2 m), tilted 25° up toward the face. Recenter re-places it.
-- **Tiles (7):** 110 × 70 mm; thumbnail (rendered from the scene), name (bold), subtitle (one line). States: idle, hover (raise 6 mm, brighten), pressed (depress 4 mm), active (cyan underline).
-- **Order:** Cosmic Web · Galaxies · Milky Way · Andromeda · Solar System · Solar System Planets · Sagittarius A\*.
-- **Right cluster:** Passthrough toggle (white square, icon state on/off), then a column of three round buttons: **Recenter**, **Mute**, **Help**.
-- **Grab bar:** 220 × 6 mm white bar under the dock; pinch to move the whole dock; it re-tilts toward the player.
+- **Tiles (7):** 110 × 62 mm, 4 mm apart. Each tile is a **picture of the place** (rendered from the scene) with its **name written on the image**, bottom-left, over a soft dark foot. Only the three tiles that offer a layout choice carry a second line: Solar System "Orbital view", Solar System Planets "Detail view", Galactic Center "Black hole". States: idle, hover (raise 6 mm, brighten), pressed (depress 4 mm), active (cyan underline along the bottom edge).
+- **Order:** Cosmic Web · Galaxies · Milky Way · Andromeda · Solar System · Solar System Planets · Galactic Center.
+- **Passthrough button:** a white tile closing the row, dark camera glyph over the word **Passthrough**; it reads as the one control that changes the room rather than the place.
+- **Under the dock:** a 60 mm white drag bar centred below it moves the whole dock (it re-tilts toward the player), and two small square buttons sit at the right end — **Recenter** and **Help**. Mute lives in the utility window.
 - **Show/hide:** palm-up on the left hand for 0.5 s toggles the dock (Quest); `Tab` on desktop. The dock hides during onboarding cards.
 
 ### 8.2 Pop-ups

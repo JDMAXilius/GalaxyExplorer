@@ -5,15 +5,18 @@ imperative; nothing is called by its internal name.
 
 ## Dock tiles
 
-| id | name | subtitle |
+The name is written on the tile's picture. Only the three tiles that offer a
+layout choice carry a second line, naming the view you get.
+
+| id | name | second line |
 |---|---|---|
-| cosmic_web | Cosmic Web | The largest structure |
-| galaxies | Galaxies | A deep field |
-| milky_way | Milky Way | Our galaxy |
-| andromeda | Andromeda | The nearest neighbour |
-| solar_system | Solar System | Orbits and motion |
-| solar_system_planets | Planets | Every world in reach |
-| sagittarius_a | Sagittarius A* | The galactic centre |
+| cosmic_web | Cosmic Web | — |
+| galaxies | Galaxies | — |
+| milky_way | Milky Way | — |
+| andromeda | Andromeda | — |
+| solar_system | Solar System | Orbital view |
+| solar_system_planets | Solar System Planets | Detail view |
+| sagittarius_a | Galactic Center | Black hole |
 
 ## Dock buttons
 
