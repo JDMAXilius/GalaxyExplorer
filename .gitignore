@@ -49,3 +49,9 @@ WSATestCertificate.pfx.meta
 # Unity 6: per-machine editor state
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
+
+# XR packages: per-user simulation and composition-layer preferences
+/Assets/XR/UserSimulationSettings/
+/Assets/XR/UserSimulationSettings.meta
+/Assets/CompositionLayers/UserSettings/
+/Assets/CompositionLayers/UserSettings.meta
