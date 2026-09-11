@@ -22,7 +22,7 @@ This is the map of the codebase as it is **today** (end of the Quest 3 port, bra
 | XR management | XR Plug-in Management **4.7.0** | Loader per platform set by `Quest3ProjectSetup` |
 | Editor tooling | Unity AI Assistant **2.19.0-pre.2** (its MCP relay), Figma MCP, Higgsfield MCP | See §13 |
 | Stereo | Android: **Multiview (Single-Pass Instanced)**; Windows/Link: **Multi-pass** | All custom shaders carry stereo macros |
-| Android player | IL2CPP, ARM64, min API 32, target 34, Vulkan, ASTC, GameActivity, Landscape Left, 4× MSAA | Package id `com.jdmaxilius.galaxyexplorer` (rename pending decision) |
+| Android player | IL2CPP, ARM64, min API 32, target 34, Vulkan, ASTC, GameActivity, Landscape Left, 4× MSAA | Package id `com.jdmaxilius.cosmicsimulationxr` (renamed 11 Sep 2026; installs alongside the old Galaxy Explorer build) |
 | Platforms | `PlatformId.Quest3 = 5` when `XRSettings.isDeviceActive`, else `Desktop` | Detected at start; Quest3 uses VR scale factors + hand menu |
 
 ---
@@ -74,7 +74,7 @@ Builds/Quest3/             GalaxyExplorer.apk (git-ignored)
 3. `ViewLoader` loads view scenes additively and keeps a back stack; `TransitionManager` animates content between views (zoom in/out) and toggles `DesktopMouseInput.InputEnabled` during transitions.
 4. `GlobalMenuManager` decides which menu buttons show per view; platform switch picks the desktop HUD, GGV menu, or the hand menu (Quest3).
 
-**[planned]** `ExperienceDirector` sits on `GEManagers`, owns the list of `ExperienceModule`s, and calls `ViewLoader.LoadViewAsync` / `UnLoadView` directly (no back stack, no zoom). `TransitionManager` remains for the fade and for restoring pulled objects on switch. Intro is replaced by the three onboarding cards (`OnboardingManager` reused) and the app boots into the Planets module.
+**[planned]** `ExperienceDirector` sits on `GEManagers`, owns the list of `ExperienceModule`s, and calls `ViewLoader.LoadViewAsync` / `UnLoadView` directly (no back stack, no zoom). `TransitionManager` remains for the fade and for restoring pulled objects on switch. The original intro (logo → Earth placement → galaxy, `IntroFlow` + `FlowManager`) is kept; two one-time hint cards follow placement (`OnboardingManager` reused); the app then lands in the Milky Way module with the dock shown.
 
 ---
 

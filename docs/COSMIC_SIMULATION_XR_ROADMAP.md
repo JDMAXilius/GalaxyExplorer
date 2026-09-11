@@ -161,7 +161,7 @@ Effort sizes: **S** ≤ half a day, **M** 1–2 days, **L** 3–5 days of focuse
 | ID | Task | Atomic steps | Tool |
 |---|---|---|---|
 | P0-T1 | Back up scenes | Copy `main_scene`, `core_systems_scene`, `galaxy_view_scene`, `solar_system_view_scene`, `galactic_center_view_scene` (+ `.meta`) to `Assets/scenes/_backup_original/`; exclude folder from build settings; commit | Unity MCP / git |
-| P0-T2 | Rebrand | Product name "Cosmic Simulation XR"; decide bundle id (`com.jdmaxilius.cosmicsimulationxr`); About text; window title; placeholder logo | Unity MCP |
+| P0-T2 | Rebrand | Product name "Cosmic Simulation XR"; bundle id `com.jdmaxilius.cosmicsimulationxr` (done); About text (done); placeholder logo | Unity MCP |
 | P0-T3 | Repo hygiene | `docs/` (this roadmap, decisions log), `Assets/_sources/CREDITS.md`, `.gitattributes` for LF/CRLF, commit the two stray settings files | git |
 | P0-T4 | Figma workspace | Create file "Cosmic Simulation XR — UI"; pages: Tokens, Dock, Pop-ups, Panels, Labels, Desktop HUD, Onboarding | Figma MCP |
 | P0-T5 | Asset sourcing kick-off | Download and licence-log: Solar System Scope / NASA planet maps (only where ours are weak), Hubble Helix, Orion, Crab, Homunculus; Hubble deep-field galaxy cutouts | Web / Chrome |
@@ -183,7 +183,7 @@ Effort sizes: **S** ≤ half a day, **M** 1–2 days, **L** 3–5 days of focuse
 | P1-T4 | Info panels | Body variant (title, paragraph, 2×2 stats); Scene variant (title + paragraphs + instruction); width 230 units at 0.7 mm/unit |
 | P1-T5 | Labels | Destination tag (idle / hover / selected), moon label small & large, leader line |
 | P1-T6 | Desktop HUD | Screen-space dock, controls overlay, About panel with backing plate |
-| P1-T7 | Onboarding | 3-step first-run cards (pinch to grab, two hands to scale, poke the dock) |
+| P1-T7 | Hint cards | Two one-time hint cards shown after the original intro's Earth placement (pinch to grab, two hands to resize), in the intro's visual style |
 | P1-T8 | Export | SVG/PNG at 2×; TMP style sheet; write `docs/ui/spec.md` (sizes in mm and canvas units) |
 
 **Tools:** Figma MCP (`use_figma` to build, `get_design_context` / `download_assets` to export). Icons drawn as vectors; thumbnails placeholder until Phase 2 renders them.
@@ -282,7 +282,7 @@ Effort sizes: **S** ≤ half a day, **M** 1–2 days, **L** 3–5 days of focuse
 | P6-T1 | SFX map | Assign existing UI clips to dock, pop-up, label, grab/release, scene switch (transition clips exist) |
 | P6-T2 | Narration | Existing VO for 10 bodies + 7 destinations; new clips for Andromeda, Cosmic Web, Galaxies, Helix, Orion, 6 moons: TTS placeholders now; Higgsfield voice on approval |
 | P6-T3 | Music | Keep the three existing tracks; loop per environment |
-| P6-T4 | Onboarding | First-run 3 cards from Figma; skip after first session (PlayerPrefs) |
+| P6-T4 | Intro | Keep the original intro (logo → Earth placement → galaxy); add the two hint cards after placement, shown once (PlayerPrefs); land in the Milky Way with the dock visible |
 | P6-T5 | Branding | Logo (Figma vector, optional Higgsfield hero art), app icon, splash, About |
 | P6-T6 | Accessibility | Mute (done), narration toggle, subtitle option for panels |
 
@@ -407,13 +407,15 @@ Automation: the existing MCP harness (synthetic mouse/keyboard, screenshots, con
 
 ---
 
-## 10. Open decisions (need your call)
+## 10. Decisions (locked 11 September 2026)
 
-1. **Bundle id:** keep `com.jdmaxilius.galaxyexplorer` (installed builds update in place) or switch to `com.jdmaxilius.cosmicsimulationxr` (clean identity)?
-2. **Extra destinations:** keep Pillars, NGC 1501 and Trumpler 14 in the Milky Way (we have them) or hide them for strict one-to-one?
-3. **Narration:** TTS placeholders only, or spend Higgsfield credits on a natural voice for all ~33 clips?
-4. **Onboarding:** minimal 3 cards (recommended) or keep the original Earth-placement intro?
-5. **Order of Phases 4 and 5:** nebulae first (more reuse) or new scenes first (more visible progress)?
+1. **Bundle id:** renamed to `com.jdmaxilius.cosmicsimulationxr` (product name "Cosmic Simulation XR").
+2. **Extra destinations:** Pillars of Creation, NGC 1501 and Trumpler 14 stay **on** in the Milky Way alongside the six reference destinations.
+3. **Narration:** reuse the 22 original recorded clips; the 11 new clips get TTS placeholders during development and a natural voice (chosen to sit close to the original narrator) at Phase 6.
+4. **Intro:** keep the original intro (logo → Earth placement → galaxy) and extend it with two one-time hint cards; no separate onboarding.
+5. **Order:** Phase 4 (nebulae, black hole) before Phase 5 (new scenes).
+
+Work is tracked as tickets in `docs/BACKLOG.md`, split into a Claude Code track and a terminal track.
 
 ---
 

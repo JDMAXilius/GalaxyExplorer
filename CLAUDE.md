@@ -6,7 +6,11 @@ Unity 6000.6 (Built-in RP) mixed-reality app for Meta Quest 3 (hands, passthroug
 1. `docs/COSMIC_SIMULATION_XR_ROADMAP.md` — the phased plan (what to do next).
 2. `docs/GDD.md` — the design contract (every scene, object, interaction, UI, audio). One-to-one with the reference app.
 3. `docs/TECHNICAL_OVERVIEW.md` — architecture, systems, pipelines, tooling, asset inventory.
+4. `docs/BACKLOG.md` — the ticket queue. **Start here to pick work.** Two tracks: **[CC]** tickets can be done in the repo alone; **[TERM]** tickets need the live Unity editor (MCP relay), the Quest, or the Figma/Higgsfield MCPs and are done in the local terminal session. Follow the workflow at the top of that file (claim → do → verify → commit `<ID>: <title>` → mark done with notes).
 Update the relevant doc in the same commit as any behaviour change.
+
+## Decisions locked (11 Sep 2026)
+Bundle id `com.jdmaxilius.cosmicsimulationxr`; the three extra Milky Way destinations (Pillars, NGC 1501, Trumpler 14) stay on; reuse the 22 original narration clips, TTS placeholders for the 11 new ones, natural voice at Phase 6; keep the original intro and add two hint cards; Phase 4 before Phase 5.
 
 ## Working rules
 - Reuse before sourcing before generating. Log every downloaded/generated asset in `Assets/_sources/CREDITS.md`.

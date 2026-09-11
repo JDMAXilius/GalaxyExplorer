@@ -29,10 +29,11 @@
 
 ## 2. Player journey
 
-### 2.1 First launch (onboarding)
-1. The app opens in passthrough. A three-card onboarding sequence floats at arm's length, one card at a time: **"Pinch to grab"** (animated hand pinching a planet), **"Two hands to resize"**, **"Poke the dock to travel"**. Each card is dismissed by doing the action once, or by poking **Skip**.
-2. The dock fades in at waist height in front of the player. The **Solar System Planets** scene loads (the Solar Row) so there is something to touch immediately.
-3. Onboarding is not shown again (stored preference). It can be replayed from the dock's **Help** button.
+### 2.1 First launch (the original intro, extended)
+1. The app opens in passthrough with the original Galaxy Explorer intro: the logo appears, then the player places the Earth pin on their floor (this anchors all content in the room), then the Milky Way grows in. Narration and music are the original recordings.
+2. After placement, two **hint cards** appear once, one after the other, in the intro's visual style: **"Pinch to grab"** (animated hand pinching a planet) and **"Two hands to resize"**. Each dismisses on doing the action or after 6 s.
+3. The dock fades in at waist height. The player is in the **Milky Way** experience with everything reachable from the dock.
+4. Hints are not shown again (stored preference); they can be replayed from the dock's **Help** button. The intro itself plays on every launch, as in the original, and can be skipped by pinching the logo.
 
 ### 2.2 A typical session
 Pull Earth out of the row → it grows, the Moon appears orbiting it, Earth's panel opens → scale Earth to a metre with two hands → grab the Moon and read its label → poke **Sagittarius A\*** on the dock → the room goes black and the black hole appears → walk around it → poke **Solar System** → tilt the orbit model with both hands → poke **Cosmic Web** → stand inside the filaments.
@@ -124,7 +125,7 @@ Each experience is specified by: what you see, placement and scale, objects, int
 
 ### 4.3 Milky Way (destination map)
 
-**What you see.** A particle spiral galaxy 1.4 m across, tilted 55°, floating at 1.2 m height, 1.2 m in front, with a warm yellow core and blue-white arms. Six **destination tags** float above points on the disc with thin leader lines: **Helix Nebula**, **Crab Nebula**, **Solar System**, **Galactic Center – Sagittarius A\***, **Homunculus Nebula**, **Orion Nebula**. (Three extra tags we already own — Pillars of Creation, NGC 1501, Trumpler 14 — are available behind a setting; default off for one-to-one.)
+**What you see.** A particle spiral galaxy 1.4 m across, tilted 55°, floating at 1.2 m height, 1.2 m in front, with a warm yellow core and blue-white arms. Six **destination tags** float above points on the disc with thin leader lines: **Helix Nebula**, **Crab Nebula**, **Solar System**, **Galactic Center – Sagittarius A\***, **Homunculus Nebula**, **Orion Nebula**. Three further tags from the original app — **Pillars of Creation**, **NGC 1501**, **Trumpler 14** — ship on as well (decision of 11 Sep 2026); nine destinations in total.
 
 **Interactions.**
 - Hover a tag (hand ray or near finger): it grows 15 % and turns cyan; a focus tick plays.
@@ -276,7 +277,7 @@ Moon sizes when orbiting: 3–7 cm (scaled to parent, floor 3 cm). Held moon gro
 | Homunculus Nebula | Bipolar (Eta Carinae) | 7,500 ly | Project texture + Hubble |
 | Orion Nebula (M42) | Star-forming region | 1,344 ly | Hubble/ESA (CC BY) |
 
-Optional extras already owned: Pillars of Creation, NGC 1501, Trumpler 14.
+Also shipped, from the original app: Pillars of Creation, NGC 1501, Trumpler 14 (existing textures and narration).
 
 ### 6.4 Galaxies
 Milky Way (map), Andromeda (M31), and the Galaxies deep field (anonymous sprites).
@@ -329,8 +330,8 @@ All UI is designed in Figma (file *Cosmic Simulation XR — UI*) and exported; s
 - Controls overlay (`H`/`F1`) listing §5.3.
 - About panel with backing plate: credits (Microsoft Galaxy Explorer, MIT), imagery credits, privacy link, version.
 
-### 8.6 Onboarding cards
-Three cards, 200 × 120 mm, one at a time, each with a looping 3 s animation and one line of text; **Skip** button; auto-advance on the action.
+### 8.6 Hint cards
+Two cards, 200 × 120 mm, shown once after the intro's Earth placement, each with a looping 3 s animation and one line of text; auto-advance on the action or after 6 s. Styled to match the original intro prompts.
 
 ### 8.7 Visual system
 - **Type:** Selawik (semilight for titles, regular body, semibold labels) — already in the project.
@@ -407,7 +408,7 @@ Spatialisation: Unity 3D panning (no plugin). Loudness target −16 LUFS music, 
 | F-29 | Narration | Per body/experience; replays; stops on switch |
 | F-30 | Ambience & music | Per experience; crossfades |
 | F-31 | UI sounds | Hover, press, grab, release, whoosh |
-| F-32 | Onboarding | 3 cards, first run only, replay from Help |
+| F-32 | Intro + hints | Original intro plays; two hint cards after placement, first run only, replay from Help |
 | F-33 | Desktop parity | Every row in §5.3 works |
 | F-34 | About | Credits, licences, privacy link, version |
 | F-35 | Performance | ≥ 60 fps at 72 Hz on Quest 3 in every experience |
