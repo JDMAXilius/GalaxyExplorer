@@ -23,16 +23,23 @@ Status values: `todo` · `doing` · `done` · `blocked-term` · `blocked-cc` · 
 | CS-001 | CC | Back up scenes to `Assets/scenes/_backup_original/` | — | done |
 | CS-002 | CC | Rebrand: product name, bundle id, About copy | — | done |
 | CS-003 | CC | Repo hygiene: `.gitattributes`, `Assets/_sources/CREDITS.md`, `docs/decisions.md` | — | done |
-| CS-004 | TERM | Create the Figma file and pages | — | todo |
+| CS-004 | TERM | Create the Figma file and pages | — | done |
 | CS-005 | TERM | Source public-domain imagery (Helix, Orion, Crab, Homunculus, deep field, planet maps) and log credits | CS-003 | todo |
 | CS-006 | CC | Write the copy deck (`docs/copy/*.md`) | — | done |
-| CS-007 | TERM | Verify in the editor: backups import, build list clean, identity applied; commit generated `.meta` files | CS-001 | todo |
+| CS-007 | TERM | Verify in the editor: backups import, build list clean, identity applied; commit generated `.meta` files | CS-001 | done |
 
 **Phase 0 notes (11 Sep 2026).**
 *CS-001 done:* five scenes copied to `Assets/scenes/_backup_original/` with a README; the owner's `main_scene - Copy.unity` moved in as `main_scene_user_copy.unity` (kept its `.meta`, so its GUID is unchanged) and removed from the build list. The five copies have no `.meta` yet — Unity generates them on next open; CS-007 commits them.
 *CS-003 done:* `.gitattributes` (Unity YAML marked `merge=binary` so a bad auto-merge can't corrupt a scene), `Assets/_sources/CREDITS.md` (licence table + the six assets we have already made + what CS-005 must source), `docs/decisions.md` (D-001..D-005 with rationale).
 *CS-006 done:* `docs/copy/` — README (rules: **ASCII only**, the Selawik fonts have no degree sign, en dash or curly quote), `experiences.md` (7 panels), `bodies.md` (10 bodies, paragraph + 4 stats), `moons.md` (11 moons, 6 in scope), `nebulae.md` (7 destination overlays), `hints.md`, `ui.md` (dock, pop-ups, overlay, About, messages).
 *Fixed in passing:* `main_scene` and `core_systems_scene` were each listed twice in `EditorBuildSettings`; duplicates removed.
+*CS-007 done:* editor verification — six backup scenes import with fresh GUIDs (the owner's copy keeps its original), build list holds exactly the six shipping scenes with no duplicates and no backups, product name and both bundle ids applied. `.meta` files committed.
+*CS-004 done:* Figma file **Cosmic Simulation XR** — `https://www.figma.com/design/qWxL0ZGiyI7aRjnQAVISoI` — with pages *Design System* and *Front End - Screens*. It sits in the owner's drafts; move it into a team project when convenient.
+*Open question for the owner:* `companyName` in Player Settings is still "Microsoft Corporation". It sets the save-data path and the publisher shown by the store. Change it to your own name/handle when you decide what it should be.
+
+## Phase 0/1 note on the build (11 Sep 2026)
+
+A Quest APK build stalls on a modal: **"Unsupported Input Handling on Android"** — Active Input Handling is "Both", which Android does not officially support. We need "Both" (XRI uses the new Input System, TouchScript the old one), and the shipped 111 MB APK was built the same way, so the answer is **Ignore**. Tick *Don't ask again for this session* to keep an unattended build from blocking. If we ever drop TouchScript, switch to Input System only and the warning goes away.
 
 **CS-001** Copy `main_scene`, `core_systems_scene`, `galaxy_view_scene`, `solar_system_view_scene`, `galactic_center_view_scene` (+ `.meta`, keep GUIDs unchanged is *not* possible — generate new meta GUIDs by deleting the copied `.meta` files so Unity regenerates them) into `Assets/scenes/_backup_original/`; add a `README.md` there ("do not edit"); ensure none are in `ProjectSettings/EditorBuildSettings.asset`. *Acceptance:* files present, not in build list, README present.
 **CS-002** Done 11 Sep 2026: `productName` "Cosmic Simulation XR", Android/Standalone identifier `com.jdmaxilius.cosmicsimulationxr`; About text already updated. *Remaining (TERM):* confirm Unity accepts the identifier on next open.
@@ -43,15 +50,21 @@ Status values: `todo` · `doing` · `done` · `blocked-term` · `blocked-cc` · 
 
 | ID | Track | Title | Depends | Status |
 |---|---|---|---|---|
-| CS-010 | TERM | Figma tokens page (colour, type, spacing, radii) | CS-004 | todo |
-| CS-011 | TERM | Figma dock frames + states | CS-010 | todo |
-| CS-012 | TERM | Figma pop-ups + utility window | CS-010 | todo |
-| CS-013 | TERM | Figma info panels (body / scene / moon) | CS-010 | todo |
-| CS-014 | TERM | Figma labels (tag states, moon labels, leader line) | CS-010 | todo |
-| CS-015 | TERM | Figma desktop HUD (dock mirror, controls overlay, About) | CS-010 | todo |
-| CS-016 | TERM | Figma hint cards (2) | CS-010 | todo |
+| CS-010 | TERM | Figma tokens page (colour, type, spacing, radii) | CS-004 | done |
+| CS-011 | TERM | Figma dock frames + states | CS-010 | done |
+| CS-012 | TERM | Figma pop-ups + utility window | CS-010 | done |
+| CS-013 | TERM | Figma info panels (body / scene / moon) | CS-010 | done |
+| CS-014 | TERM | Figma labels (tag states, moon labels, leader line) | CS-010 | done |
+| CS-015 | TERM | Figma desktop HUD (dock mirror, controls overlay, About) | CS-010 | doing |
+| CS-016 | TERM | Figma hint cards (2) | CS-010 | done |
 | CS-017 | TERM | Export SVG/PNG @2× to `Assets/ui/figma/`, write `docs/ui/spec.md` | CS-011…016 | todo |
 | CS-018 | CC | Sprite import settings script (`Editor/UiSpriteImporter.cs`: UI sprite, no mips, 9-slice per spec) | CS-017 | todo |
+
+**Phase 1 notes (11 Sep 2026).** The file has two pages, as the owner asked: *Design System* (read-me, colour, type, space and radius, surfaces) and *Front End - Screens* (A dock, B panels/tags/hints, C three in-headset shots, D desktop, E pop-ups and dock states).
+Two conventions the rest of the work depends on:
+- **Scale.** Virtual UI is specified in millimetres and drawn at **1 mm = 4 px**. A dock tile is 110 x 70 mm, drawn 440 x 280.
+- **Font.** Figma has neither Selawik nor Segoe UI, so the mockups use **Source Sans 3** as a metric stand-in. The app keeps its Selawik SDF assets; match the millimetre sizes, not the family.
+CS-015 remains open for the controls overlay and About panel; CS-011 states are drawn (idle, hover, pressed, active) but not yet Figma component variants.
 
 Sizes and colours: GDD §8. *Acceptance for CS-017:* every frame exported; spec maps frame → prefab with mm sizes.
 
