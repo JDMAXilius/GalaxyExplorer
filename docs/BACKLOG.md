@@ -20,13 +20,19 @@ Status values: `todo` · `doing` · `done` · `blocked-term` · `blocked-cc` · 
 
 | ID | Track | Title | Depends | Status |
 |---|---|---|---|---|
-| CS-001 | CC | Back up scenes to `Assets/scenes/_backup_original/` | — | todo |
+| CS-001 | CC | Back up scenes to `Assets/scenes/_backup_original/` | — | done |
 | CS-002 | CC | Rebrand: product name, bundle id, About copy | — | done |
-| CS-003 | CC | Repo hygiene: `.gitattributes`, `Assets/_sources/CREDITS.md`, `docs/decisions.md` | — | todo |
+| CS-003 | CC | Repo hygiene: `.gitattributes`, `Assets/_sources/CREDITS.md`, `docs/decisions.md` | — | done |
 | CS-004 | TERM | Create the Figma file and pages | — | todo |
 | CS-005 | TERM | Source public-domain imagery (Helix, Orion, Crab, Homunculus, deep field, planet maps) and log credits | CS-003 | todo |
-| CS-006 | CC | Write the copy deck (`docs/copy/*.md`) | — | todo |
-| CS-007 | TERM | Move `Assets/scenes/main_scene - Copy.unity` into `_backup_original/` and verify the build list in the editor | CS-001 | todo |
+| CS-006 | CC | Write the copy deck (`docs/copy/*.md`) | — | done |
+| CS-007 | TERM | Verify in the editor: backups import, build list clean, identity applied; commit generated `.meta` files | CS-001 | todo |
+
+**Phase 0 notes (11 Sep 2026).**
+*CS-001 done:* five scenes copied to `Assets/scenes/_backup_original/` with a README; the owner's `main_scene - Copy.unity` moved in as `main_scene_user_copy.unity` (kept its `.meta`, so its GUID is unchanged) and removed from the build list. The five copies have no `.meta` yet — Unity generates them on next open; CS-007 commits them.
+*CS-003 done:* `.gitattributes` (Unity YAML marked `merge=binary` so a bad auto-merge can't corrupt a scene), `Assets/_sources/CREDITS.md` (licence table + the six assets we have already made + what CS-005 must source), `docs/decisions.md` (D-001..D-005 with rationale).
+*CS-006 done:* `docs/copy/` — README (rules: **ASCII only**, the Selawik fonts have no degree sign, en dash or curly quote), `experiences.md` (7 panels), `bodies.md` (10 bodies, paragraph + 4 stats), `moons.md` (11 moons, 6 in scope), `nebulae.md` (7 destination overlays), `hints.md`, `ui.md` (dock, pop-ups, overlay, About, messages).
+*Fixed in passing:* `main_scene` and `core_systems_scene` were each listed twice in `EditorBuildSettings`; duplicates removed.
 
 **CS-001** Copy `main_scene`, `core_systems_scene`, `galaxy_view_scene`, `solar_system_view_scene`, `galactic_center_view_scene` (+ `.meta`, keep GUIDs unchanged is *not* possible — generate new meta GUIDs by deleting the copied `.meta` files so Unity regenerates them) into `Assets/scenes/_backup_original/`; add a `README.md` there ("do not edit"); ensure none are in `ProjectSettings/EditorBuildSettings.asset`. *Acceptance:* files present, not in build list, README present.
 **CS-002** Done 11 Sep 2026: `productName` "Cosmic Simulation XR", Android/Standalone identifier `com.jdmaxilius.cosmicsimulationxr`; About text already updated. *Remaining (TERM):* confirm Unity accepts the identifier on next open.
