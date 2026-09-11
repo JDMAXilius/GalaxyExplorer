@@ -1,9 +1,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 // Meta Quest 3 APK build.
-// Usage: Galaxy Explorer > Quest 3 > Build APK, or
+// Usage: Cosmic Simulation > Quest 3 > Build APK, or
 //        Unity.exe -batchmode -quit -projectPath . -executeMethod GalaxyExplorer.Build.Quest3Build.BuildApk
-// Install: adb install -r Builds/Quest3/GalaxyExplorer.apk (or drag the APK into Meta Quest Developer Hub).
+// Install: adb install -r Builds/Quest3/CosmicSimulationXR.apk (or drag the APK into Meta Quest Developer Hub).
 
 using System.Linq;
 using UnityEditor;
@@ -14,9 +14,9 @@ namespace GalaxyExplorer.Build
 {
     public static class Quest3Build
     {
-        private const string OutputPath = "Builds/Quest3/GalaxyExplorer.apk";
+        private const string OutputPath = "Builds/Quest3/CosmicSimulationXR.apk";
 
-        [MenuItem("Galaxy Explorer/Quest 3/Build APK")]
+        [MenuItem("Cosmic Simulation/Quest 3/Build APK")]
         public static void BuildApk()
         {
             Quest3ProjectSetup.ConfigureProject();

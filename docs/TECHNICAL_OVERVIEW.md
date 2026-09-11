@@ -250,8 +250,10 @@ Design in the Figma file → `get_design_context` for specs → `download_assets
 
 ## 11. Build and deploy
 
-- **Galaxy Explorer → Quest 3 → Configure Project** (`Quest3ProjectSetup.cs`): OpenXR features (Touch, Touch Plus, Hand Interaction, Hand Tracking, Meta Hand Aim, Meta AR Session/Camera, Meta Quest feature on Android), render modes, Android player settings, 4× MSAA, spatializer none, Android asset overrides, automatic validation fixes. **List OpenXR Features** and **Apply Android Asset Overrides** are separate menu items.
-- **Galaxy Explorer → Quest 3 → Build APK** (`Quest3Build.cs`) → `Builds/Quest3/GalaxyExplorer.apk`. Last build: 0 errors, ~111 MB. Manifest: VR category, head tracking, `HAND_TRACKING`, `PASSTHROUGH`, supported devices, GameActivity, landscape, SDK 32/34.
+- **Cosmic Simulation → Quest 3 → Configure Project** (`Quest3ProjectSetup.cs`): OpenXR features (Touch, Touch Plus, Hand Interaction, Hand Tracking, Meta Hand Aim, Meta AR Session/Camera, Meta Quest feature on Android), render modes, Android player settings, 4× MSAA, spatializer none, Android asset overrides, automatic validation fixes. **List OpenXR Features** and **Apply Android Asset Overrides** are separate menu items.
+- **Cosmic Simulation → Quest 3 → Build APK** (`Quest3Build.cs`) → `Builds/Quest3/CosmicSimulationXR.apk`. Last build: 0 errors, ~112 MB.
+- `ConfigureProject()` runs at the head of every build and **overwrites player settings from its own constants** — `AndroidPackageId` above all. Editing `ProjectSettings.asset` alone is not enough; the build will put the old value back. (This bit us on 11 Sep 2026: the APK shipped as `com.jdmaxilius.galaxyexplorer` with the new product name.)
+- A build started from a script stops on the modal **"Unsupported Input Handling on Android"**, because Active Input Handling is "Both" (XRI needs the new system, TouchScript the old). Answer **Ignore**; tick *Don't ask again for this session* for unattended builds. Manifest: VR category, head tracking, `HAND_TRACKING`, `PASSTHROUGH`, supported devices, GameActivity, landscape, SDK 32/34.
 - Install: Meta Quest Developer Hub or `adb install -r`.
 - Quest Link testing: press Play with the Standalone OpenXR loader; passthrough over Link needs *Developer Runtime Features* + *Passthrough over Meta Quest Link* in the Link app.
 - Editor Play without a headset runs desktop mode (`XRSettings.isDeviceActive` false).

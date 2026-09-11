@@ -41,6 +41,16 @@ project. Hiding them for strict parity would remove value for no gain.
 **Trade-off.** The Milky Way map differs from the reference by three labels; the
 GDD records this as intentional.
 
+### D-001a · The rename lives in the build script, not just Project Settings
+**Found 11 Sep 2026, after the first build.** `Quest3ProjectSetup.ConfigureProject()` runs at the start of every
+build and sets the Android package id from its own constant, so the first
+renamed APK still shipped as `com.jdmaxilius.galaxyexplorer` under the new
+name. The constant is now `com.jdmaxilius.cosmicsimulationxr`, and the editor
+menus moved from "Galaxy Explorer" to "Cosmic Simulation" with the APK renamed
+to `CosmicSimulationXR.apk`.
+**Rule.** Identity and player settings are owned by `Quest3ProjectSetup`. Change
+them there; Project Settings alone will be overwritten by the next build.
+
 ### D-001 · Renamed to Cosmic Simulation XR
 **Decision.** Product name "Cosmic Simulation XR"; bundle id
 `com.jdmaxilius.cosmicsimulationxr` (was `com.jdmaxilius.galaxyexplorer`).

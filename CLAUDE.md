@@ -30,7 +30,7 @@ Bundle id `com.jdmaxilius.cosmicsimulationxr`; the three extra Milky Way destina
 - `Object.GetInstanceID()` doesn't compile in 6000.6.
 
 ## Build
-Menu **Galaxy Explorer → Quest 3**: *Configure Project*, *Build APK* (→ `Builds/Quest3/GalaxyExplorer.apk`), *List OpenXR Features*, *Apply Android Asset Overrides*. Android multiview; Windows/Link multi-pass. All custom shaders need stereo macros, no geometry shaders, target ≤ 4.5.
+Menu **Cosmic Simulation → Quest 3**: *Configure Project*, *Build APK* (→ `Builds/Quest3/CosmicSimulationXR.apk`), *List OpenXR Features*, *Apply Android Asset Overrides*. `Quest3ProjectSetup.ConfigureProject()` runs first on every build and **writes player settings from its own constants** (bundle id, SDK levels, graphics API) — change identity there, not only in Project Settings, or the build silently reverts it. An unattended build stops on the modal *"Unsupported Input Handling on Android"* (we need Active Input Handling "Both"): answer **Ignore**. Android multiview; Windows/Link multi-pass. All custom shaders need stereo macros, no geometry shaders, target ≤ 4.5.
 
 ## Key code
 - Input routing: `Assets/scripts/XR/` (`GEInteractable`, `GEPointer`, `GEInputEvents.ExecuteHierarchy`, `ManipulationHandler`, `DesktopMouseInput`, `XRInputRig`).

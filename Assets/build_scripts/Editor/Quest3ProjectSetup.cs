@@ -23,7 +23,7 @@ namespace GalaxyExplorer.Build
     public static class Quest3ProjectSetup
     {
         private const string OpenXRLoader = "UnityEngine.XR.OpenXR.OpenXRLoader";
-        private const string AndroidPackageId = "com.jdmaxilius.galaxyexplorer";
+        private const string AndroidPackageId = "com.jdmaxilius.cosmicsimulationxr";
 
         // Enabled for both Standalone (Quest Link) and Android (standalone Quest 3).
         private static readonly string[] CommonFeatures =
@@ -43,7 +43,7 @@ namespace GalaxyExplorer.Build
             "UnityEngine.XR.OpenXR.Features.Meta.DisplayUtilitiesFeature", // refresh rate control
         };
 
-        [MenuItem("Galaxy Explorer/Quest 3/Configure Project")]
+        [MenuItem("Cosmic Simulation/Quest 3/Configure Project")]
         public static void ConfigureProject()
         {
             EnsureOpenXRLoaders();
@@ -125,7 +125,7 @@ namespace GalaxyExplorer.Build
             log.AppendLine($"Quality: 4x MSAA on {levels.arraySize} level(s)");
         }
 
-        [MenuItem("Galaxy Explorer/Quest 3/Apply Android Asset Overrides")]
+        [MenuItem("Cosmic Simulation/Quest 3/Apply Android Asset Overrides")]
         public static void ApplyAndroidAssetOverrides()
         {
             var log = new StringBuilder("Android asset overrides\n");
@@ -226,7 +226,7 @@ namespace GalaxyExplorer.Build
             }
         }
 
-        [MenuItem("Galaxy Explorer/Quest 3/List OpenXR Features")]
+        [MenuItem("Cosmic Simulation/Quest 3/List OpenXR Features")]
         public static void ListFeatures()
         {
             EnsureOpenXRLoaders();

@@ -11,7 +11,7 @@ namespace GalaxyExplorer.Build
 {
     public static class Unity6WindowsBuild
     {
-        private const string OutputPath = "Builds/Win64/GalaxyExplorer.exe";
+        private const string OutputPath = "Builds/Win64/CosmicSimulationXR.exe";
 
         public static void BuildWindows64()
         {
