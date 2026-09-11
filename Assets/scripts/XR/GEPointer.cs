@@ -19,12 +19,31 @@ namespace GalaxyExplorer.XR
 
         private static readonly Dictionary<IXRInteractor, GEPointer> Pointers = new Dictionary<IXRInteractor, GEPointer>();
 
+        private readonly Transform _mouseAttach, _mouseRayOrigin;
         private bool isFocusLocked;
 
         private GEPointer(IXRInteractor interactor)
         {
             Interactor = interactor;
         }
+
+        private GEPointer(Transform attach, Transform rayOrigin)
+        {
+            _mouseAttach = attach;
+            _mouseRayOrigin = rayOrigin;
+            IsMouse = true;
+        }
+
+        /// <summary>
+        /// A desktop mouse pointer (no XR interactor). Its attach transform follows the mouse ray; see DesktopMouseInput.
+        /// </summary>
+        public static GEPointer CreateMouse(Transform attach, Transform rayOrigin)
+        {
+            return new GEPointer(attach, rayOrigin);
+        }
+
+        /// <summary>True for the desktop mouse pointer.</summary>
+        public bool IsMouse { get; }
 
         public static GEPointer For(IXRInteractor interactor)
         {
@@ -42,14 +61,20 @@ namespace GalaxyExplorer.XR
             return pointer;
         }
 
+        /// <summary>The XR interactor behind this pointer; null for the mouse.</summary>
         public IXRInteractor Interactor { get; }
 
-        public Transform Transform => Interactor.transform;
+        public Transform Transform => IsMouse ? _mouseAttach : Interactor.transform;
 
         public Handedness Handedness
         {
             get
             {
+                if (IsMouse)
+                {
+                    return Handedness.None;
+                }
+
                 switch (Interactor.handedness)
                 {
                     case InteractorHandedness.Left:
@@ -62,18 +87,19 @@ namespace GalaxyExplorer.XR
             }
         }
 
-        public bool IsActive => Interactor is Behaviour behaviour && behaviour.isActiveAndEnabled;
+        public bool IsActive => IsMouse ? _mouseAttach != null : Interactor is Behaviour behaviour && behaviour.isActiveAndEnabled;
 
         public bool IsPoke => Interactor is XRPokeInteractor;
 
-        /// <summary>True for interactors that can reach distant objects with a ray (near-far and ray interactors).</summary>
-        public bool CanCastFar => Interactor is IXRRayProvider;
+        /// <summary>True for pointers that reach distant objects with a ray (near-far and ray interactors, the mouse).</summary>
+        public bool CanCastFar => IsMouse || Interactor is IXRRayProvider;
 
-        /// <summary>Origin of the far ray (aim pose), or the interactor itself when it has no ray.</summary>
-        public Transform RayOrigin => Interactor is IXRRayProvider rayProvider ? rayProvider.GetOrCreateRayOrigin() : Transform;
+        /// <summary>Origin of the far ray (aim pose, or the camera for the mouse).</summary>
+        public Transform RayOrigin => IsMouse ? _mouseRayOrigin
+            : Interactor is IXRRayProvider rayProvider ? rayProvider.GetOrCreateRayOrigin() : Transform;
 
-        /// <summary>The grab/pinch point that follows the hand or controller.</summary>
-        public Transform AttachTransform => Interactor.GetAttachTransform(null) ?? Transform;
+        /// <summary>The grab/pinch point that follows the hand, controller or mouse.</summary>
+        public Transform AttachTransform => IsMouse ? _mouseAttach : Interactor.GetAttachTransform(null) ?? Transform;
 
         /// <summary>The object this pointer is currently driving (set by ForceSolver while pulling a planet).</summary>
         public object FocusTarget { get; set; }
@@ -105,11 +131,16 @@ namespace GalaxyExplorer.XR
 
         public bool IsNear(Vector3 worldPoint)
         {
-            return IsPoke || Vector3.Distance(AttachTransform.position, worldPoint) <= NearDistance;
+            return !IsMouse && (IsPoke || Vector3.Distance(AttachTransform.position, worldPoint) <= NearDistance);
         }
 
         public bool IsNear(GEInteractable interactable)
         {
+            if (IsMouse)
+            {
+                return false;
+            }
+
             if (IsPoke)
             {
                 return true;
@@ -131,6 +162,11 @@ namespace GalaxyExplorer.XR
         // Raise the exits/enters that were suppressed while focus was locked.
         private void ResyncFocus()
         {
+            if (IsMouse)
+            {
+                return; // DesktopMouseInput drives the mouse pointer's focus itself
+            }
+
             var hovered = new HashSet<GEInteractable>();
             if (Interactor is IXRHoverInteractor hoverInteractor)
             {

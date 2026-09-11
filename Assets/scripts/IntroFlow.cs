@@ -4,12 +4,17 @@
 using MRS.FlowManager;
 using System.Collections;
 using UnityEngine;
-using GalaxyExplorer.XR;
 
 namespace GalaxyExplorer
 {
     public class IntroFlow : MonoBehaviour
     {
+        /// <summary>
+        /// Editor session key holding the view to open directly, set when Play is pressed inside a view scene
+        /// (see PlayFromViewScene).
+        /// </summary>
+        public const string QuickStartViewKey = "GalaxyExplorer.QuickStartView";
+
         [SerializeField]
         [Tooltip("Duration of Logo stage")]
         private float LogoDuration = 5.0f;
@@ -133,14 +138,50 @@ namespace GalaxyExplorer
                 flowManagerScript = GalaxyExplorerManager.Instance.FlowManagerHandler;
                 if (flowManagerScript)
                 {
-                    flowManagerScript.enabled = true;
                     flowManagerScript.OnStageTransition += OnStageTransition;
+
+                    // The flow manager runs the intro stages; a quick start skips them.
+                    if (!TryQuickStart())
+                    {
+                        flowManagerScript.enabled = true;
+                    }
                 }
             }
 
             StartCoroutine(PlayWelcomeMusic());
 
             yield return null;
+        }
+
+        // Editor only: open the view the developer pressed Play in, skipping the logo and placement.
+        private bool TryQuickStart()
+        {
+#if UNITY_EDITOR
+            var view = UnityEditor.SessionState.GetString(QuickStartViewKey, string.Empty);
+            if (string.IsNullOrEmpty(view))
+            {
+                return false;
+            }
+            UnityEditor.SessionState.EraseString(QuickStartViewKey);
+
+            // Anchor the content where the intro would have: 2 m in front of the user, a bit lower on a headset.
+            var head = Camera.main.transform;
+            var forward = Vector3.ProjectOnPlane(head.forward, Vector3.up).normalized;
+            var position = head.position + (forward == Vector3.zero ? Vector3.forward : forward) * 2f;
+            if (!GalaxyExplorerManager.IsDesktop)
+            {
+                position += Vector3.down * .5f;
+            }
+            FindObjectOfType<WorldAnchorHandler>().CreateWorldAnchor(position);
+
+            GalaxyExplorerManager.Instance.TransitionManager.OnIntroFinished();
+            GalaxyExplorerManager.Instance.TransitionManager.LoadNextScene(view);
+            OnIntroFinished?.Invoke();
+            Debug.Log($"[IntroFlow] Quick start: skipped the intro and opened {view}");
+            return true;
+#else
+            return false;
+#endif
         }
 
         private IEnumerator PlayWelcomeMusic()

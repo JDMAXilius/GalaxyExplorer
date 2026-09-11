@@ -49,8 +49,26 @@ namespace TouchScript.Examples.CameraControl
             ManipulationGesture.Transformed -= manipulationTransformedHandler;
         }
 
+        // Galaxy Explorer: the mouse is handled by DesktopMouseInput; this controller only reacts to touch.
+        private static bool IsMouseDriven(ScreenTransformGesture gesture)
+        {
+            foreach (var pointer in gesture.ActivePointers)
+            {
+                if (pointer.Type == TouchScript.Pointers.Pointer.PointerType.Mouse)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private void manipulationTransformedHandler(object sender, System.EventArgs e)
         {
+            if (IsMouseDriven(ManipulationGesture))
+            {
+                return;
+            }
+
             var rotation = Quaternion.Euler(ManipulationGesture.DeltaPosition.y/Screen.height*RotationSpeed,
                 -ManipulationGesture.DeltaPosition.x/Screen.width*RotationSpeed,
                 ManipulationGesture.DeltaRotation);
@@ -61,6 +79,11 @@ namespace TouchScript.Examples.CameraControl
 
         private void twoFingerTransformHandler(object sender, System.EventArgs e)
         {
+            if (IsMouseDriven(TwoFingerMoveGesture))
+            {
+                return;
+            }
+
             //pivot.localPosition += pivot.rotation*TwoFingerMoveGesture.DeltaPosition*PanSpeed;
             //pivot.localRotation *= Quaternion.Euler(TwoFingerMoveGesture.DeltaRotation, 0.0f, 0.0f);
             EntityToMove.localPosition += Pivot.rotation*TwoFingerMoveGesture.DeltaPosition*PanSpeed;

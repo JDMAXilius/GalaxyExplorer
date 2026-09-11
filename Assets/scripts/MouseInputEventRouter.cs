@@ -57,6 +57,12 @@ public class MouseInputEventRouter : MonoBehaviour
         
         private void Update()
         {
+            // DesktopMouseInput routes the mouse through the same pointer events as XR hands; don't click twice.
+            if (DesktopMouseInput.Instance != null)
+            {
+                return;
+            }
+
             if (Input.GetMouseButtonDown(0) && !mouseDown)
             {
                 if (!mouseDown)

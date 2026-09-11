@@ -67,21 +67,27 @@ namespace GalaxyExplorer.XR
         protected override void OnSelectEntered(SelectEnterEventArgs args)
         {
             base.OnSelectEntered(args);
-
-            var pointer = GEPointer.For(args.interactorObject);
-            var eventData = new GEPointerEventData(pointer, this, pointer != null && pointer.IsNear(this));
-            GEInputEvents.ExecuteHierarchy<IGEPointerHandler>(gameObject, h => h.OnPointerDown(eventData));
-            GEInputEvents.RaiseGlobalPointerDown(eventData);
+            RaisePointerDown(GEPointer.For(args.interactorObject));
         }
 
         protected override void OnSelectExited(SelectExitEventArgs args)
         {
             base.OnSelectExited(args);
+            RaisePointerUp(GEPointer.For(args.interactorObject), !args.isCanceled);
+        }
 
-            var pointer = GEPointer.For(args.interactorObject);
+        internal void RaisePointerDown(GEPointer pointer)
+        {
+            var eventData = new GEPointerEventData(pointer, this, pointer != null && pointer.IsNear(this));
+            GEInputEvents.ExecuteHierarchy<IGEPointerHandler>(gameObject, h => h.OnPointerDown(eventData));
+            GEInputEvents.RaiseGlobalPointerDown(eventData);
+        }
+
+        internal void RaisePointerUp(GEPointer pointer, bool clicked)
+        {
             var eventData = new GEPointerEventData(pointer, this, pointer != null && pointer.IsNear(this));
             GEInputEvents.ExecuteHierarchy<IGEPointerHandler>(gameObject, h => h.OnPointerUp(eventData));
-            if (!args.isCanceled)
+            if (clicked)
             {
                 GEInputEvents.ExecuteHierarchy<IGEPointerHandler>(gameObject, h => h.OnPointerClicked(eventData));
             }

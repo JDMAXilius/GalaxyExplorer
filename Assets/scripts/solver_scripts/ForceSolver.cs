@@ -606,8 +606,9 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
                     StartManipulation();
                     _manipulationHandler.OnPointerDown(eventData);
                 }
-                else if (eventData.Pointer == null)
+                else if (eventData.Pointer == null || eventData.Pointer.IsMouse)
                 {
+                    // Desktop: no hand to pull to, so bring the object in front of the camera.
                     if (planetController != null)
                     {
                         if (previewTarget == null)

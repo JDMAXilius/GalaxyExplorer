@@ -625,6 +625,11 @@ namespace GalaxyExplorer
             {
                 GalaxyExplorerManager.Instance.CameraControllerHandler.enabled = enable;
             }
+
+            if (GalaxyExplorer.XR.DesktopMouseInput.Instance != null)
+            {
+                GalaxyExplorer.XR.DesktopMouseInput.Instance.InputEnabled = enable;
+            }
         }
 
         private void UpdateActivationOfPOIs(SceneTransition scene, bool isEnabled)

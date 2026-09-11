@@ -105,6 +105,8 @@ namespace GalaxyExplorer.Build
             PlayerSettings.Android.textureCompressionFormats = new[] { TextureCompressionFormat.ASTC };
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.Vulkan });
+            PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.GameActivity;
+            PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft; // the only orientation Quest supports
             log.AppendLine($"[Android] IL2CPP, ARM64, API {PlayerSettings.Android.minSdkVersion}-{PlayerSettings.Android.targetSdkVersion}, Vulkan, ASTC, id {AndroidPackageId}");
         }
 
@@ -213,6 +215,13 @@ namespace GalaxyExplorer.Build
             log.AppendLine($"[{group}] OpenXR validation issues: {issues.Count}");
             foreach (var issue in issues)
             {
+                // Apply Unity's own automatic fixes for the Quest build (e.g. latency optimization).
+                if (group == BuildTargetGroup.Android && issue.fixItAutomatic && issue.fixIt != null)
+                {
+                    issue.fixIt();
+                    log.AppendLine($"  fixed: {issue.message}");
+                    continue;
+                }
                 log.AppendLine($"  {(issue.error ? "ERROR" : "warn")}: {issue.message}");
             }
         }

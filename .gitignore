@@ -50,6 +50,9 @@ WSATestCertificate.pfx.meta
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 
+# Android (Game Activity) native build cache
+/.utmp/
+
 # XR packages: per-user simulation and composition-layer preferences
 /Assets/XR/UserSimulationSettings/
 /Assets/XR/UserSimulationSettings.meta
