@@ -1,3 +1,5 @@
+using System;
+using TMPro;
 using UnityEngine;
 
 namespace GalaxyExplorer
@@ -36,6 +38,27 @@ namespace GalaxyExplorer
         [SerializeField]
         private float followLerpTime = 0.08f;
 
+        [Serializable]
+        public struct Fact
+        {
+            public string Label;
+            public string Value;
+        }
+
+        [Header("Content (empty fields keep the prefab's text)")]
+        [SerializeField]
+        private string title = "";
+
+        [SerializeField]
+        private string subtitle = "";
+
+        [SerializeField]
+        private Fact[] facts = new Fact[0];
+
+        [SerializeField]
+        [TextArea(2, 5)]
+        private string description = "";
+
         private Canvas _canvas;
         private CanvasGroup _group;
         private RectTransform _rect;
@@ -48,6 +71,13 @@ namespace GalaxyExplorer
             get
             {
                 if (body == null)
+                {
+                    return false;
+                }
+
+                // Fade out while the view changes (e.g. Back to the galaxy with a planet still pulled out).
+                if (GalaxyExplorerManager.IsInitialized && GalaxyExplorerManager.Instance.TransitionManager != null &&
+                    GalaxyExplorerManager.Instance.TransitionManager.InTransition)
                 {
                     return false;
                 }
@@ -75,6 +105,42 @@ namespace GalaxyExplorer
             _group.interactable = false;
             _group.blocksRaycasts = false;
             _canvas.enabled = false;
+            ApplyContent();
+        }
+
+        /// <summary>Writes this card's content into its text objects (title, subtitle, facts, description).</summary>
+        public void ApplyContent()
+        {
+            SetText(transform.Find("title"), title);
+            SetText(transform.Find("subtitle"), subtitle);
+            SetText(transform.Find("description"), description);
+
+            var factList = transform.Find("facts");
+            if (factList == null || facts == null || facts.Length == 0)
+            {
+                return;
+            }
+
+            for (var i = 0; i < factList.childCount; i++)
+            {
+                var cell = factList.GetChild(i);
+                var shown = i < facts.Length;
+                cell.gameObject.SetActive(shown);
+                if (shown)
+                {
+                    SetText(cell.Find("label"), facts[i].Label);
+                    SetText(cell.Find("value"), facts[i].Value);
+                }
+            }
+        }
+
+        private static void SetText(Transform target, string text)
+        {
+            var label = target != null ? target.GetComponent<TMP_Text>() : null;
+            if (label != null && !string.IsNullOrEmpty(text))
+            {
+                label.text = text;
+            }
         }
 
         private void LateUpdate()

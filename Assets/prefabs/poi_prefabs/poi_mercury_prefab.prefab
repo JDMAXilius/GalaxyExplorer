@@ -114,6 +114,7 @@ Transform:
   - {fileID: 4628288372271154}
   - {fileID: 4999589401689910}
   - {fileID: 2364414591659271302}
+  - {fileID: 851506778198977705}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1432332347344330
@@ -1892,6 +1893,244 @@ MonoBehaviour:
   forceToWorldUp: 0
   forceCameraUp: 0
   forceParentUp: 0
+--- !u!1001 &6267937166321157750
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 4325643008624968}
+    m_Modifications:
+    - target: {fileID: 233501262579099475, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: ONE DAY
+      objectReference: {fileID: 0}
+    - target: {fileID: 943482073734789467, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: THE SMALLEST PLANET
+      objectReference: {fileID: 0}
+    - target: {fileID: 1335703153372201206, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 57.9 MILLION KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 1571073266347094934, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: ONE YEAR
+      objectReference: {fileID: 0}
+    - target: {fileID: 2911536043001379055, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: DISTANCE FROM SUN
+      objectReference: {fileID: 0}
+    - target: {fileID: 3153229064077419532, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: The closest planet to the Sun. With almost no atmosphere to hold heat, its surface swings from about 430 degrees Celsius by day to minus 180 at night.
+      objectReference: {fileID: 0}
+    - target: {fileID: 3192197683835201999, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 88 EARTH DAYS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: body
+      value: 
+      objectReference: {fileID: 1343588552044845485}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: title
+      value: MERCURY
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: subtitle
+      value: THE SMALLEST PLANET
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: description
+      value: The closest planet to the Sun. With almost no atmosphere to hold heat, its surface swings from about 430 degrees Celsius by day to minus 180 at night.
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: bodyRenderer
+      value: 
+      objectReference: {fileID: 6696888286886495552}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.size
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[0].Label
+      value: DIAMETER
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[0].Value
+      value: 4,879 KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[1].Label
+      value: DISTANCE FROM SUN
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[1].Value
+      value: 57.9 MILLION KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[2].Label
+      value: ONE YEAR
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[2].Value
+      value: 88 EARTH DAYS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[3].Label
+      value: ONE DAY
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[3].Value
+      value: 176 EARTH DAYS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[4].Label
+      value: SURFACE GRAVITY
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[4].Value
+      value: 0.38 G
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[5].Label
+      value: MOONS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[5].Value
+      value: NONE
+      objectReference: {fileID: 0}
+    - target: {fileID: 4064777390568391617, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 4,879 KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 4229589752510193695, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 176 EARTH DAYS
+      objectReference: {fileID: 0}
+    - target: {fileID: 6072698056313799571, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_Name
+      value: mercury_info_card
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673238148658499396, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: MOONS
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 230
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 200
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7518588104309165439, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: MERCURY
+      objectReference: {fileID: 0}
+    - target: {fileID: 7636526188098655158, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: NONE
+      objectReference: {fileID: 0}
+    - target: {fileID: 8299729824120392437, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 0.38 G
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+--- !u!224 &851506778198977705 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+  m_PrefabInstance: {fileID: 6267937166321157750}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &7176216196721740469
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -527,6 +527,7 @@ Transform:
   - {fileID: 4172264244251832}
   - {fileID: 4823145083213304}
   - {fileID: 70080282537791341}
+  - {fileID: 3805258011526516472}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1528343881253292
@@ -2041,6 +2042,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eacfeb92c1cc045498d036742b4d10c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  visualRoot: {fileID: 0}
   Blend: 0
 --- !u!95 &6933946946044632604
 Animator:
@@ -3008,6 +3010,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7043098104879182020, guid: c37220c8a2361564d83d6399dfae2a6f, type: 3}
   m_PrefabInstance: {fileID: 5542634909297386939}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &6264503263475518945 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1874792199282124890, guid: c37220c8a2361564d83d6399dfae2a6f, type: 3}
+  m_PrefabInstance: {fileID: 5542634909297386939}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &6049575921459744895
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3373,4 +3380,246 @@ PrefabInstance:
 Transform:
   m_CorrespondingSourceObject: {fileID: 1224226717575684176, guid: b8510a5274fd3824694aedd2b80455cd, type: 3}
   m_PrefabInstance: {fileID: 6915555492853917541}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &7630216264028709927
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 4169871806514038}
+    m_Modifications:
+    - target: {fileID: 233501262579099475, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: ONE DAY
+      objectReference: {fileID: 0}
+    - target: {fileID: 943482073734789467, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: THE LARGEST PLANET
+      objectReference: {fileID: 0}
+    - target: {fileID: 1335703153372201206, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 778.5 MILLION KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 1571073266347094934, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: ONE YEAR
+      objectReference: {fileID: 0}
+    - target: {fileID: 1909130838622124059, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: GRAVITY
+      objectReference: {fileID: 0}
+    - target: {fileID: 2911536043001379055, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: DISTANCE FROM SUN
+      objectReference: {fileID: 0}
+    - target: {fileID: 3153229064077419532, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: A gas giant more than twice as massive as all the other planets combined. Its Great Red Spot is a storm wider than Earth that has raged for centuries.
+      objectReference: {fileID: 0}
+    - target: {fileID: 3192197683835201999, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 11.9 EARTH YEARS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: body
+      value: 
+      objectReference: {fileID: 3853272619218396461}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: title
+      value: JUPITER
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: subtitle
+      value: THE LARGEST PLANET
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: description
+      value: A gas giant more than twice as massive as all the other planets combined. Its Great Red Spot is a storm wider than Earth that has raged for centuries.
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: bodyRenderer
+      value: 
+      objectReference: {fileID: 6264503263475518945}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.size
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[0].Label
+      value: DIAMETER
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[0].Value
+      value: 142,984 KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[1].Label
+      value: DISTANCE FROM SUN
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[1].Value
+      value: 778.5 MILLION KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[2].Label
+      value: ONE YEAR
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[2].Value
+      value: 11.9 EARTH YEARS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[3].Label
+      value: ONE DAY
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[3].Value
+      value: 9.9 HOURS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[4].Label
+      value: GRAVITY
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[4].Value
+      value: 2.5 G
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[5].Label
+      value: MOONS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[5].Value
+      value: 95+
+      objectReference: {fileID: 0}
+    - target: {fileID: 4064777390568391617, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 142,984 KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 4229589752510193695, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 9.9 HOURS
+      objectReference: {fileID: 0}
+    - target: {fileID: 6072698056313799571, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_Name
+      value: jupiter_info_card
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673238148658499396, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: MOONS
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 230
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 200
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7518588104309165439, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: JUPITER
+      objectReference: {fileID: 0}
+    - target: {fileID: 7636526188098655158, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 95+
+      objectReference: {fileID: 0}
+    - target: {fileID: 8299729824120392437, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 2.5 G
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+--- !u!224 &3805258011526516472 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+  m_PrefabInstance: {fileID: 7630216264028709927}
   m_PrefabAsset: {fileID: 0}

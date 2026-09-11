@@ -1162,6 +1162,7 @@ Transform:
   - {fileID: 1048764266691358751}
   - {fileID: 1268481174482943301}
   - {fileID: 74687329423526130}
+  - {fileID: 1725850910538717295}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1645327383108464
@@ -4843,4 +4844,250 @@ MonoBehaviour:
 Transform:
   m_CorrespondingSourceObject: {fileID: 311045954647939084, guid: 1feb7da4c9edf9441ae1c3b2433ebc93, type: 3}
   m_PrefabInstance: {fileID: 3250931752758080354}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &5394875854832038576
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 4974685956589874}
+    m_Modifications:
+    - target: {fileID: 233501262579099475, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: LIGHT TO EARTH
+      objectReference: {fileID: 0}
+    - target: {fileID: 943482073734789467, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: OUR STAR
+      objectReference: {fileID: 0}
+    - target: {fileID: 1335703153372201206, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 333,000 EARTHS
+      objectReference: {fileID: 0}
+    - target: {fileID: 1571073266347094934, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: SURFACE TEMPERATURE
+      objectReference: {fileID: 0}
+    - target: {fileID: 1909130838622124059, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: AGE
+      objectReference: {fileID: 0}
+    - target: {fileID: 2911536043001379055, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: MASS
+      objectReference: {fileID: 0}
+    - target: {fileID: 3153229064077419532, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: A giant ball of hot plasma that fuses hydrogen into helium in its core. The Sun holds 99.8% of all the mass in the solar system.
+      objectReference: {fileID: 0}
+    - target: {fileID: 3192197683835201999, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 5,500 DEGREES C
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: gap
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: body
+      value: 
+      objectReference: {fileID: 5148172857946962726}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: title
+      value: THE SUN
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: subtitle
+      value: OUR STAR
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: description
+      value: A giant ball of hot plasma that fuses hydrogen into helium in its core. The Sun holds 99.8% of all the mass in the solar system.
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: bodyRenderer
+      value: 
+      objectReference: {fileID: 8228629561822195359}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.size
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[0].Label
+      value: DIAMETER
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[0].Value
+      value: 1,392,000 KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[1].Label
+      value: MASS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[1].Value
+      value: 333,000 EARTHS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[2].Label
+      value: SURFACE TEMPERATURE
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[2].Value
+      value: 5,500 DEGREES C
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[3].Label
+      value: LIGHT TO EARTH
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[3].Value
+      value: 8 MIN 20 SEC
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[4].Label
+      value: AGE
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[4].Value
+      value: 4.6 BILLION YEARS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[5].Label
+      value: STAR TYPE
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[5].Value
+      value: YELLOW DWARF
+      objectReference: {fileID: 0}
+    - target: {fileID: 4064777390568391617, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 1,392,000 KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 4229589752510193695, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 8 MIN 20 SEC
+      objectReference: {fileID: 0}
+    - target: {fileID: 6072698056313799571, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_Name
+      value: sun_info_card
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673238148658499396, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: STAR TYPE
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 230
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 200
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7518588104309165439, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: THE SUN
+      objectReference: {fileID: 0}
+    - target: {fileID: 7636526188098655158, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: YELLOW DWARF
+      objectReference: {fileID: 0}
+    - target: {fileID: 8299729824120392437, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 4.6 BILLION YEARS
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+--- !u!224 &1725850910538717295 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+  m_PrefabInstance: {fileID: 5394875854832038576}
   m_PrefabAsset: {fileID: 0}

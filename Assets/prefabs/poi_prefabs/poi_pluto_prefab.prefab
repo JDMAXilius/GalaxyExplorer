@@ -482,6 +482,7 @@ Transform:
   - {fileID: 4592337515172146}
   - {fileID: 4755342815211024}
   - {fileID: 597068634600670084}
+  - {fileID: 2172521913115772118}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1465607769650264
@@ -1984,4 +1985,242 @@ MonoBehaviour:
 Transform:
   m_CorrespondingSourceObject: {fileID: 311045954647939084, guid: 1feb7da4c9edf9441ae1c3b2433ebc93, type: 3}
   m_PrefabInstance: {fileID: 2938782202369504291}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &4831058828427341321
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 4804863230426058}
+    m_Modifications:
+    - target: {fileID: 233501262579099475, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: ONE DAY
+      objectReference: {fileID: 0}
+    - target: {fileID: 943482073734789467, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: A DWARF PLANET
+      objectReference: {fileID: 0}
+    - target: {fileID: 1335703153372201206, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 5.9 BILLION KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 1571073266347094934, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: ONE YEAR
+      objectReference: {fileID: 0}
+    - target: {fileID: 2911536043001379055, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: DISTANCE FROM SUN
+      objectReference: {fileID: 0}
+    - target: {fileID: 3153229064077419532, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: Once counted as the ninth planet, Pluto was reclassified as a dwarf planet in 2006. In 2015 the New Horizons probe flew past and found a vast heart-shaped plain of ice.
+      objectReference: {fileID: 0}
+    - target: {fileID: 3192197683835201999, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 248 EARTH YEARS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: body
+      value: 
+      objectReference: {fileID: 4712424985490400389}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: title
+      value: PLUTO
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: subtitle
+      value: A DWARF PLANET
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: description
+      value: Once counted as the ninth planet, Pluto was reclassified as a dwarf planet in 2006. In 2015 the New Horizons probe flew past and found a vast heart-shaped plain of ice.
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: bodyRenderer
+      value: 
+      objectReference: {fileID: 1071014073977158737}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.size
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[0].Label
+      value: DIAMETER
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[0].Value
+      value: 2,376 KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[1].Label
+      value: DISTANCE FROM SUN
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[1].Value
+      value: 5.9 BILLION KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[2].Label
+      value: ONE YEAR
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[2].Value
+      value: 248 EARTH YEARS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[3].Label
+      value: ONE DAY
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[3].Value
+      value: 6.4 EARTH DAYS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[4].Label
+      value: SURFACE GRAVITY
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[4].Value
+      value: 0.06 G
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[5].Label
+      value: MOONS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[5].Value
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4064777390568391617, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 2,376 KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 4229589752510193695, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 6.4 EARTH DAYS
+      objectReference: {fileID: 0}
+    - target: {fileID: 6072698056313799571, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_Name
+      value: pluto_info_card
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673238148658499396, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: MOONS
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 230
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 200
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7518588104309165439, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: PLUTO
+      objectReference: {fileID: 0}
+    - target: {fileID: 7636526188098655158, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8299729824120392437, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 0.06 G
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+--- !u!224 &2172521913115772118 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+  m_PrefabInstance: {fileID: 4831058828427341321}
   m_PrefabAsset: {fileID: 0}

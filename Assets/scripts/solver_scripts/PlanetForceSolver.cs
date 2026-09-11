@@ -56,8 +56,9 @@ public class PlanetForceSolver : ForceSolver
     {
         if (planetAudioClip != null)
         {
+            // Narrate every time the body is pulled, not only the first time in a session.
             GalaxyExplorerManager.Instance.VoManager.Stop(true);
-            GalaxyExplorerManager.Instance.VoManager.PlayClip(planetAudioClip);
+            GalaxyExplorerManager.Instance.VoManager.PlayClip(planetAudioClip, allowReplay: true, replaceQueue: true);
         }
 
         if (planetAmbiantClip != null)
@@ -109,6 +110,14 @@ public class PlanetForceSolver : ForceSolver
     {
         base.OnStartFree();
         ShowMoons();
+    }
+
+    // The pull ends once the body has arrived and also finished growing, so it always ends at its pulled size.
+    protected override bool IsAttractionComplete()
+    {
+        return base.IsAttractionComplete() &&
+               (_scaleController == null ||
+                Mathf.Abs(transform.localScale.x - _editScaleTarget.x) <= _editScaleTarget.x * 0.02f);
     }
 
     /// <summary>Local scale this body grows to when pulled out of its orbit.</summary>

@@ -308,6 +308,7 @@ Transform:
   - {fileID: 6136337752449409916}
   - {fileID: 1041996164747756433}
   - {fileID: 4060888601691801623}
+  - {fileID: 8617313706070404771}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1180156086438348
@@ -2759,6 +2760,244 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 311045954647939084, guid: 1feb7da4c9edf9441ae1c3b2433ebc93, type: 3}
   m_PrefabInstance: {fileID: 2339637083714566735}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &3079299322169771132
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 4494807075462918}
+    m_Modifications:
+    - target: {fileID: 233501262579099475, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: ONE DAY
+      objectReference: {fileID: 0}
+    - target: {fileID: 943482073734789467, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: OUR HOME PLANET
+      objectReference: {fileID: 0}
+    - target: {fileID: 1335703153372201206, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 149.6 MILLION KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 1571073266347094934, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: ONE YEAR
+      objectReference: {fileID: 0}
+    - target: {fileID: 2911536043001379055, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: DISTANCE FROM SUN
+      objectReference: {fileID: 0}
+    - target: {fileID: 3153229064077419532, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: The only world known to support life. Liquid water covers about 71% of its surface, and its atmosphere and magnetic field shield it from harmful radiation.
+      objectReference: {fileID: 0}
+    - target: {fileID: 3192197683835201999, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 365.25 DAYS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: body
+      value: 
+      objectReference: {fileID: 4032327956959144552}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: title
+      value: EARTH
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: subtitle
+      value: OUR HOME PLANET
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: description
+      value: The only world known to support life. Liquid water covers about 71% of its surface, and its atmosphere and magnetic field shield it from harmful radiation.
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: bodyRenderer
+      value: 
+      objectReference: {fileID: 8484686266427445712}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.size
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[0].Label
+      value: DIAMETER
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[0].Value
+      value: 12,756 KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[1].Label
+      value: DISTANCE FROM SUN
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[1].Value
+      value: 149.6 MILLION KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[2].Label
+      value: ONE YEAR
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[2].Value
+      value: 365.25 DAYS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[3].Label
+      value: ONE DAY
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[3].Value
+      value: 24 HOURS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[4].Label
+      value: SURFACE GRAVITY
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[4].Value
+      value: 1 G
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[5].Label
+      value: MOONS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[5].Value
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4064777390568391617, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 12,756 KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 4229589752510193695, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 24 HOURS
+      objectReference: {fileID: 0}
+    - target: {fileID: 6072698056313799571, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_Name
+      value: earth_info_card
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673238148658499396, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: MOONS
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 230
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 200
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7518588104309165439, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: EARTH
+      objectReference: {fileID: 0}
+    - target: {fileID: 7636526188098655158, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8299729824120392437, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: m_text
+      value: 1 G
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+--- !u!224 &8617313706070404771 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 6714030607840160479, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+  m_PrefabInstance: {fileID: 3079299322169771132}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &7311079325332955848
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2772,9 +3011,73 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 8733022007830538499}
     - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: title
+      value: THE MOON
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: subtitle
+      value: EARTH'S ONLY NATURAL SATELLITE
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: description
+      value: The Moon always keeps the same face toward Earth. Its gravity raises our ocean tides, and in 1969 the Apollo 11 astronauts became the first people to walk on another world.
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
       propertyPath: bodyRenderer
       value: 
       objectReference: {fileID: 6394571391171429250}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.size
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[0].Label
+      value: DIAMETER
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[0].Value
+      value: 3,474 KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[1].Label
+      value: DISTANCE FROM EARTH
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[1].Value
+      value: 384,400 KM
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[2].Label
+      value: ORBIT AROUND EARTH
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[2].Value
+      value: 27.3 DAYS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[3].Label
+      value: ONE LUNAR DAY
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[3].Value
+      value: 29.5 EARTH DAYS
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[4].Label
+      value: SURFACE GRAVITY
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[4].Value
+      value: 1/6 OF EARTH'S
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[5].Label
+      value: AGE
+      objectReference: {fileID: 0}
+    - target: {fileID: 4061284196276697406, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
+      propertyPath: facts.Array.data[5].Value
+      value: 4.5 BILLION YEARS
+      objectReference: {fileID: 0}
     - target: {fileID: 6072698056313799571, guid: 6388745c3e12325428018c78b27ee05c, type: 3}
       propertyPath: m_Name
       value: moon_info_card

@@ -14,7 +14,9 @@ namespace GalaxyExplorer.XR
     /// - Left click: open cards, change views, press buttons; a planet is pulled in front of the camera.
     /// - Left drag on a pulled planet: move it. Right drag on it: spin it. Wheel over it: scale it.
     /// - Left drag on empty space: orbit the view. Right drag: pan. Wheel: zoom. Home: reset the view.
-    /// - Backspace: back. R: reset planets. Esc: close the open card.
+    /// - Backspace: back. R: reset planets. Esc: close the open card or the controls overlay.
+    /// - 1-9, 0: pull the Sun through Pluto (again to send it back). M: the Moon.
+    /// - Tab: open or close the menu. H or F1: controls overlay.
     /// </summary>
     public class DesktopMouseInput : MonoBehaviour
     {
@@ -30,8 +32,17 @@ namespace GalaxyExplorer.XR
         [SerializeField] private float minPlanetScale = 0.1f;
         [SerializeField] private float maxPlanetScale = 3f;
 
+        // Planet-bar slots: 1-9 and 0 are the Sun through Pluto, M is the Moon.
+        private static readonly Key[] BodyKeys =
+        {
+            Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5,
+            Key.Digit6, Key.Digit7, Key.Digit8, Key.Digit9, Key.Digit0, Key.M,
+        };
+
         private Camera _camera;
         private Transform _grabPoint;
+        private GlobalMenuManager _menu;
+        private DesktopMenuManager _desktopMenu;
         private GEPointer _pointer;
 
         private GEInteractable _hovered;
@@ -247,25 +258,86 @@ namespace GalaxyExplorer.XR
                 return;
             }
 
-            var menu = FindAnyObjectByType<GlobalMenuManager>();
-            if (keyboard.backspaceKey.wasPressedThisFrame && menu != null && menu.MenuIsAvailable && menu.BackButtonNeedsShowing)
+            if (_menu == null)
+            {
+                _menu = FindAnyObjectByType<GlobalMenuManager>();
+                _desktopMenu = FindAnyObjectByType<DesktopMenuManager>();
+            }
+
+            var menu = _menu;
+            var menuAvailable = menu != null && menu.MenuIsAvailable;
+            if (keyboard.backspaceKey.wasPressedThisFrame && menuAvailable && menu.BackButtonNeedsShowing)
             {
                 menu.OnBackButtonPressed();
             }
 
-            if (keyboard.rKey.wasPressedThisFrame && menu != null && menu.MenuIsAvailable && menu.ResetButtonNeedsShowing)
+            if (keyboard.rKey.wasPressedThisFrame && menuAvailable && menu.ResetButtonNeedsShowing)
             {
                 menu.OnResetButtonPressed();
             }
 
-            if (keyboard.escapeKey.wasPressedThisFrame && manager.CardPoiManager != null)
+            if (keyboard.escapeKey.wasPressedThisFrame)
             {
-                manager.CardPoiManager.CloseAnyOpenCard();
+                if (_desktopMenu != null && _desktopMenu.IsHelpVisible)
+                {
+                    _desktopMenu.SetHelpVisible(false);
+                }
+                else if (manager.CardPoiManager != null)
+                {
+                    manager.CardPoiManager.CloseAnyOpenCard();
+                }
             }
 
             if (keyboard.homeKey.wasPressedThisFrame)
             {
                 ResetView();
+            }
+
+            if (_desktopMenu != null && _desktopMenu.IsVisible)
+            {
+                if (keyboard.tabKey.wasPressedThisFrame)
+                {
+                    _desktopMenu.OnToggleDesktopButtonVisibility();
+                }
+
+                if (keyboard.hKey.wasPressedThisFrame || keyboard.f1Key.wasPressedThisFrame)
+                {
+                    _desktopMenu.OnHelpButtonPressed();
+                }
+            }
+
+            if (menuAvailable && InputEnabled)
+            {
+                for (var slot = 0; slot < BodyKeys.Length; slot++)
+                {
+                    if (keyboard[BodyKeys[slot]].wasPressedThisFrame)
+                    {
+                        ToggleBody(slot, menu);
+                    }
+                }
+            }
+        }
+
+        // Pulls the Sun, a planet or the Moon (by its planet-bar slot) out in front of the camera, or sends it back
+        // if it is already out.
+        private static void ToggleBody(int slot, GlobalMenuManager menu)
+        {
+            foreach (var target in FindObjectsByType<UiPreviewTarget>(FindObjectsSortMode.None))
+            {
+                if (target.slotId != slot || target.forceSolver == null)
+                {
+                    continue;
+                }
+
+                if (target.forceSolver.ForceState == ForceSolver.State.Root)
+                {
+                    target.forceSolver.OnPointerDown();
+                }
+                else if (menu.ResetButtonNeedsShowing)
+                {
+                    menu.OnResetButtonPressed();
+                }
+                return;
             }
         }
 
@@ -352,7 +424,7 @@ namespace GalaxyExplorer.XR
             planet.rotation = Quaternion.AngleAxis(yaw, cameraTransform.up) * Quaternion.AngleAxis(pitch, cameraTransform.right) * planet.rotation;
         }
 
-        private void ResetView()
+        public void ResetView()
         {
             if (!TryGetViewTransforms(out var pivot, out var entity))
             {
