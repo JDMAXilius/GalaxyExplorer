@@ -319,6 +319,10 @@ namespace CosmicSimulation
         /// <summary>Opens or closes the controls overlay.</summary>
         public void ToggleHelp()
         {
+            // Before the branch below, deliberately: the legacy overlay path returns early, and the hints are
+            // owed on Help whether or not this scene still carries that overlay.
+            HintCards.Replay();
+
             var menu = Menu();
             if (menu != null)
             {

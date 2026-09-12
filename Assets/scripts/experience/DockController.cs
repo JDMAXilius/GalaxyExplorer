@@ -149,7 +149,18 @@ namespace CosmicSimulation
             {
                 recenterButton.OnClick.AddListener(Recenter);
             }
+
+            // This button existed, was shown and hidden with the rest, and had no listener on it at all:
+            // SetVisible toggled its GameObject and nothing was ever subscribed. GDD 8.6 and F-32 want Help
+            // to replay the two hint cards, so that is what it now does.
+            if (helpButton != null)
+            {
+                helpButton.OnClick.AddListener(ShowHelp);
+            }
         }
+
+        /// <summary>Replays the one-time hint cards. F-05 and F-32: Help is how a player asks to see them again.</summary>
+        public void ShowHelp() => HintCards.Replay();
 
         // ---------- building
 

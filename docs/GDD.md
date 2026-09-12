@@ -331,7 +331,7 @@ All UI is designed in Figma (file *Cosmic Simulation XR — UI*) and exported; s
 - About panel with backing plate: credits (Microsoft Galaxy Explorer, MIT), imagery credits, privacy link, version.
 
 ### 8.6 Hint cards
-Two cards, 200 × 120 mm, shown once after the intro's Earth placement, each with a looping 3 s animation and one line of text; auto-advance on the action or after 6 s. Styled to match the original intro prompts.
+Two cards, 200 × 120 mm, shown once after the intro's Earth placement, each with a looping 3 s animation and one line of text; auto-advance on the action or after 6 s. Styled to match the original intro prompts: the same white line-art hand, cross-faded, over white outlined text with no plate. A card can also be dismissed directly — poke or pinch it in the headset, click it or press `Space`/`Esc` on the desktop — so a player who has understood it does not have to wait the six seconds out. Replayed from Help; the "seen" flag is a stored preference.
 
 ### 8.7 Visual system
 - **Type:** Selawik (semilight for titles, regular body, semibold labels) — already in the project.
