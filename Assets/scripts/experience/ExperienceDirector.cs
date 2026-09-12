@@ -447,6 +447,11 @@ namespace CosmicSimulation
                 {
                     _prefabContent = Instantiate(module.ContentPrefab, ContentRoot());
                     _prefabContent.name = module.Id;
+
+                    // Where Restore will bring this back to, taken here because here is the only moment the
+                    // pose is the intended one: before the grow-in below, which drives localScale from zero
+                    // every frame for its duration (CS-107).
+                    FreePlacementAnchor.CaptureHome(_prefabContent.transform);
                 }
 
                 yield return null; // let the new content's own Awake/Start run before we touch it
@@ -855,6 +860,11 @@ namespace CosmicSimulation
             instance.name = destination.Id;
             _destinationObjects.Add(instance);
 
+            // The position above is knowledge only this method has — it comes from the tag the player pinched,
+            // not from the prefab — so home is recorded now. Before the grow-in at the bottom of this method,
+            // which writes localScale from zero every frame and would otherwise be what got remembered.
+            FreePlacementAnchor.CaptureHome(instance.transform);
+
             if (EnvironmentController.Instance != null)
             {
                 EnvironmentController.Instance.Set(destination.Environment);
@@ -916,6 +926,11 @@ namespace CosmicSimulation
                 solver.ResetToRoot();
                 solver.EnableForce = true;
             }
+
+            // Content that is not a body — a nebula overlay, the Cosmic Web, Andromeda — has no solver to reset,
+            // so until CS-107 this loop walked straight past it. Snapped rather than eased, to match the line
+            // above: the only caller is a switch, and the place this restores is already being taken apart.
+            FreePlacementAnchor.RestoreAllImmediate();
         }
     }
 }

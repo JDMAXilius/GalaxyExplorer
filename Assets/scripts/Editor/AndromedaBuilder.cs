@@ -859,6 +859,11 @@ namespace CosmicSimulation.EditorTools
             // ForceSolver here to forward them (CS-106).
             root.AddComponent<ManipulationPointerRouter>();
 
+            // And without this one the galaxy could be moved, tilted and scaled but never brought back: Restore
+            // reaches bodies through their ForceSolver or their LayoutRig, and this has neither (CS-107). Home is
+            // the pose the director spawns it in, recorded before the grow-in.
+            root.AddComponent<FreePlacementAnchor>();
+
             var limits = root.AddComponent<ScaleLimits>(); // requires the handler above, so it is added after
             var limitsSo = new SerializedObject(limits);
             // None of Body (5 cm - 3 m), Model (40 cm - 4 m) or Nebula (30 cm - 2 m) is GDD 4.4's 0.5-3 m, and

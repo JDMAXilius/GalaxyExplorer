@@ -249,6 +249,11 @@ namespace CosmicSimulation.EditorTools
             // ForceSolver here to forward them (CS-106).
             root.AddComponent<ManipulationPointerRouter>();
 
+            // And without this one the web could be turned and scaled but never brought back: Restore reaches
+            // bodies through their ForceSolver or their LayoutRig, and the web has neither (CS-107). Home is
+            // the pose the director spawns it in, recorded before the grow-in.
+            root.AddComponent<FreePlacementAnchor>();
+
             var limits = root.AddComponent<ScaleLimits>(); // requires the handler above, so it is added after
             var limitsSo = new SerializedObject(limits);
             SetEnum(limitsSo, "kind", (int)ScaleLimits.Kind.Custom);

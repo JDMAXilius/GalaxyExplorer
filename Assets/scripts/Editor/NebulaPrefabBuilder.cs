@@ -159,6 +159,11 @@ namespace CosmicSimulation.EditorTools
             // ForceSolver here to forward them (CS-106).
             root.AddComponent<ManipulationPointerRouter>();
 
+            // And without this one it could be moved but never brought back: Restore reaches bodies through
+            // their ForceSolver or their LayoutRig, and an overlay has neither (CS-107). The anchor records the
+            // pose OpenDestination spawns it in — the only code that knows where a destination belongs.
+            root.AddComponent<FreePlacementAnchor>();
+
             var limitsSo = new SerializedObject(root.AddComponent<ScaleLimits>());
             limitsSo.FindProperty("kind").enumValueIndex = (int)ScaleLimits.Kind.Nebula; // 30 cm to 2 m
             limitsSo.ApplyModifiedPropertiesWithoutUndo();

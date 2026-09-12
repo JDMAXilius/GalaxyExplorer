@@ -409,6 +409,11 @@ namespace GalaxyExplorer.XR
         /// </summary>
         private static void RestoreLayout()
         {
+            // First, and outside both branches below, because neither can reach it: content the player arranges
+            // that is not a body has no ForceSolver and belongs to no rig — the nebula overlays, the Cosmic Web,
+            // Andromeda — and the rig branch returns (CS-107).
+            CosmicSimulation.FreePlacementAnchor.RestoreAll();
+
             // A rig knows the arrangement, animates the anchors, and walks anything the player pulled out home
             // over the same duration, so ask it rather than snapping bodies to their roots behind its back.
             var rigs = FindObjectsByType<CosmicSimulation.LayoutRig>(FindObjectsSortMode.None);
@@ -664,6 +669,14 @@ namespace GalaxyExplorer.XR
 
         public void ResetView()
         {
+            // Every desktop route to the word "Recenter" funnels through here — the Home key, the dock's button
+            // (DesktopDock.Recenter) and the legacy HUD's Reset View — so it is the one place that can honour
+            // contract F-13's "Recenter returns everything" for content no rig and no solver owns (CS-107).
+            // Bodies are deliberately untouched: today Recenter does not move them, and this ticket does not
+            // change that. In the headset the world dock's Recenter button goes to DockController.Recenter,
+            // which needs the same line.
+            CosmicSimulation.FreePlacementAnchor.RestoreAll();
+
             if (!TryGetViewTransforms(out var pivot, out var entity))
             {
                 return;
