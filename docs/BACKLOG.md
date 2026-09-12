@@ -74,8 +74,8 @@ Sizes and colours: GDD §8. *Acceptance for CS-017:* every frame exported; spec 
 |---|---|---|---|---|
 | CS-020 | CC | `ExperienceModule`, `BodyInfo`, `LayoutPreset` ScriptableObjects (`Assets/scripts/experience/`) | — | done |
 | CS-021 | CC | `CopyImporter` editor menu: `docs/copy/*.md` → SO assets | CS-006, CS-020 | done |
-| CS-022 | CC | `ExperienceDirector` (switch over `ViewLoader`, events, restore-on-switch) | CS-020 | todo |
-| CS-023 | CC | `EnvironmentController` + dim quad shader/material + halo gradient generator | — | todo |
+| CS-022 | CC | `ExperienceDirector` (switch over `ViewLoader`, events, restore-on-switch) | CS-020 | done |
+| CS-023 | CC | `EnvironmentController` + dim quad shader/material + halo gradient generator | — | done |
 | CS-024 | CC | `FreePlacementSolver` (no snap-back, `RestoreLayout`, bounds auto-restore) | CS-020 | todo |
 | CS-025 | CC | `TwoHandTransformer` (limits per type, smoothing) | — | todo |
 | CS-026 | CC | `LabelButton` (hover grow/cyan, pinch/click → target) | — | todo |
@@ -94,6 +94,11 @@ Design contract: GDD §3, §5, §8; architecture: Technical Overview §5.5–5.6
 *CS-020 done:* `Assets/scripts/experience/` — `ExperienceModule` (dock tile or destination: scene or content prefab, environment mode, panel copy, layouts, audio), `BodyInfo` (body or moon: title, subtitle, paragraph, `Stat[]`, moons, the planet a moon orbits; `Stat.ToRichText()` renders the superscript), `LayoutPreset` (named arrangement + `Find(bodyId)`). Namespace `CosmicSimulation`.
 *CS-021 done:* `Assets/scripts/Editor/CopyImporter.cs`, menu **Cosmic Simulation → Import Copy**, parses `docs/copy/*.md` into `Assets/data/{bodies,moons,experiences,destinations,layouts}`. Idempotent: assets are updated in place so references survive. Verified run: 10 bodies, 11 moons attached to Earth/Jupiter/Saturn/Mars, 7 experiences, 7 destinations, none incomplete.
 *Gotcha worth keeping:* inside `AssetDatabase.StartAssetEditing()` the database is not refreshed, so `IsValidFolder` reports a folder you just made as missing and `CreateFolder` silently creates `data 1`, `data 2`, … beside it. Create folders through `Directory.CreateDirectory` + one `Refresh` instead.
+
+*CS-022 done:* `ExperienceDirector` — `Switch(module)` clears destinations, restores moved bodies, stops narration, sets the environment, unloads the previous view, loads the new one through `ViewLoaderScript.LoadViewAsync`, grows it in on a cubic ease-out, then starts narration and raises `ExperienceChanged`. Also `OpenDestination`, `ClearDestinations`, `RestoreEverything`.
+*CS-023 done:* `EnvironmentController` (dim quad parented to `Camera.main` at 0.06 m, queue 3900 so panels and the dock stay legible; generated 256² radial halo texture; `SpawnHalo`/`Forget`; `SetPassthroughForced` for the dock button) and `BlackHalo` (billboard 1.6× the subject, 0.15 m behind it along the view ray, 0.4 s fade). Verified in play mode on the galactic centre: dimming took mean frame brightness 4.28 → 2.95 with the desktop HUD unaffected, and the halo renders at queue 2990 tracking S2 as it orbits.
+*Gotcha worth keeping:* the halo first failed with *"Material … with Shader 'Unlit/Transparent' doesn't have a color property '_Color'"*. `Unlit/Transparent Colored` is not in this project and `Shader.Find` on a built-in that no material references can return null in a player build, so both surfaces now use `Assets/shaders/environment_tint_shader.shader` (`CosmicSimulation/EnvironmentTint`) — a flat tinted transparent shader that also carries the stereo macros Android multiview needs. It is registered under **Always Included Shaders** in `ProjectSettings/GraphicsSettings.asset` so the runtime lookup survives the APK build.
+*Gotcha worth keeping:* `stop.cs` leaves play mode; `exit.cs` **quits the editor**. Do not reach for the wrong one. If `EditorApplication.isPlaying` reads stale `True` after a crash-out, set `isPaused = false` then `isPlaying = false` and again inside `delayCall` before compiling.
 
 ## Phase 3 — Solar system one-to-one
 
