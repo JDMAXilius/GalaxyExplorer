@@ -270,6 +270,66 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &3841438734462507267
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2416603306361606451}
+  - component: {fileID: 1148478552462634900}
+  m_Layer: 0
+  m_Name: place_shell
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2416603306361606451
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3841438734462507267}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2724754879188894676}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1148478552462634900
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3841438734462507267}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98776ada2fba5bd4f9003926654458d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.PlaceShell
+  skyMaterial: {fileID: 2100000, guid: faa9e1433968e7147af031c817bc12f3, type: 2}
+  gasMaterial: {fileID: 2100000, guid: 2c7ad35b90c54cd468a2db08404e57ee, type: 2}
+  skyRadius: 60
+  gasRadius: 7
+  skySegments: {x: 64, y: 32}
+  gasSegments: {x: 48, y: 24}
+  gasSpinDegreesPerSecond: 0.35
+  gasTiltDegrees: 24
+  gasFollowDeadzone: 2
+  gasFollowSpeed: 0.6
+  fadeInSeconds: 1.2
+  fadeOutSeconds: 0.35
+  faceInitialGaze: 1
+  forceFullBlack: 1
+  hideInPassthrough: 1
+  rendererLayer: 0
 --- !u!1 &7930321079744228713
 GameObject:
   m_ObjectHideFlags: 0
@@ -400,6 +460,7 @@ Transform:
   - {fileID: 6398309791929583048}
   - {fileID: 1291201113966872118}
   - {fileID: 7768686553867988314}
+  - {fileID: 2416603306361606451}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &4763317911854233334

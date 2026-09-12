@@ -71,6 +71,7 @@ namespace CosmicSimulation.EditorTools
             {
                 Id = "whirlpool",
                 DisplayName = "Whirlpool Galaxy (M51)",
+                SecondLine = "M51",
                 Kind = GalaxyKind.SpiralArms,
 
                 // Slightly smaller than Andromeda's 1.2 m. M51 is a genuinely smaller galaxy, and the set
@@ -155,6 +156,7 @@ namespace CosmicSimulation.EditorTools
             {
                 Id = "pinwheel",
                 DisplayName = "Pinwheel Galaxy (M101)",
+                SecondLine = "M101",
                 Kind = GalaxyKind.SpiralArms,
 
                 // The largest of the three on purpose. M101 really is bigger than Andromeda, and if every
@@ -238,6 +240,7 @@ namespace CosmicSimulation.EditorTools
             {
                 Id = "triangulum",
                 DisplayName = "Triangulum Galaxy (M33)",
+                SecondLine = "M33",
                 Kind = GalaxyKind.SpiralArms,
 
                 WidthMetres = 0.95f,
@@ -444,6 +447,7 @@ namespace CosmicSimulation.EditorTools
         {
             var made = 0;
             var kept = 0;
+            var filled = 0;
 
             foreach (var profile in All())
             {
@@ -451,6 +455,19 @@ namespace CosmicSimulation.EditorTools
                 var existing = AssetDatabase.LoadAssetAtPath<ExperienceModule>(path);
                 if (existing != null)
                 {
+                    // Kept, not rewritten: the panel copy on an existing module may have been edited since,
+                    // and clobbering that is the one thing a "build" of already-built content must not do.
+                    // The exception is a second line that is still blank - these modules were written before
+                    // the field existed, and a blank there is an absence rather than a decision.
+                    if (string.IsNullOrEmpty(existing.SecondLine) && !string.IsNullOrEmpty(profile.SecondLine))
+                    {
+                        var patch = new SerializedObject(existing);
+                        patch.FindProperty("SecondLine").stringValue = profile.SecondLine;
+                        patch.ApplyModifiedPropertiesWithoutUndo();
+                        EditorUtility.SetDirty(existing);
+                        filled++;
+                    }
+
                     kept++;
                     continue;
                 }
@@ -467,6 +484,7 @@ namespace CosmicSimulation.EditorTools
                 so.FindProperty("Id").stringValue = profile.Id;
                 so.FindProperty("Kind").enumValueIndex = (int)ExperienceKind.Destination;
                 so.FindProperty("DisplayName").stringValue = profile.DisplayName;
+                so.FindProperty("SecondLine").stringValue = profile.SecondLine ?? string.Empty;
 
                 // Dimmed, like the Milky Way and Andromeda: these are objects held in a lit room, not places
                 // the player stands inside. Full black is for Sagittarius A* and the Cosmic Web.
@@ -500,7 +518,8 @@ namespace CosmicSimulation.EditorTools
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log($"GalaxyLibrary: {made} module(s) created, {kept} already present. " +
+            Debug.Log($"GalaxyLibrary: {made} module(s) created, {kept} already present " +
+                      $"({filled} of those given the second line their map tag needs). " +
                       "Now run Cosmic Simulation > Build All Galaxy Content.");
         }
     }

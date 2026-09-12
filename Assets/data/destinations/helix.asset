@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: helix
   Kind: 1
   DisplayName: Helix Nebula
-  SecondLine: 
+  SecondLine: Planetary nebula - 650 light-years
   DockThumbnail: {fileID: 0}
   SceneName: 
   ContentPrefab: {fileID: 2409670606923518696, guid: 3ffe5afa8740fd247a07beb143d2ba23, type: 3}
@@ -25,6 +25,7 @@ MonoBehaviour:
     Paragraphs:
     - A Sun-like star at the end of its life has shrugged off its outer layers, leaving a glowing shell of gas around the white dwarf that remains. We happen to see the shell close to face-on, which is why it looks like an eye.
     - At 650 light-years it is one of the nearest planetary nebulae, and about two and a half light-years wide. Our own Sun will end much the same way.
+    - What surrounds you is an impression built from the Hubble photograph of the nebula, wrapped around you so you can see its colours at size. The real shell is two and a half light-years across and we see it from the outside, face-on; nobody has been inside it.
     Instruction: 
   Layouts: []
   Narration: {fileID: 8300000, guid: 1e761f18249fe5347b8bea796b3db8c5, type: 3}

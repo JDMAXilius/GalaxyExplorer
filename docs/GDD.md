@@ -329,7 +329,9 @@ All UI is designed in Figma (file *Cosmic Simulation XR — UI*) and exported; s
 - **Behaviour:** no background plate; text has a 1 px dark outline for legibility over passthrough; the panel sits on the side of the object nearer the player's view centre, 30 mm off its edge, faces the player, keeps constant physical size, fades 0.35 s. Several can be open.
 
 ### 8.4 Labels
-- **Destination tag:** dark rounded pill (radius 4 mm) 60 × 16 mm, white text 5 mm, thin leader line to the point. Hover: +15 % scale, cyan fill. Selected: cyan outline.
+- **Destination tag:** dark rounded card (radius 4 mm), **60 × 24 mm minimum**, carrying two lines — the name in white 5 mm, and under it a second line in caps, 3.6 mm, in the secondary ink; a thin leader line runs to the point. The card's **width is fitted to whichever line is longer** and never goes below 60 mm. Hover: +15 % scale, cyan fill, both lines darken. Selected: cyan outline.
+  - *Changed from the original 60 × 16 mm single-line pill (v1.2, 12 Sep 2026).* Two of the inherited Milky Way markers — Solar System and Galactic Center — carried a name and a category line, the owner asked for that treatment on every destination, and those two legacy markers were then retired so nothing draws twice. Two lines do not fit in 16 mm.
+  - **Every card above the disc sits on its own height**, ordered outermost-lowest in steps of a card height + 2 mm. The cards billboard, so two at the same height overlap whenever the player is near the line joining them, however far apart they are on the map.
 - **Body name label (orbit model):** plain white text 6 mm, no pill.
 - **Moon label:** small (5 mm text) under the moon while orbiting; large (18 mm bold) while held.
 

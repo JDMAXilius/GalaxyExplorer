@@ -185,6 +185,13 @@ namespace CosmicSimulation.EditorTools
         /// <c>CopyImporter</c> and <c>docs/copy/</c>, and overwriting it here would silently undo an edit.</summary>
         public string DisplayName;
 
+        /// <summary>
+        /// The caps line under the name on this galaxy's map tag - its catalogue designation, matching
+        /// Andromeda's "M31". Short on purpose: the tag is read at a glance from across the room, and the
+        /// panel behind it is where the sentences go.
+        /// </summary>
+        public string SecondLine;
+
         public GalaxyKind Kind = GalaxyKind.SpiralArms;
 
         // ---------- how it is presented

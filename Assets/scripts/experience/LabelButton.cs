@@ -39,6 +39,11 @@ namespace CosmicSimulation
         private TMP_Text label;
 
         [SerializeField]
+        [Tooltip("The line under the name - a category or catalogue number, in caps. Optional: a label with " +
+                 "nothing to say on a second line hides this and centres the name on its own.")]
+        private TMP_Text secondLine;
+
+        [SerializeField]
         [Tooltip("Hairline running back to the point this names. Optional.")]
         private Graphic leader;
 
@@ -61,6 +66,7 @@ namespace CosmicSimulation
         private Color _idleFill = new Color(0.055f, 0.078f, 0.094f, 0.8f); // surface/plate
         private Color _accent = new Color(0.424f, 0.812f, 0.867f);          // accent/cyan
         private Color _idleText = Color.white;
+        private Color _idleSecondText = new Color(0.620f, 0.722f, 0.769f); // ink/secondary
         private Color _hoverText = new Color(0.055f, 0.078f, 0.094f);
 
         private bool _ready;
@@ -102,6 +108,11 @@ namespace CosmicSimulation
             if (label != null)
             {
                 _idleText = label.color;
+            }
+
+            if (secondLine != null)
+            {
+                _idleSecondText = secondLine.color;
             }
 
             Apply();
@@ -186,6 +197,14 @@ namespace CosmicSimulation
             {
                 label.color = Color.Lerp(_idleText, _hoverText, _hover);
                 label.fontStyle = IsSelected ? label.fontStyle | FontStyles.Bold : label.fontStyle & ~FontStyles.Bold;
+            }
+
+            if (secondLine != null)
+            {
+                // The same journey as the name, from its own dimmer idle colour. Both have to travel or the
+                // subtitle stays pale grey on a cyan fill, which is the one combination in the palette that
+                // does not read.
+                secondLine.color = Color.Lerp(_idleSecondText, _hoverText, _hover);
             }
 
             if (leader != null && leader.enabled)

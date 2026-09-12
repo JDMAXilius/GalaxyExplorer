@@ -598,19 +598,61 @@ namespace CosmicSimulation.EditorTools
 
         // ---------- a destination tag
 
+        /// <summary>
+        /// A destination tag: a dark card carrying a name and, under it, a small line of caps saying what kind
+        /// of thing it is.
+        ///
+        /// <b>Two lines because the player asked for the one card they already liked, everywhere.</b> The
+        /// Milky Way map inherited two treatments: the original app's large markers, of which "Solar System"
+        /// and "Galactic Center" survived, and our own single-line pills on everything else. The large ones
+        /// read better - a name alone tells you what a place is called, and the line under it tells you what
+        /// you are about to go and look at - so this is now the one treatment, and the two legacy markers are
+        /// retired by <c>LegacyPoiCleanup</c> rather than left drawing alongside.
+        ///
+        /// <b>The card is 24 mm tall, not 16.</b> Two lines of type at 5 mm and 3.2 mm with the 4 mm of
+        /// breathing room GDD 8.4 asks for do not fit in the old 16 mm plate; a card that keeps the old height
+        /// would either clip the subtitle or squash both. <c>DestinationTagBuilder</c> fits the width to
+        /// whichever of the two lines is longer.
+        ///
+        /// A tag whose module has no second line hides the subtitle and centres the name on its own, which is
+        /// what keeps this usable for the body labels in the orbit model as well as for the map.
+        /// </summary>
         private static void BuildLabelButton()
         {
+            const float w = 60f;
+            const float h = 24f;
+
             var root = Root("label_button_prefab", true);
             var rt = (RectTransform)root.transform;
-            rt.sizeDelta = new Vector2(60f, 16f);
+            rt.sizeDelta = new Vector2(w, h);
 
-            var grow = Rect("grow", rt, 60f, 16f);
-            var pill = Panel("pill", grow, 60f, 16f, Load("ui_rounded_r32"), Plate);
+            var grow = Rect("grow", rt, w, h);
+            var pill = Panel("pill", grow, w, h, Load("ui_rounded_r32"), Plate);
 
-            var text = Label("name", grow, 54f, 8f, "Crab Nebula", 5f, Ink, TextAlignmentOptions.Center, FontWeight.Medium);
-            text.rectTransform.anchoredPosition = Vector2.zero;
+            // The name a little above centre, the subtitle a little below. Not by the same amount: the name's
+            // box is 8 mm and the subtitle's is 5, so +4.5 and -5 put 3 mm of air between their facing edges and
+            // leave 3.5 mm above the name and 4.5 mm below the subtitle. The slight bottom weighting is
+            // deliberate - the leader line leaves the card's bottom edge, and a subtitle sitting too close to
+            // where the hairline starts reads as attached to it.
+            //
+            // Both offsets come from DestinationTagBuilder rather than being typed here, because that builder
+            // rewrites the name's Y on every tag it fits; a literal in each file would let the two drift and
+            // nothing would catch it.
+            var text = Label("name", grow, w - 10f, 8f, "Crab Nebula", 5f, Ink,
+                             TextAlignmentOptions.Center, FontWeight.SemiBold);
+            text.rectTransform.anchoredPosition = new Vector2(0f, DestinationTagBuilder.NameYMm);
 
-            var outline = Panel("selected_outline", grow, 64f, 20f, Load("ui_rounded_r32"), Cyan);
+            // Caps with a little tracking, which is what makes a subtitle read as a category rather than as a
+            // second, quieter name. TMP takes character spacing in ems of the current size.
+            // 3.6 and not a hair smaller: DestinationTagBuilder.MinFontSizeMm calls 3.6 mm the point below
+            // which a tag 1.2 m away stops being readable, and a subtitle set under that number would
+            // contradict the same file's own floor.
+            var second = Label("second", grow, w - 10f, 5f, "SUPERNOVA REMNANT", 3.6f, InkSecondary,
+                               TextAlignmentOptions.Center, FontWeight.Medium);
+            second.rectTransform.anchoredPosition = new Vector2(0f, DestinationTagBuilder.SecondLineYMm);
+            second.characterSpacing = 6f;
+
+            var outline = Panel("selected_outline", grow, w + 4f, h + 4f, Load("ui_rounded_r32"), Cyan);
             outline.raycastTarget = false;
             outline.gameObject.SetActive(false);
             outline.transform.SetAsFirstSibling();
@@ -619,13 +661,14 @@ namespace CosmicSimulation.EditorTools
             leader.raycastTarget = false;
 
             var box = grow.gameObject.AddComponent<BoxCollider>();
-            box.size = new Vector3(60f, 16f, 2f);
+            box.size = new Vector3(w, h, 2f);
             grow.gameObject.AddComponent<GEInteractable>();
 
             var label = root.AddComponent<LabelButton>();
             var so = new SerializedObject(label);
             so.FindProperty("pill").objectReferenceValue = pill;
             so.FindProperty("label").objectReferenceValue = text;
+            so.FindProperty("secondLine").objectReferenceValue = second;
             so.FindProperty("leader").objectReferenceValue = leader;
             so.FindProperty("growTarget").objectReferenceValue = grow;
             so.FindProperty("selectedOutline").objectReferenceValue = outline.gameObject;

@@ -349,6 +349,10 @@ namespace CosmicSimulation.EditorTools
                 module.Kind = ExperienceKind.Destination;
                 module.Environment = EnvironmentMode.BlackHalo;
                 module.DisplayName = meta.TryGetValue(id, out var label) ? label : id;
+
+                // The caps line under the name on the map tag. Same field the dock tiles use, so a destination
+                // and an experience are one kind of thing to everything downstream of here.
+                module.SecondLine = Field(section, "Second line") ?? string.Empty;
                 module.Panel = new ScenePanelCopy
                 {
                     Title = Field(section, "Title") ?? module.DisplayName,

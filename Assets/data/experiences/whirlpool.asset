@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: whirlpool
   Kind: 1
   DisplayName: Whirlpool Galaxy (M51)
-  SecondLine: 
+  SecondLine: M51
   DockThumbnail: {fileID: 0}
   SceneName: 
   ContentPrefab: {fileID: 8893301692396262014, guid: 21a38073b13cf004f918e56d0a1c73af, type: 3}

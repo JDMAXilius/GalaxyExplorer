@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: ngc1501
   Kind: 1
   DisplayName: NGC 1501
-  SecondLine: 
+  SecondLine: Planetary nebula - 4,240 light-years
   DockThumbnail: {fileID: 0}
   SceneName: 
   ContentPrefab: {fileID: 8678201033224882983, guid: f77eae3dbe0511a40a96689172f7c934, type: 3}
@@ -25,6 +25,7 @@ MonoBehaviour:
     Paragraphs:
     - 'A planetary nebula nicknamed the Oyster: a rippling bubble of gas blown off by a dying star, about a light-year across.'
     - The exposed stellar core at its centre pulses in brightness every half hour, which makes it one of the more closely watched objects of its kind.
+    - What surrounds you is an impression built from the photograph, opened out around you so its structure can be seen. The real nebula is about a third of a light-year across - a small, compact object seen from outside - so this is a way of looking closely, not a place.
     Instruction: 
   Layouts: []
   Narration: {fileID: 8300000, guid: 6bf04bd6d7ecbad49b5418ac4aa12d78, type: 3}

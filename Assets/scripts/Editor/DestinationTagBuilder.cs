@@ -55,10 +55,18 @@ namespace CosmicSimulation.EditorTools
             "Assets/data/experiences",
         };
 
-        /// <summary>Half the pill's height, in canvas units (millimetres). The leader starts at its bottom edge.</summary>
-        private const float PillHalfHeightMm = 8f;
+        /// <summary>Half the card's height, in canvas units (millimetres). The leader starts at its bottom edge.</summary>
+        private const float PillHalfHeightMm = 12f;
 
-        /// <summary>The pill's height, in canvas units. GDD 8.4: 60 x 16 mm.</summary>
+        /// <summary>
+        /// The card's height, in canvas units.
+        ///
+        /// <b>24, not the 16 of GDD 8.4.</b> The spec's 60 x 16 mm plate was drawn for a tag carrying a name and
+        /// nothing else. Every tag now carries a second line under the name - the treatment the two surviving
+        /// original markers used, and the one the player asked to see everywhere - and two lines of type at
+        /// 5 mm and 3.6 mm with any margin at all do not fit in 16. The width is fitted to whichever of the two
+        /// lines is longer, and the 60 mm floor below is still the spec's.
+        /// </summary>
         private const float PillHeightMm = PillHalfHeightMm * 2f;
 
         /// <summary>
@@ -90,16 +98,45 @@ namespace CosmicSimulation.EditorTools
         private const float MinPillWidthMm = 60f;
 
         /// <summary>
-        /// Past this the plate stops growing and the type shrinks instead. Nothing in the set reaches it (the
-        /// longest, Sagittarius A*, lands near 93 mm); it is here so that a long name added later degrades to
-        /// small-but-readable rather than to a slab wider than the galaxy.
+        /// Past this the plate stops growing and the type shrinks instead. Nothing in the set reaches it - the
+        /// longest built is Orion at about 96 mm, set by its subtitle rather than its name, and the two that
+        /// used to be longest ("Solar System", "Galactic Center") now sit on the 60 mm floor. It is here so
+        /// that a long name added later degrades to small-but-readable rather than to a slab wider than the
+        /// galaxy.
         /// </summary>
         private const float MaxPillWidthMm = 130f;
 
         private const float PillPadMm = 5f;
 
-        /// <summary>Height of the text box inside the pill, in canvas units — the label prefab's own.</summary>
+        /// <summary>Height of the name's text box inside the card, in canvas units — the label prefab's own.</summary>
         private const float TextBoxHeightMm = 8f;
+
+        /// <summary>Height of the second line's text box, in canvas units — the label prefab's own.</summary>
+        private const float SecondBoxHeightMm = 5f;
+
+        /// <summary>
+        /// Where the name sits when there is a second line under it, in canvas units above the card's centre.
+        /// <see cref="SecondLineYMm"/> is where the second line sits. Both are <c>internal</c> and both are read
+        /// by <see cref="UiPrefabBuilder"/> when it authors the prefab, because this builder rewrites the name's
+        /// Y on every tag and the prefab sets both: a literal in each file would let them drift, and the failure
+        /// would be twelve slightly crooked cards that nothing checks.
+        /// </summary>
+        internal const float NameYMm = 4.5f;
+
+        /// <summary>Where the second line sits, in canvas units below the card's centre. See <see cref="NameYMm"/>.</summary>
+        internal const float SecondLineYMm = -5f;
+
+        /// <summary>
+        /// Floor for auto-sized <i>subtitle</i> type, in canvas units.
+        ///
+        /// <b>Below <see cref="MinFontSizeMm"/> on purpose, and that is not a contradiction.</b> The subtitle is
+        /// authored at exactly 3.6 mm, so a floor of 3.6 would give autosizing a range of zero - the shrink
+        /// would do nothing and an over-long second line would simply run off the plate, which is the one
+        /// outcome the width fitting exists to prevent. A subtitle that has to come down to 3.0 mm is too small
+        /// to read comfortably at 1.2 m and <see cref="Build"/> says so by name when it happens; small and
+        /// flagged beats clipped and silent.
+        /// </summary>
+        private const float MinSecondFontSizeMm = 3.0f;
 
         /// <summary>The selected outline is this much larger than the pill on every side, as authored.</summary>
         private const float OutlineMarginMm = 4f;
@@ -133,9 +170,11 @@ namespace CosmicSimulation.EditorTools
         // and Crab (-120 deg) on a shorter radius, which is at least the right way round — Orion is the
         // nearest of the nine.
         //
-        // Lift is straight up, in the same units. 0.12 m clears the disc for a 60 x 16 mm plate; the two on
-        // short radii are raised to 0.17 so their labels do not sit on top of the arms, and the galactic centre
-        // to 0.22 to clear the bright core it names.
+        // Lift is straight up, in the same units, and these are starting heights rather than final ones.
+        // 0.12 m clears the disc; the two on short radii start at 0.17 so their labels do not sit on top of the
+        // arms, and the galactic centre at 0.22 to clear the bright core it names. SpaceOut then raises
+        // whichever of them would otherwise overlap a neighbour - see that method for why it has to run after
+        // the cards are built rather than being solved here.
         private static readonly Placement[] Placements =
         {
             new Placement("helix",        -0.371f, 0f,     0.594f, 0.12f),
@@ -240,6 +279,8 @@ namespace CosmicSimulation.EditorTools
                 return;
             }
 
+            Undersized.Clear();
+
             var modules = LoadModules();
             var wanted = AllPlacements();
 
@@ -281,6 +322,10 @@ namespace CosmicSimulation.EditorTools
                                   : $"scene {module.SceneName}"));
                 }
 
+                // After the cards exist, because it needs their fitted widths, and before Bind, because Bind
+                // writes the lifts into the component that reproduces them at run time.
+                var raised = SpaceOut(buttons, placed);
+
                 Bind(set, buttons, placed);
 
                 PrefabUtility.SaveAsPrefabAsset(contents, PoiPrefabPath);
@@ -288,7 +333,10 @@ namespace CosmicSimulation.EditorTools
                 Debug.Log($"DestinationTagBuilder: {built.Count} of {wanted.Count} tags written into " +
                           $"{PoiPrefabPath} under '{TagRootName}'.\n" +
                           $"  built: {string.Join("\n         ", built)}\n" +
-                          $"  no module asset: {(missing.Count == 0 ? "none" : string.Join(", ", missing))}");
+                          $"  no module asset: {(missing.Count == 0 ? "none" : string.Join(", ", missing))}\n" +
+                          $"  moved onto its own tier: {(raised.Count == 0 ? "none" : string.Join(", ", raised))}\n" +
+                          $"  subtitle shrunk below {MinFontSizeMm} mm to fit: " +
+                          $"{(Undersized.Count == 0 ? "none" : string.Join(", ", Undersized))}");
             }
             finally
             {
@@ -423,13 +471,15 @@ namespace CosmicSimulation.EditorTools
             // The children are read back off the component's own references rather than found by path, so a
             // rename inside UiPrefabBuilder cannot silently leave this builder writing into nothing.
             var text = so.FindProperty("label").objectReferenceValue as TMP_Text;
+            var second = so.FindProperty("secondLine").objectReferenceValue as TMP_Text;
             var pill = so.FindProperty("pill").objectReferenceValue as Graphic;
             var leader = so.FindProperty("leader").objectReferenceValue as Graphic;
             var grow = so.FindProperty("growTarget").objectReferenceValue as Transform;
             var outline = so.FindProperty("selectedOutline").objectReferenceValue as GameObject;
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            FitPill(instance.transform as RectTransform, text, pill, grow, outline, module.DisplayName);
+            FitPill(instance.transform as RectTransform, text, second, pill, grow, outline,
+                    module.DisplayName, module.SecondLine);
             SetLeader(leader, placement.Lift);
 
             // Turned to the player about the world Y only, so the plate stays upright and level however the
@@ -453,38 +503,66 @@ namespace CosmicSimulation.EditorTools
         /// well, so that if the measurement is ever off by a millimetre the name runs a hair over the plate
         /// instead of vanishing.
         /// </summary>
-        private static void FitPill(RectTransform root, TMP_Text label, Graphic pill, Transform grow,
-                                    GameObject outline, string displayName)
+        private static void FitPill(RectTransform root, TMP_Text label, TMP_Text second, Graphic pill,
+                                    Transform grow, GameObject outline, string displayName, string secondText)
         {
             if (label == null)
             {
                 return;
             }
 
+            // A module with no second line gets the name centred on its own rather than pushed up to leave room
+            // for an empty box. Only the three outside galaxies were in that state when this was written, and
+            // they are given one below, but the case has to work: this prefab is the general destination tag.
+            var hasSecond = second != null && !string.IsNullOrWhiteSpace(secondText);
+
             label.text = displayName;
             label.textWrappingMode = TextWrappingModes.NoWrap;
             label.enableAutoSizing = false;
-
-            var fontSize = label.fontSize;
             label.ForceMeshUpdate();
 
-            var measured = label.preferredWidth;
-            if (float.IsNaN(measured) || float.IsInfinity(measured) || measured <= 1f)
+            var titleWidth = Measure(label, displayName);
+
+            var secondWidth = 0f;
+            if (second != null)
             {
-                // TMP can decline to measure before its font atlas is warm. A character count at roughly half
-                // an em is a poor substitute but a safe one: it errs wide, and a slightly roomy plate is a
-                // great deal better than a clipped name.
-                measured = (displayName == null ? 0 : displayName.Length) * fontSize * 0.52f;
+                second.gameObject.SetActive(hasSecond);
+                if (hasSecond)
+                {
+                    // Upper-cased here rather than in the copy deck, so the deck stays readable prose and the
+                    // caps are a property of this treatment. TMP's FontStyles.UpperCase would do it at draw
+                    // time, but then preferredWidth measures the lower-case string and the plate comes out
+                    // narrow enough to clip - which is the bug this whole method exists to prevent.
+                    second.text = secondText.ToUpperInvariant();
+                    second.textWrappingMode = TextWrappingModes.NoWrap;
+                    second.enableAutoSizing = false;
+                    second.ForceMeshUpdate();
+                    secondWidth = Measure(second, second.text);
+                }
+
+                Mark(second);
+                Mark(second.rectTransform);
+                Mark(second.gameObject);
             }
 
-            var wanted = measured + 2f * PillPadMm;
+            // The plate has to hold whichever line is longer. "NGC 1501" under a subtitle of "PLANETARY NEBULA"
+            // is the case that makes this matter: the name is half the width of the line beneath it.
+            var wanted = Mathf.Max(titleWidth, secondWidth) + 2f * PillPadMm;
             var width = Mathf.Clamp(wanted, MinPillWidthMm, MaxPillWidthMm);
 
             if (wanted > MaxPillWidthMm)
             {
-                label.enableAutoSizing = true;
-                label.fontSizeMax = fontSize;
-                label.fontSizeMin = MinFontSizeMm;
+                // Shrink whichever line was the one that overflowed, and only that one: shrinking the name
+                // because the subtitle is long would make the name smaller than it needs to be.
+                if (titleWidth >= secondWidth)
+                {
+                    Shrink(label, MinFontSizeMm);
+                }
+                else if (second != null)
+                {
+                    Shrink(second, MinSecondFontSizeMm);
+                    Undersized.Add(displayName);
+                }
             }
 
             Mark(label);
@@ -492,11 +570,72 @@ namespace CosmicSimulation.EditorTools
             SetSize(root, width, PillHeightMm);
             SetSize(grow as RectTransform, width, PillHeightMm);
             SetSize(pill != null ? pill.rectTransform : null, width, PillHeightMm);
-            SetSize(label.rectTransform, width - 2f * PillPadMm, TextBoxHeightMm);
             SetSize(outline != null ? outline.transform as RectTransform : null,
                     width + OutlineMarginMm, PillHeightMm + OutlineMarginMm);
 
+            var inner = width - 2f * PillPadMm;
+            SetSize(label.rectTransform, inner, TextBoxHeightMm);
+            if (second != null)
+            {
+                SetSize(second.rectTransform, inner, SecondBoxHeightMm);
+            }
+
+            // One line sits centred; two sit either side of centre at the offsets the prefab authored. Written
+            // here as well as there because a one-line tag has to look deliberate, not like a two-line tag
+            // with the bottom half missing.
+            SetY(label.rectTransform, hasSecond ? NameYMm : 0f);
+            if (hasSecond)
+            {
+                SetY(second.rectTransform, SecondLineYMm);
+            }
+
             WidenCollider(grow, width);
+        }
+
+        /// <summary>
+        /// How wide a line of type is, in canvas units, with a fallback for the case TMP will not answer.
+        /// </summary>
+        private static float Measure(TMP_Text text, string content)
+        {
+            var measured = text.preferredWidth;
+            if (!float.IsNaN(measured) && !float.IsInfinity(measured) && measured > 1f)
+            {
+                return measured;
+            }
+
+            // TMP can decline to measure before its font atlas is warm. A character count at roughly half an em
+            // is a poor substitute but a safe one: it errs wide, and a slightly roomy plate is a great deal
+            // better than a clipped name.
+            return (content == null ? 0 : content.Length) * text.fontSize * 0.52f;
+        }
+
+        /// <summary>
+        /// Lets a line shrink to fit rather than run off the plate. The floor is a parameter because the name
+        /// and the subtitle have different ones - see <see cref="MinSecondFontSizeMm"/>.
+        /// </summary>
+        private static void Shrink(TMP_Text text, float floorMm)
+        {
+            text.enableAutoSizing = true;
+            text.fontSizeMax = text.fontSize;
+            text.fontSizeMin = floorMm;
+        }
+
+        /// <summary>
+        /// Names of tags whose subtitle had to shrink under <see cref="MinFontSizeMm"/> to fit. Collected across
+        /// one run and printed by <see cref="Build"/>, so a copy change that makes a line unreadable is visible
+        /// the moment it is made rather than on a headset weeks later.
+        /// </summary>
+        private static readonly List<string> Undersized = new List<string>();
+
+        private static void SetY(RectTransform rect, float y)
+        {
+            if (rect == null)
+            {
+                return;
+            }
+
+            rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, y);
+            Mark(rect);
         }
 
         /// <summary>
@@ -507,11 +646,12 @@ namespace CosmicSimulation.EditorTools
         /// standing. One canvas unit is a millimetre and the label prefab's root is scaled 0.001, so a lift
         /// given in metres becomes a height in canvas units by multiplying by a thousand.
         ///
-        /// <b>Minus the pill's half-height, which the first version of this forgot.</b> The rect is centred on
-        /// the pill, not on its bottom edge, so a line of the full lift length starting 8 mm below centre ends
-        /// 8 mm <i>past</i> the point it is supposed to touch. On the shortest tags that is seven per cent of
-        /// the leader poking out through the far side of the disc. The span that has to be covered is from the
-        /// bottom edge of the pill to the point, which is the lift less that 8 mm.
+        /// <b>Minus the card's half-height, which the first version of this forgot.</b> The rect is centred on
+        /// the card, not on its bottom edge, so a line of the full lift length starting <see cref="PillHalfHeightMm"/>
+        /// below centre ends that far <i>past</i> the point it is supposed to touch. The span that has to be
+        /// covered is from the bottom edge of the card to the point, which is the lift less that half-height.
+        /// It reads the constant rather than a number, so the 8 mm -> 12 mm change that came with the second
+        /// line needed no edit here.
         ///
         /// A negative lift hangs the tag below its point — one of the outside galaxies is under the galactic
         /// plane — and the same line is then drawn upward from the top edge.
@@ -578,6 +718,97 @@ namespace CosmicSimulation.EditorTools
 
             EditorUtility.SetDirty(target);
             PrefabUtility.RecordPrefabInstancePropertyModifications(target);
+        }
+
+        /// <summary>
+        /// Gives every card above the disc its own height, so that no two can ever draw on top of each other,
+        /// and rewrites each one's placement and leader to match.
+        ///
+        /// <para><b>The first version of this tested whether two cards were close together on the disc, and it
+        /// was the wrong test.</b> The cards billboard: they turn to face the player about world Y, so two of
+        /// them at the same height overlap whenever the player is anywhere near the line joining them - and
+        /// that is true however far apart they are, because what matters is where they land in the view, not
+        /// where they sit on the map. Six of the nine Milky Way tags started at exactly 0.12 m, which made
+        /// every such overlap a total one. Testing planar distance found nothing and reported success.</para>
+        ///
+        /// <para><b>So: one tier each, ordered by radius.</b> The outermost card sits lowest and each step
+        /// inwards is <see cref="TierStepMetres"/> higher, which is a card height plus a couple of millimetres
+        /// - the least that guarantees two cards cannot touch whatever angle they are seen from. Radius is the
+        /// ordering rather than the array's order because it means something: the leaders fan out from a low
+        /// outer rim to a high centre, inner cards clear the bright core and the arms the way the old
+        /// hand-typed 0.17 and 0.22 were trying to, and the arrangement is stable - adding a destination
+        /// slots it in by where it is rather than reshuffling everything.</para>
+        ///
+        /// <para><b>What it costs</b> is height: eleven tiers is about 0.29 m of spread over a disc 1.6 m
+        /// across, so the innermost leader is long. That is the price of never having to explain to a player
+        /// why two labels are sitting on top of each other, and it is the cheaper of the two.</para>
+        ///
+        /// <para>A card hung <i>below</i> the plane is left exactly as placed. There is one - Triangulum,
+        /// which really is under the galactic plane - and being the only thing down there it has nothing to
+        /// collide with.</para>
+        /// </summary>
+        private static List<string> SpaceOut(List<LabelButton> buttons, List<Placement> placements)
+        {
+            var raised = new List<string>();
+
+            var above = new List<int>();
+            for (var i = 0; i < placements.Count; i++)
+            {
+                if (placements[i].Lift >= 0f)
+                {
+                    above.Add(i);
+                }
+            }
+
+            // Outermost first. The comparison is on the square, which orders identically and avoids eleven
+            // square roots for nothing.
+            above.Sort((a, b) => RadiusSquared(placements[b].Anchor).CompareTo(RadiusSquared(placements[a].Anchor)));
+
+            for (var tier = 0; tier < above.Count; tier++)
+            {
+                var index = above[tier];
+                var placement = placements[index];
+                var lift = BaseLiftMetres + tier * TierStepMetres;
+
+                if (Mathf.Approximately(lift, placement.Lift))
+                {
+                    continue;
+                }
+
+                raised.Add($"{placement.Id} {placement.Lift:0.###} -> {lift:0.###}");
+
+                // The placement is the record Bind writes and DestinationTags reproduces at run time, so it has
+                // to change too - not just the transform. A card moved here whose anchor still said 0.12 would
+                // snap back to the old height on the first frame.
+                placements[index] = new Placement(
+                    placement.Id, placement.Anchor.x, placement.Anchor.y, placement.Anchor.z, lift);
+
+                var t = buttons[index].transform;
+                t.localPosition = placement.Anchor + Vector3.up * lift;
+                Mark(t);
+
+                var so = new SerializedObject(buttons[index]);
+                SetLeader(so.FindProperty("leader").objectReferenceValue as Graphic, lift);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(buttons[index]);
+            }
+
+            return raised;
+        }
+
+        /// <summary>How high the outermost card floats above the disc, in metres. Enough to clear it.</summary>
+        private const float BaseLiftMetres = 0.12f;
+
+        /// <summary>
+        /// The gap between one tier and the next, in metres: a card height plus 2 mm. Below a card height two
+        /// cards can still catch each other's corners when they line up in the view; this is the least that
+        /// cannot.
+        /// </summary>
+        private const float TierStepMetres = (PillHeightMm + 2f) * 0.001f;
+
+        /// <summary>How far an anchor is from the centre of the disc, squared. Height is not part of it.</summary>
+        private static float RadiusSquared(Vector3 anchor)
+        {
+            return anchor.x * anchor.x + anchor.z * anchor.z;
         }
 
         private static void Bind(DestinationTags set, List<LabelButton> buttons, List<Placement> placements)

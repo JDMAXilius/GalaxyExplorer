@@ -19,19 +19,27 @@ namespace CosmicSimulation.EditorTools
     /// the nebula card overlay in that prefab is left exactly as <see cref="NebulaPrefabBuilder"/> made it. See
     /// <see cref="PlaceShell"/> for how the two coexist and what the shell costs.</para>
     ///
-    /// <para><b>Only Orion is wired.</b> <see cref="Wired"/> is the whole list. The mechanism is general -- every
-    /// destination already has a plate, and the numbers below are all derived from the plate rather than
-    /// hand-tuned per nebula -- so adding the other six is one line each in that array plus a look at the result
-    /// on the headset. Orion first because it is the best-known object in the set and its plate is clean, wide
-    /// and bright enough to carry a whole sky.</para>
+    /// <para><b>All seven are wired.</b> <see cref="Wired"/> is the whole list. The mechanism is general --
+    /// every destination already has a plate, and the numbers below are all derived from the plate rather than
+    /// hand-tuned per nebula -- so a destination costs one line in that array. Orion was wired first, alone,
+    /// because it is the best-known object in the set and its plate is clean, wide and bright enough to carry a
+    /// whole sky; the rest followed when the owner asked for every nebula to be a place you go inside.</para>
     ///
-    /// <para><b>A shell is not right for every destination, and that is a judgement, not an oversight.</b> A
-    /// shell answers "what would it look like to be inside this". That is a real question for the big diffuse
-    /// clouds you could actually be inside -- Orion, the Carina complex around Trumpler 14, the Pillars -- and
-    /// close to meaningless for the small compact ones. The Crab is a nine-light-year shell of debris seen from
-    /// outside, NGC 1501 is a planetary nebula a third of a light year across, the Homunculus is two lobes of
-    /// ejecta around one star: those are objects to look at, and blowing one up into a sky would be a picture of
-    /// nothing anybody could stand in. Give those the card overlay alone.</para>
+    /// <para><b>The astronomical objection, recorded rather than acted on.</b> An earlier pass here argued that
+    /// a shell answers "what would it look like to be inside this", which is a real question only for the big
+    /// diffuse clouds you could actually be inside -- Orion, the Carina complex around Trumpler 14, the Pillars
+    /// -- and close to meaningless for the compact ones. That objection is sound and still stands as physics:
+    /// the Crab is a nine-light-year shell of debris seen from outside, NGC 1501 is a planetary nebula a third
+    /// of a light year across, the Homunculus is two lobes of ejecta around one star, and the Helix is a shell
+    /// we happen to see face-on. You could not stand in the middle of any of them and see what this draws.
+    ///
+    /// It is wired anyway, deliberately, because the owner asked for it after seeing Orion and because the
+    /// question the shell answers here is not "where could you stand" but "what is this made of" -- being
+    /// surrounded by the gas and colour of an object is a way of showing it, not a claim about travel. What
+    /// that costs is honesty, and the cost is paid in the copy: every shelled destination carries a line in its
+    /// panel saying the surroundings are an impression built from the photograph rather than a view from
+    /// inside. D-010 requires that line; without it this would be presenting a construction as observation.
+    /// <see cref="Report"/> fails a destination whose copy does not carry it, so the two cannot drift.</para>
     ///
     /// <para><b>Truthfulness (docs/decisions.md D-010).</b> The plate is a real photograph and is not altered:
     /// the sky layer shows it whole and the gas layer shows one luminance band of it. What is <i>modelled</i> is
@@ -68,8 +76,18 @@ namespace CosmicSimulation.EditorTools
         private const string ShaderName = "CosmicSimulation/PlaceShell";
         private const string StarModelPath = "Assets/models/boundry_space_background_stars_model.fbx";
 
-        /// <summary>The destinations that get a shell. One, on purpose -- see the class note.</summary>
-        private static readonly string[] Wired = { "orion" };
+        /// <summary>The destinations that get a shell. All seven -- see the class note for what that costs.</summary>
+        private static readonly string[] Wired =
+        {
+            "orion", "pillars", "trumpler14", "helix", "crab", "homunculus", "ngc1501",
+        };
+
+        /// <summary>
+        /// The phrase every shelled destination's panel copy has to contain, so that nobody meets one of these
+        /// skies believing it is a photograph taken from inside the cloud. Matched case-insensitively on this
+        /// fragment rather than on a whole sentence, so the copy can be reworded without breaking the check.
+        /// </summary>
+        private const string ImpressionPhrase = "impression built from";
 
         /// <summary>
         /// Same table as <see cref="NebulaPrefabBuilder"/>'s, duplicated rather than shared because that one is
@@ -156,6 +174,17 @@ namespace CosmicSimulation.EditorTools
                     continue;
                 }
 
+                if (!SaysItIsAnImpression(module))
+                {
+                    // Refused rather than warned. A shell that claims to be a photograph taken from inside the
+                    // cloud is precisely what D-010 forbids, and a warning in a console nobody reads is not a
+                    // disclosure. The fix is one sentence in docs/copy/nebulae.md and a re-run of Import Copy.
+                    failed.Add($"{id}: its panel copy does not say the surroundings are an " +
+                               $"\"{ImpressionPhrase} ...\" the photograph, so no shell was attached. " +
+                               "Add that line in docs/copy/nebulae.md, run Import Copy, and run this again.");
+                    continue;
+                }
+
                 var entry = Attach(module, shader, failed);
                 if (entry != null)
                 {
@@ -167,6 +196,43 @@ namespace CosmicSimulation.EditorTools
             AssetDatabase.Refresh();
 
             Report(built, failed);
+        }
+
+        /// <summary>
+        /// Whether this destination's panel already tells the player that its surroundings are constructed.
+        ///
+        /// Looks through the whole panel - title, every paragraph and the instruction - rather than at a fixed
+        /// paragraph index, so the disclosure can live wherever it reads best in the copy.
+        /// </summary>
+        private static bool SaysItIsAnImpression(ExperienceModule module)
+        {
+            if (module == null)
+            {
+                return false;
+            }
+
+            var panel = module.Panel;
+            if (Contains(panel.Title) || Contains(panel.Instruction))
+            {
+                return true;
+            }
+
+            if (panel.Paragraphs != null)
+            {
+                foreach (var paragraph in panel.Paragraphs)
+                {
+                    if (Contains(paragraph))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+
+            bool Contains(string text) =>
+                !string.IsNullOrEmpty(text) &&
+                text.IndexOf(ImpressionPhrase, System.StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         [MenuItem("Cosmic Simulation/Remove Place Shells")]

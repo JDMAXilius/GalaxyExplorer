@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: orion
   Kind: 1
   DisplayName: Orion Nebula
-  SecondLine: 
+  SecondLine: Star-forming region - 1,344 light-years
   DockThumbnail: {fileID: 0}
   SceneName: 
   ContentPrefab: {fileID: 6832103769052129594, guid: a874798eb1aa17941bc62d4e1de0c5e8, type: 3}
@@ -25,6 +25,7 @@ MonoBehaviour:
     Paragraphs:
     - The closest large nursery of new stars, visible without a telescope as the fuzzy middle point in the sword of Orion.
     - A cluster of hot young stars lights the gas from inside, while hundreds of infant solar systems take shape in the shadows around them. This is roughly what our own system looked like four and a half billion years ago.
+    - What surrounds you is an impression built from the photograph, projected onto the sky around you. The nebula really is a cloud you could be inside - twenty-four light-years of it - but this is that photograph arranged around you, not a view recorded from in there.
     Instruction: 
   Layouts: []
   Narration: {fileID: 8300000, guid: 330693851707b2748b5995f72e10d06b, type: 3}

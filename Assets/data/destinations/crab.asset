@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: crab
   Kind: 1
   DisplayName: Crab Nebula
-  SecondLine: 
+  SecondLine: Supernova remnant - 6,500 light-years
   DockThumbnail: {fileID: 0}
   SceneName: 
   ContentPrefab: {fileID: 8177246022835991511, guid: e1f1dfd49a05c1c4891c740050355f5e, type: 3}
@@ -25,6 +25,7 @@ MonoBehaviour:
     Paragraphs:
     - The wreckage of a star that exploded in 1054, bright enough that Chinese and Japanese astronomers recorded seeing it in daylight for more than three weeks.
     - At its centre spins a neutron star the size of a city, turning thirty times a second. Its beam sweeps the whole cloud and keeps it glowing nearly a thousand years later.
+    - What surrounds you is an impression built from the photograph, projected around you so the filaments can be seen at size. In reality this is nine light-years of expanding debris viewed from four thousand light-years away, and no camera has ever been within it.
     Instruction: 
   Layouts: []
   Narration: {fileID: 8300000, guid: 6e72f8409213c474e8e75c103c270ff6, type: 3}

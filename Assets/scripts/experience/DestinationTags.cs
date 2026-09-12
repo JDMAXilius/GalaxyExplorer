@@ -39,6 +39,24 @@ namespace CosmicSimulation
                  "Left empty, every LabelButton below this object is collected instead.")]
         private LabelButton[] tags = Array.Empty<LabelButton>();
 
+        /// <summary>
+        /// Where one tag's subject actually is, and how far above it the tag floats.
+        /// </summary>
+        [Serializable]
+        public struct TagAnchor
+        {
+            [Tooltip("The point on the map this tag names, in this node's local space.")]
+            public Vector3 Point;
+
+            [Tooltip("How far above that point the tag hangs, in metres. Negative hangs it below.")]
+            public float Lift;
+        }
+
+        [SerializeField]
+        [Tooltip("One per tag, in the same order, written by Cosmic Simulation > Build Destination Tags. " +
+                 "Left empty, the tags keep whatever pose the prefab authored.")]
+        private TagAnchor[] anchors = Array.Empty<TagAnchor>();
+
         [SerializeField]
         [Tooltip("How far in front of the player a destination overlay opens, in metres. GDD 4.3 asks for 1.0 m.")]
         private float openDistanceMetres = 1f;
@@ -80,6 +98,48 @@ namespace CosmicSimulation
         }
 
         private void OnDisable() => Unsubscribe();
+
+        /// <summary>
+        /// Hangs every tag straight up in the room from the point it names, however the map is turned.
+        ///
+        /// <para><b>Why this is not just the pose the prefab authored.</b> A tag is a child of the map, so a
+        /// pose authored as "the point, plus a bit of local up" leans over as soon as the player turns the
+        /// galaxy - and the leader line does not lean with it, because <c>Billboard</c> holds the card upright
+        /// in the room about world Y. The result is a hairline that points at the floor next to the thing it
+        /// is supposed to touch. Recomputing the offset in world space each frame keeps the two agreeing:
+        /// whatever the map does, the tag is directly above its point and the leader lands on it.</para>
+        ///
+        /// <para>The lift is multiplied by the node's own scale so that a galaxy the player has shrunk gets a
+        /// proportionally shorter leader rather than a tag floating a fixed metre above a toy. The scale is
+        /// uniform by construction here - <c>POIs</c> is (0.4, 2.5, 0.4) under a <c>GrabArea</c> of
+        /// (2.5, 0.4, 2.5), whose product is the identity - so one component is the whole story.</para>
+        ///
+        /// <para>In <c>LateUpdate</c>, after anything that moves the map has moved it. Twelve transform writes
+        /// a frame, and only while the map is on screen.</para>
+        /// </summary>
+        private void LateUpdate()
+        {
+            if (anchors == null || tags == null || anchors.Length != tags.Length)
+            {
+                // Either nothing was written, or the two arrays have drifted apart - which would pair a tag
+                // with another tag's point, and a label on the wrong object is worse than a label that leans.
+                return;
+            }
+
+            var scale = transform.lossyScale.y;
+
+            for (var i = 0; i < tags.Length; i++)
+            {
+                var tag = tags[i];
+                if (tag == null)
+                {
+                    continue;
+                }
+
+                tag.transform.position =
+                    transform.TransformPoint(anchors[i].Point) + Vector3.up * (anchors[i].Lift * scale);
+            }
+        }
 
         // A tag set can be bound and asked to refresh in the frame it spawns, and a caller has no way to know
         // whether Awake has run, so every entry point goes through this instead of trusting that it has.

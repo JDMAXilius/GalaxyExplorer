@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: pinwheel
   Kind: 1
   DisplayName: Pinwheel Galaxy (M101)
-  SecondLine: 
+  SecondLine: M101
   DockThumbnail: {fileID: 0}
   SceneName: 
   ContentPrefab: {fileID: 3917629120775957070, guid: 7cc1cb576630cc44b95d751046beec0b, type: 3}

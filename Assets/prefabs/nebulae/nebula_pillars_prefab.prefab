@@ -400,6 +400,7 @@ Transform:
   - {fileID: 7940660498938359536}
   - {fileID: 3009178667928131466}
   - {fileID: 5821351343034807909}
+  - {fileID: 386146389435231253}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8946159524191264959
@@ -591,3 +592,63 @@ MonoBehaviour:
   customMaxMetres: 3
   measureFrom: {fileID: 0}
   authoredMetresAtUnitScale: 0
+--- !u!1 &6870387554522695589
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 386146389435231253}
+  - component: {fileID: 9114570509015052243}
+  m_Layer: 0
+  m_Name: place_shell
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &386146389435231253
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6870387554522695589}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3507412289892940326}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9114570509015052243
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6870387554522695589}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98776ada2fba5bd4f9003926654458d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.PlaceShell
+  skyMaterial: {fileID: 2100000, guid: dd53eaa3c0beddb44bd95bcc2eb2538a, type: 2}
+  gasMaterial: {fileID: 2100000, guid: 3702b74684a112d4fa1b1af690269531, type: 2}
+  skyRadius: 60
+  gasRadius: 7
+  skySegments: {x: 64, y: 32}
+  gasSegments: {x: 48, y: 24}
+  gasSpinDegreesPerSecond: 0.35
+  gasTiltDegrees: 24
+  gasFollowDeadzone: 2
+  gasFollowSpeed: 0.6
+  fadeInSeconds: 1.2
+  fadeOutSeconds: 0.35
+  faceInitialGaze: 1
+  forceFullBlack: 1
+  hideInPassthrough: 1
+  rendererLayer: 0

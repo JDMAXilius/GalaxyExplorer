@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: homunculus
   Kind: 1
   DisplayName: Homunculus Nebula
-  SecondLine: 
+  SecondLine: Eruption cloud - 7,500 light-years
   DockThumbnail: {fileID: 0}
   SceneName: 
   ContentPrefab: {fileID: 8965997080532947227, guid: 964f6970c89bd4f4a96ded09108bd465, type: 3}
@@ -25,6 +25,7 @@ MonoBehaviour:
     Paragraphs:
     - Two lobes of gas thrown out by Eta Carinae, a colossal double star, during an eruption in the 1840s that briefly made it the second-brightest star in the sky.
     - The star survived what should have killed it. It remains one of the most massive and unstable stars known, and is expected to end as a supernova.
+    - What surrounds you is an impression built from the photograph of the two lobes, opened out around you. The real Homunculus is a shell of ejecta about a light-year across wrapped close around Eta Carinae, and this is a way of showing it rather than a view from within.
     Instruction: 
   Layouts: []
   Narration: {fileID: 8300000, guid: ff0b35519220bd245ae50d7789b9805f, type: 3}

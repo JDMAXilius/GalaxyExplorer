@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: triangulum
   Kind: 1
   DisplayName: Triangulum Galaxy (M33)
-  SecondLine: 
+  SecondLine: M33
   DockThumbnail: {fileID: 0}
   SceneName: 
   ContentPrefab: {fileID: 2851081467816877124, guid: 9a0bc52b7f3a6ac48ab476301000f325, type: 3}

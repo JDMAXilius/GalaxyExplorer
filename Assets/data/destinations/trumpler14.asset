@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: trumpler14
   Kind: 1
   DisplayName: Trumpler 14
-  SecondLine: 
+  SecondLine: Star cluster - 8,980 light-years
   DockThumbnail: {fileID: 0}
   SceneName: 
   ContentPrefab: {fileID: 264158519724105097, guid: d773a3bdf7206a544a7c6f0265a9aef9, type: 3}
@@ -25,6 +25,7 @@ MonoBehaviour:
     Paragraphs:
     - One of the youngest and most crowded star clusters known, packed into the Carina Nebula about nine thousand light-years away.
     - Its thousands of stars are only a few hundred thousand years old, and the brightest of them are among the most luminous in the galaxy. They will burn out quickly and explode.
+    - What surrounds you is an impression built from the photograph of the Carina Nebula that holds this cluster, wrapped around you. The cloud is a place you could be inside; the arrangement here, and the stars scattered through it, are ours rather than measured.
     Instruction: 
   Layouts: []
   Narration: {fileID: 8300000, guid: dc37ccfec6a787a46b53849d4993aec2, type: 3}
