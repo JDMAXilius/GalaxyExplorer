@@ -16,10 +16,10 @@ MonoBehaviour:
   Kind: 0
   DisplayName: Cosmic Web
   SecondLine: 
-  DockThumbnail: {fileID: 0}
+  DockThumbnail: {fileID: 21300000, guid: 51c8bdff72306cd4c87a564096db6e9e, type: 3}
   SceneName: 
   ContentPrefab: {fileID: 0}
-  Environment: 1
+  Environment: 3
   Panel:
     Title: Cosmic Web
     Paragraphs:

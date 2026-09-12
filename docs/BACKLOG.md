@@ -90,8 +90,8 @@ Sizes and colours: GDD §8. *Acceptance for CS-017:* every frame exported; spec 
 | CS-028 | CC | `DockController`, `DockPopup` scripts (data-bound, poke via `GEButton`/`XRPokeFilter`, grab bar, palm-up show/hide) | CS-020 | done |
 | CS-029 | CC | `DesktopDock` + `DesktopMouseInput` additions (`P`, `F2–F8`, label clicks, free placement) | CS-028 | done |
 | CS-030 | TERM | Build dock/pop-up/panel prefabs from Figma exports (RunCommand scripts) | CS-017, CS-027, CS-028 | done |
-| CS-031 | TERM | Dock thumbnails: render 7 modules to `Assets/ui/thumbnails/` | CS-030 | todo |
-| CS-032 | TERM | Register existing 3 scenes as modules; hide old Back/zoom UI; verify switching in play mode | CS-022, CS-030 | todo |
+| CS-031 | TERM | Dock thumbnails: render 7 modules to `Assets/ui/thumbnails/` | CS-030 | done |
+| CS-032 | TERM | Register existing 3 scenes as modules; hide old Back/zoom UI; verify switching in play mode | CS-022, CS-030 | done |
 | CS-033 | TERM | `smoke.cs` harness: switch all modules, panels, place/restore, screenshots, console clean | CS-032 | todo |
 | CS-034 | TERM | Quest Link check: dock poke, dim quad, halo, passthrough toggle | CS-032 | todo |
 

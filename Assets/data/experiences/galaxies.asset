@@ -16,10 +16,10 @@ MonoBehaviour:
   Kind: 0
   DisplayName: Galaxies
   SecondLine: 
-  DockThumbnail: {fileID: 0}
+  DockThumbnail: {fileID: 21300000, guid: e8d7a7e78565bc048accbd8a0441db54, type: 3}
   SceneName: 
   ContentPrefab: {fileID: 0}
-  Environment: 1
+  Environment: 3
   Panel:
     Title: Galaxies
     Paragraphs:

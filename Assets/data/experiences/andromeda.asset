@@ -16,7 +16,7 @@ MonoBehaviour:
   Kind: 0
   DisplayName: Andromeda (M31)
   SecondLine: 
-  DockThumbnail: {fileID: 0}
+  DockThumbnail: {fileID: 21300000, guid: 50fc52dfd109e5c48a445d12cfc4cb7b, type: 3}
   SceneName: 
   ContentPrefab: {fileID: 0}
   Environment: 1

@@ -16,8 +16,8 @@ MonoBehaviour:
   Kind: 0
   DisplayName: Milky Way
   SecondLine: 
-  DockThumbnail: {fileID: 0}
-  SceneName: 
+  DockThumbnail: {fileID: 21300000, guid: 07bed97deb206cf4290dbc415dc1c9ac, type: 3}
+  SceneName: galaxy_view_scene
   ContentPrefab: {fileID: 0}
   Environment: 1
   Panel:

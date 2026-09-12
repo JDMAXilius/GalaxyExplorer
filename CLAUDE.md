@@ -9,6 +9,22 @@ Unity 6000.6 (Built-in RP) mixed-reality app for Meta Quest 3 (hands, passthroug
 4. `docs/BACKLOG.md` — the ticket queue. **Start here to pick work.** Two tracks: **[CC]** tickets can be done in the repo alone; **[TERM]** tickets need the live Unity editor (MCP relay), the Quest, or the Figma/Higgsfield MCPs and are done in the local terminal session. Follow the workflow at the top of that file (claim → do → verify → commit `<ID>: <title>` → mark done with notes).
 Update the relevant doc in the same commit as any behaviour change.
 
+## The crew (`.claude/agents/`)
+Work is dispatched to specialists rather than done one file at a time. For anything spanning more than one ticket or track, hand the goal to **`orchestrator`** and let it plan waves.
+
+| Agent | Owns |
+|---|---|
+| `orchestrator` | Plans a wave from the backlog and dispatches the rest in parallel |
+| `unity-code` | C# runtime and editor scripts — the [CC] track |
+| `unity-editor` | The live editor via the MCP relay — the [TERM] track |
+| `scene-builder` | The content of an experience: bodies, orbits, labels, overlays |
+| `ui-figma` | Figma design and the export pipeline into `Assets/ui/` |
+| `asset-smith` | Imagery, textures, audio, and the credits log |
+| `verifier` | Adversarial review of a diff before it is committed |
+| `scribe` | Backlog notes, docs, decisions, commit messages |
+
+Two rules: **only one `unity-editor` at a time** — the relay is a single shared connection and two will deadlock — and **run `verifier` over the combined diff** before committing a wave. Everything else parallelises; dispatch a wave as several `Agent` calls in one message.
+
 ## Decisions locked (11 Sep 2026)
 Bundle id `com.jdmaxilius.cosmicsimulationxr`; the three extra Milky Way destinations (Pillars, NGC 1501, Trumpler 14) stay on; reuse the 22 original narration clips, TTS placeholders for the 11 new ones, natural voice at Phase 6; keep the original intro and add two hint cards; Phase 4 before Phase 5.
 
