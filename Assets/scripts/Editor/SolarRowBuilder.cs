@@ -12,8 +12,11 @@ using UnityEngine;
 namespace CosmicSimulation.EditorTools
 {
     /// <summary>
-    /// Builds the content of the <b>Solar System Planets</b> experience (GDD 4.1): ten bodies at arm's reach that
-    /// the player grabs, grows and compares.
+    /// Builds the content of a <b>planetary system</b> experience: bodies at arm's reach that the player grabs,
+    /// grows and compares. Our own solar system (GDD 4.1, ten bodies) is profile #1 and the case every number
+    /// here was tuned against; since D-010 the same machinery builds any system whose bodies a
+    /// <see cref="SystemProfile"/> lists, so a real exoplanet system is a table row rather than a second
+    /// builder.
     ///
     /// <para><b>A prefab, not a scene.</b> The ticket asked for a <c>solar_row_scene</c>; CS-036 made that
     /// unnecessary. <see cref="ExperienceDirector"/> now opens a module from its
@@ -21,13 +24,25 @@ namespace CosmicSimulation.EditorTools
     /// hangs off the <c>ViewLoader</c> and destroying it on the way out. A scene here would buy nothing but load
     /// time and one more thing to keep in sync, so this writes one prefab and hangs it on the module.</para>
     ///
-    /// <para><b>Nothing is authored here.</b> Every body's geometry and materials come out of the existing
-    /// <c>poi_&lt;id&gt;_prefab</c> under <c>Assets/prefabs/poi_prefabs</c> — the same prefabs the orbit model
-    /// uses. What is lifted out of each one is the <c>*_tilt</c> subtree: the axial tilt, the constant-rotation
-    /// node under it, and the planet's sphere, clouds, rings, glow and (for the Sun) flares. Everything the orbit
-    /// model wraps around that — the POI card, the orbit trail, the LOD shell, the offset scale controller, the
-    /// highlighter, the moons — is left behind, and the interaction components that were on the mesh are stripped
-    /// so the new pattern can put one set on the body root.</para>
+    /// <para><b>Nothing is authored here.</b> A body's geometry and materials come out of a prefab that already
+    /// exists. For our ten that is <c>poi_&lt;id&gt;_prefab</c> under <c>Assets/prefabs/poi_prefabs</c> — the
+    /// same prefabs the orbit model uses, carrying real mesh and real NASA/USGS surface imagery. What is lifted
+    /// out of each one is the <c>*_tilt</c> subtree: the axial tilt, the constant-rotation node under it, and the
+    /// planet's sphere, clouds, rings, glow and (for the Sun) flares. Everything the orbit model wraps around
+    /// that — the POI card, the orbit trail, the LOD shell, the offset scale controller, the highlighter, the
+    /// moons — is left behind, and the interaction components that were on the mesh are stripped so the new
+    /// pattern can put one set on the body root.</para>
+    ///
+    /// <para><b>Which system, and where a body with no art comes from.</b> The profile supplies the body order,
+    /// the module the content is hung on, the file the prefab is written to and the arrangement it is authored
+    /// in — everything that used to be a constant or a hard-coded array in this file. A profile entry that names
+    /// no source prefab is built by <see cref="GenericBodyBuilder"/> instead, from published physical
+    /// quantities, and comes back shaped exactly like a <c>poi_&lt;id&gt;_prefab</c>: a <c>*_tilt</c> node, a
+    /// rotation node, and a <c>&lt;id&gt;_sphere_mesh</c>. That is the whole of the generalisation on this side —
+    /// everything below this line runs the same on a hand-authored body and a parameterised one, which is why
+    /// an exoplanet is exactly as grabbable as Earth and needs no desktop work of its own. It is also why our
+    /// own system's output is unchanged by the refactor: nothing about profile #1 reaches a different code
+    /// path.</para>
     ///
     /// <para><b>Normalisation.</b> A <see cref="LayoutSlot.Scale"/> is a diameter in metres (the convention
     /// CS-040 set), which is only true if a body is 1 m across at <c>localScale</c> 1. The bodies as authored are
@@ -56,21 +71,17 @@ namespace CosmicSimulation.EditorTools
     /// to the hand — is in <see cref="LayoutRig"/> instead.</para>
     ///
     /// Re-running rewrites the prefab in place, so its GUID and the module's reference to it survive.
-    /// Menu: <b>Cosmic Simulation -> Build Solar Row Content</b>.
+    /// Menu: <b>Cosmic Simulation -> Build Solar Row Content</b> for our own system, kept under that name
+    /// because the docs and the backlog call it that, and <b>Build System Content</b> for whichever
+    /// <see cref="SystemProfile"/> is selected in the Project window.
     /// </summary>
     public static class SolarRowBuilder
     {
-        private const string ModulePath = "Assets/data/experiences/solar_system_planets.asset";
         private const string BodyFolder = "Assets/data/bodies";
         private const string LayoutFolder = "Assets/data/layouts";
-        private const string SourceFolder = "Assets/prefabs/poi_prefabs";
         private const string PanelPrefabPath = "Assets/prefabs/ui/info_panel_prefab.prefab";
         private const string TractorBeamPath = "Assets/prefabs/tractor_beam_prefab.prefab";
         private const string OutputFolder = "Assets/prefabs/experiences";
-        private const string OutputName = "solar_system_planets_content_prefab";
-
-        /// <summary>The arrangement the prefab is authored in, and the one the experience opens with.</summary>
-        private const string DefaultLayoutId = "solar_row";
 
         /// <summary>GDD 4.1: small bodies keep a 6 cm invisible grab sphere so they can still be pinched.</summary>
         private const float GrabDiameter = 0.06f;
@@ -88,12 +99,6 @@ namespace CosmicSimulation.EditorTools
         /// shrinks them to what the arrangement leaves room for; this is the only number that decision needs.
         /// </summary>
         private const float RingClearance = 0.01f;
-
-        /// <summary>The ten bodies, in the order GDD 4.1 lists them.</summary>
-        private static readonly string[] Order =
-        {
-            "sun", "mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto",
-        };
 
         /// <summary>
         /// Components that belong to the orbit model, not to a body the player arranges. Ordered so that a
@@ -119,6 +124,8 @@ namespace CosmicSimulation.EditorTools
         private class Built
         {
             public string Id;
+            public BodyRole Role;
+            public AppearanceSource Provenance;
             public BodyInfo Info;
             public GameObject Root;
             public Transform Home;
@@ -151,8 +158,50 @@ namespace CosmicSimulation.EditorTools
             public int Vertices;
         }
 
+        /// <summary>
+        /// Our own solar system. Kept under its original menu name, and kept working without any new step:
+        /// the profile is written from <see cref="SystemProfileBuilder"/>'s table if it is not there yet, so a
+        /// checkout that has never heard of profiles still builds the row.
+        /// </summary>
         [MenuItem("Cosmic Simulation/Build Solar Row Content")]
         public static void Build()
+        {
+            // Checked here as well as in BuildSystem, because EnsureProfile writes an asset and must not do
+            // that during play either.
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogError("SolarRowBuilder: leave play mode first.");
+                return;
+            }
+
+            // Rewritten from the table, not merely loaded: our system's body list is GDD 4.1 itself, and this
+            // menu item is the one the docs and the backlog point at, so it has to produce the GDD's ten
+            // bodies in the GDD's order regardless of what is in the profile asset.
+            BuildSystem(SystemProfileBuilder.EnsureProfile(SystemProfileBuilder.SolarSystemId, true));
+        }
+
+        /// <summary>Whichever <see cref="SystemProfile"/> is selected in the Project window.</summary>
+        [MenuItem("Cosmic Simulation/Build System Content")]
+        public static void BuildSelected()
+        {
+            var profile = Selection.activeObject as SystemProfile;
+            if (profile == null)
+            {
+                Debug.LogError("SolarRowBuilder: select a SystemProfile in the Project window first " +
+                               "(Assets/data/systems). Run Cosmic Simulation > Build System Profiles if there " +
+                               "are none, and Build Solar Row Content for our own.");
+                return;
+            }
+
+            BuildSystem(profile);
+        }
+
+        /// <summary>
+        /// Writes one system's content prefab and hangs it on that system's module. Everything that used to be
+        /// a constant in this file — which module, which file, which arrangement, which bodies in what order —
+        /// comes off the profile.
+        /// </summary>
+        public static void BuildSystem(SystemProfile profile)
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
             {
@@ -160,19 +209,38 @@ namespace CosmicSimulation.EditorTools
                 return;
             }
 
-            var module = AssetDatabase.LoadAssetAtPath<ExperienceModule>(ModulePath);
-            if (module == null)
+            if (profile == null)
             {
-                Debug.LogError($"SolarRowBuilder: no experience module at {ModulePath}.");
+                return; // EnsureProfile already said why
+            }
+
+            if (profile.Bodies == null || profile.Bodies.Length == 0)
+            {
+                Debug.LogError($"SolarRowBuilder: system '{profile.Id}' lists no bodies.");
                 return;
             }
 
-            var layout = LoadLayout(DefaultLayoutId) ??
+            if (string.IsNullOrEmpty(profile.ContentPrefabName))
+            {
+                Debug.LogError($"SolarRowBuilder: system '{profile.Id}' names no content prefab, so there is " +
+                               "nowhere to write it.");
+                return;
+            }
+
+            var module = profile.Module;
+            if (module == null)
+            {
+                Debug.LogError($"SolarRowBuilder: system '{profile.Id}' names no experience module.");
+                return;
+            }
+
+            var layout = LoadLayout(profile.AuthoredLayoutId) ??
                          (module.Layouts != null && module.Layouts.Length > 0 ? module.Layouts[0] : null);
             if (layout == null)
             {
-                Debug.LogError("SolarRowBuilder: no layout to author the prefab in. Run " +
-                               "Cosmic Simulation > Build Layout Presets first.");
+                Debug.LogError($"SolarRowBuilder: no layout to author '{profile.Id}' in. For our own system " +
+                               "run Cosmic Simulation > Build Layout Presets; for any other, select the " +
+                               "profile and run Cosmic Simulation > Build System Layouts.");
                 return;
             }
 
@@ -192,7 +260,7 @@ namespace CosmicSimulation.EditorTools
             Directory.CreateDirectory(OutputFolder);
             AssetDatabase.Refresh();
 
-            var root = new GameObject(OutputName);
+            var root = new GameObject(profile.ContentPrefabName);
             var tracker = BuildTracker(root.transform);
             var homes = Group("homes", root.transform);
             var group = Group("bodies", root.transform);
@@ -201,12 +269,18 @@ namespace CosmicSimulation.EditorTools
             var built = new List<Built>();
             var missing = new List<string>();
 
-            foreach (var id in Order)
+            foreach (var body in profile.Bodies)
             {
-                var entry = BuildBody(id, layout, group, homes, panels, panelPrefab, beam, tracker);
+                if (body == null || string.IsNullOrEmpty(body.Id))
+                {
+                    missing.Add("(unnamed entry)");
+                    continue;
+                }
+
+                var entry = BuildBody(body, layout, group, homes, panels, panelPrefab, beam, tracker);
                 if (entry == null)
                 {
-                    missing.Add(id);
+                    missing.Add(body.Id);
                     continue;
                 }
 
@@ -220,13 +294,13 @@ namespace CosmicSimulation.EditorTools
                 return;
             }
 
-            WireSunlight(root.transform, built);
-            WireSaturnRings(built);
+            WireStarlight(root.transform, built);
+            WireRingVisuals(built);
 
             var rig = root.AddComponent<LayoutRig>();
             WireRig(rig, module, layout, built);
 
-            var path = $"{OutputFolder}/{OutputName}.prefab";
+            var path = $"{OutputFolder}/{profile.ContentPrefabName}.prefab";
             var saved = PrefabUtility.SaveAsPrefabAsset(root, path, out var success);
             Object.DestroyImmediate(root);
 
@@ -240,24 +314,42 @@ namespace CosmicSimulation.EditorTools
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Report(built, missing, layout, module, path);
+            Report(profile, built, missing, layout, module, path);
         }
 
         // ---------- one body
 
-        private static Built BuildBody(string id, LayoutPreset layout, Transform group, Transform homes,
+        private static Built BuildBody(SystemBody body, LayoutPreset layout, Transform group, Transform homes,
                                        Transform panels, GameObject panelPrefab, GameObject beam,
                                        ControllerTransformTracker tracker)
         {
-            var sourcePath = $"{SourceFolder}/poi_{id}_prefab.prefab";
-            var source = AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath);
+            var id = body.Id;
+
+            // A body with art of its own uses it. A body without gets one built from its published parameters,
+            // shaped so that everything below this point cannot tell the difference.
+            var source = body.SourcePrefab;
             if (source == null)
             {
-                Debug.LogError($"SolarRowBuilder: no source prefab at {sourcePath}; '{id}' skipped.");
+                source = GenericBodyBuilder.EnsureBodyPrefab(body, out var note);
+                if (source == null)
+                {
+                    Debug.LogError($"SolarRowBuilder: '{id}' has no source prefab and no generic one could be " +
+                                   $"built ({note}); skipped.");
+                    return null;
+                }
+
+                Debug.Log($"SolarRowBuilder: '{id}' has no art of its own, so it was built from parameters — " +
+                          $"{note}");
+            }
+
+            var sourcePath = AssetDatabase.GetAssetPath(source);
+            if (string.IsNullOrEmpty(sourcePath))
+            {
+                Debug.LogError($"SolarRowBuilder: '{id}' names a prefab that is not an asset; skipped.");
                 return null;
             }
 
-            var info = LoadBodyInfo(id);
+            var info = body.Info ?? LoadBodyInfo(id);
             if (info == null)
             {
                 Debug.LogWarning($"SolarRowBuilder: no BodyInfo with Id '{id}' in {BodyFolder}; the body is " +
@@ -392,7 +484,9 @@ namespace CosmicSimulation.EditorTools
             placementSo.FindProperty("restoreSeconds").floatValue = RestoreSeconds;
             placementSo.ApplyModifiedPropertiesWithoutUndo();
 
-            if (id == "sun")
+            // Keyed off the body's role rather than off the id "sun", so the touch response lands on whatever
+            // star a system has. For our own system the two are the same object, which is the point.
+            if (body.IsStar)
             {
                 AddSunTouch(bodyRoot, visual.transform, surfaceRenderer);
             }
@@ -421,6 +515,8 @@ namespace CosmicSimulation.EditorTools
             return new Built
             {
                 Id = id,
+                Role = body.Role,
+                Provenance = body.Provenance,
                 Info = info,
                 Root = bodyRoot,
                 Home = home,
@@ -826,16 +922,23 @@ namespace CosmicSimulation.EditorTools
         }
 
         /// <summary>
-        /// Points every <c>SunLightReceiver</c> at our own Sun. Left unset it calls <c>GameObject.Find("Sun")</c>
-        /// from <c>LateUpdate</c>, once per receiver per frame, forever — a whole-scene search on a Quest 3.
+        /// Points every <c>SunLightReceiver</c> at the system's star. Left unset it calls
+        /// <c>GameObject.Find("Sun")</c> from <c>LateUpdate</c>, once per receiver per frame, forever — a
+        /// whole-scene search on a Quest 3.
+        ///
+        /// <para>The star is the first body with <see cref="BodyRole.Star"/>, not the body called "sun", so a
+        /// system whose star has any other name is lit. A system with two stars is lit by the first of them
+        /// only: <c>SunLightReceiver</c> takes one transform, and a second light direction is a shader change
+        /// rather than a wiring one.</para>
         /// </summary>
-        private static void WireSunlight(Transform root, List<Built> built)
+        private static void WireStarlight(Transform root, List<Built> built)
         {
-            var sun = built.FirstOrDefault(b => b.Id == "sun");
-            var target = sun != null ? (sun.SurfaceNode != null ? sun.SurfaceNode : sun.Root.transform) : null;
+            var star = built.FirstOrDefault(b => b.Role == BodyRole.Star);
+            var target = star != null ? (star.SurfaceNode != null ? star.SurfaceNode : star.Root.transform) : null;
             if (target == null)
             {
-                Debug.LogWarning("SolarRowBuilder: no Sun was built, so the other bodies have no light direction.");
+                Debug.LogWarning("SolarRowBuilder: no star was built, so the other bodies have no light " +
+                                 "direction and will be lit from wherever an object called 'Sun' happens to be.");
                 return;
             }
 
@@ -848,27 +951,38 @@ namespace CosmicSimulation.EditorTools
             }
 
             Debug.Log($"SolarRowBuilder: {wired} SunLightReceiver components pointed at '{target.name}'.");
+
+            var stars = built.Count(b => b.Role == BodyRole.Star);
+            if (stars > 1)
+            {
+                Debug.LogWarning($"SolarRowBuilder: this system has {stars} stars and every body is lit by " +
+                                 $"'{target.name}' alone. The planets of a circumbinary system orbit the pair's " +
+                                 "barycentre and are lit by both; neither is modelled here.");
+            }
         }
 
         /// <summary>
         /// <c>SaturnVisual</c> reads a content root's scale every <c>LateUpdate</c> and dereferences it without a
         /// check; in the orbit model that was the view root. Here the body is its own root, so the ring radii
         /// follow the body's size rather than a scene's.
+        ///
+        /// <para>Run over every body rather than over Saturn by name. Only Saturn's prefab carries the
+        /// component today, so this writes exactly what it always wrote, but a body is now found by what is on
+        /// it rather than by what it is called — and a second ringed body would otherwise have silently
+        /// dereferenced null every frame.</para>
         /// </summary>
-        private static void WireSaturnRings(List<Built> built)
+        private static void WireRingVisuals(List<Built> built)
         {
-            var saturn = built.FirstOrDefault(b => b.Id == "saturn");
-            if (saturn == null)
+            foreach (var entry in built)
             {
-                return;
-            }
-
-            foreach (var visual in saturn.Root.GetComponentsInChildren<GalaxyExplorer.SaturnVisual>(true))
-            {
-                visual.contentRoot = saturn.Root;
-                EditorUtility.SetDirty(visual);
-                Debug.Log("SolarRowBuilder: SaturnVisual now reads Saturn's own scale for its ring radii. Its " +
-                          "_InnerRingRadius/_OuterRingRadius will want retuning on the headset (CS-048).");
+                foreach (var visual in entry.Root.GetComponentsInChildren<GalaxyExplorer.SaturnVisual>(true))
+                {
+                    visual.contentRoot = entry.Root;
+                    EditorUtility.SetDirty(visual);
+                    Debug.Log($"SolarRowBuilder: SaturnVisual on '{entry.Id}' now reads that body's own scale " +
+                              "for its ring radii. Its _InnerRingRadius/_OuterRingRadius will want retuning on " +
+                              "the headset (CS-048).");
+                }
             }
         }
 
@@ -970,17 +1084,31 @@ namespace CosmicSimulation.EditorTools
         /// GDD 4.1 without opening the prefab: how many bodies, what each one was made from, how big it came out,
         /// where it sits, and how close any two of them come to touching.
         /// </summary>
-        private static void Report(List<Built> built, List<string> missing, LayoutPreset layout,
-                                   ExperienceModule module, string path)
+        private static void Report(SystemProfile profile, List<Built> built, List<string> missing,
+                                   LayoutPreset layout, ExperienceModule module, string path)
         {
             var text = new StringBuilder();
-            text.AppendLine($"SolarRowBuilder: {built.Count} of {Order.Length} bodies written to {path}, " +
-                            $"authored in '{layout.DisplayName}' ({layout.Slots.Length} slots, " +
+            text.AppendLine($"SolarRowBuilder: '{profile.Id}' ({profile.DisplayName}) — {built.Count} of " +
+                            $"{profile.Bodies.Length} bodies written to {path}, authored in " +
+                            $"'{layout.DisplayName}' ({layout.Slots.Length} slots, " +
                             $"{layout.TransitionSeconds:F2} s transition) and hung on module '{module.Id}'.");
 
             if (missing.Count > 0)
             {
                 text.AppendLine($"  MISSING: {string.Join(", ", missing)}");
+            }
+
+            // The line D-010 exists for. A body drawn from parameters has no observed surface, and its panel
+            // has to say so; a run that quietly produced twelve of them would be the failure that decision was
+            // written to prevent.
+            var modelled = built.Where(b => b.Provenance == AppearanceSource.Modelled).Select(b => b.Id).ToArray();
+            if (modelled.Length > 0)
+            {
+                text.AppendLine(
+                    $"  MODELLED APPEARANCE ({modelled.Length}): {string.Join(", ", modelled)}. These bodies " +
+                    "have no observed surface imagery — none exists — so their colour is derived from " +
+                    "published physical quantities by a declared convention. Their panel copy must say so " +
+                    "(D-010).");
             }
 
             var vertices = 0;
@@ -999,7 +1127,8 @@ namespace CosmicSimulation.EditorTools
                     $"visual={entry.VisualSpan * entry.Diameter * 100f,7:F2} cm ({entry.VisualSpan:F2}x)  " +
                     $"norm={entry.Normalised:F4}{flag}");
                 text.AppendLine(
-                    $"           from {entry.Source} :: {entry.TiltNode} / {entry.SurfaceName}, " +
+                    $"           {entry.Role}, appearance {entry.Provenance}, from {entry.Source} :: " +
+                    $"{entry.TiltNode} / {entry.SurfaceName}, " +
                     $"authored {entry.SourceDiameter:F4} -> x{1f / entry.SourceDiameter:F3}, " +
                     $"{entry.Stripped} legacy components stripped, {entry.Renderers} renderers, " +
                     $"{entry.Vertices} verts");
@@ -1058,7 +1187,7 @@ namespace CosmicSimulation.EditorTools
             ReportRings(text, built, module, layout);
 
             text.AppendLine(
-                $"  weight: {renderers} renderers, {vertices} vertices across the ten bodies.");
+                $"  weight: {renderers} renderers, {vertices} vertices across {built.Count} bodies.");
             text.AppendLine(
                 $"  grab: nothing smaller than {GrabDiameter * 100f:F0} cm to the hand; a pull grows a body to " +
                 $"{PullDiameter * 100f:F0} cm; two hands are limited to 5 cm - 3 m (ScaleLimits.Kind.Body).");

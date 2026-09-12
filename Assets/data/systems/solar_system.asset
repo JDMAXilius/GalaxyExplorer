@@ -1,0 +1,180 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a1d82b3ba3579645924b6713dbbf000, type: 3}
+  m_Name: solar_system
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.SystemProfile
+  Id: solar_system
+  DisplayName: Our Solar System
+  Module: {fileID: 11400000, guid: 36d3a6ad63f2f794a97ab01c68764bd6, type: 2}
+  ContentPrefabName: solar_system_planets_content_prefab
+  AuthoredLayoutId: solar_row
+  Bodies:
+  - Id: sun
+    Role: 0
+    Info: {fileID: 11400000, guid: 57cc73ef361647549bd765796a0d2805, type: 2}
+    SourcePrefab: {fileID: 1643589125921812, guid: ac1470558d9973740a20c0a37abdad3a, type: 3}
+    DiameterKm: 1392700
+    OrbitSemiMajorAu: 0
+    Appearance:
+      Class: 0
+      IlluminantTemperatureK: 5772
+      EquilibriumTemperatureK: 0
+      InsolationEarth: 0
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0
+  - Id: mercury
+    Role: 1
+    Info: {fileID: 11400000, guid: f0aaf420eb7ed904fa92ec81fe1878d8, type: 2}
+    SourcePrefab: {fileID: 1259350673869148, guid: 225b2bfd78fd7e041af8cd1fc3016f3d, type: 3}
+    DiameterKm: 4879
+    OrbitSemiMajorAu: 0
+    Appearance:
+      Class: 0
+      IlluminantTemperatureK: 5772
+      EquilibriumTemperatureK: 0
+      InsolationEarth: 0
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0
+  - Id: venus
+    Role: 1
+    Info: {fileID: 11400000, guid: 77715e1fba50af547976450a06af764e, type: 2}
+    SourcePrefab: {fileID: 1038226900464428, guid: f2b8bee34b0faf8448abea9c5832018b, type: 3}
+    DiameterKm: 12104
+    OrbitSemiMajorAu: 0
+    Appearance:
+      Class: 0
+      IlluminantTemperatureK: 5772
+      EquilibriumTemperatureK: 0
+      InsolationEarth: 0
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0
+  - Id: earth
+    Role: 1
+    Info: {fileID: 11400000, guid: 1d1744c55b1db7a44bf4de4327cdab3d, type: 2}
+    SourcePrefab: {fileID: 1156133316895304, guid: bc5f2d93842f5584999ba3a17d859f1c, type: 3}
+    DiameterKm: 12742
+    OrbitSemiMajorAu: 0
+    Appearance:
+      Class: 0
+      IlluminantTemperatureK: 5772
+      EquilibriumTemperatureK: 0
+      InsolationEarth: 0
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0
+  - Id: mars
+    Role: 1
+    Info: {fileID: 11400000, guid: 44bdfe792eff186438ec2c71d4faa3a5, type: 2}
+    SourcePrefab: {fileID: 1016721853542446, guid: 5f83d016fa60cbb4eb99ba7794345276, type: 3}
+    DiameterKm: 6779
+    OrbitSemiMajorAu: 0
+    Appearance:
+      Class: 0
+      IlluminantTemperatureK: 5772
+      EquilibriumTemperatureK: 0
+      InsolationEarth: 0
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0
+  - Id: jupiter
+    Role: 1
+    Info: {fileID: 11400000, guid: be9b1f8fd0603b947a7507c5500cffb0, type: 2}
+    SourcePrefab: {fileID: 1412934807682780, guid: ad83fcd88d1c833449e130e6e8fb0197, type: 3}
+    DiameterKm: 139820
+    OrbitSemiMajorAu: 0
+    Appearance:
+      Class: 0
+      IlluminantTemperatureK: 5772
+      EquilibriumTemperatureK: 0
+      InsolationEarth: 0
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0
+  - Id: saturn
+    Role: 1
+    Info: {fileID: 11400000, guid: 9bf50b92ca7516e4cb139e406ff436f7, type: 2}
+    SourcePrefab: {fileID: 1752569321218954, guid: 5961d5d78d5a2a44ba5086802a2d2778, type: 3}
+    DiameterKm: 116460
+    OrbitSemiMajorAu: 0
+    Appearance:
+      Class: 0
+      IlluminantTemperatureK: 5772
+      EquilibriumTemperatureK: 0
+      InsolationEarth: 0
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0
+  - Id: uranus
+    Role: 1
+    Info: {fileID: 11400000, guid: 18c8b19d7afa82746a3bff61c3c1bd23, type: 2}
+    SourcePrefab: {fileID: 1398306140611038, guid: 255a48b2a3892c240a53d3ba2fc97828, type: 3}
+    DiameterKm: 50724
+    OrbitSemiMajorAu: 0
+    Appearance:
+      Class: 0
+      IlluminantTemperatureK: 5772
+      EquilibriumTemperatureK: 0
+      InsolationEarth: 0
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0
+  - Id: neptune
+    Role: 1
+    Info: {fileID: 11400000, guid: f6fe938c46a77e74e85216731ff66e2e, type: 2}
+    SourcePrefab: {fileID: 1125920926886276, guid: 72b2b14c122d5f9449ca23154f43e1a9, type: 3}
+    DiameterKm: 49244
+    OrbitSemiMajorAu: 0
+    Appearance:
+      Class: 0
+      IlluminantTemperatureK: 5772
+      EquilibriumTemperatureK: 0
+      InsolationEarth: 0
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0
+  - Id: pluto
+    Role: 2
+    Info: {fileID: 11400000, guid: 0a2320c3588a253468914253eb626734, type: 2}
+    SourcePrefab: {fileID: 1428833266870566, guid: e34c77ad5a997fc47b26bbafcd17f274, type: 3}
+    DiameterKm: 2377
+    OrbitSemiMajorAu: 0
+    Appearance:
+      Class: 0
+      IlluminantTemperatureK: 5772
+      EquilibriumTemperatureK: 0
+      InsolationEarth: 0
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0
