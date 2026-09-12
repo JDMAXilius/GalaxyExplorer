@@ -6,6 +6,45 @@ you change one, update the affected docs in the same commit.
 
 ---
 
+## 2026-09-12 — Phase 6
+
+### D-007 · Music ducks under narration — **awaiting owner sign-off**
+**Decision (provisional).** While `VOManager` is speaking, music drops to 55 % of
+its level over 0.35 s and comes back the same way.
+**Why.** GDD §9 says nothing about ducking; it separates the two layers by
+mastering alone (−16 LUFS music against −14 narration, 2 dB apart). Two dB is
+not much room, and the narration plays from a spatial pooled source at the
+camera while the bed is flat 2D, so the bed is the thing that blurs consonants.
+The duck is one multiplier on our own two sources — nothing touches the
+narration itself — and setting `narrationDuck` to 1 on the component turns it
+off entirely.
+
+### D-006 · Which music bed belongs to which room state — **awaiting owner sign-off**
+**Decision (provisional).** GDD §9 asks for one ambient track per environment
+mode and names the three tracks the project owns, but not which is which. There
+are four modes, so one track is used twice:
+
+| Room state | Bed |
+|---|---|
+| Passthrough | `background_music_audio_clip` |
+| Dimmed | `bgm_system_audio_clip` |
+| Black halo | `bgm_galaxy_audio_clip` |
+| Full black | `bgm_galaxy_audio_clip` |
+
+**Why.** `background_music` is the neutral bed the app has always played, which
+suits the state where the player's own room is the backdrop. The dimmed state
+covers the solar system, the planets row and Andromeda — the places you are
+looking *at* something — and the two dark states put you *in* deep space, so
+they share the galaxy bed. Sharing also means opening a nebula inside the Milky
+Way map does not change the music under the map.
+**Consequence.** The mapping lives in `ExperienceWiring.MusicTracks` and is
+written into `MusicController.tracks` in the boot scene; changing it is an
+inspector edit, or a one-line edit plus re-running *Install Runtime Systems*.
+Levels (0.35 on every track) still need a listening pass against the GDD's
+−16 LUFS target.
+
+---
+
 ## 2026-09-11 — Phase 0 kick-off decisions
 
 ### D-005 · Phase 4 runs before Phase 5

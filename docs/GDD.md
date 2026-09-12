@@ -352,6 +352,8 @@ Two cards, 200 × 120 mm, shown once after the intro's Earth placement, each wit
 
 Spatialisation: Unity 3D panning (no plugin). Loudness target −16 LUFS music, −14 narration.
 
+Which of the three tracks plays in which environment mode is not fixed here; the working mapping (four modes, three tracks, black halo and full black share one) is decision D-006, pending sign-off. Music ducks to 55 % while narration speaks — decision D-007, not a requirement of this document.
+
 ---
 
 ## 10. Copy and content

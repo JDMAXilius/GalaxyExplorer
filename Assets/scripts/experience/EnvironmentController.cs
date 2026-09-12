@@ -1,5 +1,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System;
 using System.Collections.Generic;
 using GalaxyExplorer;
 using UnityEngine;
@@ -48,6 +49,7 @@ namespace CosmicSimulation
         private float _dimTarget;
         private float _dimSpeed = 1f / DefaultFade;
         private readonly List<BlackHalo> _halos = new List<BlackHalo>();
+        private EnvironmentMode _broadcast = EnvironmentMode.Passthrough;
 
         public static EnvironmentController Instance { get; private set; }
 
@@ -56,6 +58,25 @@ namespace CosmicSimulation
 
         /// <summary>True while the player has forced the room visible from the dock.</summary>
         public bool PassthroughForced { get; private set; }
+
+        /// <summary>The state the room is actually in: what the experience asked for, unless the player overrode it.</summary>
+        public EnvironmentMode EffectiveMode => PassthroughForced ? EnvironmentMode.Passthrough : Mode;
+
+        /// <summary>
+        /// Raised with <see cref="EffectiveMode"/> when it changes, and only then — <see cref="Set"/> is called on
+        /// every experience switch, including switches that ask for the state the room is already in, and a
+        /// subscriber that re-reacted to those would restart whatever it is driving. Nothing is raised for the
+        /// opening state, since there is no change: late subscribers read <see cref="EffectiveMode"/> instead.
+        /// </summary>
+        public static event Action<EnvironmentMode> ModeChanged;
+
+        // Play mode can start without a domain reload, which would otherwise leave last session's dead
+        // subscribers on a static event.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            ModeChanged = null;
+        }
 
         private void Awake()
         {
@@ -111,7 +132,7 @@ namespace CosmicSimulation
 
         private void Apply(float fadeSeconds)
         {
-            var effective = PassthroughForced ? EnvironmentMode.Passthrough : Mode;
+            var effective = EffectiveMode;
 
             // Full black is the headset's VR mode; everything else keeps passthrough on underneath.
             var wantsVR = effective == EnvironmentMode.FullBlack;
@@ -133,6 +154,13 @@ namespace CosmicSimulation
                 {
                     halo.SetVisible(effective == EnvironmentMode.BlackHalo);
                 }
+            }
+
+            // Last, so anything listening sees a room that has already been told what to do.
+            if (effective != _broadcast)
+            {
+                _broadcast = effective;
+                ModeChanged?.Invoke(effective);
             }
         }
 
