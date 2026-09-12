@@ -89,6 +89,9 @@ namespace CosmicSimulation
         private CanvasGroup _group;
         private Camera _camera;
         private bool _shown;
+
+        // Last value LateUpdate sounded on, so the open/close clip fires on the change and not every frame.
+        private bool _sounded;
         private float _side = 1f;
         private const float SideSwitchDistance = 0.12f;
 
@@ -306,7 +309,17 @@ namespace CosmicSimulation
 
         private void LateUpdate()
         {
-            var wanted = WantsToShow() ? 1f : 0f;
+            // Edge-triggered, not hooked to Show()/Hide(). Those are idempotent setters that callers drive
+            // every frame, and real visibility is this recomputed predicate, so hooking them would sound on
+            // every spawn and stay silent on a body-driven open.
+            var want = WantsToShow();
+            if (want != _sounded)
+            {
+                _sounded = want;
+                AudioService.Instance?.PlayClip(want ? AudioId.CardSelect : AudioId.CardDeselect);
+            }
+
+            var wanted = want ? 1f : 0f;
             if (!Mathf.Approximately(_group.alpha, wanted))
             {
                 _group.alpha = fadeSeconds <= 0f

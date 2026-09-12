@@ -540,6 +540,11 @@ namespace CosmicSimulation
         /// <summary>Scales content up from nothing, the one transition this app uses.</summary>
         private static IEnumerator GrowIn(Transform content, float seconds)
         {
+            // No target transform on purpose: the whoosh belongs to the arrival, not to the object, so it
+            // must outlive content that a second switch destroys mid-grow. The id has no clip yet, and
+            // PlayClip simply does nothing until one is assigned, so this can ship ahead of the sound.
+            AudioService.Instance?.PlayClip(AudioId.GrowIn);
+
             var target = content.localScale;
             var elapsed = 0f;
             content.localScale = Vector3.zero;

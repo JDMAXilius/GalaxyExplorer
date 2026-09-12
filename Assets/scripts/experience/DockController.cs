@@ -278,6 +278,9 @@ namespace CosmicSimulation
             }
 
             _visible = visible;
+
+            // Guarded by the equality check above, so a held palm that re-asserts the same state stays silent.
+            AudioService.Instance?.PlayClip(visible ? AudioId.DockShow : AudioId.DockHide);
             if (tileRow != null)
             {
                 tileRow.gameObject.SetActive(visible);
