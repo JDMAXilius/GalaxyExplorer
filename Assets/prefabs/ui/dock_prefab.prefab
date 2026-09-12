@@ -807,7 +807,9 @@ MonoBehaviour:
   helpButton: {fileID: 8842127710400153393}
   dragBar: {fileID: 4977014282212378471}
   distanceMetres: 0.75
-  heightMetres: 0.9
+  heightFractionOfHead: 0.55
+  minimumHeightMetres: 0.7
+  assumedEyeHeightMetres: 1.6
   tiltDegrees: 25
   tilePitch: 114
   palmDwellSeconds: 0.5

@@ -13,6 +13,13 @@ Shader "Planets/Sun"
 
 		_TintColor("Tint", Color) = (1,1,1,1)
 
+		// Driven per renderer by SunTouchResponse through a MaterialPropertyBlock, so the material asset keeps
+		// the rest value and four prefabs can share this material while only the one being touched brightens.
+		// Zero has to leave the shading arithmetic untouched: both gains below enter as (1 + 0 * gain) = 1.
+		_TouchBrightness("Touch Brightness", Range(0, 1)) = 0
+		_TouchBodyGain("Touch Body Gain", Range(0, 4)) = 0.7
+		_TouchRimGain("Touch Rim Gain", Range(0, 4)) = 1.5
+
 		_AddCycleParams("AddCycle(X, X, Speed, PhaseOffset", vector) = (0,1,1,0)
 		_CycleParams("(Add Offset, Add Scale, Mult Offset, Mult Scale)", vector) = (0,0,0,0)
 
@@ -42,6 +49,10 @@ Shader "Planets/Sun"
 
 				#pragma vertex vert
 				#pragma fragment frag
+				// Without this the STEREO_INSTANCING_ON variant is never compiled, so the instancing macros below
+				// do nothing and both eyes would draw with the left eye's matrices under Single Pass Instanced
+				// (Windows/Link). Android multiview does not need it; compiling it costs one variant.
+				#pragma multi_compile_instancing
 
 				#include "UnityCG.cginc"
 				#include "cginc/NearClip.cginc"
@@ -51,6 +62,7 @@ Shader "Planets/Sun"
 					float4 vertex : POSITION;
 					float3 normal : NORMAL0;
 					float2 uv : TEXCOORD0;
+					UNITY_VERTEX_INPUT_INSTANCE_ID
 				};
 
 				struct v2f
@@ -61,6 +73,7 @@ Shader "Planets/Sun"
 					float3 fresnel : TEXCOORD1;
 					float timeParameters : TEXCOORD2;
 					float  clipAmount : TEXCOORD3;
+					UNITY_VERTEX_OUTPUT_STEREO
 				};
 
 				sampler2D _MainTex;
@@ -72,6 +85,9 @@ Shader "Planets/Sun"
 				float4 _TintColor;
 				float _TransitionAlpha;
 				float4 _CycleParams;
+				float _TouchBrightness;
+				float _TouchBodyGain;
+				float _TouchRimGain;
 
 #define TWOPI ((min16float)6.2831853)
 				
@@ -81,6 +97,10 @@ Shader "Planets/Sun"
 				v2f vert(appdata v)
 				{
 					v2f o;
+					// Before any unity_ObjectToWorld read: under instancing that matrix is indexed by the id.
+					UNITY_SETUP_INSTANCE_ID(v);
+					UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
 					float3 wPos = mul(unity_ObjectToWorld, v.vertex);
 					o.vertex = UnityObjectToClipPos(v.vertex);
 					o.uv = v.uv;
@@ -118,7 +138,16 @@ Shader "Planets/Sun"
 					cycles.x = sin(sinFactor) * _CycleParams.y + _CycleParams.x;
 					cycles.y = cos(sinFactor) * _CycleParams.w + _CycleParams.z;
 
-					min16float4 finalColor = min16float4(baseColor * saturate(cycles.y) + cycles.x * (min16float3)i.fresnel.xyz, (min16float)_TransitionAlpha);
+					// A hand inside the Sun brightens it (GDD F-16). The rim is pushed harder than the disc so the
+					// limb flares and it reads as the surface swelling rather than the texture being washed out.
+					min16float touch = (min16float)_TouchBrightness;
+					min16float bodyGain = (min16float)1.0 + touch * (min16float)_TouchBodyGain;
+					min16float rimGain = (min16float)1.0 + touch * (min16float)_TouchRimGain;
+
+					min16float3 litColor = baseColor * saturate(cycles.y) * bodyGain +
+						cycles.x * (min16float3)i.fresnel.xyz * rimGain;
+
+					min16float4 finalColor = min16float4(litColor, (min16float)_TransitionAlpha);
 
 					return ApplyVertClipAmount(finalColor, i.clipAmount);
 				}

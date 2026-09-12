@@ -15,6 +15,11 @@ namespace CosmicSimulation
     /// it or asks to recentre — it does not follow the head around, which would make it impossible to look away
     /// from.
     ///
+    /// Chest height is derived from the player rather than fixed, because a seated player and a standing one do
+    /// not have the same chest (GDD 11). The height is a fraction of the eye height with a floor under it, and it
+    /// is sampled once per recentre: re-deriving it every frame would make the dock ride up and down as the
+    /// player leans, which is the following behaviour the parking rule exists to avoid.
+    ///
     /// Showing and hiding is palm-up on the left hand in the headset (held briefly, so a passing gesture does
     /// not flash it) and Tab on the desktop.
     /// </summary>
@@ -37,8 +42,20 @@ namespace CosmicSimulation
         private float distanceMetres = 0.75f;
 
         [SerializeField]
-        [Tooltip("Metres above the floor.")]
-        private float heightMetres = 0.9f;
+        [Tooltip("Dock height as a fraction of the player's eye height, sampled at recentre. 0.55 of a 1.6 m " +
+                 "eye height is the 0.88 m chest height the dock used to be pinned to.")]
+        [Range(0.2f, 1f)]
+        private float heightFractionOfHead = 0.55f;
+
+        [SerializeField]
+        [Tooltip("Metres above the floor the dock never drops below, however low the player is sitting. Below " +
+                 "this the tiles are hard to reach over a lap or a desk.")]
+        private float minimumHeightMetres = 0.7f;
+
+        [SerializeField]
+        [Tooltip("Eye height in metres assumed when there is no headset to measure — desktop, and the first " +
+                 "recentre before tracking has settled.")]
+        private float assumedEyeHeightMetres = 1.6f;
 
         [SerializeField]
         [Tooltip("Degrees tilted up toward the face.")]
@@ -77,11 +94,20 @@ namespace CosmicSimulation
         private bool _palmLatched;
         private bool _visible = true;
 
+        // Sampled at recentre only. See the class comment for why this is not recomputed per frame.
+        private float _heightMetres;
+        private bool _heightSampled;
+
         public static DockController Instance { get; private set; }
 
         public IReadOnlyList<DockTile> Tiles => _tiles;
 
         public bool IsVisible => _visible;
+
+        /// <summary>Metres above the floor the dock was parked at by the last recentre.</summary>
+        public float HeightMetres => _heightSampled
+            ? _heightMetres
+            : Mathf.Max(assumedEyeHeightMetres * heightFractionOfHead, minimumHeightMetres);
 
         private void Awake()
         {
@@ -190,17 +216,31 @@ namespace CosmicSimulation
 
             forward.Normalize();
 
-            var origin = new Vector3(head.position.x, head.position.y - GuessEyeHeight(), head.position.z);
-            transform.position = origin + forward * distanceMetres + Vector3.up * heightMetres;
+            // One eye height answers both questions, so the floor the dock measures up from and the height it
+            // measures cannot disagree with each other.
+            var eyeHeight = EyeHeight();
+            _heightMetres = Mathf.Max(eyeHeight * heightFractionOfHead, minimumHeightMetres);
+            _heightSampled = true;
+
+            var origin = new Vector3(head.position.x, head.position.y - eyeHeight, head.position.z);
+            transform.position = origin + forward * distanceMetres + Vector3.up * _heightMetres;
             transform.rotation = Quaternion.LookRotation(forward, Vector3.up) * Quaternion.Euler(-tiltDegrees, 0f, 0f);
         }
 
-        // The rig reports floor-relative tracking, but on desktop there is no floor, so fall back to a
-        // plausible standing height rather than putting the dock around the player's knees.
-        private float GuessEyeHeight()
+        // In the headset the rig tracks floor-relative, so the camera's own height is the head height. On the
+        // desktop the camera is a free-flying preview that can be orbited anywhere, and its height says nothing
+        // about the person at the keyboard; a headset that has not produced a pose yet reads near zero for the
+        // same reason. Both fall back to a nominal standing eye height rather than parking the dock at the
+        // player's knees or over their head.
+        private float EyeHeight()
         {
+            if (!UnityEngine.XR.XRSettings.isDeviceActive)
+            {
+                return assumedEyeHeightMetres;
+            }
+
             var y = _camera != null ? _camera.transform.position.y : 0f;
-            return y > 0.5f ? y : 1.6f;
+            return y > 0.5f ? y : assumedEyeHeightMetres;
         }
 
         /// <summary>Moves the whole dock, for the drag bar underneath it.</summary>
