@@ -1,6 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -24,6 +25,38 @@ namespace GalaxyExplorer.Build
     {
         private const string OpenXRLoader = "UnityEngine.XR.OpenXR.OpenXRLoader";
         private const string AndroidPackageId = "com.jdmaxilius.cosmicsimulationxr";
+
+        /// <summary>
+        /// The app version, owned here for the same reason the bundle id above is (decision D-001a):
+        /// <see cref="ConfigureProject"/> runs at the start of every build and writes player settings from these
+        /// constants, so a number typed into Project Settings is silently reverted by the next build.
+        /// </summary>
+        /// <remarks>
+        /// 0.x until the first build is actually submitted to the Meta store; 1.0.0 is reserved for that build.
+        /// Bump the patch for a fix, the minor for a phase of the roadmap landing, and nothing else - the Android
+        /// version code is derived from this string and Meta refuses an upload whose code has not gone up.
+        /// </remarks>
+        public const string AppVersion = "0.9.0";
+
+        /// <summary>
+        /// Meta requires a monotonically increasing integer per upload. Deriving it from <see cref="AppVersion"/>
+        /// rather than keeping a second number means the two can never disagree: major * 10000 + minor * 100 +
+        /// patch, so 0.9.0 is 900 and 1.0.0 is 10000. Minor and patch must therefore stay below 100.
+        /// </summary>
+        public static int AndroidVersionCode => VersionCodeFor(AppVersion);
+
+        /// <summary>The MIT notice for the inherited Galaxy Explorer code, at the repository root.</summary>
+        private const string RootLicenseFile = "License.txt";
+
+        /// <summary>
+        /// Where that notice is copied so it ships inside the player. A Resources asset, not StreamingAssets:
+        /// on Android StreamingAssets lives inside the APK and can only be read through UnityWebRequest, and an
+        /// async read is a poor foundation for text that must always be displayable.
+        /// </summary>
+        private const string ShippedLicenseAsset = "Assets/Resources/legal/galaxy_explorer_license.txt";
+
+        /// <summary>Our own notice, kept as a separate file so the two copyrights are never merged.</summary>
+        private const string ProjectNoticeAsset = "Assets/Resources/legal/cosmic_simulation_xr_notice.txt";
 
         // Enabled for both Standalone (Quest Link) and Android (standalone Quest 3).
         private static readonly string[] CommonFeatures =
@@ -58,8 +91,10 @@ namespace GalaxyExplorer.Build
             OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android).renderMode = OpenXRSettings.RenderMode.SinglePassInstanced;
             OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Standalone).renderMode = OpenXRSettings.RenderMode.MultiPass;
 
+            ConfigureVersion(log);
             ConfigureAndroidPlayer(log);
             ConfigureQuality(log);
+            EnsureLegalNoticesShip(log);
 
             // "MS HRTF Spatializer" is a Windows-only plugin; Unity's built-in 3D panning is used instead.
             var audioManagerAsset = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/AudioManager.asset")[0];
@@ -90,6 +125,84 @@ namespace GalaxyExplorer.Build
                 EditorUtility.SetDirty(feature);
             }
             log.AppendLine($"[{group}] enabled: " + string.Join(", ", features.Where(f => f.enabled).Select(f => f.GetType().Name)));
+        }
+
+        private static void ConfigureVersion(StringBuilder log)
+        {
+            var parts = AppVersion.Split('.');
+            if (parts.Length != 3 || parts.Any(p => !int.TryParse(p, out _)))
+            {
+                Debug.LogError($"[Version] AppVersion '{AppVersion}' is not major.minor.patch; fix the constant in Quest3ProjectSetup.");
+            }
+            else if (int.Parse(parts[1]) > 99 || int.Parse(parts[2]) > 99)
+            {
+                // 1.2.100 and 1.3.0 would both derive to 10300 and Meta would reject the second upload as a repeat.
+                Debug.LogError($"[Version] AppVersion '{AppVersion}' has a minor or patch part above 99, which breaks the Android version code's ordering.");
+            }
+
+            var code = AndroidVersionCode;
+
+            // bundleVersion is not per-platform: this is Application.version in the Quest build and the desktop
+            // build alike, which is what the About slate reads.
+            PlayerSettings.bundleVersion = AppVersion;
+            PlayerSettings.Android.bundleVersionCode = code;
+            log.AppendLine($"Version {AppVersion} (Android version code {code})");
+        }
+
+        private static int VersionCodeFor(string version)
+        {
+            var parts = version.Split('.');
+            var code = 0;
+            for (var i = 0; i < 3; i++)
+            {
+                var part = i < parts.Length && int.TryParse(parts[i], out var n) ? n : 0;
+                code = (code * 100) + part;
+            }
+            return code;
+        }
+
+        /// <summary>
+        /// Copies the repository's <c>License.txt</c> into Resources so the MIT notice for the inherited Galaxy
+        /// Explorer code is inside the player, and checks our own notice is there too.
+        /// </summary>
+        /// <remarks>
+        /// The root file is the single source of truth; the shipped copy is regenerated from it rather than
+        /// maintained, so the two cannot drift. Returns false when the notice would not ship - a licence breach,
+        /// not a warning - so <c>Quest3Build</c> can stop before producing an APK that is not distributable.
+        /// </remarks>
+        public static bool EnsureLegalNoticesShip(StringBuilder log = null)
+        {
+            var projectRoot = Directory.GetParent(Application.dataPath).FullName;
+            var source = Path.Combine(projectRoot, RootLicenseFile);
+            var destination = Path.Combine(projectRoot, ShippedLicenseAsset);
+
+            if (!File.Exists(source))
+            {
+                Debug.LogError($"[Legal] {RootLicenseFile} is missing from the project root, so the MIT notice for the " +
+                               "inherited Galaxy Explorer code cannot be shipped. Restore it before building.");
+                return false;
+            }
+
+            var sourceText = File.ReadAllText(source);
+            if (!File.Exists(destination) || File.ReadAllText(destination) != sourceText)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(destination));
+                File.WriteAllText(destination, sourceText);
+                AssetDatabase.ImportAsset(ShippedLicenseAsset, ImportAssetOptions.ForceUpdate);
+                log?.AppendLine($"[Legal] refreshed {ShippedLicenseAsset} from {RootLicenseFile}");
+            }
+            else
+            {
+                log?.AppendLine($"[Legal] {ShippedLicenseAsset} matches {RootLicenseFile}");
+            }
+
+            if (!File.Exists(Path.Combine(projectRoot, ProjectNoticeAsset)))
+            {
+                Debug.LogError($"[Legal] {ProjectNoticeAsset} is missing; the app would ship Microsoft's notice with no notice of our own.");
+                return false;
+            }
+
+            return true;
         }
 
         private static void ConfigureAndroidPlayer(StringBuilder log)

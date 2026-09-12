@@ -13,6 +13,14 @@ namespace GalaxyExplorer
         public GameObject SlateContentParent;
         public float TransitionDuration = 1.0f;
 
+        [Header("Licence page")]
+        [SerializeField, Tooltip("Objects that make up the About page proper. Switched off while the licence page is showing.")]
+        private GameObject[] aboutPage = new GameObject[0];
+
+        [SerializeField, Tooltip("Objects that make up the full-licence page, off by default. Leave empty and the licence toggle does nothing.")]
+        private GameObject[] licencePage = new GameObject[0];
+
+        private bool _licencesAreShowing;
         private bool _aboutIsActive;
         private ZoomInOut _zoomInOut;
         private Collider[] _otherCollidersInScene;
@@ -23,7 +31,9 @@ namespace GalaxyExplorer
             AboutMaterial.SetFloat("_TransitionAlpha", 0f);
             _aboutIsActive = false;
 
-            _hyperlinkRenderers = SlateContentParent.GetComponentsInChildren<Renderer>();
+            // Include inactive children: the licence page starts switched off, and anything missing from this cache
+            // never gets its alpha driven and so renders at full opacity the moment it is switched on.
+            _hyperlinkRenderers = SlateContentParent.GetComponentsInChildren<Renderer>(true);
             SetHyperlinksTransitionAplha((0f));
 
             _zoomInOut = FindObjectOfType<ZoomInOut>();
@@ -61,8 +71,42 @@ namespace GalaxyExplorer
             }
         }
 
+        /// <summary>
+        /// Swaps the About page for the full MIT notice for the inherited Galaxy Explorer code. Hooked to a link on
+        /// the slate; the licence has to be readable in the app, not only in the repository.
+        /// </summary>
+        public void ToggleLicencePage()
+        {
+            ShowLicences(!_licencesAreShowing);
+        }
+
+        public void ShowLicences(bool show)
+        {
+            if (licencePage == null || licencePage.Length == 0)
+            {
+                return; // no licence page in this prefab yet; leave the About page exactly as it was
+            }
+
+            _licencesAreShowing = show;
+
+            if (aboutPage != null)
+            {
+                foreach (GameObject page in aboutPage)
+                {
+                    if (page != null) { page.SetActive(!show); }
+                }
+            }
+
+            foreach (GameObject page in licencePage)
+            {
+                if (page != null) { page.SetActive(show); }
+            }
+        }
+
         private void Show()
         {
+            ShowLicences(false); // the slate always opens on the About page, whatever it was closed on
+
             EnableOtherCollidersInScene(false);
 
             transform.position = Camera.main.transform.position + Camera.main.transform.forward * 2f;

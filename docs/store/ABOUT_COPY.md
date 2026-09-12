@@ -17,12 +17,14 @@ value before this ships. Do not publish with a placeholder still in it.
 
 **Version:** Cosmic Simulation XR {version}
 
-*Note: there is no version text on the About slate today - no text element
-in the prefab shows one, and no version constant is set anywhere in the
-project (`Application.version`/`PlayerSettings.bundleVersion` are left at
-Unity's default). Displaying a real version needs both a prefab change and a
-place to own the number, the same way `Quest3ProjectSetup` already owns the
-bundle id (see decision D-001a). Flagged as ticket CS-087.*
+*Updated 12 Sep 2026 (CS-113): the number now exists.
+`Quest3ProjectSetup.AppVersion` owns it - `0.9.0` - and every build writes it
+to `PlayerSettings.bundleVersion`, so `Application.version` is authoritative
+(see the D-001a extension in `docs/decisions.md`). The slate still has no text
+element showing it: add one and drop a `LegalNoticeText` on it with notice
+`Version`, which produces exactly "Cosmic Simulation XR 0.9.0" from the
+product name and version the build wrote. That is ticket CS-114 and it is
+prefab-only - do not type the number in.*
 
 **Body:**
 
@@ -42,6 +44,18 @@ planetary fact sheets. NASA does not endorse this app.
 
 Galaxy Explorer (c) Microsoft Corporation. Used under the MIT License. Full
 licence text: License.txt in the project source, or {SOURCE_URL}/blob/main/License.txt
+
+*Updated 12 Sep 2026 (CS-116): the full text now ships inside the app, so this
+line no longer has to carry the obligation on its own. The verbatim MIT text
+is `Assets/Resources/legal/galaxy_explorer_license.txt`, regenerated from the
+repo-root `License.txt` by the build script; our own copyright is the separate
+`cosmic_simulation_xr_notice.txt`. Do not merge the two, reword either, or
+paste the MIT text into this file - a `LegalNoticeText` component with notice
+`GalaxyExplorerLicense` reads it straight out of the shipped asset. The first
+sentence above is the same string as `LegalNotices.GalaxyExplorerAttribution`;
+if you change one, change the other. The slate element that shows the full
+text is ticket CS-117 (prefab surgery); until it exists, the notice ships in
+the APK but is not on screen.*
 
 **Credits line:**
 

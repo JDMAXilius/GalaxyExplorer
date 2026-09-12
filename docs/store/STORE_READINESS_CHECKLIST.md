@@ -45,15 +45,19 @@ there yet.
 
 ## Should do before submission
 
-- **[CC] CS-087 - Give the app an owned version number.** No version
-  constant exists anywhere in the project; `PlayerSettings.bundleVersion` is
-  whatever Unity's default is. Follow the pattern decision D-001a already set
-  for the bundle id: own it in `Quest3ProjectSetup`, not only in Project
-  Settings, so a build cannot silently revert it.
+- **[CC] CS-113 - Give the app an owned version number. DONE 12 Sep 2026,
+  unverified.** `Quest3ProjectSetup.AppVersion` is `0.9.0` and is written to
+  `PlayerSettings.bundleVersion` on every `ConfigureProject()`, with the
+  Android version code derived from it (`major*10000 + minor*100 + patch` =
+  900) so the two cannot drift. See the D-001a extension in
+  `docs/decisions.md`. Still needs a [TERM] check that one *Configure Project*
+  really rewrites `ProjectSettings.asset`, which still holds the stale `1.0`
+  / `1`.
 
-- **[TERM] CS-088 - Show the version on the About slate.** There is no text
-  element for it today. Needs a new UI element in
-  `about_slate_prefab.prefab` bound to the value CS-087 introduces.
+- **[TERM] CS-114 - Show the version on the About slate.** There is no text
+  element for it today. Needs a new UI element in `about_slate_prefab.prefab`
+  with a `LegalNoticeText` component set to notice `Version`; that fills
+  itself from `Application.version`, so no further code is needed.
 
 - **[TERM] CS-091 - Verify the exported `AndroidManifest.xml`.** There is no
   custom manifest in `Assets/Plugins/Android`; every permission the shipped
@@ -63,14 +67,18 @@ there yet.
   unexpected (for example `RECORD_AUDIO` or `INTERNET`) arrived transitively
   from a package. Needs a real build (pairs with CS-081).
 
-- **[CC] Bundle the MIT licence text with the build.** `License.txt` sits at
-  the repo root; it is not confirmed to ship inside the built APK or be
-  reachable from the About screen, and the MIT licence requires the notice to
-  travel with the software. A small build step that copies it into
-  `StreamingAssets` (or a "Licences" panel that reads it) would close this;
-  today the About screen's attribution line only points back at the source
-  repository (`docs/store/ABOUT_COPY.md`), which is weaker than shipping the
-  text itself.
+- **[CC] CS-116 - Bundle the MIT licence text with the build. DONE in code
+  12 Sep 2026, unverified; in-app half is [TERM] CS-117.**
+  `Quest3ProjectSetup.EnsureLegalNoticesShip()` copies the repo-root
+  `License.txt` verbatim into `Assets/Resources/legal/galaxy_explorer_license.txt`
+  on every `ConfigureProject()`, and `Quest3Build.BuildApk` aborts if it
+  cannot - a Resources asset rather than `StreamingAssets`, because on Android
+  StreamingAssets is only readable through `UnityWebRequest`. Our own notice
+  is the separate `cosmic_simulation_xr_notice.txt`; Microsoft's text is not
+  reworded, trimmed or merged with it. `LegalNotices` reads either at runtime
+  and `LegalNoticeText` writes one into a `TMP_Text`. **Remaining:** the About
+  slate has no element showing it yet (CS-117), and nobody has unpacked a
+  built APK to confirm the asset is inside it.
 
 - **Screenshots and a capture.** Needs the live app on a headset
   (`docs/COSMIC_SIMULATION_XR_ROADMAP.md` P7-T5, and CS-080/CS-081 in the

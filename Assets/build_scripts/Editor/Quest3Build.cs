@@ -21,6 +21,18 @@ namespace GalaxyExplorer.Build
         {
             Quest3ProjectSetup.ConfigureProject();
 
+            // An APK that does not carry the MIT notice for the inherited Galaxy Explorer code is not
+            // distributable, so refuse to produce one rather than leave the problem to be noticed at submission.
+            if (!Quest3ProjectSetup.EnsureLegalNoticesShip())
+            {
+                Debug.LogError("[GEBuild] Aborted: the legal notices would not ship with this APK. See the [Legal] errors above.");
+                if (Application.isBatchMode)
+                {
+                    EditorApplication.Exit(1);
+                }
+                return;
+            }
+
             var scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).Distinct().ToArray();
 
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions

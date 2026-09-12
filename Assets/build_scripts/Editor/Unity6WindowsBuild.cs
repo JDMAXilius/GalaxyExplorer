@@ -18,6 +18,11 @@ namespace GalaxyExplorer.Build
             // Mono, because only the Mono Windows player module is installed on this machine.
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
 
+            // The desktop build shows the same version on its About slate as the Quest build, and this script does
+            // not run Quest3ProjectSetup, so read the constant that owns it directly (decision D-001a).
+            PlayerSettings.bundleVersion = Quest3ProjectSetup.AppVersion;
+            Quest3ProjectSetup.EnsureLegalNoticesShip();
+
             var scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).Distinct().ToArray();
 
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions

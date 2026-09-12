@@ -1,0 +1,13 @@
+Cosmic Simulation XR
+Copyright (c) 2026 JDMAXilius
+
+Cosmic Simulation XR is a derivative work of Galaxy Explorer, published by
+Microsoft Corporation and released under the MIT License. Microsoft's
+copyright notice and the MIT permission notice are reproduced in full and
+unaltered, both inside this application and as License.txt in the project
+source. Nothing in this notice modifies, replaces or extends them, and
+Microsoft does not endorse this application.
+
+Imagery is used from NASA, ESA and the Hubble Space Telescope. NASA does not
+endorse this application. Every sourced and generated asset, together with its
+licence, is credited in Assets/_sources/CREDITS.md in the project source.

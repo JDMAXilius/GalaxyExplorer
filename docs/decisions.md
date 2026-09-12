@@ -90,6 +90,25 @@ to `CosmicSimulationXR.apk`.
 **Rule.** Identity and player settings are owned by `Quest3ProjectSetup`. Change
 them there; Project Settings alone will be overwritten by the next build.
 
+**Extended 12 Sep 2026 (CS-113) — the version number too.** The store-readiness
+audit found no version constant anywhere: `bundleVersion` sat at the inherited
+`1.0` and `AndroidBundleVersionCode` at `1`, owned by nothing and reverted by
+nothing, which is exactly the shape of the bug above waiting to happen again.
+`Quest3ProjectSetup.AppVersion` is now the single constant, written to
+`PlayerSettings.bundleVersion` on every `ConfigureProject()` (and by
+`Unity6WindowsBuild`, which does not call it, so the desktop build shows the
+same number). **Starting version `0.9.0`**: the app is content-complete but has
+never been submitted, and roadmap phases 6-7 are unfinished, so `1.0.0` is
+reserved for the first build that actually goes to the Meta store. Bump the
+patch for a fix and the minor when a roadmap phase lands.
+The Android version code is **derived** from that string —
+`major * 10000 + minor * 100 + patch`, so `0.9.0` is `900` and `1.0.0` is
+`10000` — rather than kept as a second number, because Meta refuses an upload
+whose code has not increased and two hand-maintained numbers drift. The
+consequence is that minor and patch must stay below 100, and that re-uploading
+a build without bumping `AppVersion` will be rejected, which is correct.
+`Application.version` is what runtime code reads; the constant is editor-only.
+
 ### D-001 · Renamed to Cosmic Simulation XR
 **Decision.** Product name "Cosmic Simulation XR"; bundle id
 `com.jdmaxilius.cosmicsimulationxr` (was `com.jdmaxilius.galaxyexplorer`).
