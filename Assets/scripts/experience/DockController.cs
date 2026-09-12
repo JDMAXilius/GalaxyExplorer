@@ -360,14 +360,9 @@ namespace CosmicSimulation
 
             var head = _camera.transform;
 
-            // Flatten the look direction: a dock pitched with the head ends up on the floor or the ceiling.
-            var forward = Vector3.ProjectOnPlane(head.forward, Vector3.up);
-            if (forward.sqrMagnitude < 1e-4f)
-            {
-                forward = Vector3.forward;
-            }
-
-            forward.Normalize();
+            // The flattened look direction. Degenerate only when the player is looking straight up or down,
+            // where world forward is as good an answer as any.
+            Flatten(head.forward, out var forward);
 
             // One eye height answers both questions, so the floor the dock measures up from and the height it
             // measures cannot disagree with each other. When the eye height cannot be had from the same place as
@@ -382,12 +377,57 @@ namespace CosmicSimulation
             _heightMetres = Mathf.Max(eyeHeight * heightFractionOfHead, minimumHeightMetres);
             _heightSampled = true;
 
+            // A hand on the bar and a recentre are two answers to "where does the dock go", and the handler
+            // holds the pose it captured when the grab began: park the dock now and the next frame of the drag
+            // would pull it straight back out again. Letting go for the player is the only honest way to let
+            // Recenter win. The handler drops its pointers when it is disabled and ignores the release of a
+            // pointer it no longer holds, so nothing is left stuck; the player simply pinches again. Done here
+            // rather than at the top because a recentre that gives up above has not moved anything, and taking
+            // a grab away for nothing would be worse than leaving it.
+            var grab = DragGrab();
+            if (grab != null && grab.IsManipulating)
+            {
+                grab.enabled = false;
+                grab.enabled = true;
+            }
+
             var origin = new Vector3(head.position.x, head.position.y - eyeHeight, head.position.z);
             transform.position = origin + forward * distanceMetres + Vector3.up * _heightMetres;
-            transform.rotation = Quaternion.LookRotation(forward, Vector3.up) * Quaternion.Euler(-tiltDegrees, 0f, 0f);
+            transform.rotation = ParkedRotation(forward);
 
+            // Recentring is one of the routes that puts the dock somewhere new, so it owes the same tidying
+            // as the others: without this the pop-up stays hanging where the dock used to be, and nothing
+            // listening to Moved hears that it went anywhere.
             Placed();
         }
+
+        // The two halves of the parking maths, shared by the two things that aim the dock: a recentre, which
+        // points it along the flattened way the player is looking, and a drag, which points it back along the
+        // line from the player to wherever the bar was let go. They are the same two steps — flatten, then
+        // pitch up by tiltDegrees — and they live together so that a change to the tilt cannot reach only one
+        // of them and leave a dragged dock at a different angle from a parked one (GDD 8.1).
+
+        /// <summary>
+        /// Flattens a direction onto the floor plane. A dock that kept the head's pitch would end up face down
+        /// on the floor or face up at the ceiling. False when there was no horizontal component to keep.
+        /// </summary>
+        private static bool Flatten(Vector3 direction, out Vector3 flat)
+        {
+            flat = Vector3.ProjectOnPlane(direction, Vector3.up);
+            if (flat.sqrMagnitude < 1e-4f)
+            {
+                flat = Vector3.forward;
+                return false;
+            }
+
+            flat.Normalize();
+            return true;
+        }
+
+        /// <summary>The dock's resting orientation, given the flattened direction its face looks along — which
+        /// is away from the player, since the plate reads from behind its own forward axis.</summary>
+        private Quaternion ParkedRotation(Vector3 flatForward) =>
+            Quaternion.LookRotation(flatForward, Vector3.up) * Quaternion.Euler(-tiltDegrees, 0f, 0f);
 
         // The eye height and the floor have to come out of the same measurement, or they contradict each other.
         //
@@ -443,9 +483,9 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// Moves the whole dock, for anything that wants to place it in one step. The hand drag does not come
-        /// through here — the bar's <see cref="ManipulationHandler"/> writes the transform itself, frame by
-        /// frame, and this class only holds the parts of that pose the dock owns (see the drag bar section).
+        /// Puts the whole dock somewhere and turns it back toward the player. The bar does not go through
+        /// here — it drives the transform directly through its <see cref="ManipulationHandler"/> — but a
+        /// caller with a pose in mind still needs one call that leaves the dock facing the right way.
         /// </summary>
         public void MoveTo(Vector3 worldPosition)
         {
@@ -458,8 +498,6 @@ namespace CosmicSimulation
         {
             if (_camera == null)
             {
-                // Resolved again here, not only in Awake: a dock that is dragged before the main camera exists
-                // would otherwise keep whatever tilt the hand happened to leave it at.
                 _camera = Camera.main;
                 if (_camera == null)
                 {
@@ -467,15 +505,109 @@ namespace CosmicSimulation
                 }
             }
 
-            var toPlayer = _camera.transform.position - transform.position;
-            toPlayer.y = 0f;
-            if (toPlayer.sqrMagnitude < 1e-4f)
+            // Straight above or below the head there is no horizontal direction to face and any answer would
+            // be arbitrary, so the last good one is kept.
+            if (!Flatten(transform.position - _camera.transform.position, out var awayFromPlayer))
             {
                 return;
             }
 
-            transform.rotation = Quaternion.LookRotation(-toPlayer.normalized, Vector3.up) *
-                                 Quaternion.Euler(-tiltDegrees, 0f, 0f);
+            transform.rotation = ParkedRotation(awayFromPlayer);
+        }
+
+        // ---------- the drag bar
+        //
+        // GDD 8.1: the bar under the dock "moves the whole dock (it re-tilts toward the player)". The moving
+        // is the ManipulationHandler on the bar, whose hostTransform the UI prefab builder points at this root
+        // — the bar itself is only the handle. The re-tilting is here, because the handler has one idea of
+        // rotation and it is the wrong one: a one-handed grab carries the host's rotation with the wrist, and
+        // a dock rolled onto its side by a turned hand is unreadable. LateUpdate runs after every Update, so
+        // writing the rotation here is the last word on it each frame and the handler's own attempt never
+        // shows. Position it leaves alone.
+
+        private ManipulationHandler _dragGrab;
+        private bool _dragResolved;
+        private bool _wasDragging;
+
+        /// <summary>True while a hand or a ray is holding the bar.</summary>
+        private bool IsBeingDragged
+        {
+            get
+            {
+                var grab = DragGrab();
+                return grab != null && grab.IsManipulating;
+            }
+        }
+
+        // Resolved on first ask rather than in Awake: this is reached from Recenter, which Start calls, and
+        // from LateUpdate, and the project has twice been bitten by assuming Awake has run.
+        private ManipulationHandler DragGrab()
+        {
+            if (_dragResolved)
+            {
+                return _dragGrab;
+            }
+
+            _dragResolved = true;
+            if (dragBar == null)
+            {
+                return null;
+            }
+
+            _dragGrab = dragBar.GetComponent<ManipulationHandler>();
+            if (_dragGrab == null)
+            {
+                return null;
+            }
+
+            // A prefab built before CS-108 has no hostTransform on the bar, and reading HostTransform is what
+            // makes it default to the bar itself. Refusing the grab outright is much better than allowing one:
+            // the failure then is a dock whose bar does nothing, which is what it did before, rather than a
+            // bar that tears off the dock the first time somebody pinches it.
+            if (_dragGrab.HostTransform != transform)
+            {
+                Debug.LogError(
+                    $"{name}: the drag bar's ManipulationHandler would move {_dragGrab.HostTransform.name} " +
+                    "rather than the dock, so the bar has been disabled. Run Cosmic Simulation > Build UI " +
+                    "Prefabs, which sets its hostTransform to the dock root.", this);
+                _dragGrab.enabled = false;
+                _dragGrab = null;
+            }
+
+            return _dragGrab;
+        }
+
+        private void LateUpdate()
+        {
+            var dragging = IsBeingDragged;
+
+            if (dragging)
+            {
+                if (!_wasDragging && popup != null)
+                {
+                    // The layout pop-up hangs 40 mm above the tile that opened it and is placed once, so the
+                    // dock would slide out from under it. It is a momentary choice, not a window: shut it.
+                    popup.Close();
+                }
+
+                FaceThePlayer();
+            }
+            else if (_wasDragging)
+            {
+                // Once more on the frame the grab ends, in case the release was processed after this ran.
+                FaceThePlayer();
+
+                // The settings window is placed beside the dock when it opens and never again, so it has to be
+                // told the dock has moved. Open() on an already-open window is exactly that and nothing else:
+                // it re-places it, with no sound and no repaint. Asked only of a window that exists and is
+                // open, so this can neither create one nor re-open one the player closed mid-drag.
+                if (_utility != null && _utility.IsOpen)
+                {
+                    _utility.Open();
+                }
+            }
+
+            _wasDragging = dragging;
         }
 
         // ---------- the drag bar
@@ -647,7 +779,9 @@ namespace CosmicSimulation
 
         private void Update()
         {
-            if (_recenterPending)
+            // Not while the player has hold of the bar: a recentre that is still waiting for a head pose runs
+            // every frame, and it would fight the drag for the same transform. The wait is resumed on release.
+            if (_recenterPending && !IsBeingDragged)
             {
                 _poseWaitedSeconds += Time.unscaledDeltaTime;
                 Recenter();
