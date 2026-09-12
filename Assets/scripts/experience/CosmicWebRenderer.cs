@@ -36,6 +36,27 @@ namespace CosmicSimulation
     [DefaultExecutionOrder(55)]
     public class CosmicWebRenderer : MonoBehaviour
     {
+        /// <summary>
+        /// Sprites in the whole web, and a tenth of the 400 000 the whole frame is allowed across both eyes
+        /// (Technical Overview 7.4).
+        ///
+        /// It was 120 000, which is thirty percent of the entire frame budget spent on one decorative volume and
+        /// was never measured on a headset. Three reasons for a tenth instead. One decorative object taking a
+        /// tenth of the frame's geometry is defensible with no profile in hand; taking a third is not. It is
+        /// still 2.3x Andromeda's 17 200 points, which is the only point cloud in this app that has been seen
+        /// running well on the device and which reads as a dense galaxy — and Andromeda is looked *at*, where
+        /// the web is stood *inside*, so its points spread across the whole field of view instead of crowding
+        /// into one disc and the same count covers far more screen. And the real cost of an additive sprite
+        /// cloud on a tiled mobile GPU is fill, not count: at roughly 3-4 px across, 40 000 sprites are about
+        /// half a million shaded fragments per eye per frame of pure overdraw, where 120 000 were one and a
+        /// half million.
+        ///
+        /// Nothing clamps to it. It is the default of a serialized field, so any value is still reachable from
+        /// the inspector, and <c>CosmicWebBuilder</c> writes it into the prefab from a constant of its own.
+        /// CS-066 measures frame time on device and moves the number.
+        /// </summary>
+        public const int DefaultPointCount = 40000;
+
         private static readonly int StarsId = Shader.PropertyToID("_Stars");
         private static readonly int WsScaleId = Shader.PropertyToID("_WSScale");
         private static readonly int AgeId = Shader.PropertyToID("_Age");
@@ -47,8 +68,9 @@ namespace CosmicSimulation
         private Material pointsMaterial;
 
         [SerializeField]
-        [Tooltip("After the skybox: opaque depth already exists so the web is occluded properly, and world-space UI still draws over it.")]
-        private CameraEvent cameraEvent = CameraEvent.AfterSkybox;
+        [Tooltip("Before the transparent pass: opaque depth already exists so the web is occluded properly, and " +
+                 "world-space UI still draws over it. Do not use AfterSkybox — see ResolveCameraEvent.")]
+        private CameraEvent cameraEvent = CameraEvent.BeforeForwardAlpha;
 
         [SerializeField]
         [Tooltip("Half-width of one point sprite in metres, at this object's local scale 1.")]
@@ -64,8 +86,9 @@ namespace CosmicSimulation
         private int seed = 20260912;
 
         [SerializeField]
-        [Tooltip("Point sprites in the whole web. Technical Overview 7.4 caps the frame at 400 000; see the class comment for why this sits well under it.")]
-        private int pointCount = 120000;
+        [Tooltip("Point sprites in the whole web. Technical Overview 7.4 caps the whole frame at 400 000 across " +
+                 "both eyes; 40 000 is a tenth of that. Raise it here once CS-066 has profiled the volume on device.")]
+        private int pointCount = DefaultPointCount;
 
         [SerializeField]
         [Tooltip("Half-width of the volume in metres, at this object's local scale 1. GDD 4.7 asks for a 5 m volume.")]
@@ -125,12 +148,16 @@ namespace CosmicSimulation
         private ComputeBuffer _buffer;
         private CommandBuffer _commandBuffer;
         private Camera _commandBufferCamera;
+        private CameraEvent _commandBufferEvent;
         private Material _material;
         private StarVertDescriptor[] _points;
+        private CosmicWebGenerator.Builder _builder;
         private Coroutine _build;
+        private int _uploaded;
         private int _visible;
         private float _age;
-        private bool _started;
+        private bool _buildComplete;
+        private bool _saidWhereItDraws;
 
         /// <summary>How many points are in the buffer and being drawn.</summary>
         public int PointCount => _visible;
@@ -167,12 +194,14 @@ namespace CosmicSimulation
             }
 
             ReleaseBuffer();
-            _visible = 0;
+            _builder = null;
             _points = null;
+            _uploaded = 0;
+            _visible = 0;
+            _buildComplete = false;
 
-            // While disabled there is no coroutine runner, so leave the flag clear and let OnEnable start it.
-            _started = isActiveAndEnabled;
-            if (_started)
+            // While disabled there is no coroutine runner; OnEnable picks the build up instead.
+            if (isActiveAndEnabled)
             {
                 _build = StartCoroutine(BuildRoutine());
             }
@@ -186,9 +215,12 @@ namespace CosmicSimulation
             // everything initialises from wherever it is first needed rather than from one entry point.
             EnsureMaterial();
 
-            if (!_started)
+            // Unity stops a coroutine when its component is disabled and never restarts it, so a web that was
+            // still building when its experience closed would have stayed frozen at however many points it had
+            // reached. The builder, the staging array and the upload offset are all fields, so this picks the
+            // same build up where it stopped rather than starting a new one.
+            if (!_buildComplete && _build == null)
             {
-                _started = true;
                 _build = StartCoroutine(BuildRoutine());
             }
         }
@@ -196,6 +228,9 @@ namespace CosmicSimulation
         private void OnDisable()
         {
             RemoveCommandBuffer();
+
+            // Unity has already stopped the coroutine; clearing the handle is what tells OnEnable to resume it.
+            _build = null;
         }
 
         private void OnDestroy()
@@ -240,43 +275,61 @@ namespace CosmicSimulation
 
         private IEnumerator BuildRoutine()
         {
-            var settings = BuildSettings();
             EnsureMaterial();
-            if (settings.PointCount <= 0 || _material == null)
+            if (_material == null)
             {
-                if (_material == null)
-                {
-                    Debug.LogError(
-                        $"CosmicWebRenderer on '{name}': no points material. Run " +
-                        "Cosmic Simulation -> Build Cosmic Web Content, which creates it and assigns it here.");
-                }
+                Debug.LogError(
+                    $"CosmicWebRenderer on '{name}': no points material. Run " +
+                    "Cosmic Simulation -> Build Cosmic Web Content, which creates it and assigns it here.");
 
                 _build = null;
                 yield break;
             }
 
-            var builder = new CosmicWebGenerator.Builder(settings);
-            _points = new StarVertDescriptor[builder.Capacity];
-
-            ReleaseBuffer();
-            _buffer = new ComputeBuffer(builder.Capacity, StarVertDescriptor.StructSize);
-            _material.SetBuffer(StarsId, _buffer);
-            _visible = 0;
-
-            // Tracked separately from _visible: with the reveal off, nothing is drawn until the end, but the
-            // upload offset still has to advance or every slice would land on top of the first one.
-            var uploaded = 0;
-
-            while (!builder.Done)
+            if (_builder == null)
             {
-                var written = builder.Step(_points, buildMillisecondsPerFrame);
+                var settings = BuildSettings();
+                if (settings.PointCount <= 0)
+                {
+                    _buildComplete = true;
+                    _build = null;
+                    yield break;
+                }
+
+                _builder = new CosmicWebGenerator.Builder(settings);
+                _points = new StarVertDescriptor[_builder.Capacity];
+
+                // Tracked separately from _visible: with the reveal off, nothing is drawn until the end, but the
+                // upload offset still has to advance or every slice would land on top of the first one.
+                _uploaded = 0;
+                _visible = 0;
+            }
+            else if (_points == null)
+            {
+                // Only reachable if a build were interrupted after the staging array was dropped, which cannot
+                // happen today — but indexing a null here would be a crash rather than a slow frame.
+                _points = new StarVertDescriptor[_builder.Capacity];
+            }
+
+            if (_buffer == null)
+            {
+                _buffer = new ComputeBuffer(_builder.Capacity, StarVertDescriptor.StructSize);
+            }
+
+            // Bound here every time rather than once: a material instance can be made after the buffer (a
+            // resumed build) or before it (a fresh one), and both orders have to end up with the buffer bound.
+            _material.SetBuffer(StarsId, _buffer);
+
+            while (!_builder.Done)
+            {
+                var written = _builder.Step(_points, buildMillisecondsPerFrame);
                 if (written > 0)
                 {
-                    _buffer.SetData(_points, uploaded, uploaded, written);
-                    uploaded += written;
+                    _buffer.SetData(_points, _uploaded, _uploaded, written);
+                    _uploaded += written;
                     if (revealWhileBuilding)
                     {
-                        _visible = uploaded;
+                        _visible = _uploaded;
                     }
                 }
 
@@ -288,18 +341,26 @@ namespace CosmicSimulation
                 yield return null;
             }
 
-            _visible = uploaded;
+            _visible = _uploaded;
+            _buildComplete = true;
 
             // The staging array is the same size as the buffer; holding it would double the web's memory for
             // the life of the experience and it is rebuilt from scratch anyway.
             _points = null;
 
-            if (builder.RanShort)
+            if (_builder.RanShort)
             {
                 Debug.LogWarning(
-                    $"CosmicWebRenderer on '{name}': the generator ran out of candidates at {builder.Count} of " +
-                    $"{settings.PointCount} points. The structure shares or the snap tolerance are too tight for " +
+                    $"CosmicWebRenderer on '{name}': the generator ran out of candidates at {_builder.Count} of " +
+                    $"{pointCount} points. The structure shares or the snap tolerance are too tight for " +
                     "this cell size; the web is real but thinner than asked for.");
+            }
+            else
+            {
+                // One line, once, naming the number that actually reached the GPU. Nothing else in the app can
+                // say whether this volume is drawing: it has no Renderer, so it appears in no frame debugger
+                // hierarchy and no statistics window count.
+                Debug.Log($"CosmicWebRenderer on '{name}': {_visible:N0} points built and uploaded.");
             }
 
             _build = null;
@@ -342,30 +403,78 @@ namespace CosmicSimulation
             }
         }
 
+        /// <summary>
+        /// Where the draw can actually be inserted on <paramref name="camera"/>.
+        ///
+        /// This is what made the web invisible. The built-in pipeline raises <c>BeforeSkybox</c> and
+        /// <c>AfterSkybox</c> from inside the skybox pass, and that pass only runs when a camera's clear flags
+        /// ask for a skybox. This app's camera never does: <c>main_camera_prefab</c> is authored as
+        /// <c>SolidColor</c>, and <c>ExperienceModeManager.Apply</c> rewrites the clear flags to
+        /// <c>SolidColor</c> on every passthrough/VR switch so Meta's compositor can key on the eye buffer's
+        /// alpha. A command buffer parked on <c>AfterSkybox</c> was therefore attached, recorded and never once
+        /// executed, and the player saw black. <c>DrawStars</c> — the same DrawProcedural path, and the reason
+        /// Andromeda renders — sits on <c>BeforeForwardOpaque</c>, which has no such condition.
+        ///
+        /// <see cref="cameraEvent"/> now defaults to <c>BeforeForwardAlpha</c>, the same place in the frame the
+        /// old value meant (opaque depth laid down, transparents and world-space UI still to come) on a pass
+        /// that always runs. The remap below covers the serialized value in a prefab built before this fix, and
+        /// says so once, because a silently dead command buffer is exactly the failure this is here to prevent.
+        /// </summary>
+        private CameraEvent ResolveCameraEvent(Camera camera)
+        {
+            var needsSkyboxPass = cameraEvent == CameraEvent.BeforeSkybox || cameraEvent == CameraEvent.AfterSkybox;
+            if (!needsSkyboxPass || camera.clearFlags == CameraClearFlags.Skybox)
+            {
+                return cameraEvent;
+            }
+
+            if (!_saidWhereItDraws)
+            {
+                _saidWhereItDraws = true;
+
+                // Log, not LogWarning: it is a corrected setting, not a fault, and a warning here would fail
+                // the editor relay's NOT-OK check on an otherwise good run.
+                Debug.Log(
+                    $"CosmicWebRenderer on '{name}': camera '{camera.name}' clears to {camera.clearFlags}, so it " +
+                    $"runs no skybox pass and nothing on {cameraEvent} would ever execute. Drawing on " +
+                    $"{CameraEvent.BeforeForwardAlpha} instead. Re-run Cosmic Simulation -> Build Cosmic Web " +
+                    "Content to write the corrected value into the prefab.");
+            }
+
+            return CameraEvent.BeforeForwardAlpha;
+        }
+
         private void EnsureCommandBuffer()
         {
             var camera = Camera.main;
-            if (camera == _commandBufferCamera && _commandBuffer != null)
+            if (camera == null)
+            {
+                RemoveCommandBuffer();
+                return;
+            }
+
+            var when = ResolveCameraEvent(camera);
+            if (_commandBuffer != null && camera == _commandBufferCamera && when == _commandBufferEvent)
             {
                 return;
             }
 
             RemoveCommandBuffer();
-            if (camera == null)
-            {
-                return;
-            }
 
             _commandBuffer = new CommandBuffer { name = "Cosmic web" };
-            camera.AddCommandBuffer(cameraEvent, _commandBuffer);
+            camera.AddCommandBuffer(when, _commandBuffer);
             _commandBufferCamera = camera;
+            _commandBufferEvent = when;
         }
 
         private void RemoveCommandBuffer()
         {
+            // Removed from the event it was added with, not from the serialized field: those differ whenever
+            // ResolveCameraEvent has had to step in, and removing from the wrong event leaves the old buffer
+            // attached and drawing for ever.
             if (_commandBuffer != null && _commandBufferCamera != null)
             {
-                _commandBufferCamera.RemoveCommandBuffer(cameraEvent, _commandBuffer);
+                _commandBufferCamera.RemoveCommandBuffer(_commandBufferEvent, _commandBuffer);
             }
 
             _commandBuffer?.Release();

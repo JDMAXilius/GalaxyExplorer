@@ -52,8 +52,19 @@ namespace CosmicSimulation
                  "the experience wherever the room put it, not beside the world origin.")]
         private Vector3 scenePanelOffset = new Vector3(0.55f, 0.2f, 0f);
 
+        [SerializeField]
+        [Tooltip("Metres left between the edge of the content and the experience's own panel. The offset above " +
+                 "is pushed out to clear wide content rather than landing inside it.")]
+        private float panelClearanceMetres = 0.15f;
+
         /// <summary>How long the intro's own last-stage load is given to appear before we stop waiting for one.</summary>
         private const float IntroSettleGrace = 0.5f;
+
+        /// <summary>
+        /// Content whose middle is already this close to its own origin is left exactly where it is, so the
+        /// framing below can never nudge an experience that was authored the way the content root expects.
+        /// </summary>
+        private const float CentringDeadzone = 0.02f;
 
         private readonly List<GameObject> _destinationObjects = new List<GameObject>();
         private readonly HashSet<ExperienceModule> _warnedEmpty = new HashSet<ExperienceModule>();
@@ -61,6 +72,14 @@ namespace CosmicSimulation
         private InfoPanel _scenePanel;
         private InfoPanel _destinationPanel;
         private Transform _scenePanelAnchor;
+
+        /// <summary>
+        /// Half the width of the open prefab content, in metres, once it has been framed on the content root.
+        /// Zero for a scene-backed place and for content with nothing to measure. Read by the panel anchor so
+        /// the panel parks beside the experience rather than inside it.
+        /// </summary>
+        private float _contentSpanMetres;
+
         private bool _warnedNoPanelPrefab;
         private bool _ownsContentRoot;
         private Coroutine _switching;
@@ -463,6 +482,9 @@ namespace CosmicSimulation
                     _prefabContent = Instantiate(module.ContentPrefab, ContentRoot());
                     _prefabContent.name = module.Id;
 
+                    // Before home is captured, because framing is part of where this content belongs.
+                    FrameContent(_prefabContent.transform);
+
                     // Where Restore will bring this back to, taken here because here is the only moment the
                     // pose is the intended one: before the grow-in below, which drives localScale from zero
                     // every frame for its duration (CS-107).
@@ -474,7 +496,9 @@ namespace CosmicSimulation
                 var content = ResolveContent(adopted);
                 if (content != null && growInSeconds > 0f)
                 {
-                    yield return GrowIn(content.transform, growInSeconds);
+                    // Only our own instance may have been framed, and only a framed object needs its offset
+                    // driven with the scale; a view scene's root is where its scene put it.
+                    yield return GrowIn(content.transform, growInSeconds, content == _prefabContent);
                 }
 
                 // Both after the grow-in, and both after the only `yield break` in this routine: a switch that
@@ -557,8 +581,17 @@ namespace CosmicSimulation
             ExperienceChanged?.Invoke(null);
         }
 
-        /// <summary>Scales content up from nothing, the one transition this app uses.</summary>
-        private static IEnumerator GrowIn(Transform content, float seconds)
+        /// <summary>
+        /// Scales content up from nothing, the one transition this app uses.
+        ///
+        /// <paramref name="keepFramed"/> is for content <see cref="FrameContent"/> has offset so that its middle
+        /// sits on the content root. Such an object's pivot is no longer its middle, so scale alone would swell it
+        /// out of a point somewhere off to one side and walk the middle across the room on the way in. Driving the
+        /// offset by the same factor as the scale keeps the middle still: at factor zero the offset is zero too, so
+        /// everything starts from the content root, which is where the whoosh belongs. Content that was not framed
+        /// has no offset to drive and is left alone, so this is a no-op for every place that already worked.
+        /// </summary>
+        private static IEnumerator GrowIn(Transform content, float seconds, bool keepFramed = false)
         {
             // No target transform on purpose: the whoosh belongs to the arrival, not to the object, so it
             // must outlive content that a second switch destroys mid-grow. The id has no clip yet, and
@@ -566,17 +599,154 @@ namespace CosmicSimulation
             AudioService.Instance?.PlayClip(AudioId.GrowIn);
 
             var target = content.localScale;
+            var targetPosition = keepFramed ? content.localPosition : Vector3.zero;
+
             var elapsed = 0f;
             content.localScale = Vector3.zero;
+            if (keepFramed)
+            {
+                content.localPosition = Vector3.zero;
+            }
+
             while (elapsed < seconds)
             {
                 elapsed += Time.deltaTime;
+
+                // A destination the player closed mid-grow is already gone, and Unity's fake-null makes the
+                // next write a MissingReferenceException rather than a quiet no-op.
+                if (content == null)
+                {
+                    yield break;
+                }
+
                 var t = Mathf.Clamp01(elapsed / seconds);
-                content.localScale = target * (1f - Mathf.Pow(1f - t, 3f)); // ease out
+                var eased = 1f - Mathf.Pow(1f - t, 3f); // ease out
+                content.localScale = target * eased;
+                if (keepFramed)
+                {
+                    content.localPosition = targetPosition * eased;
+                }
+
                 yield return null;
             }
 
+            if (content == null)
+            {
+                yield break;
+            }
+
             content.localScale = target;
+            if (keepFramed)
+            {
+                content.localPosition = targetPosition;
+            }
+        }
+
+        // ---------- framing a content prefab on the content root
+
+        /// <summary>
+        /// Moves a freshly spawned content prefab so that the middle of what it shows sits on the content root.
+        ///
+        /// <para>Every scene-backed place puts its content at the content root's own origin — <c>SolarSystemContent</c>
+        /// and the galaxy view are both at local zero under the <see cref="ViewLoader"/> — and that origin is where
+        /// the room has decided the experience goes: two metres in front of the player and a little below eye
+        /// height, turned to face them. A content prefab authored around its own origin therefore lands correctly
+        /// with nothing done to it, which is why Andromeda and the Cosmic Web have always been in the right place.</para>
+        ///
+        /// <para>The solar row was not. Its arrangement is written in room coordinates — <c>SystemLayoutBuilder</c>
+        /// stands the bodies 1.2 m above the floor and up to two metres out from the player's feet — so spawning it
+        /// at the content root put the planets 1.2 m above and most of a metre beyond the thing the player was
+        /// looking at. On the desktop rig that is far enough above the view to leave the room empty but for the
+        /// experience's own panel, which parks near the root and so stayed visible: the black screen this fixes.</para>
+        ///
+        /// <para>Rather than teach the director which places are authored which way, the content is asked where its
+        /// middle is and then offset by that. Content that has nothing to measure — a point cloud drawn by a command
+        /// buffer has no renderer at all — reports nothing and is not touched, and content already centred on its own
+        /// origin falls inside <see cref="CentringDeadzone"/> and is not touched either.</para>
+        /// </summary>
+        private void FrameContent(Transform content)
+        {
+            _contentSpanMetres = 0f;
+
+            if (content == null || !TryMeasureContent(content, out var measured))
+            {
+                return;
+            }
+
+            // The content root is turned to face the player, so a box measured on world axes says nothing about
+            // the content's own width. The two horizontal extents combined are the widest the box can be in any
+            // frame turned about the vertical — an over-estimate rather than an under-estimate, which is the
+            // safe direction to be wrong in when the number is only used to keep a panel clear.
+            _contentSpanMetres = new Vector2(measured.extents.x, measured.extents.z).magnitude;
+
+            // Moving the transform by this moves the middle by the same, and the middle then lands exactly where
+            // the transform is now — the content root's origin, since a fresh instance sits on it.
+            var offset = content.position - measured.center;
+            if (offset.sqrMagnitude < CentringDeadzone * CentringDeadzone)
+            {
+                return;
+            }
+
+            content.position += offset;
+        }
+
+        /// <summary>
+        /// Where the content's middle is, in world space, and roughly how far it reaches. False when there is
+        /// nothing honest to measure. Only the centre is relied on to be exact; the size is a clearance.
+        /// </summary>
+        private static bool TryMeasureContent(Transform content, out Bounds measured)
+        {
+            // An arrangeable place states its own arrangement, which beats guessing from geometry: the home
+            // anchors are the authored intent, and they are right even before the rig's first Start has run.
+            var rig = content.GetComponentInChildren<LayoutRig>(true);
+            if (rig != null && rig.TryGetArrangementBounds(out measured))
+            {
+                return true;
+            }
+
+            return TryMeasureRenderers(content, out measured);
+        }
+
+        /// <summary>The box the content's real geometry fills, ignoring everything that is not the thing itself.</summary>
+        private static bool TryMeasureRenderers(Transform content, out Bounds measured)
+        {
+            measured = default;
+            var found = false;
+
+            foreach (var r in content.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r == null || !r.enabled || !r.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                // Effects and text say nothing about where the thing is. A halo or a tractor beam is far wider
+                // than what it surrounds, and a panel sits at its prefab's own origin until the first frame it
+                // is shown tells it where to go — measuring those would drag the middle somewhere arbitrary.
+                if (r is ParticleSystemRenderer || r is LineRenderer || r is TrailRenderer ||
+                    r is SpriteRenderer || r.GetComponentInParent<Canvas>() != null)
+                {
+                    continue;
+                }
+
+                var bounds = r.bounds;
+                if (bounds.size.sqrMagnitude <= 0f)
+                {
+                    continue;
+                }
+
+                if (found)
+                {
+                    measured.Encapsulate(bounds);
+                }
+                else
+                {
+                    measured = bounds;
+                    found = true;
+                }
+            }
+
+            return found;
         }
 
         // ---------- content: a scene, or a prefab under our own root
@@ -616,6 +786,10 @@ namespace CosmicSimulation
             // Cleared straight away rather than after the deferred Destroy, so the rest of the switch does not
             // mistake a dying instance for the new content.
             _prefabContent = null;
+
+            // The span described content that has just gone. A scene-backed place never sets it, so leaving the
+            // last prefab's width behind would push that place's panel out into nothing.
+            _contentSpanMetres = 0f;
         }
 
         // ---------- the open experience's own panel (GDD 3.3, 8.3; contract F-20, F-23, F-25, F-26)
@@ -741,7 +915,19 @@ namespace CosmicSimulation
 
             // Re-read every time, so the offset can be dragged in the inspector during play and take effect on
             // the next switch.
-            _scenePanelAnchor.localPosition = scenePanelOffset;
+            var offset = scenePanelOffset;
+
+            // The authored offset was written when every prefab place was a galaxy a metre or so across sitting on
+            // the content root. A row of ten planets is nearly two metres wide about the same point, and the panel
+            // would stand between Saturn and Uranus. Pushed out to the edge of whatever is actually there, keeping
+            // the side the offset asks for; content narrower than the offset leaves it exactly as authored.
+            var wanted = _contentSpanMetres + Mathf.Max(0f, panelClearanceMetres);
+            if (_contentSpanMetres > 0f && Mathf.Abs(offset.x) < wanted)
+            {
+                offset.x = offset.x < 0f ? -wanted : wanted;
+            }
+
+            _scenePanelAnchor.localPosition = offset;
             return _scenePanelAnchor;
         }
 

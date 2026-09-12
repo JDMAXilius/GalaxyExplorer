@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d653dec819cc37641a0a5388e9e0dff9, type: 3}
+  m_Name: hd110067_g
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.BodyInfo
+  Id: hd110067_g
+  DisplayName: HD 110067 g
+  Subtitle: SIXTH IN THE CHAIN
+  Paragraph: The outermost known planet, taking about 55 days to go round. Even out here it receives six times the sunlight Earth does - this system is packed far tighter than ours, and none of it is in the zone where liquid water could sit on a surface.
+  Stats:
+  - Label: Diameter
+    Value: 33,218
+    Unit: km
+    Exponent: 0
+  - Label: Mass
+    Value: Not yet measured
+    Unit: 
+    Exponent: 0
+  - Label: Orbital Period
+    Value: 54.77
+    Unit: days
+    Exponent: 0
+  - Label: Orbital Distance
+    Value: 0.2621
+    Unit: AU
+    Exponent: 0
+  - Label: Day Length
+    Value: Not yet measured
+    Unit: 
+    Exponent: 0
+  Moons: []
+  Orbits: {fileID: 0}
+  Narration: {fileID: 0}
+  Ambience: {fileID: 0}

@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d653dec819cc37641a0a5388e9e0dff9, type: 3}
+  m_Name: hd110067_c
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.BodyInfo
+  Id: hd110067_c
+  DisplayName: HD 110067 c
+  Subtitle: SECOND IN THE CHAIN
+  Paragraph: Its size is measured, because it passes in front of its star and blocks a little light. Its mass is not - only an upper limit is known, so how heavy it is remains genuinely open.
+  Stats:
+  - Label: Diameter
+    Value: 30,428
+    Unit: km
+    Exponent: 0
+  - Label: Mass
+    Value: Not yet measured
+    Unit: 
+    Exponent: 0
+  - Label: Orbital Period
+    Value: 13.67
+    Unit: days
+    Exponent: 0
+  - Label: Orbital Distance
+    Value: 0.1039
+    Unit: AU
+    Exponent: 0
+  - Label: Day Length
+    Value: Not yet measured
+    Unit: 
+    Exponent: 0
+  Moons: []
+  Orbits: {fileID: 0}
+  Narration: {fileID: 0}
+  Ambience: {fileID: 0}

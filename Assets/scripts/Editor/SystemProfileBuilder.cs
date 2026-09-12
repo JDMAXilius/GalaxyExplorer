@@ -143,7 +143,108 @@ namespace CosmicSimulation.EditorTools
                     new Row("neptune", BodyRole.Planet,        49244f, Poi("neptune")),
                     new Row("pluto",   BodyRole.DwarfPlanet,    2377f, Poi("pluto")),
                 }),
+
+            // ------------------------------------------------------------------ HD 110067
+            //
+            // Profile #2, and the first system that is not ours. Six sub-Neptunes round a bright K dwarf in
+            // Coma Berenices, 104.9 ly away, locked in a 3:2, 3:2, 3:2, 4:3, 4:3 resonant chain - the
+            // structure is the reason the system is famous, and it is data rather than decoration.
+            //
+            // Sources and their state, from docs/research/exoplanet_systems.md 7.9: every radius is measured
+            // (all six transit). Only b, d and f have measured masses; c, e and g have UPPER LIMITS ONLY, so
+            // their Mass stat must read "not yet measured" and must never carry a number converted from the
+            // radius by a mass-radius relation - that is a model output, not an observation.
+            // Archive: exoplanetarchive.ipac.caltech.edu pscomppars. Paper: Luque et al. 2023, Nature,
+            // arxiv.org/abs/2311.17775.
+            //
+            // What these worlds are, and therefore what we may draw. Measured densities for the three with
+            // masses are 2.94, 2.02 and 1.58 g/cm3 - f is less dense than Neptune. The paper's conclusion is
+            // that all of them, except perhaps e, must carry large hydrogen-dominated envelopes. So they are
+            // puffy volatile-rich sub-Neptunes with NO VISIBLE SURFACE. Anything depicting terrain here is
+            // invented, which is why every Class below is IceGiant rather than Rocky and why not one of them
+            // gets a source prefab: a hazy, banded, featureless pale disc is the defensible look, and the
+            // generic body builder is what draws it.
+            //
+            // Note what this system is NOT. Its habitable zone is 0.663-1.175 AU and the outermost planet sits
+            // at 0.262 AU with 6.3 times Earth's insolation. Nothing here is in the habitable zone, and the
+            // copy must not sell it as a habitability story.
+            //
+            // The star is disputed at the edges - the archive gives Teff 5,266 K and R 0.788 Rsun, the paper
+            // ~5,400 K and ~0.86 Rsun. The archive composite is used here, consistently, because mixing the
+            // two sources is how a system ends up internally inconsistent.
+            new Profile(
+                "hd110067",
+                "HD 110067",
+                "Assets/data/experiences/hd110067.asset",
+                "hd110067_content_prefab",
+                "hd110067_row",
+                new[]
+                {
+                    // 0.788 Rsun. Teff 5,266 K drives its computed colour - a warm white barely
+                    // distinguishable from the Sun by eye, which is itself worth saying in the copy.
+                    new Row("hd110067_star", BodyRole.Star, 1097448f, 0f, Star(5266f)),
+
+                    // Insolation and equilibrium temperature are the research table's, computed at zero
+                    // albedo and marked as such. Albedo is -1 throughout: not one of these has a measured
+                    // albedo, and a made-up one would silently change how bright they look.
+                    new Row("hd110067_b", BodyRole.Planet, 28032f, 0.0793f, SubNeptune(5266f, 803f, 69.1f)),
+                    new Row("hd110067_c", BodyRole.Planet, 30428f, 0.1039f, SubNeptune(5266f, 701f, 40.2f)),
+                    new Row("hd110067_d", BodyRole.Planet, 36340f, 0.1362f, SubNeptune(5266f, 613f, 23.4f)),
+                    new Row("hd110067_e", BodyRole.Planet, 24719f, 0.1785f, SubNeptune(5266f, 535f, 13.6f)),
+                    new Row("hd110067_f", BodyRole.Planet, 33142f, 0.2163f, SubNeptune(5266f, 486f,  9.28f)),
+                    new Row("hd110067_g", BodyRole.Planet, 33218f, 0.2621f, SubNeptune(5266f, 442f,  6.32f)),
+                }),
         };
+
+        /// <summary>
+        /// A host star's appearance. Only the effective temperature matters - <c>StarColor</c> computes the
+        /// colour from it, which is the one visual quantity in this whole file that is derived from published
+        /// physics rather than from a declared convention.
+        /// </summary>
+        private static BodyAppearance Star(float effectiveTemperatureK)
+        {
+            var appearance = BodyAppearance.Default;
+            appearance.Class = BodyClass.Unknown;          // a star is not a planet class
+            appearance.IlluminantTemperatureK = effectiveTemperatureK;
+            appearance.EquilibriumTemperatureK = effectiveTemperatureK;
+            appearance.GeometricAlbedo = -1f;              // meaningless for a star, and not measured
+            appearance.Spin = SpinDirection.NotMeasured;
+            appearance.RotationPeriodHours = 0f;
+            return appearance;
+        }
+
+        /// <summary>
+        /// A puffy volatile-rich sub-Neptune with no visible surface.
+        /// <para>
+        /// <b>IceGiant, deliberately, and it is the least wrong of four bad options.</b> The enum offers
+        /// Unknown, Rocky, IceGiant and GasGiant. Rocky is flatly contradicted by the measured densities.
+        /// GasGiant overstates them - these are two to three Earth radii, not Jupiters. Unknown would render
+        /// a neutral grey placeholder, which is honest about our ignorance but wrong about what is published:
+        /// the hydrogen envelope IS the measurement. IceGiant carries the methane-cyan convention, which is
+        /// the closest the palette has to a hazy volatile world. This is a declared convention, not a claim
+        /// about composition, and the panel copy has to say the appearance is modelled.
+        /// </para>
+        /// <para>
+        /// Albedo is always -1 here: none of these six has a measured albedo, and inventing one would change
+        /// how bright the world looks for no reason anyone could later check. Spin is NotMeasured and the
+        /// rotation period is 0, because no rotation period has been measured for any of them - so the Day
+        /// Length stat must read "not yet measured" rather than carry a number.
+        /// </para>
+        /// </summary>
+        private static BodyAppearance SubNeptune(float starTeffK, float equilibriumK, float insolationEarth)
+        {
+            var appearance = BodyAppearance.Default;
+            appearance.Class = BodyClass.IceGiant;
+            appearance.IlluminantTemperatureK = starTeffK;
+            appearance.EquilibriumTemperatureK = equilibriumK;
+            appearance.InsolationEarth = insolationEarth;
+            appearance.GeometricAlbedo = -1f;
+            appearance.AxialTiltDegrees = 0f;              // no obliquity is measured outside our own system
+            appearance.Spin = SpinDirection.NotMeasured;
+            appearance.RotationPeriodHours = 0f;
+            appearance.RingOuterRadiusPlanetRadii = 0f;    // no ring geometry is published for any of them
+            return appearance;
+        }
 
         // ---------- menu
 

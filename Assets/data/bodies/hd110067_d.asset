@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d653dec819cc37641a0a5388e9e0dff9, type: 3}
+  m_Name: hd110067_d
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.BodyInfo
+  Id: hd110067_d
+  DisplayName: HD 110067 d
+  Subtitle: THIRD IN THE CHAIN
+  Paragraph: The largest of the six. Its density works out at about a third of Earth's, which is the signature of a small rocky core wrapped in an enormous envelope of hydrogen and helium.
+  Stats:
+  - Label: Diameter
+    Value: 36,340
+    Unit: km
+    Exponent: 0
+  - Label: Mass
+    Value: 5.09
+    Unit: kg
+    Exponent: 25
+  - Label: Orbital Period
+    Value: 20.52
+    Unit: days
+    Exponent: 0
+  - Label: Orbital Distance
+    Value: 0.1362
+    Unit: AU
+    Exponent: 0
+  - Label: Day Length
+    Value: Not yet measured
+    Unit: 
+    Exponent: 0
+  Moons: []
+  Orbits: {fileID: 0}
+  Narration: {fileID: 0}
+  Ambience: {fileID: 0}

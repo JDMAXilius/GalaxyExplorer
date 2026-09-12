@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5c7f912d32d84348be50abf568bcb04, type: 3}
+  m_Name: hd110067
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.ExperienceModule
+  Id: hd110067
+  Kind: 1
+  DisplayName: HD 110067
+  SecondLine: SIX WORLDS IN STEP
+  DockThumbnail: {fileID: 0}
+  SceneName: 
+  ContentPrefab: {fileID: 1908302769716434719, guid: 40897441e4b13d241ab89cedab40c9e0, type: 3}
+  Environment: 1
+  Panel:
+    Title: HD 110067
+    Paragraphs:
+    - Six worlds around a star slightly cooler than the Sun, 105 light years away, moving in a rhythm that has held for billions of years. Each planet's year is a simple fraction of its neighbour's - three orbits to two, over and over, then four to three for the outer pair. Systems are born like this and almost always lose it; this one never did.
+    - All six are larger than Earth and far lighter than their size suggests, which means deep hydrogen atmospheres rather than ground. Nobody has photographed them and nobody has seen their surfaces, because they may not have any. What you are looking at is built from measured sizes and orbits - the appearance is our best reading of the physics, not a picture.
+    - The whole system would fit comfortably inside the orbit of Mercury.
+    Instruction: Pinch a world to lift it out, two hands to grow it, let go to leave it.
+  Layouts:
+  - {fileID: 11400000, guid: 37ce05d2bf42f1040ac83df6a5a2d4a4, type: 2}
+  - {fileID: 11400000, guid: 1e6679aca2722b34b81e105dc8ce0d2b, type: 2}
+  Narration: {fileID: 0}
+  Ambience: {fileID: 0}

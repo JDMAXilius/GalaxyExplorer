@@ -10,9 +10,13 @@ using UnityEngine.UI;
 namespace CosmicSimulation.EditorTools
 {
     /// <summary>
-    /// Writes the nine destination tags of GDD 4.3 into <c>galaxy_pois_prefab</c>: a
-    /// <c>label_button_prefab</c> per destination, its module assigned, its name taken from that module, and a
-    /// <see cref="DestinationTags"/> on the node above them that routes every pick.
+    /// Writes the destination tags of GDD 4.3 into <c>galaxy_pois_prefab</c>: a <c>label_button_prefab</c> per
+    /// destination, its module assigned, its name taken from that module, and a <see cref="DestinationTags"/> on
+    /// the node above them that routes every pick.
+    ///
+    /// <b>Twelve tags, in two groups.</b> Nine are places inside the Milky Way (GDD 4.3). Three —
+    /// <c>whirlpool</c>, <c>pinwheel</c>, <c>triangulum</c> — are other galaxies, and they sit outside the disc:
+    /// see <see cref="External"/> for where they go and why they go here at all.
     ///
     /// <b>Into the existing POI prefab rather than a new one.</b> Three reasons, in order of weight. The prefab
     /// is already referenced from <c>galaxy_view_scene</c>, so nothing has to be added to a scene — and a scene
@@ -36,7 +40,7 @@ namespace CosmicSimulation.EditorTools
     /// because the centre of the galaxy really is the origin of this space.
     ///
     /// Re-running replaces the whole <c>destination_tags</c> node, so it is idempotent: running it twice leaves
-    /// exactly nine tags, and running it after <c>Build UI Prefabs</c> picks up whatever the label prefab has
+    /// exactly twelve tags, and running it after <c>Build UI Prefabs</c> picks up whatever the label prefab has
     /// become.
     /// </summary>
     public static class DestinationTagBuilder
@@ -54,8 +58,19 @@ namespace CosmicSimulation.EditorTools
         /// <summary>Half the pill's height, in canvas units (millimetres). The leader starts at its bottom edge.</summary>
         private const float PillHalfHeightMm = 8f;
 
-        /// <summary>Width of the hairline, in canvas units (millimetres).</summary>
-        private const float LeaderWidthMm = 0.6f;
+        /// <summary>The pill's height, in canvas units. GDD 8.4: 60 x 16 mm.</summary>
+        private const float PillHeightMm = PillHalfHeightMm * 2f;
+
+        /// <summary>
+        /// Width of the hairline, in canvas units (millimetres).
+        ///
+        /// <b>1.2 and not the 0.6 this shipped with.</b> A Quest 3 resolves roughly 20 pixels per degree at the
+        /// centre of the lens. The tags sit on a disc that floats about 1.2 m away, so a 0.6 mm line subtends
+        /// 0.029 degrees — a little over half a pixel. A sub-pixel line does not read as thin, it reads as
+        /// dashed, and it crawls as the head moves. 1.2 mm is 1.1 pixels at that distance and still a fourteenth
+        /// of the pill's height, which is what GDD 8.4 means by "thin".
+        /// </summary>
+        private const float LeaderWidthMm = 1.2f;
 
         /// <summary>
         /// How deep the tag's collider is, in canvas units (millimetres). The label prefab draws a flat plate
@@ -63,6 +78,34 @@ namespace CosmicSimulation.EditorTools
         /// widening CS-108 gave the dock's drag bar, and for the same reason.
         /// </summary>
         private const float ColliderDepthMm = 8f;
+
+        // ---------- how wide a pill has to be to hold its name
+        //
+        // The label prefab ships a 60 mm pill with a 54 mm text box, which fits "Crab Nebula" and does not fit
+        // "Galactic Center - Sagittarius A*" — thirty-two characters at 5 mm needs about 83 mm, so that tag has
+        // been wrapping onto a second line and overflowing an 8 mm box since it was built. Rather than shorten
+        // names the GDD spells out, the plate is fitted to the name it carries: measured off TMP, padded, and
+        // never narrower than the 60 mm the spec asks for.
+
+        private const float MinPillWidthMm = 60f;
+
+        /// <summary>
+        /// Past this the plate stops growing and the type shrinks instead. Nothing in the set reaches it (the
+        /// longest, Sagittarius A*, lands near 93 mm); it is here so that a long name added later degrades to
+        /// small-but-readable rather than to a slab wider than the galaxy.
+        /// </summary>
+        private const float MaxPillWidthMm = 130f;
+
+        private const float PillPadMm = 5f;
+
+        /// <summary>Height of the text box inside the pill, in canvas units — the label prefab's own.</summary>
+        private const float TextBoxHeightMm = 8f;
+
+        /// <summary>The selected outline is this much larger than the pill on every side, as authored.</summary>
+        private const float OutlineMarginMm = 4f;
+
+        /// <summary>Floor for auto-sized type, in canvas units. Below this a 1.2 m tag stops being readable.</summary>
+        private const float MinFontSizeMm = 3.6f;
 
         /// <summary>One tag: which module, where its point on the disc is, and how far above it the label floats.</summary>
         private readonly struct Placement
@@ -106,6 +149,74 @@ namespace CosmicSimulation.EditorTools
             new Placement("trumpler14",    0.328f, 0f,    -0.176f, 0.17f),
         };
 
+        /// <summary>Where the Sun sits on this map. The same anchor <c>solar_system</c> uses, by construction.</summary>
+        private static readonly Vector3 SunAnchor = new Vector3(0.115f, 0f, 0.648f);
+
+        /// <summary>
+        /// An outside galaxy, given as a real bearing from the Sun rather than as a made-up point.
+        /// </summary>
+        private readonly struct Bearing
+        {
+            /// <summary>Module id.</summary>
+            public readonly string Id;
+
+            /// <summary>Galactic longitude l, degrees. 0 is the direction of the galactic centre.</summary>
+            public readonly float Longitude;
+
+            /// <summary>Galactic latitude b, degrees. Positive is out of the disc on the north side.</summary>
+            public readonly float Latitude;
+
+            /// <summary>How far along that bearing to draw it, in map metres. Layout only — see the note.</summary>
+            public readonly float Range;
+
+            public Bearing(string id, float longitude, float latitude, float range)
+            {
+                Id = id;
+                Longitude = longitude;
+                Latitude = latitude;
+                Range = range;
+            }
+        }
+
+        /// <summary>
+        /// The three galaxies built by <c>GalaxyLibrary</c>, hung outside the disc of the Milky Way map.
+        ///
+        /// <b>Why here.</b> They are <see cref="ExperienceKind.Destination"/> modules with content prefabs and
+        /// nothing at all opened them: no dock tile, no tag, no route of any kind, so the work done on them was
+        /// invisible in the running app. The Galaxies view is where they will eventually belong, and when it has
+        /// its own <see cref="DestinationTags"/> these three should move there. Until then this is the one place
+        /// that can reach them without editing a scene or a file this builder does not own, and it is not a
+        /// stopgap that reads badly: standing on the Milky Way map and being shown the way out to three other
+        /// galaxies is a better piece of storytelling than finding them in a drawer.
+        ///
+        /// <b>The bearings are real; the distances are not.</b> Longitude and latitude are the published
+        /// galactic coordinates of each galaxy, so the direction each tag lies in — relative to the line from
+        /// the Sun to the galactic centre, which this map does get right — is the true one. M51 and M101 are
+        /// near the north galactic pole and come out high above the disc, which is exactly where they are;
+        /// M33 is well below it and beyond the rim, which is also true. The <b>range</b> along each bearing is
+        /// pure layout: the real distances are 2.7, 21 and 23 million light years and the map is 1.6 m across,
+        /// so no honest scale exists. The ranges here are chosen only to keep the three labels apart and inside
+        /// arm's reach, and the panel copy is where the actual distances are stated.
+        ///
+        /// Two further caveats, stated rather than hidden. The map's spiral is an artist's disc, so which face
+        /// of it is the galactic north pole was never decided; the constellation of three may be mirrored.
+        /// And the tag is lifted straight up in the room rather than perpendicular to the disc — see
+        /// <see cref="DestinationTags"/> — so the height reads as "above the map", not as a measured distance
+        /// out of the galactic plane.
+        /// </summary>
+        private static readonly Bearing[] External =
+        {
+            // l, b from the standard catalogues; all three are textbook figures.
+            //   M51  l = 104.85, b = +68.56   -> foot ( 0.002, 0, 0.700), 0.32 m up
+            //   M101 l = 102.04, b = +59.77   -> foot (-0.109, 0, 0.739), 0.41 m up
+            //   M33  l = 133.61, b = -31.33   -> foot (-0.164, 0, 1.026), 0.29 m down
+            // The first two feet land on the disc just inside its 0.8 m rim, so their leaders read as drop
+            // lines from a long way above it; M33's foot is beyond the rim, below the plane.
+            new Bearing("whirlpool",  104.85f,  68.56f, 0.34f),
+            new Bearing("pinwheel",   102.04f,  59.77f, 0.48f),
+            new Bearing("triangulum", 133.61f, -31.33f, 0.55f),
+        };
+
         [MenuItem("Cosmic Simulation/Build Destination Tags")]
         public static void Build()
         {
@@ -130,6 +241,7 @@ namespace CosmicSimulation.EditorTools
             }
 
             var modules = LoadModules();
+            var wanted = AllPlacements();
 
             var contents = PrefabUtility.LoadPrefabContents(PoiPrefabPath);
             try
@@ -140,8 +252,9 @@ namespace CosmicSimulation.EditorTools
                 var tagRoot = ResetTagRoot(contents.transform);
                 var set = tagRoot.AddComponent<DestinationTags>();
                 var buttons = new List<LabelButton>();
+                var placed = new List<Placement>();
 
-                foreach (var placement in Placements)
+                foreach (var placement in wanted)
                 {
                     if (!modules.TryGetValue(placement.Id, out var module))
                     {
@@ -159,19 +272,20 @@ namespace CosmicSimulation.EditorTools
                     }
 
                     buttons.Add(button);
+                    placed.Add(placement);
                     built.Add($"{placement.Id} -> \"{module.DisplayName}\" at " +
                               $"({placement.Anchor.x:0.###}, {placement.Anchor.y:0.###}, {placement.Anchor.z:0.###})" +
-                              $" + {placement.Lift:0.##} up, " +
+                              $" {(placement.Lift < 0f ? "- " : "+ ")}{Mathf.Abs(placement.Lift):0.##} up, " +
                               (string.IsNullOrEmpty(module.SceneName)
                                   ? (module.ContentPrefab != null ? "overlay" : "NOT BUILT YET")
                                   : $"scene {module.SceneName}"));
                 }
 
-                Bind(set, buttons);
+                Bind(set, buttons, placed);
 
                 PrefabUtility.SaveAsPrefabAsset(contents, PoiPrefabPath);
 
-                Debug.Log($"DestinationTagBuilder: {built.Count} of {Placements.Length} tags written into " +
+                Debug.Log($"DestinationTagBuilder: {built.Count} of {wanted.Count} tags written into " +
                           $"{PoiPrefabPath} under '{TagRootName}'.\n" +
                           $"  built: {string.Join("\n         ", built)}\n" +
                           $"  no module asset: {(missing.Count == 0 ? "none" : string.Join(", ", missing))}");
@@ -186,6 +300,52 @@ namespace CosmicSimulation.EditorTools
         }
 
         // ---------- pieces
+
+        /// <summary>The nine inside the galaxy, then the three outside it, in that order.</summary>
+        private static List<Placement> AllPlacements()
+        {
+            var all = new List<Placement>(Placements.Length + External.Length);
+            all.AddRange(Placements);
+
+            foreach (var bearing in External)
+            {
+                all.Add(FromBearing(bearing));
+            }
+
+            return all;
+        }
+
+        /// <summary>
+        /// Turns a galactic bearing into a point on this map.
+        ///
+        /// The map gives us two of the three axes for free: the galactic plane is the local XZ plane, and the
+        /// line from the Sun to the origin is l = 0, because the origin of this space really is the centre of
+        /// the galaxy. The third, which way round l runs, is the assumption called out on <see cref="External"/>.
+        ///
+        /// The point returned is the <b>foot</b> — where the bearing crosses the plane of the disc — and the
+        /// height goes into the lift, so the tag ends up with a long leader dropping to the disc rather than a
+        /// short one dangling in empty space. A galaxy below the plane gets a negative lift, and the leader is
+        /// drawn upward instead; <see cref="SetLeader"/> handles the sign.
+        /// </summary>
+        private static Placement FromBearing(Bearing bearing)
+        {
+            var towardCentre = -SunAnchor;
+            towardCentre.y = 0f;
+            towardCentre.Normalize();
+
+            // l = 90 degrees. Cross(up, towardCentre) is a quarter turn about the map's own vertical, which is
+            // the galactic pole axis here, so the pair is an orthonormal basis for the plane.
+            var quarterTurn = Vector3.Cross(Vector3.up, towardCentre);
+
+            var l = bearing.Longitude * Mathf.Deg2Rad;
+            var b = bearing.Latitude * Mathf.Deg2Rad;
+
+            var alongPlane = Mathf.Cos(l) * towardCentre + Mathf.Sin(l) * quarterTurn;
+            var foot = SunAnchor + alongPlane * (Mathf.Cos(b) * bearing.Range);
+            var height = Mathf.Sin(b) * bearing.Range;
+
+            return new Placement(bearing.Id, foot.x, 0f, foot.z, height);
+        }
 
         /// <summary>
         /// Every <see cref="ExperienceModule"/> in the two data folders, by id. Destinations and dock tiles
@@ -242,6 +402,10 @@ namespace CosmicSimulation.EditorTools
             instance.name = "tag_" + placement.Id;
 
             var t = instance.transform;
+
+            // The authored pose. At runtime DestinationTags re-hangs every tag straight up in the room from its
+            // anchor, which is what lets the leader land on its point however the map is tilted; this is what
+            // the prefab looks like in the editor and what is used if that data ever goes missing.
             t.localPosition = placement.Anchor + Vector3.up * placement.Lift;
             t.localRotation = Quaternion.identity;
 
@@ -259,13 +423,14 @@ namespace CosmicSimulation.EditorTools
             // The children are read back off the component's own references rather than found by path, so a
             // rename inside UiPrefabBuilder cannot silently leave this builder writing into nothing.
             var text = so.FindProperty("label").objectReferenceValue as TMP_Text;
+            var pill = so.FindProperty("pill").objectReferenceValue as Graphic;
             var leader = so.FindProperty("leader").objectReferenceValue as Graphic;
             var grow = so.FindProperty("growTarget").objectReferenceValue as Transform;
+            var outline = so.FindProperty("selectedOutline").objectReferenceValue as GameObject;
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            SetName(text, module.DisplayName);
+            FitPill(instance.transform as RectTransform, text, pill, grow, outline, module.DisplayName);
             SetLeader(leader, placement.Lift);
-            WidenCollider(grow);
 
             // Turned to the player about the world Y only, so the plate stays upright and level however the
             // galaxy is tilted. Billboard writes rotation away from the camera, which is the direction a
@@ -279,7 +444,17 @@ namespace CosmicSimulation.EditorTools
             return button;
         }
 
-        private static void SetName(TMP_Text label, string displayName)
+        /// <summary>
+        /// Puts the name on the plate and makes the plate wide enough to hold it.
+        ///
+        /// The width is measured off TMP rather than counted in characters, because the difference between
+        /// "NGC 1501" and "Galactic Center - Sagittarius A*" at 5 mm is the difference between a plate that fits
+        /// and one that silently wraps onto a line the 8 mm text box cannot show. Wrapping is turned off as
+        /// well, so that if the measurement is ever off by a millimetre the name runs a hair over the plate
+        /// instead of vanishing.
+        /// </summary>
+        private static void FitPill(RectTransform root, TMP_Text label, Graphic pill, Transform grow,
+                                    GameObject outline, string displayName)
         {
             if (label == null)
             {
@@ -287,17 +462,59 @@ namespace CosmicSimulation.EditorTools
             }
 
             label.text = displayName;
-            EditorUtility.SetDirty(label);
-            PrefabUtility.RecordPrefabInstancePropertyModifications(label);
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            label.enableAutoSizing = false;
+
+            var fontSize = label.fontSize;
+            label.ForceMeshUpdate();
+
+            var measured = label.preferredWidth;
+            if (float.IsNaN(measured) || float.IsInfinity(measured) || measured <= 1f)
+            {
+                // TMP can decline to measure before its font atlas is warm. A character count at roughly half
+                // an em is a poor substitute but a safe one: it errs wide, and a slightly roomy plate is a
+                // great deal better than a clipped name.
+                measured = (displayName == null ? 0 : displayName.Length) * fontSize * 0.52f;
+            }
+
+            var wanted = measured + 2f * PillPadMm;
+            var width = Mathf.Clamp(wanted, MinPillWidthMm, MaxPillWidthMm);
+
+            if (wanted > MaxPillWidthMm)
+            {
+                label.enableAutoSizing = true;
+                label.fontSizeMax = fontSize;
+                label.fontSizeMin = MinFontSizeMm;
+            }
+
+            Mark(label);
+
+            SetSize(root, width, PillHeightMm);
+            SetSize(grow as RectTransform, width, PillHeightMm);
+            SetSize(pill != null ? pill.rectTransform : null, width, PillHeightMm);
+            SetSize(label.rectTransform, width - 2f * PillPadMm, TextBoxHeightMm);
+            SetSize(outline != null ? outline.transform as RectTransform : null,
+                    width + OutlineMarginMm, PillHeightMm + OutlineMarginMm);
+
+            WidenCollider(grow, width);
         }
 
         /// <summary>
-        /// Draws the hairline from the bottom of the pill down to the point on the disc.
+        /// Draws the hairline between the pill and the point it names.
         ///
-        /// Straight down in canvas units, because the tag is lifted straight up and only ever turns about Y:
-        /// a vertical line in the canvas is a vertical line in the room, whichever way the player is standing.
-        /// One canvas unit is a millimetre and the label prefab's root is scaled 0.001, so a lift given in
-        /// metres becomes a height in canvas units by multiplying by a thousand and nothing else.
+        /// Straight down in canvas units, because the tag hangs straight up over its point and only ever turns
+        /// about Y: a vertical line in the canvas is a vertical line in the room, whichever way the player is
+        /// standing. One canvas unit is a millimetre and the label prefab's root is scaled 0.001, so a lift
+        /// given in metres becomes a height in canvas units by multiplying by a thousand.
+        ///
+        /// <b>Minus the pill's half-height, which the first version of this forgot.</b> The rect is centred on
+        /// the pill, not on its bottom edge, so a line of the full lift length starting 8 mm below centre ends
+        /// 8 mm <i>past</i> the point it is supposed to touch. On the shortest tags that is seven per cent of
+        /// the leader poking out through the far side of the disc. The span that has to be covered is from the
+        /// bottom edge of the pill to the point, which is the lift less that 8 mm.
+        ///
+        /// A negative lift hangs the tag below its point — one of the outside galaxies is under the galactic
+        /// plane — and the same line is then drawn upward from the top edge.
         /// </summary>
         private static void SetLeader(Graphic leader, float liftMetres)
         {
@@ -306,36 +523,83 @@ namespace CosmicSimulation.EditorTools
                 return;
             }
 
-            var heightMm = liftMetres * 1000f;
             var rect = leader.rectTransform;
-            rect.sizeDelta = new Vector2(LeaderWidthMm, heightMm);
-            rect.anchoredPosition = new Vector2(0f, -(PillHalfHeightMm + heightMm * 0.5f));
+            var span = Mathf.Abs(liftMetres) * 1000f - PillHalfHeightMm;
 
-            EditorUtility.SetDirty(leader);
-            PrefabUtility.RecordPrefabInstancePropertyModifications(rect);
+            if (span <= 1f)
+            {
+                // The point is inside the plate. There is no line to draw, and a 1 mm stub sticking out of the
+                // pill would read as a rendering fault rather than as a leader.
+                leader.enabled = false;
+                Mark(leader);
+                Mark(rect);
+                return;
+            }
+
+            leader.enabled = true;
+            var direction = liftMetres < 0f ? 1f : -1f;
+            rect.sizeDelta = new Vector2(LeaderWidthMm, span);
+            rect.anchoredPosition = new Vector2(0f, direction * (PillHalfHeightMm + span * 0.5f));
+
+            Mark(leader);
+            Mark(rect);
         }
 
-        private static void WidenCollider(Transform growTarget)
+        private static void WidenCollider(Transform growTarget, float widthMm)
         {
             if (growTarget == null || !growTarget.TryGetComponent<BoxCollider>(out var box))
             {
                 return;
             }
 
-            var size = box.size;
-            box.size = new Vector3(size.x, size.y, ColliderDepthMm);
-            EditorUtility.SetDirty(box);
-            PrefabUtility.RecordPrefabInstancePropertyModifications(box);
+            box.size = new Vector3(widthMm, PillHeightMm, ColliderDepthMm);
+            Mark(box);
         }
 
-        private static void Bind(DestinationTags set, List<LabelButton> buttons)
+        private static void SetSize(RectTransform rect, float widthMm, float heightMm)
+        {
+            if (rect == null)
+            {
+                return;
+            }
+
+            // sizeDelta is the size itself only while the anchors are together, which every rect in the label
+            // prefab keeps them (the prefab builder never moves them off centre for this one).
+            rect.sizeDelta = new Vector2(widthMm, heightMm);
+            Mark(rect);
+        }
+
+        private static void Mark(Object target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            EditorUtility.SetDirty(target);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(target);
+        }
+
+        private static void Bind(DestinationTags set, List<LabelButton> buttons, List<Placement> placements)
         {
             var so = new SerializedObject(set);
+
             var array = so.FindProperty("tags");
             array.arraySize = buttons.Count;
             for (var i = 0; i < buttons.Count; i++)
             {
                 array.GetArrayElementAtIndex(i).objectReferenceValue = buttons[i];
+            }
+
+            // Written in the same order and the same length as the tags above, which is the only thing
+            // DestinationTags checks before trusting them.
+            var anchors = so.FindProperty("anchors");
+            anchors.arraySize = placements.Count;
+            for (var i = 0; i < placements.Count; i++)
+            {
+                var element = anchors.GetArrayElementAtIndex(i);
+                element.FindPropertyRelative("Point").vector3Value = placements[i].Anchor;
+                element.FindPropertyRelative("Lift").floatValue = placements[i].Lift;
             }
 
             so.ApplyModifiedPropertiesWithoutUndo();

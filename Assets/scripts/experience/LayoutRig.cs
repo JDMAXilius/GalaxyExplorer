@@ -347,6 +347,65 @@ namespace CosmicSimulation
             LayoutApplied?.Invoke(layout);
         }
 
+        /// <summary>
+        /// The box the arrangement fills right now: <c>center</c> in world space, <c>size</c> measured along the
+        /// rig's own axes. False when there is no arrangement to measure.
+        ///
+        /// <para>It is built from the home anchors and the bodies' own diameters rather than from renderers,
+        /// because those are the authored intent: they are right before the first <see cref="Start"/> has run,
+        /// they still describe the arrangement when the player has carried a body off, and they are unmoved by
+        /// haloes, labels and panels. It is measured on the rig's axes and only then put back into the world so
+        /// that the centre is the middle of the arrangement itself, and not the middle of a world-aligned box
+        /// drawn round a row standing at an angle.</para>
+        ///
+        /// <para><see cref="ExperienceDirector"/> uses it to frame a place on the content root. A rig whose
+        /// bodies are not wired yet reports nothing rather than a box around the origin, so a half-built prefab
+        /// is left where it is instead of being shoved somewhere by a measurement of nothing.</para>
+        /// </summary>
+        public bool TryGetArrangementBounds(out Bounds bounds)
+        {
+            bounds = default;
+
+            if (bodies == null)
+            {
+                return false;
+            }
+
+            var rigScale = Mathf.Max(0.0001f, transform.lossyScale.x);
+            var found = false;
+
+            foreach (var body in bodies)
+            {
+                if (body == null || !body.IsUsable)
+                {
+                    continue;
+                }
+
+                // The body's own width, taken from the transform rather than from a slot: a layout may not name
+                // this body at all, and lossyScale is a diameter in metres by the convention CS-040 set. Divided
+                // back out of the rig's own scale, because the box is being built in the rig's units.
+                var width = Mathf.Max(0.0001f, body.Root.lossyScale.x) / rigScale * Mathf.Max(1f, body.SpanRatio);
+                var box = new Bounds(transform.InverseTransformPoint(body.Home.position), Vector3.one * width);
+
+                if (found)
+                {
+                    bounds.Encapsulate(box);
+                }
+                else
+                {
+                    bounds = box;
+                    found = true;
+                }
+            }
+
+            if (found)
+            {
+                bounds.center = transform.TransformPoint(bounds.center);
+            }
+
+            return found;
+        }
+
         private LayoutPreset FirstLayout()
         {
             return module != null && module.Layouts != null && module.Layouts.Length > 0 ? module.Layouts[0] : null;

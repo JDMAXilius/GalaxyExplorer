@@ -4,6 +4,7 @@ using System.IO;
 using GalaxyExplorer.XR;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace CosmicSimulation.EditorTools
 {
@@ -32,15 +33,20 @@ namespace CosmicSimulation.EditorTools
         private const string GraphicsSettingsPath = "ProjectSettings/GraphicsSettings.asset";
 
         /// <summary>
-        /// 120 000 sprites, against the 400 000 the Quest 3 budget allows for a whole frame (Technical
-        /// Overview 7.4). Well under, on purpose: the player stands *inside* this volume, so unlike the galaxy
-        /// — which is 18 520 points seen from outside — a large share of the web's sprites are within a couple
-        /// of metres and their screen area, not their count, is what costs. 120 000 is still six and a half
-        /// times the whole Milky Way, and it is 720 000 vertices and 240 000 triangles per view before Android
-        /// multiview doubles the vertex stage. CS-066 measures frame time on device and moves this number; it
-        /// is one serialized field and one re-run.
+        /// 40 000 sprites, against the 400 000 the Quest 3 budget allows for a whole frame across both eyes
+        /// (Technical Overview 7.4) — a tenth of it, spent on one decorative volume.
+        ///
+        /// It was 120 000, which is thirty percent of the entire frame and had never been profiled on a
+        /// headset. The player stands *inside* this volume, so unlike the galaxy — which is 17 200 points seen
+        /// from outside — a large share of the web's sprites are within a couple of metres, and their screen
+        /// area, not their count, is what costs: at roughly 3-4 px across, 40 000 additive sprites are about
+        /// half a million shaded fragments per eye per frame of pure overdraw, where 120 000 were one and a
+        /// half million. 40 000 is still 2.3x Andromeda, the one point cloud in this app known to run well on
+        /// the device, and it is 240 000 vertices and 80 000 triangles per view before Android multiview
+        /// doubles the vertex stage. CS-066 measures frame time on device and moves this number; it is one
+        /// constant here, or one serialized field on the prefab, and one re-run.
         /// </summary>
-        private const int PointCount = 120000;
+        private const int PointCount = CosmicWebRenderer.DefaultPointCount;
 
         /// <summary>Half-width of the volume in metres. GDD 4.7 asks for a 5 m volume around the player.</summary>
         private const float VolumeRadius = 2.5f;
@@ -271,6 +277,14 @@ namespace CosmicSimulation.EditorTools
 
             var rendererSo = new SerializedObject(renderer);
             SetObject(rendererSo, "pointsMaterial", material);
+
+            // Stated rather than left at the component default, because the first prefab this builder wrote
+            // carried AfterSkybox and that is a command-buffer slot this app never reaches: its camera clears
+            // to a solid colour, so the built-in pipeline runs no skybox pass and the whole web was recorded
+            // and then skipped. CameraEvent's members run 0..24 with no gaps, so the enum index the
+            // SerializedProperty wants is the value itself.
+            SetEnum(rendererSo, "cameraEvent", (int)CameraEvent.BeforeForwardAlpha);
+
             SetInt(rendererSo, "pointCount", PointCount);
             SetFloat(rendererSo, "volumeRadiusMetres", VolumeRadius);
             SetFloat(rendererSo, "pointSizeMetres", PointSize);

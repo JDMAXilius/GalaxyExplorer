@@ -191,6 +191,41 @@ namespace CosmicSimulation
             // Wired here as well as lazily, so the bar is draggable from the first frame rather than from the
             // first LateUpdate. See the drag bar section for what this corrects and why.
             DragHandler();
+
+            HideBehindTheDesktopMirror();
+        }
+
+        /// <summary>
+        /// One dock at a time (GDD 3.1). On a monitor the dock the player uses is <see cref="DesktopDock"/>'s
+        /// screen-space mirror, so this one takes its furniture down.
+        ///
+        /// <para>It was already meant to be out of sight there — see <see cref="TryEyeHeight"/>: the dock parks
+        /// 0.72 m below the eye line and the desktop camera never tilts, so the frustum was doing the hiding.
+        /// That is a coincidence of numbers rather than a decision, and it stops being true the moment anything
+        /// moves the camera, widens the field of view, or scales the content around it — and when it stops being
+        /// true the player gets a second row of the same seven tiles floating behind the one they are using,
+        /// which is exactly what "three menus on top of each other" looked like. Say it instead of relying on
+        /// it.</para>
+        ///
+        /// <para>Only the visuals go. The dock object stays alive and so does everything asked of it from the
+        /// mirror: <see cref="Recenter"/> (which is also how the desktop's Restore reaches
+        /// <c>FreePlacementAnchor</c>), <see cref="ToggleUtility"/> on U, and the utility window it spawns —
+        /// that window places itself in front of the camera on a desktop rather than beside this dock.</para>
+        ///
+        /// <para>Guarded on a mirror actually existing. <c>DesktopDock.Instance</c> is set in its Awake, so it is
+        /// already decided by the time any Start runs; a desktop scene carrying no mirror keeps this dock, on
+        /// the grounds that one dock the player has to look down at beats none at all.</para>
+        /// </summary>
+        private void HideBehindTheDesktopMirror()
+        {
+            if (!GalaxyExplorer.GalaxyExplorerManager.IsDesktop || DesktopDock.Instance == null)
+            {
+                return;
+            }
+
+            // Quietly: this is the dock never having been shown, not the player putting it away, and the hide
+            // clip at startup would be a sound with nothing behind it.
+            SetVisible(false, true);
         }
 
         /// <summary>Replays the one-time hint cards. F-05 and F-32: Help is how a player asks to see them again.</summary>
@@ -545,7 +580,12 @@ namespace CosmicSimulation
 
         // ---------- visibility
 
-        public void SetVisible(bool visible)
+        public void SetVisible(bool visible) => SetVisible(visible, false);
+
+        // The body of SetVisible. "quiet" skips the show/hide clip, for the one caller that is not the player
+        // asking: the desktop mirror taking this dock's furniture down at startup, which is not a dock being put
+        // away and should not sound like one.
+        private void SetVisible(bool visible, bool quiet)
         {
             if (_visible == visible)
             {
@@ -555,7 +595,11 @@ namespace CosmicSimulation
             _visible = visible;
 
             // Guarded by the equality check above, so a held palm that re-asserts the same state stays silent.
-            AudioService.Instance?.PlayClip(visible ? AudioId.DockShow : AudioId.DockHide);
+            if (!quiet)
+            {
+                AudioService.Instance?.PlayClip(visible ? AudioId.DockShow : AudioId.DockHide);
+            }
+
             if (tileRow != null)
             {
                 tileRow.gameObject.SetActive(visible);

@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: hd110067_f_surface_material
+  m_Shader: {fileID: 4800000, guid: 360dd7d855cc6d64fbfefade646c47b5, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalAlpha:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _DSTBLEND: 0
+    - _SRCBLEND: 1
+    - _TransitionAlpha: 1
+    m_Colors:
+    - _AlbedoMultiplier: {r: 0.561, g: 0.749, b: 0.847, a: 1}
+    - _AmbientColor: {r: 0.1122, g: 0.1498, b: 0.1694, a: 0.2}
+    - _FresnelColor: {r: 0.26928, g: 0.35952, b: 0.40656, a: 0.48}
+    - _FresnelDarkSideColor: {r: 0.092565, g: 0.12358501, b: 0.13975501, a: 0.165}
+    - _FresnelTerm: {r: 1.6, g: 0.8, b: 0, a: 0}
+    - _LightAmount: {r: 0.79, g: 0, b: 0, a: 0}
+    - _LightGammaCorrection: {r: 1.2, g: 0.8, b: 1, a: 1}
+    - _LightTint: {r: 0.99999994, g: 0.9193174, b: 0.85261637, a: 1}
+    - _NormalScale: {r: 0, g: 0, b: 1, a: 0}
+    - _SpecParams: {r: 40, g: 0, b: 0, a: 0}
+    - _SunDirection: {r: 0, g: 0, b: 0, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

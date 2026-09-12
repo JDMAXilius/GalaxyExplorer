@@ -1,0 +1,132 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a1d82b3ba3579645924b6713dbbf000, type: 3}
+  m_Name: hd110067
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.SystemProfile
+  Id: hd110067
+  DisplayName: HD 110067
+  Module: {fileID: 11400000, guid: e1e2ed909d2754448b9724a8a4e3603c, type: 2}
+  ContentPrefabName: hd110067_content_prefab
+  AuthoredLayoutId: hd110067_row
+  Bodies:
+  - Id: hd110067_star
+    Role: 0
+    Info: {fileID: 11400000, guid: b1124159ff5058341b782a46a5647eff, type: 2}
+    SourcePrefab: {fileID: 0}
+    DiameterKm: 1097448
+    OrbitSemiMajorAu: 0
+    Appearance:
+      Class: 0
+      IlluminantTemperatureK: 5266
+      EquilibriumTemperatureK: 5266
+      InsolationEarth: 0
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0
+  - Id: hd110067_b
+    Role: 1
+    Info: {fileID: 11400000, guid: d86b703f0c1590644b162d3d61b61e78, type: 2}
+    SourcePrefab: {fileID: 0}
+    DiameterKm: 28032
+    OrbitSemiMajorAu: 0.0793
+    Appearance:
+      Class: 2
+      IlluminantTemperatureK: 5266
+      EquilibriumTemperatureK: 803
+      InsolationEarth: 69.1
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0
+  - Id: hd110067_c
+    Role: 1
+    Info: {fileID: 11400000, guid: 652a16a23c1c3714788b9fbb9381f5d0, type: 2}
+    SourcePrefab: {fileID: 0}
+    DiameterKm: 30428
+    OrbitSemiMajorAu: 0.1039
+    Appearance:
+      Class: 2
+      IlluminantTemperatureK: 5266
+      EquilibriumTemperatureK: 701
+      InsolationEarth: 40.2
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0
+  - Id: hd110067_d
+    Role: 1
+    Info: {fileID: 11400000, guid: dce7e98af8ce62d4c9811bee5d2b7523, type: 2}
+    SourcePrefab: {fileID: 0}
+    DiameterKm: 36340
+    OrbitSemiMajorAu: 0.1362
+    Appearance:
+      Class: 2
+      IlluminantTemperatureK: 5266
+      EquilibriumTemperatureK: 613
+      InsolationEarth: 23.4
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0
+  - Id: hd110067_e
+    Role: 1
+    Info: {fileID: 11400000, guid: 2f923d58a573eab4c8899da5a28fb8e9, type: 2}
+    SourcePrefab: {fileID: 0}
+    DiameterKm: 24719
+    OrbitSemiMajorAu: 0.1785
+    Appearance:
+      Class: 2
+      IlluminantTemperatureK: 5266
+      EquilibriumTemperatureK: 535
+      InsolationEarth: 13.6
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0
+  - Id: hd110067_f
+    Role: 1
+    Info: {fileID: 11400000, guid: 631659925eaa7ef408d9d597dad32366, type: 2}
+    SourcePrefab: {fileID: 0}
+    DiameterKm: 33142
+    OrbitSemiMajorAu: 0.2163
+    Appearance:
+      Class: 2
+      IlluminantTemperatureK: 5266
+      EquilibriumTemperatureK: 486
+      InsolationEarth: 9.28
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0
+  - Id: hd110067_g
+    Role: 1
+    Info: {fileID: 11400000, guid: 01e2fd97c3242dd4cac256c6dbe0d71b, type: 2}
+    SourcePrefab: {fileID: 0}
+    DiameterKm: 33218
+    OrbitSemiMajorAu: 0.2621
+    Appearance:
+      Class: 2
+      IlluminantTemperatureK: 5266
+      EquilibriumTemperatureK: 442
+      InsolationEarth: 6.32
+      GeometricAlbedo: -1
+      AxialTiltDegrees: 0
+      Spin: 2
+      RotationPeriodHours: 0
+      RingOuterRadiusPlanetRadii: 0

@@ -237,9 +237,10 @@ namespace CosmicSimulation
 
         private void Update()
         {
-            // Tab, per GDD 8.5. Read here rather than in DesktopMouseInput, which already spends Tab folding
-            // away the legacy DesktopMenuManager row and only while one is on screen. Where both are present
-            // Tab moves both, which is the right answer while the old row is still being retired.
+            // Tab, per GDD 8.5, and Tab belongs to this dock alone. DesktopMouseInput only reaches for it when
+            // there is no DesktopDock in the scene at all, and what it reaches for — the legacy button row — is
+            // retired: its root ships switched off and DesktopMenuManager has no path left that switches it back
+            // on. So there is one dock on a monitor and one key that shows it (CS-111).
             var keyboard = Keyboard.current;
             if (keyboard != null && keyboard.tabKey.wasPressedThisFrame)
             {
@@ -247,7 +248,8 @@ namespace CosmicSimulation
             }
 
             // The room state and the mute state both change from elsewhere — P, the world dock's own
-            // passthrough button, the legacy HUD — so the two toggles read them rather than remember them.
+            // passthrough button, the utility window's mute — so the two toggles read them rather than
+            // remember them.
             PaintControls();
         }
 
@@ -304,8 +306,10 @@ namespace CosmicSimulation
             var menu = Menu();
             if (menu != null)
             {
-                // The legacy HUD owns the stored preference and its own icon; going through it keeps one
-                // answer to "is this app muted".
+                // DesktopMenuManager owns the stored preference; going through it keeps one answer to "is this
+                // app muted". Its button row is retired, but the component itself is not — it still holds the
+                // pref, the mute icon and the controls overlay, and it is on the menu_managers root, which stays
+                // alive with the row's own object switched off.
                 menu.OnMuteButtonPressed();
             }
             else
@@ -330,8 +334,8 @@ namespace CosmicSimulation
                 return;
             }
 
-            // The overlay itself belongs to the legacy desktop HUD. Say so once rather than shipping a button
-            // that quietly does nothing.
+            // The overlay itself still lives under DesktopMenuManager, the last surviving piece of the legacy
+            // desktop HUD. Say so once rather than shipping a button that quietly does nothing.
             if (!_warnedNoHelp)
             {
                 _warnedNoHelp = true;
@@ -356,7 +360,7 @@ namespace CosmicSimulation
             }
         }
 
-        // Looked up lazily: the legacy HUD lives in a view scene that is loaded and unloaded under us, so a
+        // Looked up lazily: menu_managers lives in a scene that can be loaded and unloaded under us, so a
         // reference taken once at startup goes stale.
         private DesktopMenuManager Menu()
         {

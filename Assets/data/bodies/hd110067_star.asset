@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d653dec819cc37641a0a5388e9e0dff9, type: 3}
+  m_Name: hd110067_star
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.BodyInfo
+  Id: hd110067_star
+  DisplayName: HD 110067
+  Subtitle: THE HOST STAR
+  Paragraph: A K-type dwarf a little cooler and smaller than the Sun, in Coma Berenices, about 105 light years away. It is bright enough to keep studying, and old - somewhere around seven to eight billion years. From any of its six planets it would look like a warm white disc several times wider than the Sun looks from Earth.
+  Stats:
+  - Label: Diameter
+    Value: 1,097,448
+    Unit: km
+    Exponent: 0
+  - Label: Mass
+    Value: 1.59
+    Unit: kg
+    Exponent: 30
+  - Label: Day Length
+    Value: Not yet measured
+    Unit: 
+    Exponent: 0
+  Moons: []
+  Orbits: {fileID: 0}
+  Narration: {fileID: 0}
+  Ambience: {fileID: 0}

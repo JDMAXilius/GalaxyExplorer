@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d653dec819cc37641a0a5388e9e0dff9, type: 3}
+  m_Name: hd110067_b
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.BodyInfo
+  Id: hd110067_b
+  DisplayName: HD 110067 b
+  Subtitle: FIRST IN THE CHAIN
+  Paragraph: 'The innermost of six worlds locked into a rhythm: for every two orbits this planet makes, the next one out makes three, and that pattern continues all the way to the sixth. Its measured density is far too low for rock, so it almost certainly carries a deep hydrogen atmosphere with no surface to stand on.'
+  Stats:
+  - Label: Diameter
+    Value: 28,032
+    Unit: km
+    Exponent: 0
+  - Label: Mass
+    Value: 3.40
+    Unit: kg
+    Exponent: 25
+  - Label: Orbital Period
+    Value: 9.11
+    Unit: days
+    Exponent: 0
+  - Label: Orbital Distance
+    Value: 0.0793
+    Unit: AU
+    Exponent: 0
+  - Label: Day Length
+    Value: Not yet measured
+    Unit: 
+    Exponent: 0
+  Moons: []
+  Orbits: {fileID: 0}
+  Narration: {fileID: 0}
+  Ambience: {fileID: 0}

@@ -112,11 +112,16 @@ namespace CosmicSimulation
             /// <summary>Brightness multiplier for each structure. The hue is the material's, not ours.</summary>
             public float VoidBrightness, WallBrightness, FilamentBrightness, NodeBrightness;
 
-            /// <summary>The values CS-065 shipped. See CosmicWebRenderer for where each one is exposed.</summary>
+            /// <summary>
+            /// The values CS-065 shipped, with the point count lowered to
+            /// <see cref="CosmicWebRenderer.DefaultPointCount"/> — a tenth of the frame budget rather than
+            /// thirty percent of it, for the reasons recorded there. See CosmicWebRenderer for where each of
+            /// these is exposed.
+            /// </summary>
             public static Settings Default => new Settings
             {
                 Seed = 20260912,
-                PointCount = 120000,
+                PointCount = CosmicWebRenderer.DefaultPointCount,
                 Radius = 2.5f,
                 CellsPerAxis = 7,
                 SiteJitter = 0.45f,

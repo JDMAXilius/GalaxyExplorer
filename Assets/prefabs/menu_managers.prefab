@@ -1088,6 +1088,7 @@ MonoBehaviour:
   displayNameArea: {fileID: 3753525395651940064}
   planetPreviewController: {fileID: 1150211265439676737}
   staticPreview: {fileID: 2800000, guid: c1b0a97100e8ba84dad317868940e532, type: 3}
+  keepLegacyBar: 0
 --- !u!1 &4510988643917448100
 GameObject:
   m_ObjectHideFlags: 0
@@ -2346,6 +2347,7 @@ MonoBehaviour:
   displayNameArea: {fileID: 4723039680146105197}
   planetPreviewController: {fileID: 1150211265439676737}
   staticPreview: {fileID: 0}
+  keepLegacyBar: 0
 --- !u!1 &4723039679275017287
 GameObject:
   m_ObjectHideFlags: 0
@@ -2916,6 +2918,7 @@ MonoBehaviour:
   displayNameArea: {fileID: 4723039680427015846}
   planetPreviewController: {fileID: 1150211265439676737}
   staticPreview: {fileID: 0}
+  keepLegacyBar: 0
 --- !u!1 &4723039679406502890
 GameObject:
   m_ObjectHideFlags: 0
@@ -3075,6 +3078,7 @@ MonoBehaviour:
   displayNameArea: {fileID: 4723039680600284354}
   planetPreviewController: {fileID: 1150211265439676737}
   staticPreview: {fileID: 0}
+  keepLegacyBar: 0
 --- !u!1 &4723039679435046569
 GameObject:
   m_ObjectHideFlags: 0
@@ -3502,6 +3506,7 @@ MonoBehaviour:
   displayNameArea: {fileID: 4723039680731166055}
   planetPreviewController: {fileID: 1150211265439676737}
   staticPreview: {fileID: 0}
+  keepLegacyBar: 0
 --- !u!1 &4723039679484449042
 GameObject:
   m_ObjectHideFlags: 0
@@ -3518,7 +3523,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4723039679484449043
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4171,6 +4176,7 @@ MonoBehaviour:
   displayNameArea: {fileID: 4723039679353164920}
   planetPreviewController: {fileID: 1150211265439676737}
   staticPreview: {fileID: 0}
+  keepLegacyBar: 0
 --- !u!1 &4723039679665799769
 GameObject:
   m_ObjectHideFlags: 0
@@ -4839,6 +4845,7 @@ MonoBehaviour:
   displayNameArea: {fileID: 4723039680069976604}
   planetPreviewController: {fileID: 1150211265439676737}
   staticPreview: {fileID: 0}
+  keepLegacyBar: 0
 --- !u!1 &4723039679840485166
 GameObject:
   m_ObjectHideFlags: 0
@@ -5381,6 +5388,7 @@ MonoBehaviour:
   displayNameArea: {fileID: 4723039681125687661}
   planetPreviewController: {fileID: 1150211265439676737}
   staticPreview: {fileID: 0}
+  keepLegacyBar: 0
 --- !u!1 &4723039679976211386
 GameObject:
   m_ObjectHideFlags: 0
@@ -7668,6 +7676,7 @@ MonoBehaviour:
   displayNameArea: {fileID: 4723039680701440478}
   planetPreviewController: {fileID: 1150211265439676737}
   staticPreview: {fileID: 0}
+  keepLegacyBar: 0
 --- !u!1 &4723039680311303557
 GameObject:
   m_ObjectHideFlags: 0
@@ -8196,7 +8205,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4723039680420068168
 Transform:
   m_ObjectHideFlags: 0
@@ -9632,7 +9641,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4723039680655264106
 RectTransform:
   m_ObjectHideFlags: 0
@@ -10049,6 +10058,7 @@ MonoBehaviour:
   - {fileID: 4723039679809568183}
   lightDestinationPosition: {x: -10, y: 7, z: 7}
   selectionImage: {fileID: 5368345017017717350}
+  keepLegacyBar: 0
 --- !u!114 &1150211265439676737
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10075,6 +10085,7 @@ MonoBehaviour:
   - {fileID: 5413354517631034468}
   lightDestinationPosition: {x: -10, y: 7, z: 7}
   selectionImage: {fileID: 5368345017017717350}
+  keepLegacyBar: 0
 --- !u!1 &4723039680701440288
 GameObject:
   m_ObjectHideFlags: 0
@@ -10661,6 +10672,7 @@ MonoBehaviour:
   displayNameArea: {fileID: 4723039680075369294}
   planetPreviewController: {fileID: 1150211265439676737}
   staticPreview: {fileID: 0}
+  keepLegacyBar: 0
 --- !u!1 &4723039680867450346
 GameObject:
   m_ObjectHideFlags: 0
@@ -11885,7 +11897,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4723039681027560533
 Transform:
   m_ObjectHideFlags: 0
@@ -12854,6 +12866,7 @@ MonoBehaviour:
   displayNameArea: {fileID: 4723039679436820426}
   planetPreviewController: {fileID: 1150211265439676737}
   staticPreview: {fileID: 0}
+  keepLegacyBar: 0
 --- !u!1 &4723039681221338574
 GameObject:
   m_ObjectHideFlags: 0
