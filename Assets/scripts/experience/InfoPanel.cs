@@ -3,6 +3,7 @@
 using GalaxyExplorer.XR;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CosmicSimulation
 {
@@ -39,6 +40,16 @@ namespace CosmicSimulation
         [SerializeField] private TMP_Text subtitle;
         [SerializeField] private TMP_Text paragraph;
         [SerializeField] private TMP_Text instruction;
+
+        [SerializeField]
+        [Tooltip("Hairline between the prose and the stats. Only the body variant has stats, so the scene and " +
+                 "moon variants hide it rather than draw a rule under nothing.")]
+        private Graphic divider;
+
+        [SerializeField]
+        [Tooltip("Gap between the last paragraph and the instruction on a scene panel, in canvas units — one " +
+                 "unit is one millimetre on this canvas.")]
+        private float sceneInstructionGapUnits = 8f;
 
         [Header("Stats, four cells for the body variant")]
         [SerializeField] private Transform statGrid;
@@ -93,6 +104,15 @@ namespace CosmicSimulation
             if (target == null && body != null)
             {
                 target = body.transform;
+            }
+
+            if (divider == null)
+            {
+                // info_panel_prefab was built before this field existed, so on that prefab the hairline is a
+                // child nothing points at - and a scene panel, which has no stats, would draw a rule across
+                // empty space. Found by name once; harmless the day UiPrefabBuilder assigns the field instead.
+                var found = transform.Find("divider");
+                divider = found != null ? found.GetComponent<Graphic>() : null;
             }
         }
 
@@ -150,14 +170,55 @@ namespace CosmicSimulation
                 return;
             }
 
-            variant = Variant.Scene;
             var copy = module.Panel;
+            if (copy == null)
+            {
+                return;
+            }
+
+            variant = Variant.Scene;
+
+            var prose = copy.Paragraphs != null ? string.Join("\n\n", copy.Paragraphs) : null;
 
             Set(title, string.IsNullOrEmpty(copy.Title) ? module.DisplayName : copy.Title);
             Set(subtitle, null);
-            Set(paragraph, copy.Paragraphs != null ? string.Join("\n\n", copy.Paragraphs) : null);
+            Set(paragraph, prose);
             Set(instruction, copy.Instruction);
             ShowStats(0, null);
+            ReflowScene(prose);
+        }
+
+        /// <summary>
+        /// Moves the instruction under however much prose a place has.
+        ///
+        /// The prefab's rows are laid out for the body variant, whose paragraph is capped at 55 words and given
+        /// a fixed seven lines (<c>UiPrefabBuilder</c>). A scene panel's two or three paragraphs are as long as
+        /// the copy deck makes them, so a fixed row would either run the prose through the instruction or leave
+        /// a hole under it. Only the scene variant is reflowed: the body panels are already laid out and signed
+        /// off against the spec.
+        /// </summary>
+        private void ReflowScene(string prose)
+        {
+            if (paragraph == null || instruction == null)
+            {
+                return;
+            }
+
+            var proseRect = paragraph.rectTransform;
+
+            // sizeDelta rather than rect.width when the layout has not been built yet: both rows are anchored to
+            // a point at the top-left, where the two are the same number.
+            var width = proseRect.rect.width > 1f ? proseRect.rect.width : proseRect.sizeDelta.x;
+            var height = string.IsNullOrEmpty(prose) ? 0f : paragraph.GetPreferredValues(prose, width, 0f).y;
+
+            proseRect.sizeDelta = new Vector2(proseRect.sizeDelta.x, height);
+
+            // Top-left pivot, so y runs downwards as negatives and the instruction sits at the paragraph's
+            // top minus its height.
+            var instructionRect = instruction.rectTransform;
+            instructionRect.anchoredPosition = new Vector2(
+                instructionRect.anchoredPosition.x,
+                proseRect.anchoredPosition.y - height - sceneInstructionGapUnits);
         }
 
         private void ShowStats(int count, BodyInfo info)
@@ -165,6 +226,11 @@ namespace CosmicSimulation
             if (statGrid != null)
             {
                 statGrid.gameObject.SetActive(count > 0);
+            }
+
+            if (divider != null)
+            {
+                divider.gameObject.SetActive(count > 0);
             }
 
             for (var i = 0; i < statLabels.Length; i++)

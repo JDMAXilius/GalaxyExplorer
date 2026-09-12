@@ -42,12 +42,26 @@ namespace CosmicSimulation
         [Tooltip("Where a module's ContentPrefab is spawned. One is made at the origin when this is left empty.")]
         private Transform contentRoot;
 
+        [Header("The open experience's own panel")]
+        [SerializeField]
+        [Tooltip("Assets/prefabs/ui/info_panel_prefab. Left empty, no experience gets a panel.")]
+        private InfoPanel scenePanelPrefab;
+
+        [SerializeField]
+        [Tooltip("Where that panel parks, in metres, measured in the content root's frame — so it sits beside " +
+                 "the experience wherever the room put it, not beside the world origin.")]
+        private Vector3 scenePanelOffset = new Vector3(0.55f, 0.2f, 0f);
+
         /// <summary>How long the intro's own last-stage load is given to appear before we stop waiting for one.</summary>
         private const float IntroSettleGrace = 0.5f;
 
         private readonly List<GameObject> _destinationObjects = new List<GameObject>();
         private readonly HashSet<ExperienceModule> _warnedEmpty = new HashSet<ExperienceModule>();
         private GameObject _prefabContent;
+        private InfoPanel _scenePanel;
+        private InfoPanel _destinationPanel;
+        private Transform _scenePanelAnchor;
+        private bool _warnedNoPanelPrefab;
         private bool _ownsContentRoot;
         private Coroutine _switching;
         private bool _switchFinished;
@@ -237,6 +251,13 @@ namespace CosmicSimulation
                 EnvironmentController.Instance.Set(module.Environment);
             }
 
+            // No content moves, but the place is now open, and the two things that describe it belong to the
+            // place rather than to the switch that would otherwise have opened it. Without this the start
+            // module — the one the intro hands over, which is the Milky Way — would be the only experience in
+            // the app that never showed its panel or played its bed.
+            ShowScenePanel(module);
+            AmbienceController.PlayBed(module.Ambience);
+
             ExperienceChanged?.Invoke(module);
         }
 
@@ -371,6 +392,11 @@ namespace CosmicSimulation
                     vo.Stop(true);
                 }
 
+                // The bed goes out with the narration, at the same beat and for the same reason: both describe
+                // the place being left. It fades rather than cuts, and the fade is well over by the time the new
+                // one is asked for at the bottom of this routine.
+                AmbienceController.StopBed();
+
                 if (EnvironmentController.Instance != null)
                 {
                     EnvironmentController.Instance.Set(module.Environment);
@@ -382,6 +408,12 @@ namespace CosmicSimulation
                 // and duplicate singletons on top of each other.
                 var adopted = UnloadOtherViews(module.SceneName);
                 DestroyPrefabContent();
+
+                // The panel is the previous place's, so it goes when the previous place does — not earlier, or
+                // the room would be described by nothing while the old content is still standing there, and not
+                // later, or a switch that fails to load would leave the old place's prose floating over an empty
+                // room. It lives under our own content root, which survives the unload, so it has to be told.
+                DestroyScenePanel();
 
                 if (!string.IsNullOrEmpty(module.SceneName))
                 {
@@ -425,10 +457,18 @@ namespace CosmicSimulation
                     yield return GrowIn(content.transform, growInSeconds);
                 }
 
+                // Both after the grow-in, and both after the only `yield break` in this routine: a switch that
+                // was abandoned because its scene never arrived must not end up narrating, describing or
+                // sounding like a place the player is not in. The panel goes up before the voice starts, because
+                // it is the written form of the same words.
+                ShowScenePanel(module);
+
                 if (vo != null && module.Narration != null)
                 {
                     vo.PlayClip(module.Narration, allowReplay: true, replaceQueue: true);
                 }
+
+                AmbienceController.PlayBed(module.Ambience);
             }
             finally
             {
@@ -551,6 +591,133 @@ namespace CosmicSimulation
             // Cleared straight away rather than after the deferred Destroy, so the rest of the switch does not
             // mistake a dying instance for the new content.
             _prefabContent = null;
+        }
+
+        // ---------- the open experience's own panel (GDD 3.3, 8.3; contract F-20, F-23, F-25, F-26)
+
+        /// <summary>
+        /// Puts up the panel that describes the place the player has just arrived in: its title, its two or
+        /// three paragraphs and the line telling them what they can do here.
+        ///
+        /// A module with no authored copy gets nothing, silently — that is the normal state of a place whose
+        /// prose has not been written yet, not a fault. The copy is checked rather than the module: a module
+        /// always has a <see cref="ExperienceModule.DisplayName"/>, and <see cref="InfoPanel.Bind"/> falls back
+        /// to it, so testing the module alone would give every place a one-word panel.
+        /// </summary>
+        private void ShowScenePanel(ExperienceModule module)
+        {
+            // Never two for one place. Switch already tore the previous one down; this is the Adopt path, and
+            // the guard against anyone opening the same place twice.
+            DestroyScenePanel();
+
+            if (module == null || !HasPanelCopy(module))
+            {
+                return;
+            }
+
+            if (scenePanelPrefab == null)
+            {
+                if (!_warnedNoPanelPrefab)
+                {
+                    _warnedNoPanelPrefab = true;
+                    Debug.LogWarning(
+                        "ExperienceDirector: no scene panel prefab is assigned, so no experience shows its own " +
+                        "panel. Assign Assets/prefabs/ui/info_panel_prefab, or run " +
+                        "Cosmic Simulation/Wire Scene Panel.", this);
+                }
+
+                return;
+            }
+
+            _scenePanel = SpawnPanel(module, ScenePanelAnchor(), module.Id + "_scene_panel");
+        }
+
+        private void DestroyScenePanel()
+        {
+            if (_scenePanel != null)
+            {
+                Destroy(_scenePanel.gameObject);
+            }
+
+            _scenePanel = null;
+        }
+
+        /// <summary>
+        /// Instantiates a panel, binds a module's copy to it and shows it. Shared by the experience's own panel
+        /// and by a destination overlay's, which differ only in what they sit beside.
+        /// </summary>
+        private InfoPanel SpawnPanel(ExperienceModule module, Transform target, string name)
+        {
+            var panel = Instantiate(scenePanelPrefab, ContentRoot());
+            panel.name = name;
+
+            // Parked where it belongs before its first LateUpdate, so it fades in where it will live rather
+            // than sliding there from the content root's origin.
+            panel.transform.position = target.position;
+
+            panel.Bind(module);
+            panel.SetTarget(target);
+            panel.Show();
+
+            // The prefab carries a GraphicRaycaster (UiPrefabBuilder puts one on every world-space canvas it
+            // builds) and this panel has nothing to press. Left raycastable it would be a sheet of text the
+            // player's ray could catch on, between them and the experience it describes.
+            var group = panel.GetComponent<CanvasGroup>();
+            if (group != null)
+            {
+                group.interactable = false;
+                group.blocksRaycasts = false;
+            }
+
+            return panel;
+        }
+
+        /// <summary>True when a module has prose of its own, as opposed to only a name.</summary>
+        private static bool HasPanelCopy(ExperienceModule module)
+        {
+            var copy = module.Panel;
+            if (copy == null)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrEmpty(copy.Title) || !string.IsNullOrEmpty(copy.Instruction))
+            {
+                return true;
+            }
+
+            if (copy.Paragraphs != null)
+            {
+                foreach (var paragraph in copy.Paragraphs)
+                {
+                    if (!string.IsNullOrEmpty(paragraph))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// What the experience's panel sits beside. An empty object rather than the content itself: a place's
+        /// content is a galaxy or a row of planets, whose first renderer says nothing useful about how wide the
+        /// whole thing is, and <see cref="InfoPanel"/> measures its target's renderers to find the edge to clear.
+        /// An anchor with none falls back to a small radius, so the panel lands where this offset puts it.
+        /// </summary>
+        private Transform ScenePanelAnchor()
+        {
+            if (_scenePanelAnchor == null)
+            {
+                _scenePanelAnchor = new GameObject("scene_panel_anchor").transform;
+                _scenePanelAnchor.SetParent(ContentRoot(), false);
+            }
+
+            // Re-read every time, so the offset can be dragged in the inspector during play and take effect on
+            // the next switch.
+            _scenePanelAnchor.localPosition = scenePanelOffset;
+            return _scenePanelAnchor;
         }
 
         /// <summary>
@@ -696,6 +863,14 @@ namespace CosmicSimulation
                 vo.PlayClip(destination.Narration, allowReplay: true, replaceQueue: true);
             }
 
+            // A destination's copy is authored in the same place as an experience's, and GDD 8.3 lets several
+            // panels be open at once, so the map's own panel stays up while this one joins it. It sits beside
+            // the overlay rather than at the experience anchor, and follows it when the player moves it.
+            if (scenePanelPrefab != null && HasPanelCopy(destination))
+            {
+                _destinationPanel = SpawnPanel(destination, instance.transform, destination.Id + "_panel");
+            }
+
             StartCoroutine(GrowIn(instance.transform, growInSeconds));
             return instance;
         }
@@ -712,6 +887,13 @@ namespace CosmicSimulation
             }
 
             _destinationObjects.Clear();
+
+            if (_destinationPanel != null)
+            {
+                Destroy(_destinationPanel.gameObject);
+            }
+
+            _destinationPanel = null;
 
             if (Current != null && EnvironmentController.Instance != null)
             {
