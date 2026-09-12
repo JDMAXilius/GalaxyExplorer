@@ -49,9 +49,13 @@ Shader "Planets/Sun"
 
 				#pragma vertex vert
 				#pragma fragment frag
-				// Without this the STEREO_INSTANCING_ON variant is never compiled, so the instancing macros below
-				// do nothing and both eyes would draw with the left eye's matrices under Single Pass Instanced
-				// (Windows/Link). Android multiview does not need it; compiling it costs one variant.
+				// This pragma is NOT what makes the stereo macros below work, whatever this comment used to say.
+				// It gates INSTANCING_ON -- GPU instancing, per-instance property arrays, DrawMeshInstanced. The eye
+				// index rides on STEREO_INSTANCING_ON, which Unity's shader compiler adds by itself when the XR
+				// render mode calls for it: TMP_SDF-Mobile carries the full macro set with no such pragma and draws
+				// correctly in both eyes. Kept because dropping a pragma from a shipping shader gains one variant
+				// and risks the material's GPU-instancing flag -- but it is not a stereo fix, so do not add it to
+				// other shaders to "make them consistent" (CS-096 settled this).
 				#pragma multi_compile_instancing
 
 				#include "UnityCG.cginc"

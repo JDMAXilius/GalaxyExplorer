@@ -26,7 +26,7 @@
 [CmdletBinding()]
 param(
     # The Unity project. Defaults to this repo, two levels up from tools/mcp.
-    [string] $ProjectPath = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path,
+    [string] $ProjectPath = '',
 
     # How long to wait for the compile and domain reload to finish.
     [int] $TimeoutSeconds = 300,
@@ -55,8 +55,22 @@ if (Test-Path variable:PSNativeCommandUseErrorActionPreference) {
     $PSNativeCommandUseErrorActionPreference = $false
 }
 
-$umcp = Join-Path $PSScriptRoot 'umcp.js'
-if (-not (Test-Path $umcp)) { Write-Error "umcp.js is missing from $PSScriptRoot"; exit 2 }
+# $PSScriptRoot is unreliable here: it is empty when the script is
+# invoked through `powershell -File` with a relative path - which is how it failed the first
+# time it was ever run for real. Resolve the script's own folder once, here, and derive both
+# the project path and umcp.js from it.
+$scriptRoot = $PSScriptRoot
+if (-not $scriptRoot) { $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition }
+if (-not $scriptRoot) {
+    # Falling back to the working directory would compute a project path two levels above wherever
+    # the caller happened to stand, and then refresh the wrong project. Fail loudly instead.
+    Write-Error 'Cannot determine the location of compile.ps1; pass -ProjectPath explicitly.'
+    exit 2
+}
+if (-not $ProjectPath) { $ProjectPath = (Resolve-Path (Join-Path $scriptRoot '..\..')).Path }
+
+$umcp = Join-Path $scriptRoot 'umcp.js'
+if (-not (Test-Path $umcp)) { Write-Error "umcp.js is missing from $scriptRoot"; exit 2 }
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
     Write-Error 'node is not on PATH; umcp.js needs it.'
     exit 2

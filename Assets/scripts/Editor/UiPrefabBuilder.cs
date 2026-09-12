@@ -244,7 +244,24 @@ namespace CosmicSimulation.EditorTools
             var barBox = bar.gameObject.AddComponent<BoxCollider>();
             barBox.size = new Vector3(60f, 8f, 2f);
             bar.gameObject.AddComponent<GEInteractable>();
-            bar.gameObject.AddComponent<ManipulationHandler>();
+
+            // The bar is a handle, not cargo (GDD 8.1: it "moves the whole dock"), so three things have to be
+            // set on it and only the first was. (1) The host is the dock root — left at its default the handler
+            // drags the 60 mm bar out from under the dock and leaves the dock behind. (2) One hand: two hands on
+            // a handle would scale and spin the entire dock, millimetre canvas and all. (3) The router, because
+            // ManipulationHandler is deliberately not an IGEPointerHandler, so without it the pinch never
+            // arrives at all (CS-106/CS-108). DockController re-asserts (1) and (2) at run time for docks built
+            // before this, but this is the durable form.
+            var barGrab = bar.gameObject.AddComponent<ManipulationHandler>();
+            var barSo = new SerializedObject(barGrab);
+            barSo.FindProperty("hostTransform").objectReferenceValue = root.transform;
+            barSo.FindProperty("manipulationType").enumValueIndex =
+                (int)ManipulationHandler.HandMovementType.OneHandedOnly;
+            // Nothing else sounds this grab: the drag bar has no ForceSolver, which is the component that plays
+            // those clips everywhere else.
+            barSo.FindProperty("playGrabSounds").boolValue = true;
+            barSo.ApplyModifiedPropertiesWithoutUndo();
+            bar.gameObject.AddComponent<ManipulationPointerRouter>();
 
             var recenter = SquareButton("recenter_button", underRow, 9f, 6f, Load("icon_recenter"), Plate, Ink);
             ((RectTransform)recenter.transform).anchoredPosition = new Vector2(396f, 0f);

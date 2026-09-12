@@ -54,6 +54,17 @@ Shader "Planets/OrbitalTrail"
 					uint orbitIndex;
 				};
 
+				// SV_VertexID is the only real geometry input -- every segment is expanded from _OrbitsData. It has to
+				// move into a struct so UNITY_VERTEX_INPUT_INSTANCE_ID has somewhere to live: under single-pass
+				// instanced stereo the eye index arrives as the instance id, and UNITY_SETUP_INSTANCE_ID reads it off
+				// the input struct. A bare `uint vid : SV_VertexID` parameter gives it nowhere to arrive. Same shape as
+				// cosmic_web_points_shader, which shares this draw path.
+				struct appdata
+				{
+					uint vid : SV_VertexID;
+					UNITY_VERTEX_INPUT_INSTANCE_ID
+				};
+
 				struct v2f 
 				{
 					float4 vertex : SV_POSITION;
@@ -62,6 +73,8 @@ Shader "Planets/OrbitalTrail"
 					float4 planetPosAndRadius : TEXCOORD3;
 					float3 nextDirection : TEXCOORD4;
 					float  clipAmount : TEXCOORD5;
+					UNITY_VERTEX_INPUT_INSTANCE_ID
+					UNITY_VERTEX_OUTPUT_STEREO
 				};
 
 				float4 _Color;
@@ -121,10 +134,19 @@ Shader "Planets/OrbitalTrail"
 				// driver does not support together with multiview stereo.
 				static const uint SegmentStripIndex[6] = { 0, 1, 2, 2, 1, 3 };
 
-				v2f vert(uint vid : SV_VertexID)
+				v2f vert(appdata v)
 				{
-					uint id = vid / 6;
-					uint corner = SegmentStripIndex[vid % 6];
+					// The output is declared up here, not down beside the first o.* write, because UNITY_MATRIX_VP below
+					// is unity_StereoMatrixVP[unity_StereoEyeIndex] under single-pass instanced -- the eye index has to be
+					// set before the mvp is built, and UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO needs the struct to exist.
+					// Do not tidy this back down to where it was.
+					v2f o = (v2f)0;
+					UNITY_SETUP_INSTANCE_ID(v);
+					UNITY_TRANSFER_INSTANCE_ID(v, o);
+					UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
+					uint id = v.vid / 6;
+					uint corner = SegmentStripIndex[v.vid % 6];
 
 					OrbitDataPoint p1 = _OrbitsData[id];
 
@@ -179,7 +201,6 @@ Shader "Planets/OrbitalTrail"
 					float4 basePoint = atEnd ? points[2] : points[1];
 					float2 side = atEnd ? sideEnd : sideStart;
 
-					v2f o = (v2f)0;
 					o.vertex = float4(basePoint.xyz + sign * _Width * float3(side, 0) * basePoint.w, basePoint.w);
 					o.texCoord = float2(sign < 0 ? 0 : 1, 1);
 					o.wPos = atEnd ? wPos1 : wPos0;
@@ -192,6 +213,9 @@ Shader "Planets/OrbitalTrail"
 
 				fixed4 frag(v2f i) : COLOR
 				{			
+					UNITY_SETUP_INSTANCE_ID(i);
+					UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
+
 					float3 toPlanet = i.wPos - i.planetPosAndRadius.xyz;
 					float distanceFromPlanet = length(toPlanet);
 

@@ -6,6 +6,43 @@ you change one, update the affected docs in the same commit.
 
 ---
 
+## 2026-09-12 — Phase 7 (terminal session)
+
+### D-008 · The OpenXR render-mode reading was backwards; Android is Single Pass Instanced
+**Finding, not a choice — recorded as a decision because it reverses one already on
+record.** Android, the shipping Quest 3 build, runs **Single Pass Instanced**.
+Windows/Link runs **Multi Pass**.
+**Evidence.** `OpenXRSettings.RenderMode` is declared
+`MultiPass = 0, SinglePassInstanced = 1` in
+`Library/PackageCache/com.unity.xr.openxr@b5b77b4027be/Runtime/Settings/OpenXRRenderSettings.cs:16-27`
+(field default `SinglePassInstanced`), and the settings asset,
+`Assets/XR/Settings/OpenXR Package Settings.asset`, holds `m_renderMode: 1` under
+`m_Name: Android` and `m_renderMode: 0` under `m_Name: Standalone` (`m_Name: WebGL` is
+also `1`, moot since it does not ship). Read directly from the package cache and the
+asset during a terminal session with the live editor open, not inferred from either
+file's surrounding code.
+**What this reverses.** A `[CC]` session on 12 Sep, with no editor available, read the
+same two sources by eye and got the assignment backwards — it recorded Android as
+Multi Pass and Standalone as Single Pass Instanced, and on that basis flagged
+`CLAUDE.md`'s original line ("Android multiview; Windows/Link multi-pass") as wrong.
+`CLAUDE.md` was right the whole time; the note correcting it was the error, and it had
+propagated into `docs/BACKLOG.md`'s `[TERM]` priority queue (items 22 through 24, since
+rewritten) and into CS-095's acceptance criteria (since corrected in the same file).
+**Why it matters.** A missing stereo macro is a broken eye under Single Pass Instanced
+and an invisible bug under Multi Pass. With the reading corrected, **Android is where a
+missing macro actually breaks something**, and Windows/Link — the platform every prior
+verification step aimed at — is the one where the same bug hides. Any future
+close-one-eye check for a stereo-macro fix has to run against the standalone Android
+build, or against Link with the render mode explicitly forced to Single Pass Instanced;
+a default Link session proves nothing about what ships.
+**Consequence.** CS-095 and CS-096's device-verification steps now name Android (or a
+forced-SPI Link) rather than a default Link session. No shader code changes as a result
+of this entry alone — CS-096's fixes were already written on the (correct) assumption
+that the shipping platform was the one at risk, because that ticket's own author read
+the same two sources correctly on 12 Sep, ahead of the queue note above it.
+
+---
+
 ## 2026-09-12 — Phase 6
 
 ### D-007 · Music ducks under narration — **awaiting owner sign-off**

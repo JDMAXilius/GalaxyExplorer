@@ -1,5 +1,15 @@
 ﻿// Copyright Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
+// No stereo macros here, on purpose (CS-096). This shader only runs on the galaxy's render-to-texture
+// compose chain, and that chain is switched off whenever a headset is attached: DrawStars computes
+// _useDownscaledTarget as `renderIntoDownscaledTarget && !XRSettings.isDeviceActive`, because the
+// down-scaled targets are plain 2D RenderTextures and cannot feed a stereo eye texture. Under XR every
+// galaxy layer draws straight into the eye buffer and neither this material nor its Blits are touched.
+// Only pass 0 has a caller (the two CommandBuffer.Blit calls in DrawStars.UpdateCommandBuffer); passes
+// 1-3, the box blends, have no consumer anywhere in the project.
+// So adding the macros to four passes would be an unverifiable change to dead-on-XR code. If the
+// down-scaled path is ever revived for XR, the fix is a per-eye RenderTexture array plus XRSettings-aware
+// Blits in DrawStars -- macros on this shader alone would not make it correct.
 Shader "Galaxy/ScreenCompose"
 {
 	Properties { _MainTex ("Main Texture", any) = "" {} }

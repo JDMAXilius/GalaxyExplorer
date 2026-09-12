@@ -62,6 +62,18 @@ Work this list top to bottom; later groups assume the ones above left the projec
 state that actually builds. Ticket ids are given so a screen or a log line can be traced
 back to its note without re-reading eighteen commits.
 
+**Update, 12 Sep 2026 (terminal session, the first one against the live editor).** Steps
+1, 2 and 4 through 10 below passed, and step 21 passed — see the dated session note near
+the end of this file for what each one actually showed. Step 3 (confirm exactly one live
+`EventSystem` and module *after boot*) still needs a play-mode run and has not happened.
+Items 22 through 24 below were corrected today, not completed — the render-mode reading
+they were built on was backwards; see item 22's own note. Nothing else in this queue —
+step 3, steps 11 through 20, steps 25 through 28 — has run. No play-mode session and no
+device run happened today, and not by choice: play mode would not reliably enter through
+the relay (see the session note's harness paragraphs and **CS-119**), so nothing below
+step 10 could be driven from the terminal. Everything recorded above was checked
+structurally in the editor and in the serialised assets, not seen working at runtime.
+
 **0. Compile — before anything else.**
 1. Refresh and read `Logs/Editor.log` for `error CS####` lines (`tools/mcp/compile.ps1`,
    CS-098).
@@ -75,6 +87,10 @@ back to its note without re-reading eighteen commits.
    was before CS-061. The fix if it fails is isolated on purpose (`7e1a358`): delete the
    `EnsureDefaultActions` method and its one call site; the module still installs, just
    without assigned actions until something else supplies them.
+   **Resolved 12 Sep 2026, terminal session:** it compiles as written. Input System
+   **1.20.0** declares both `public InputActionAsset actionsAsset`
+   (`InputSystemUIInputModule.cs:2556`) and `public void AssignDefaultActions()`
+   (line 1541). The fallback above is not needed against this package version.
 3. Once it compiles clean: confirm exactly one live `EventSystem` with exactly one
    enabled `InputSystemUIInputModule` after boot, and that the app's own `XRUIInputModule`
    on the camera prefab ends up disabled, not destroyed and not left running alongside
@@ -136,10 +152,15 @@ builders before anything asks a nebula, the cosmic web or Andromeda to be grabbe
     a nebula or Andromeda without fighting the orbit gesture.
 18. `R` and Recenter now **do** bring a moved, turned or scaled nebula, Cosmic Web or
     Andromeda home over 0.8 s (CS-107) — check both modes, and check that planets and the
-    solar row are unaffected by the same press. In the headset the world dock's Recenter
-    button still will not, until `DockController.Recenter` gains its one line (see the
-    CS-107 note). Also check that the dock's own drag bar has not quietly started dragging
-    the dock off itself (CS-108, filed, not fixed).
+    solar row are unaffected by the same press. The world dock's Recenter button does it
+    too now: `DockController.Recenter` calls `RestoreAll()` above its own camera guard
+    (CS-107). Then the dock's own drag bar, which now actually drags the dock (CS-108) —
+    **Build UI Prefabs has already been re-run and the result confirmed structurally**
+    (`drag_bar` carries `hostTransform` pointing at the dock root, `manipulationType: 0`,
+    `playGrabSounds: 1` and `ManipulationPointerRouter`); what is left is the six hand/
+    device checks in the CS-108 note, of which the load-bearing ones are that the bar
+    stays on the dock, that the dock stays level, and that a desktop right-drag or wheel
+    over the bar still pans and zooms.
 19. Desktop key map end to end against GDD §5.3: `R`, `Home`, `Esc`, `1`-`9`/`0`/`M`,
     `Tab`, `P`, `F2`-`F8`, `H`/`F1` (CS-087). `M` should genuinely find nothing until the
     Moon's planet is pulled out — expected, not a bug.
@@ -149,14 +170,28 @@ builders before anything asks a nebula, the cosmic web or Andromeda to be grabbe
 
 **3. Shaders and Link.**
 21. Compile the 25 stereo-macro edits (CS-095) — zero errors, zero *new* warnings.
-22. Confirm the OpenXR render-mode reading against the package source itself (Android
-    Multi Pass, Standalone Single Pass Instanced — already recorded in
-    `docs/TECHNICAL_OVERVIEW.md` §7.1, but not yet confirmed against the enum).
-23. Close-one-eye check on Link across CS-095's object list: solar system view, galaxy
-    view, galactic centre, POI cards and marker pins in all three views, the boundary
-    star dome, the intro placement scene, the hand menu cards, the About slate.
-24. Confirm nothing regressed on Android (multi-pass, where a missing macro is
-    invisible rather than broken).
+22. **Answered, 12 Sep 2026, terminal session — the reading this item used to record was
+    backwards.** `OpenXRSettings.RenderMode` is declared `MultiPass = 0,
+    SinglePassInstanced = 1` in
+    `Library/PackageCache/com.unity.xr.openxr@b5b77b4027be/Runtime/Settings/OpenXRRenderSettings.cs:16-27`
+    (field default `SinglePassInstanced`), and `Assets/XR/Settings/OpenXR Package
+    Settings.asset` holds `m_renderMode: 1` under `m_Name: Android` and `m_renderMode: 0`
+    under `m_Name: Standalone` (`m_Name: WebGL` is also `1`, moot since it does not ship).
+    So **Android — the shipping Quest 3 build — is Single Pass Instanced**, where a
+    missing stereo macro breaks one eye on the real device, and **Windows/Link is Multi
+    Pass**, where the same bug is invisible. `CLAUDE.md`'s original "Android multiview;
+    Windows/Link multi-pass" line was right all along; it is the reading this item used to
+    carry, and the note that called that line backwards, that were wrong. Verified from
+    the package cache and the settings asset directly, not inferred.
+23. Close-one-eye check on **the standalone Android build, or Link explicitly forced to
+    Single Pass Instanced** — a default Link session is Multi Pass and would hand back a
+    false all-clear — across CS-095's object list: solar system view, galaxy view,
+    galactic centre, POI cards and marker pins in all three views, the boundary star dome,
+    the intro placement scene, the hand menu cards, the About slate.
+24. Also run the same list on Windows/Link (Multi Pass) as a sanity pass, not as the
+    verification: a missing macro is invisible there rather than broken, so a clean result
+    proves far less than item 23 — only that no macro is missing badly enough to break
+    even the forgiving platform.
 25. Answer the `#pragma multi_compile_instancing` question for the five affected files
     (CS-095 acceptance item 5) and apply one answer to all five.
 26. Work CS-096's eight held-back shaders in the order the audit gives: the black hole's
@@ -220,11 +255,36 @@ A Quest APK build stalls on a modal: **"Unsupported Input Handling on Android"**
 | CS-016 | TERM | Figma hint cards (2) | CS-010 | done |
 | CS-017 | TERM | Export SVG/PNG @2× to `Assets/ui/figma/`, write `docs/ui/spec.md` | CS-011…016 | done |
 | CS-018 | CC | Sprite import settings script (`Editor/UiSpriteImporter.cs`: UI sprite, no mips, 9-slice per spec) | CS-017 | done |
+| CS-122 | CC | **Every builder-written UI prefab is using Segoe UI, not Selawik.** `UiPrefabBuilder.Font()` searches `"t:TMP_FontAsset selawik"`, which matches nothing (the assets are named `selawk*`), then falls back to the first `TMP_FontAsset` in the project - `segoeui SDF` | CS-017 | todo |
 
 **Phase 1 notes (11 Sep 2026).** The file has two pages, as the owner asked: *Design System* (read-me, colour, type, space and radius, surfaces) and *Front End - Screens* (A dock, B panels/tags/hints, C three in-headset shots, D desktop, E pop-ups and dock states).
 Two conventions the rest of the work depends on:
 - **Scale.** Virtual UI is specified in millimetres and drawn at **1 mm = 4 px**. A dock tile is 110 x 62 mm, drawn 440 x 248.
 - **Font.** Figma has neither Selawik nor Segoe UI, so the mockups use **Source Sans 3** as a metric stand-in. The app keeps its Selawik SDF assets; match the millimetre sizes, not the family.
+
+**CS-122 filed 12 Sep 2026 (terminal session), and it contradicts the Font convention directly above.**
+The convention says "the app keeps its Selawik SDF assets". It does not. `UiPrefabBuilder.Font()`
+(`Assets/scripts/Editor/UiPrefabBuilder.cs:74-86`) asks for `"t:TMP_FontAsset selawik"`; the Selawik
+assets in `Assets/Fonts/` are named `selawk SDF`, `selawkb SDF`, `selawkl SDF`, `selawksb SDF`,
+`selawksl SDF` - **"selawk", not "selawik"** - so the search returns nothing, the method falls back to
+`FindAssets("t:TMP_FontAsset")` and takes `guids[0]`, which is `segoeui SDF`. Every one of the seven
+builder-written UI prefabs (`dock`, `dock_tile`, `dock_popup`, `desktop_dock`, `desktop_dock_tile`,
+`info_panel`, `label_button`, `utility_window`) therefore carries `m_fontAsset` = `segoeui SDF`.
+
+Two reasons this is more than cosmetic. **Licensing:** Segoe UI is proprietary Microsoft and must not
+ship in a store build; Selawik is the OFL-licensed, metric-compatible replacement Microsoft published
+for exactly this purpose, which is why the project chose it. **The copy rules assume Selawik:**
+`docs/copy/README.md`'s ASCII-only rule exists because the Selawik faces have no degree sign, en dash
+or curly quote - a constraint that has been shaping every line of copy while the app rendered in a
+font that does not have it.
+
+The code fix is one word (`selawik` -> `selawk`), and it should also pick the regular face
+deterministically rather than `guids[0]` of six Selawik variants. **It was deliberately not applied in
+the 12 Sep terminal session**: it changes the typeface of every piece of UI in the app, and applying it
+means re-running Build UI Prefabs and then, because that renumbers objects inside `info_panel_prefab`,
+Wire Scene Panel, Build Solar Row Content, Build Moons and Install Runtime Systems in that order. That
+is a visual-identity change plus a five-step rebuild cascade, so it is the owner's call, not a drive-by.
+Selawik is metric-compatible with Segoe UI, so layout should not shift.
 CS-011 states are drawn (idle, hover, pressed, active) but are not yet Figma component variants.
 *CS-015 done:* board **F - Desktop overlays** carries both panels the desktop needs — the controls overlay (mouse column and keyboard column, every line naming a thing the player does rather than a system) and About, with the Microsoft/MIT credit, the imagery credit and three buttons. Board **D - Desktop** holds the dock mirror.
 
@@ -273,6 +333,8 @@ Sizes and colours: GDD §8. *Acceptance for CS-017:* every frame exported; spec 
 | CS-099 | CC | Wire the dock's Help button (world + desktop) — `helpButton` has no `OnClick` listener at all — to replay the hint cards | CS-094, CS-028 | done |
 | CS-110 | CC | Fix six runtime defects an adversarial review found across the wave (input-module early return, editor-wiring guard, music crossfade cutting the louder source, dock recentring underground, a raycaster sweep touching a nonexistent prefab, one isolated compile risk) | CS-061, CS-073, CS-097, CS-062 | done |
 | CS-111 | TERM | The hand menu still offers the old Back button in the headset — the one piece of the drill-down-navigation retirement CS-087 deliberately left alone rather than strand a headset user without checking the dock is present first | CS-087, CS-088 | todo |
+| CS-119 | TERM | Make `tools/mcp/enter_play_mode.cs` actually take over the relay, or document that Play must be pressed by hand — a request returns "PLAY: requested" and reloads the domain, but the next command still reads `playing=False` and a `smoke.cs` run is refused with `UNEXPECTED_ERROR: User interactions are not supported for MCP tool calls` | CS-098 | todo |
+| CS-121 | CC | Dragging the dock (CS-108) abandons whatever opened from it — the utility window, a `DockPopup`, a hint card and `SwitchNotice` each place themselves once at open and never again, so carrying the dock leaves them floating, unattached and still interactive, at their old offset | CS-108, CS-090 | todo |
 
 Design contract: GDD §3, §5, §8; architecture: Technical Overview §5.5–5.6, §7.2. *Acceptance:* per roadmap Phase 2 "done when".
 
@@ -313,6 +375,7 @@ Design contract: GDD §3, §5, §8; architecture: Technical Overview §5.5–5.6
 *Where the panel parks, and why it is an empty anchor.* `scenePanelOffset` (metres) is measured in the content root's frame, which hangs off the `ViewLoader` for the CS-036 reason: view content is not origin-relative. The panel's target is a bare `scene_panel_anchor`, not the content itself, because `InfoPanel` measures its target's **first** renderer to find the edge to clear, and the first renderer of a galaxy or a row of planets says nothing about how wide the whole thing is; an anchor with no renderer falls back to a small radius, so the panel lands where the offset puts it. `(0.55, 0.2, 0)` is a guess that wants a headset look — **[TERM]**.
 *Two things `InfoPanel` needed for the scene variant, both scoped to it.* The instruction row is reflowed under however much prose a place has (the prefab's rows are laid out for the body variant's fixed seven-line paragraph, so a three-paragraph scene panel would have run straight through it); and the cyan hairline, which divides prose from stats, is hidden when there are no stats — scene and moon variants both. The hairline is a new serialized `Graphic` field (a UI element is a `Graphic`, not a `Renderer`) which **`UiPrefabBuilder.BuildInfoPanel` does not yet assign** — it creates the object but points nothing at it — so `Awake` finds it by name as a documented fallback. One line in that builder (`so.FindProperty("divider").objectReferenceValue = divider;`) retires the fallback; that file belonged to another agent this session.
 *Before it can show anything, someone must run **Cosmic Simulation → Wire Scene Panel*** (`Assets/scripts/Editor/ScenePanelWiring.cs`), which points the director at `Assets/prefabs/ui/info_panel_prefab`. It is a separate menu item only because `ExperienceWiring.cs` was being edited elsewhere; it belongs inside `InstallSystems` as three lines beside the dock wiring. With no prefab assigned the director warns **once** and every experience simply has no panel.
+*Run 12 Sep 2026, terminal session, on the second attempt.* It first failed with "no `ExperienceDirector` in any open scene" because `core_systems_scene` was not open. It must be opened **additively**, never Single — unloading a dirty scene raises a modal dialog that blocks the relay. Once open, `core_systems_scene.unity:1349` now reads `scenePanelPrefab: {fileID: 284596933589354139, guid: 782d1fee663b8e841b4659df5742eb48}`, which is `info_panel_prefab`. Still not seen showing a panel in play mode.
 *No new prefab, deliberately.* It builds its own canvas the first time it is asked to speak, so nothing has to be wired in the editor and no scene can lose it - and it lives on a `DontDestroyOnLoad` object, because the director unloads whole view scenes out from under itself on every switch. Two presentations, chosen from `GalaxyExplorerManager.IsDesktop` at first use (not in `Awake`: the platform is not decided yet then): in the headset a world-space canvas on the millimetre scale parked just above the dock, sharing its tilt, white text with a dark outline and **no plate**, since a plate punches a hole in passthrough; on the desktop a line above `DesktopDock` on a screen-space canvas at sorting order 60, above the dock's 50. It has no `GraphicRaycaster`, the text is not a raycast target and the `CanvasGroup` blocks nothing, so it cannot swallow the next poke; it fades itself out after 5 s, on Escape, or the moment another place opens.
 *Judgement left open:* the third refusal - a poke that arrives while the intro is still running - stays silent. The dock is hidden during onboarding, so it is a stray rather than a real request, and a message over the intro narration would be worse than nothing.
 
@@ -327,6 +390,8 @@ Design contract: GDD §3, §5, §8; architecture: Technical Overview §5.5–5.6
 *What CS-087 could not make true, honestly.* The controls overlay still *reads* the old map — that is prefab text and is **CS-089**. The legacy `desktop_dots_button` shows in the corner while the overlay is up, because the overlay borrows that root; it goes with the HUD. `M` finds nothing until the Moon's planet is out, which is correct but means the key looks dead in a fresh room. And the whole key map is reasoned, not run: no editor was available.
 *CS-033 reopened 12 Sep 2026, and CS-098 raised from it. **It was marked `done` without its artefact.*** A coverage audit went looking for the harness and `find . -iname 'smoke*'` returned nothing; the commit that closed CS-033 (`590d8ae`) touches `docs/BACKLOG.md` and nothing else. What it actually delivered was real and is worth keeping: a one-off play-mode run of the dock, which found the duplicate-scene bug (CS-035) and reopened CS-029, and the note that `core_systems_scene` loads late. What it did **not** deliver is the thing in its title — a re-runnable harness — nor five of its six acceptance clauses: only one module was switched, no panel was checked, place-and-restore was never exercised, one screenshot was taken rather than one per module, and the console was read by eye. Status is back to `todo`: the harness now exists (CS-098) but has never been executed against a live editor, and running it is the [TERM] half.
 *CS-098 done (the harness exists; **no part of it has been run** — there was no relay in the session that wrote it).* `tools/mcp/`, outside `Assets/` so Unity never compiles it, it needs no `.meta` files and none of it ships in the APK. Five files: `umcp.js` (Node stdio MCP client: `list`, `call <tool> <json>`, `run <file.cs>`), `compile.ps1` (refresh, wait, `error CS####` lines from `Logs/Editor.log` written since the refresh), `smoke.cs` (the walk), `enter_play_mode.cs` and `leave_play_mode.cs`, plus a README a terminal session can work from without reading the source. `CLAUDE.md`'s "lived in the session scratchpad; recreate if missing" is now wrong on the second half — **it is checked in** — and that line should be repointed at `tools/mcp/` next time anyone edits that file.
+*`compile.ps1` had never actually been run until 12 Sep 2026's terminal session, and did not work.* `$PSScriptRoot` is empty inside a parameter default — both directly and under `powershell -File` with a relative path — so it died on the first `Join-Path` before doing anything. Fixed by resolving the script's own root once in the body and deriving `$ProjectPath` and the path to `umcp.js` from that. See the dated session note near the end of this file.
+*`smoke.cs` had never actually been run either, and did not compile — found the same session.* Two helper classes, `Check` and `Entry`, were declared `private sealed class` at what turns out to be **file scope**: they are indented, but the runner wraps the whole file in its own namespace, which makes an indented top-level declaration a namespace member, and `private` is illegal there (`error CS1527`, two sites). Fixed by making both `internal`, which is what the section comment ("state — this assembly only") already meant. **Rule for anyone else writing into `tools/mcp/*.cs`:** no top-level type may be `private`, and a column-0 grep will not catch a violation, because the offending declaration is indented and reads like a nested class until the runner's wrapper is remembered.
 *Two things in `umcp.js` are inferred rather than read, and are the first suspects if it does not talk.* The relay's **framing**: MCP over stdio is newline-delimited JSON in the wild, but this relay was described to us as Content-Length headers, and sending the wrong one hangs rather than errors. So the reader accepts both, and the writer tries Content-Length first, respawns and retries newline framing if the handshake goes unanswered (`--framing=lsp|ndjson` skips the negotiation). And the **argument name** `Unity_RunCommand` wants the source under: rather than guessing `code`, it reads the tool's own `inputSchema` and picks the string property. Both paths were exercised against a stand-in server, not against the relay.
 *What `smoke.cs` covers of CS-033's line, honestly:* switch every module (yes), environment per module (yes), the scene panel per module (yes, now that CS-092 spawns one), place-and-restore (one body per module, through `ForceSolver.OnPointerDown` and `FreePlacementSolver.RestoreLayout`), a screenshot per module (yes), console clean (yes, but only from the moment the run starts — use `Unity_GetConsoleLogs` for anything before). *Not covered:* it calls `ExperienceDirector` directly rather than poking the dock, so a dead `GEButton` would not show; no hand input, no moons, no tags, no two-handed scaling, no passthrough toggle; one body per module, not every body.
 *Three shapes in `smoke.cs` that look odd and must not be tidied away:* it will not enter play mode itself (`EnterPlaymode` reloads the domain and unloads the assembly the command is running in); `Execute` returns immediately and the walk is driven from `EditorApplication.update`, with progress in `SessionState` and a report file, because every `run` compiles a fresh assembly with fresh statics — run it again to poll; and every file in `tools/mcp/` is written **fully qualified with no `using` directives**, because the runner wraps the file in a preamble of its own.
@@ -356,6 +421,8 @@ One compile risk is isolated on purpose rather than fixed: `UiEventSystemInstall
 *The world dock is missing a control the contract wants, and this only half fixes it.* GDD §8.1 lists Recenter and Help under the dock and says "Mute lives in the utility window", but row F-05 is "Recenter / Mute / Help — each does what it says". Before today the world dock had no mute at any depth and no way to reach a utility window; it now reaches mute in one extra press. A direct mute button on the dock is a design call, not a code one — raised for the owner rather than decided here.
 *What [TERM] must check that reading cannot settle.* (1) Re-run **Build UI Prefabs** and confirm `utility_window_prefab` exists and that `dock_prefab` now carries a fourth small button plus a `utilityWindowPrefab` reference — the dock prefab is rebuilt in place, so scene instances must be checked for stale overrides. (2) Poke the rail in the headset and drag it: the knob should follow a fingertip and a hand ray, and the value text should track. (3) On the desktop, confirm the window lands inside the frustum and in front of the near clip plane at 0.5 m — that distance is a guess against an unread camera. (4) Confirm the text at 4.55 mm is legible on a monitor at that distance; if not, raise `desktopDistanceMetres`' sibling offsets rather than the font. (5) Check the panel text size actually changes an open `InfoPanel` while it is visible. (6) Confirm `U` collides with nothing on the Quest's virtual keyboard paths.
 *Pre-existing bug found, not fixed (not our file):* `DockPopup.Close()` is wired straight to its close button's `OnClick`, and `GEButton.Click` starts its cool-down coroutine immediately after invoking listeners — on a GameObject the listener has just deactivated, which Unity logs as an error. `UtilityWindow` avoids it by deferring its own close by one frame; `DockPopup` still has it.
+
+*CS-121 (new, 12 Sep 2026, verifier pass) — a regression CS-108 made reachable, not a pre-existing bug.* `UtilityWindow.Place()` is called only at the two points the window opens, never from `Update`; `DockPopup.PlaceAbove()`, `HintCards.Park()` and `SwitchNotice`'s placement are the same shape — each reads `DockController.Instance.transform` once and never again. Concrete: open the utility window with `U`, then pinch the drag bar and carry the dock a metre left — the window stays behind, floating unattached and still interactive, about the same distance from where the dock used to be. GDD §8.2 says it belongs beside the dock. Before CS-108 the dock could not be moved by hand, so this was unreachable; it is new. **The trap for whoever takes the ticket:** `DockController`'s re-facing runs in `LateUpdate`, so during a drag the dock's rotation is a hand-rolled pose for any `Update` that reads it — calling `Place()` from `UtilityWindow.Update` would produce a window that rolls with the wrist while the dock itself stays level. Re-placing on drag *end*, not every frame, avoids it.
 
 ## Phase 3 — Solar system one-to-one
 
@@ -406,6 +473,8 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 *Nothing in this session was pushed without being compiled except `MoonOrbit.cs`, which is called out above.*
 
 **Update, 12 Sep 2026, later the same day — this stop-point note is now history, not the current state.** The wave resumed after this pause. CS-065 was written (see its Phase 5 note; still `doing`, still not compiled). CS-061 and CS-062 were both written and are recorded under Phase 2 as `done (unverified — compile-checked by reading)`, the project's standing way of saying "written, not run." `MoonBuilder.cs` was written this same day and is now CS-109, `done` in the same unverified sense: two real bugs in `MoonOrbit.cs` were found and fixed in review (a fader resolved only in `Awake`, so an early getter lied about a moon's own solver — the same lazy-init trap this project has already hit twice; and `Grow` fighting `FreePlacementSolver`'s restore lerp when a planet went home with its moon still out, both writing the same scale every frame). Six moons ship active (Ganymede, Callisto, Titan, Mimas, Iapetus, and the Moon), three more are built but switched off pending a design call, and Phobos/Deimos were deliberately not built — copy exists for them but GDD §6 does not list them, and the contract wins. Sizes are derived from each moon's own planet, never tabulated, and phases are spread across the full family including the off ones so enabling one never lands it on another. Still nothing has been compiled or run; see the `[TERM]` queue above, step 7, for the one documented risk (a prefab instance nested inside `PrefabUtility.LoadPrefabContents`, used nowhere else in this repo).
+
+**Run 12 Sep 2026, terminal session — the documented risk did not happen.** Nine `MoonOrbit` components; six moons active (Earth/Moon, Jupiter/Ganymede+Callisto, Saturn/Titan+Mimas+Iapetus), three built but switched off (Io, Europa, Enceladus), none skipped. All nine `moon_panel_*` instances exist as nested `info_panel_prefab` instances — the feared "moons with no panels" did not happen. **Gotcha worth keeping:** a nested prefab instance stores its own name in `m_Modifications`, not in `m_Name`, so `grep m_Name: moon_panel_` returns nothing on a perfectly good prefab and looks like a failure. Check `m_Modifications`, or ask the editor, before concluding a nested instance is missing. This is a structural read of the rebuilt prefab, not a play-mode confirmation.
 ## Phase 4 — Milky Way destinations, nebulae, black hole
 
 | ID | Track | Title | Depends | Status |
@@ -431,19 +500,20 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 |---|---|---|---|---|
 | CS-063 | TERM | Galaxy sprite atlas (deep-field cutouts + Higgsfield fill) | CS-005 | todo |
 | CS-064 | TERM | Galaxies content prefab (no scene — see the drop note under Roadmap §4.4 below; roadmap still names `galaxies_scene`); passthrough allowed; **pinching a sprite gently pushes it, no grab, per GDD §4.6/F-25**; verify | CS-062, CS-063 | todo |
-| CS-065 | CC | Cosmic Web generator (Voronoi filaments → point buffer) + violet ramp for star shader | — | done (unverified) |
+| CS-065 | CC | Cosmic Web generator (Voronoi filaments → point buffer) + violet ramp for star shader | — | done (built 12 Sep, terminal session; play-mode/frame-time still open — CS-066) |
 | CS-066 | TERM | Verify `cosmic_web_content_prefab` (built as a content prefab, not the `cosmic_web_scene` the roadmap still names — see the drop note under Roadmap §4.4 below); frame time | CS-065 | todo |
 | CS-067 | TERM | Thumbnails for the three new scenes | CS-061, CS-064, CS-066 | todo |
 | CS-102 | CC | Andromeda content builder: `StarsData` variant, content prefab, wire the module | CS-036 | done |
 | CS-103 | TERM | Run the Andromeda builder, tune the look, verify the tile opens and is grabbable | CS-102 | todo |
 | CS-106 | CC | Hand grab does not reach `ManipulationHandler`: forwarder + the three builders | CS-065, CS-102 | done |
 | CS-107 | CC | Restore (R, dock Restore) cannot bring back a moved nebula, Cosmic Web or Andromeda | CS-106 | done |
-| CS-108 | CC | The dock's drag bar has the same input gap, and would drag itself off the dock | CS-106 | todo |
+| CS-108 | CC | The dock's drag bar has the same input gap, and would drag itself off the dock | CS-106 | done (unverified — structurally confirmed in the rebuilt prefab; hand/device checks open) |
 
 **Phase 5 notes (12 Sep 2026).**
 *CS-102 done (written and compile-checked by reading only — **no editor was available, so the builder has never been run and none of its output exists yet**).* `andromeda.asset` had **both** `SceneName` empty and `ContentPrefab: {fileID: 0}`, which is the one combination `ExperienceDirector.Switch` refuses outright (CS-036), so the Andromeda tile has been dead by construction since it was created — contract row F-23 could not pass. One new file: `Assets/scripts/Editor/AndromedaBuilder.cs` (menu **Cosmic Simulation → Build Andromeda Content**). Nothing existing was edited.
 *What it makes when it is run:* three `StarsData` assets in `Assets/scriptable_objects/star_data_scriptabe_objects/` beside the Milky Way's three, three materials in `Assets/materials/galaxy_materials/`, `Assets/prefabs/experiences/andromeda_content_prefab.prefab`, and the `ContentPrefab` assignment on `andromeda.asset` — the same four-step shape `NebulaPrefabBuilder` and `CosmicWebBuilder` use. **The module's `ContentPrefab` was deliberately not hand-wired in the YAML**: the prefab does not exist yet, and a GUID pointing at nothing is indistinguishable at run time from today's bug while looking fixed in the diff.
 *The galaxy is the Milky Way's own renderer, re-parameterised,* exactly as Technical Overview 7.3 prescribed: three `SpiralGalaxy` layers (clouds, dust, stars) on one node, each with a baked `StarsData`, drawn by `DrawStars`. **17 200 points** (9 000 + 5 000 + 3 200) against the Milky Way's 18 720 and the 400 000-sprite frame ceiling in 7.4 — 4.3% of it; ~4 MB of generated YAML, in line with the 4.2 MB the Milky Way's three already cost. Distinguishable at a glance by construction: `MinEllipseScale` 0.10 against 0.02 so the inner disc is empty and the bulge carries the core, `SpiralRotation` 470° against 370° so the arms are wound tight enough to read as rings, half-thickness 5.5% of the radius against the Milky Way's ~19% after its scene stretch, a white-to-blue ramp instead of blue-to-white, and a dust annulus (0.46–1.0 of the radius) the Milky Way has no equivalent of. Deterministic from three fixed seeds, so a re-run with no parameter change writes byte-identical assets.
+*Built 12 Sep 2026, terminal session — `andromeda_content_prefab` exists for the first time,* along with its three materials and three `StarsData` assets. This confirms the builder itself runs; CS-103's "tune the look" and "verify grabbable" are still open.
 *Two things CS-103 must check first, both inherited rather than introduced.* (1) The `ManipulationHandler`/`IGEPointerHandler` gap recorded above for CS-065 applies here too — Andromeda will be turnable and scalable **on the desktop** (`DesktopMouseInput` right-drag and wheel) and **not by hand** until that forwarder exists. GDD 4.4's "move, tilt, scale with hands" cannot pass before it. (2) `DrawStars.cameraEvent` is a private serialized field and `DrawStars` is added at run time by `SpiralGalaxy.InitializeParticles`, so it cannot be set from a builder: Andromeda draws at `BeforeForwardOpaque`, the default the Milky Way also uses under the same Dimmed environment. If it turns out the skybox or the dim quad paints over the galaxy in a prefab-backed experience, the fix is to expose that field (`CosmicWebRenderer` chose `AfterSkybox` for the same reason) — **not** attempted here, `DrawStars.cs` was owned by another agent.
 *CS-065 written but NOT COMPILED — status `doing`, not `done`.* No editor was available in the session that wrote it; every symbol was checked by reading. Compile it before anything else. Four new files: `Assets/scripts/experience/CosmicWebGenerator.cs`, `Assets/scripts/experience/CosmicWebRenderer.cs`, `Assets/shaders/cosmic_web_points_shader.shader` (`CosmicSimulation/CosmicWebPoints`), `Assets/scripts/Editor/CosmicWebBuilder.cs` (menu **Cosmic Simulation → Build Cosmic Web Content**). Four edited: `ScaleLimits.cs`, `ManipulationHandler.cs`, `DesktopMouseInput.cs`, `docs/TECHNICAL_OVERVIEW.md`.
 *It feeds the existing star path, it does not duplicate it.* Same `StarVertDescriptor` struct and `StructSize` stride, same `cginc/StarQuad.cginc` six-vertices-per-point expansion, same `CommandBuffer.DrawProcedural` on the main camera. `DrawStars` itself is **not** reused: it is the galaxy's controller and reads `SpiralGalaxy` for tint, ellipse radii and the down-scaled RT path every frame, and a `SpiralGalaxy` stood up to satisfy it would generate a spiral of its own in `Start`. `CosmicWebRenderer` is the same 40 lines of command-buffer lifecycle as `OrbitalTrail.OrbitsRenderer`, which exists for the recorded reason that an immediate-mode draw reaches only one eye.
@@ -452,10 +522,12 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 *Point count 120 000,* against 400 000 for the whole frame in 7.4 — reasoning in `CosmicWebBuilder.PointCount`. Not baked: a `StarsData` asset at this size would be ~28 MB of YAML (the galaxy's 8 320 stars are already 1.9 MB), so the cloud is regenerated at run time from the seed, spread over frames at 3 ms each, uploading and drawing each slice as it lands so the web condenses into view.
 *Blocking finding for CS-066, and it is not new:* **`ManipulationHandler` does not implement `IGEPointerHandler`**, so `GEInteractable` → `GEInputEvents.ExecuteHierarchy<IGEPointerHandler>` never reaches it. Today it is only ever driven by `ForceSolver`, which forwards to it explicitly. That means the nebula prefabs from CS-051 and the Cosmic Web prefab are **not grabbable by hand**, despite both carrying the component. The fix is a small forwarder component rather than making `ManipulationHandler` implement the interface directly — `ExecuteHierarchy` invokes *every* matching handler on the first object that has one, so a planet carrying both would dispatch twice. Left alone deliberately: it is a shared input-layer change affecting Phase 4 content and wants its own ticket. Desktop mode is covered: `DesktopMouseInput` now right-drags to turn and wheels to scale any `ManipulationHandler` that has no `ForceSolver`, inside its own `ScaleLimits`.
 *`ScaleLimits` gained one field, `authoredMetresAtUnitScale`,* because it measures `Renderer` bounds and the web has no `Renderer` at all — without it every limit silently did nothing. Zero keeps the old behaviour, so no existing prefab changes.
+*Built 12 Sep 2026, terminal session — `cosmic_web_content_prefab` exists for the first time.* One thing the build needed that this note did not foresee: `cosmic_web_points_shader` had to be added to `m_AlwaysIncludedShaders` in `ProjectSettings/GraphicsSettings.asset`. A `DrawProcedural` shader has no material reference for the build pipeline to find, so without that entry it would be stripped from a player build silently. CS-066's frame-time and play-mode checks are still open.
 
 *CS-106 done (written and compile-checked by reading only — **no editor was available**; nothing below has been compiled or run).* One new file, `Assets/scripts/XR/ManipulationPointerRouter.cs`, and one line in each of the three builders that write the affected prefabs. **Nothing on the planet path was touched:** `GEInteractable`, `GEInputEvents`, `ForceSolver` and `ManipulationHandler` are byte-for-byte unchanged, which is how a body's grab is guaranteed to behave exactly as it did.
 *Why a forwarder and not `ManipulationHandler : IGEPointerHandler`.* `ExecuteHierarchy` invokes every enabled handler on the **first** GameObject up the chain that has one and then stops, and the two shapes bodies are built in fail differently. `solar_system_planets_content_prefab` puts `GEInteractable`, `ManipulationHandler` and `ForceSolver` on one GameObject (`body_*`), so the handler would be invoked **twice** per pinch. The `poi_*` prefabs are worse: `ManipulationHandler` and `GEInteractable` are on the mesh (`earth_sphere_mesh`) and `PlanetForceSolver` is on the parent `force_grab_root`, so the walk would stop at the mesh and **the solver would never hear a pinch at all** — no dwell, no tractor beam, no force pull. Both are avoided by keeping the interface off the handler and putting the delivery in a component that is only ever added where there is no `ForceSolver`. The router also self-disables (not merely no-ops) if it ever finds one above it, because `ExecuteHierarchy` skips disabled behaviours, so a misplaced router lets the walk continue instead of swallowing the event.
 *Re-runs the [TERM] track owes, in this order:* **Cosmic Simulation → Build Nebula Prefabs** (the seven `Assets/prefabs/nebulae/nebula_*_prefab.prefab` exist and are stale), then **Build Cosmic Web Content** and **Build Andromeda Content** (neither prefab has ever been generated, so those are first runs, not re-runs). All three builders are idempotent. Nothing was hand-edited in prefab YAML.
+*Re-run 12 Sep 2026, terminal session, verified by GUID rather than by eye.* All seven `nebula_*_prefab`s went from zero to one reference each to `ManipulationPointerRouter` (guid `c9080a9df18d4c4caaaafc7a7d8cd400`) and `FreePlacementAnchor` (guid `64e1ba70b56d49b3917223e4351fffdd`). They really were stale and ungrabbable before — this code had landed in the repo but never in these committed prefabs. Structural confirmation only; the hand-grab checks in the queue above are still open.
 *One thing widened deliberately, and it is one line:* the nebula builder now sets `playGrabSounds` true, which `ManipulationHandler`'s own tooltip already names the nebula overlays as a case for and which the Cosmic Web and Andromeda builders already set. It was inaudible before because nothing could grab an overlay.
 *What [TERM] must check that reading cannot settle.* (1) Two hands on one overlay — `GEInteractable` selects in Multiple mode, so both pinches should arrive as separate pointers; confirm a scale, not a fight. (2) Fingertip poke: `XRPokeInteractor` selecting the sphere collider reads as `IsNear`, but whether a poke select fires at all on these radii is a device question. (3) `ExperienceDirector.GrowIn` writes `localScale` every frame for `growInSeconds` — grabbing during the grow-in now has two writers in `Update` with undefined order. (4) On the desktop a left-drag on a nebula or Andromeda will now **move** it (the mouse arrives through the same routing), which is new and is the desktop half of GDD 4.3/4.4's one-hand move; confirm it does not fight the orbit gesture. A left-press on the Cosmic Web plays the grab sound and moves nothing, which is correct — it is `TwoHandedOnly`.
 *CS-107 (the restore gap, raised in review and deliberately left out of CS-106).* `DesktopMouseInput.RestoreLayout` looks for `LayoutRig`s and then for `ForceSolver`s; a nebula overlay, the Cosmic Web and Andromeda have neither, so R and the dock's Restore cannot bring one home — already true on the desktop today, since the wheel and right-drag can resize and turn them. It is its own ticket because it needs a home pose that only the spawner knows (`ExperienceDirector.OpenDestination` computes a world position; prefab content is spawned at identity under `experience_content_root`) and because `FreePlacementSolver` — the sanctioned place for "nothing snaps back" — is `[RequireComponent(typeof(ForceSolver))]` and reads solver state throughout, so making it work without one is a design change, not a patch.
@@ -469,6 +541,13 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 *What [TERM] must check that reading cannot settle.* (1) Re-run the three builders (below) and confirm each prefab root now carries `FreePlacementAnchor`. (2) Move, turn and scale a nebula, the Cosmic Web and Andromeda, then press `R` and the dock's Recenter in both modes — 0.8 s ease home, no snap, nothing else moves. (3) Press `R` **during** the grow-in: the restore lerp and `GrowIn` both write `localScale` in `Update` with undefined order; both converge on the same value, but it wants an eye on it. (4) Confirm planets and the solar row are visually unchanged by `R` and by a switch. (5) The legacy HUD's Reset View button now also brings this content home — intended, but confirm nothing else rides on that button.
 
 *CS-108 (the dock drag bar).* `dock_prefab`'s `drag_bar` carries `GEInteractable` + `ManipulationHandler` with no `ForceSolver`, so it has exactly the CS-106 gap. It was left alone because fixing it is not one line: the handler's `hostTransform` is unset, so it defaults to the bar and a working grab would drag the bar off the dock instead of moving the dock (GDD 8.1: the bar "moves the whole dock"), and the re-tilt toward the player on release wants a listener in `DockController`, which another agent held open. Fix all three together in `UiPrefabBuilder.BuildDock` plus `DockController`, then re-run the UI prefab builder.
+*CS-108 written (compile-checked by reading only, when no editor was available) and since compiled clean and structurally verified, 12 Sep 2026, terminal session.* Four files edited and none added: `Assets/scripts/Editor/UiPrefabBuilder.cs` (the `drag_bar` block in `BuildDock`), `Assets/scripts/experience/DockController.cs` (a drag bar section, `LateUpdate`, two lines in `Start`/`FaceThePlayer`, a palm guard), `Assets/scripts/XR/ManipulationHandler.cs` (a setter on `HostTransform` and a new `ManipulationType` property — no behaviour change to any existing path) and `Assets/scripts/XR/DesktopMouseInput.cs` (one guard in `ManipulatedHandler`). Docs: Technical Overview §5.2 and the audio section. Of the seven checks below, (1) is now answered by the rebuilt prefab's field values; (2) through (7) still need a hand or a device and remain open.
+*The bar is a handle, not cargo, and that is the whole of it.* The builder now writes `hostTransform` = the **dock root**, `OneHandedOnly`, `playGrabSounds` true, and adds `ManipulationPointerRouter` — the CS-106 component, not a second path. The router is why a pinch arrives at all; the host is why it moves the dock; one hand is because two on a handle would scale and spin the dock and its millimetre canvas, and the two-handed `MoveRotateScale` the stale prefab carries is exactly the "drags itself off the dock" failure wearing a second hat.
+*`DockController` re-asserts the host and the hand count on `Start`* (and lazily, since the router it adds may be used the frame it is added), because the committed `dock_prefab` predates all of it — its YAML still reads `hostTransform: {fileID: 0}`, `manipulationType: 2`, and carries no `playGrabSounds` field at all. That is the CS-107 shape: the builder is the durable form, the run-time line is what makes the fix true before anybody re-runs a menu item. It needed the two new properties on `ManipulationHandler`; both are additive, nothing on the planet path calls either, and the host setter re-captures the grab offsets if a hand is already on it. **The grab sound waited for the rebuild, and the rebuild has since happened:** the committed `dock_prefab` now reads `hostTransform: {fileID: 6230769956266320038}` (the dock root), `manipulationType: 0` and `playGrabSounds: 1`, so the sound is live — `DockController` deliberately does not also play it, which would double it.
+*The tilt and the size are held in `DockController.LateUpdate`, not by an exception inside the handler.* The handler's one-handed path writes rotation from the hand pose and its two-handed path writes scale, so the dock would roll with a wrist and could be resized by a hand span. `LateUpdate` runs after every `Update`, so it cannot lose that race the way a second `Update` would: the handler keeps the position (that is the gesture), and `FaceThePlayer()` plus the `localScale` captured at grab keep the rest — on the release frame too, which is GDD 8.1's "re-tilts toward the player". Scale is captured per grab rather than once, so it can never undo a size set between grabs. One behaviour added on purpose: palm-up show/hide is not counted during a drag, because hiding the dock switches the bar's GameObject off and would end the grab mid-placement.
+*Desktop parity, and a regression it closes before it exists.* The mouse left-drag needs no new code — it arrives through the same `GEInteractable` → router → handler path, with `GEPointer`'s mouse attach point riding the cursor ray. But pointing the host at the dock also put the dock inside `DesktopMouseInput.ManipulatedHandler`, the desktop stand-in for the **two-handed** turn and scale, where a right-drag would have left the dock rolled over at an angle nothing brings back and a wheel notch would have resized its canvas without limit. That method now skips `OneHandedOnly` handlers, so both fall back to pan and zoom; no shipped prefab is `OneHandedOnly`, so the dock bar is the only thing the guard can touch. Worth saying plainly: the **world** dock parks 0.72 m below the desktop eye line on purpose and a desktop camera never looks down, so in practice a monitor player still uses `DesktopDock`, which is pinned to the screen and has nothing to drag — the mouse drag is parity in the routing, not a gesture anyone needs there.
+*Confirmed structurally 12 Sep 2026, terminal session, editor available.* The rebuilt `dock_prefab` reads `hostTransform: {fileID: 6230769956266320038}` (the dock root), `manipulationType: 0`, `playGrabSounds: 1`, and `drag_bar` carries `ManipulationPointerRouter`; `DockController`'s other references survived the rebuild. This is a read of the serialised prefab, not a play-mode pinch — checks (2) through (6) below are still open, and (7) is now known to be worse than it was thought to be.
+*What [TERM] must check that reading cannot settle.* (1) **Confirmed, 12 Sep 2026, terminal session:** Build UI Prefabs has been re-run and `drag_bar` comes out with `ManipulationPointerRouter`, `hostTransform: {fileID: 6230769956266320038}` (the dock root), `manipulationType: 0` and `playGrabSounds: 1`; `dock_prefab`'s other references (tiles, the four buttons, the utility window) survived the rebuild. (2) In the headset, pinch the bar and walk the dock around: the dock follows, the bar stays on it, the dock stays level and keeps facing you, and letting go leaves it there (nothing snaps back). If the pinch will not land at all, suspect the collider before the wiring — it is 60 × 8 × 2 **mm**, and the **2 mm is the depth axis** (already five times the 1.6 mm bar it draws), so a near-pinch has to land within about 1 mm of the plate plane; widening the collider belongs in `UiPrefabBuilder` in canvas units, not as a metre constant somewhere. (3) Two pinches on the bar: the second must be ignored, not scale the dock. (4) Palm-up with the other hand mid-drag: the dock must not vanish. (5) Press Recenter after a drag — the dock re-parks and its height is re-sampled. (6) On the desktop, right-drag and wheel over the bar must pan and zoom the view, not spin or resize the dock. (7) **A regression this ticket introduced, not a pre-existing false positive — corrected 12 Sep 2026, verifier pass.** Before CS-108 the drag bar had no `ManipulationPointerRouter`, so `GEInputEvents.ExecuteHierarchy` never reached its `ManipulationHandler` and `OnManipulationStarted` on that handler could not fire; `HintCards.WatchManipulation` was already subscribed to it but had nothing to hear. Adding the router makes it fire. Concrete consequence: on first run, card 1 is `hint_grab` / `DismissOn: Grab` ("pinch to grab... pull a planet toward you"); a player who instead pinches the dock's drag bar sets `_actionDone = true`, the card advances, and `PlayerPrefs` records the hints as seen without a planet ever having been pulled. There is a second, smaller half: `HintCards.OnManipulationEnded(ManipulationEventData _)` ignores its source and unconditionally clears `_held`, so with the `hint_scale` card up and a nebula held in one hand, a pinch-and-release on the drag bar with the other hand clears `_held` and the resize in progress is never measured — so "the Resize card is safe" was true only against the false-positive half, not this false-negative one. See **CS-120** below.
 
 ## Phase 6 — Audio, narration, intro, branding
 
@@ -480,6 +559,7 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 | CS-073 | CC | `MusicController` crossfade by environment mode (3 existing tracks) | CS-023 | done |
 | CS-074 | TERM | Keep original intro (logo → Earth placement → galaxy); add two one-time hint cards after placement; land in Milky Way with dock shown | CS-016, CS-032 | todo |
 | CS-094 | CC | The hint cards have no runtime at all (`grep HintCard` returns nothing), so contract row F-32 cannot pass: build the card component, the first-run flag and the replay entry point CS-074 and the Help button call | CS-006, CS-062 | done |
+| CS-120 | CC | `HintCards`' manipulation watch cannot tell a body or overlay grab from dock furniture: pinching the drag bar now satisfies the `Grab` card without a planet ever being pulled, and releasing it clears `_held` and silently drops an in-progress `Resize` measurement on whatever else is held — scope the subscription to "the handler is part of the dock", not `ManipulationType` | CS-108, CS-094 | todo |
 | CS-075 | TERM | Branding: logo, app icon, splash (Figma vector; Higgsfield hero art optional) | CS-010 | todo |
 | CS-076 | CC | Narration-only mute and panel text-size setting | CS-027 | done (unverified) |
 | CS-077 | TERM | Source the two sounds nothing in the project owns (Sun touch rumble, seamless loop ~4 s; grow-in whoosh ~0.6 s; assign rumble on the Sun prefab, whoosh on `AudioId.GrowIn`) **and the ambience beds `AmbienceController` (CS-093) now plays but that do not exist yet** — Cosmic Web, Galaxies, Andromeda, Sagittarius A\*, and (open question against GDD §4.3's "Galaxy ambience") possibly the Milky Way map, so 4 or 5 beds; `Assets/audio/ambience_audio_clips/` holds only the 12 inherited body clips today | CS-070, CS-093 | todo |
@@ -502,6 +582,7 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 *Closed 12 Sep 2026 (`f9f2fa1`), same ticket, later commit — the paragraph above is now history, not the current state.* All three calls landed once the ids they needed were committed. The dock show/hide sound sits under the existing equality check, so a held palm re-asserting the same state stays silent. The grow-in whoosh plays with no target transform, deliberately — it belongs to the arrival, not the object, and a second switch can destroy the object mid-grow while the sound should not be cut off with it; its id still has no clip, so the call ships ahead of the sound and goes live the day the file lands. The panel open/close sound is edge-triggered rather than hooked to `Show`/`Hide` directly, because those are idempotent setters a caller can drive every frame while visibility is a predicate recomputed in the frame loop — hooking the setters would have sounded on every spawn and stayed silent on the one open that actually matters. Not compiled, not heard.
 *Pre-existing bug found, not fixed (out of scope):* `GEButton.Click()` plays an authored `clickSound` parented to the button, so a pop-up option button whose own click closes the pop-up cuts its sound off at `SetActive(false)`. No prefab assigns a `clickSound` today, so nothing hits it yet.
 
+*Run 12 Sep 2026, terminal session.* `MusicController` sits on `cosmic_systems` (`m_Enabled: 1`, owner `m_IsActive: 1`, so it will actually run) with three unique clips across the four room states, a 2 s crossfade and a 0.55 narration duck. The legacy `MusicAudioSources` root reads `m_IsActive: 0` — genuinely deactivated with `SetActive(false)`, not merely muted by a mixer snapshot, which is exactly the thing this note below asks someone to confirm. `desktop_dock_prefab` is referenced 23 times in `core_systems_scene`. Not yet heard: the play-mode listening pass (crossfade timing, levels) is still open.
 *What the terminal track must do and verify (new [TERM] work):* run **Cosmic Simulation → Install Runtime Systems**, which now adds `MusicController` to `cosmic_systems`, fills its three clips, **and switches off the `MusicAudioSources` object in `core_systems_scene`** — five inherited beds all playing the *same* clip through five snapshot-driven mixer groups, which would otherwise sit underneath every crossfade. Then a play-mode listen: switch Milky Way → Sagittarius A* (Dimmed → FullBlack) and hear a clean 2 s crossfade; poke the passthrough toggle twice quickly and hear no restart; check `MusicController.Instance.CurrentTrack` follows the mode; confirm the levels against −16 LUFS (0.35 on all three tracks is a guess). Clip import settings were read but not exercised: all three are 118 s stereo 48 kHz (three arrangements of one piece, which is why a crossfade between them sits well), `background_music` streams on every platform and the other two stream on Android through a platform override, so no two beds ever share a stream — the only mode pair that maps to the *same* clip (BlackHalo/FullBlack) is short-circuited as a no-op and never plays it twice at once. All three have `preloadAudioData` on and `loadInBackground` off, so the first `Play()` may hitch; that is an import-settings call for the asset track, not this ticket.
 
 *CS-094 done (unverified in the editor — [CC] track, compile-checked by reading only).* Three new files: `Assets/scripts/experience/HintCards.cs`, `Assets/scripts/experience/HintCardSet.cs`, `Assets/scripts/Editor/HintCardBuilder.cs` (menu **Cosmic Simulation → Build Hint Cards**). Nothing existing was edited — the ticket's owned-file list covered most of the input layer, and the design turned out not to need a change there.
@@ -511,8 +592,10 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 *Which card is which is keyed off the heading in hints.md, not off its prose.* "Dismisses on: the first two-hand scale" is a sentence for a person; a table in `HintCardBuilder.Behaviour` maps `hint_grab` → `Grab` and `hint_scale` → `Resize`.
 *Every hand path has a mouse path.* Card 1 ends on any `ManipulationHandler.OnManipulationStarted` (the force-pull grab goes through it — `ForceSolver.OnPointerDown` forwards), on a poke or far pinch of the card's own `GEButton`, on a left click or `Space`/`Enter`/`Esc`, or after 6 s. Card 2 ends on the **held object changing size by 12 %** rather than on counting hands: that is true of a two-handed scale *and* of the desktop wheel, which never goes through a `ManipulationHandler` pointer at all (`DesktopMouseInput.HandleWheel`). A 0.5 s settle delay before the baseline is sampled keeps a force-pulled planet's grow-in from answering the card for the player.
 *The seen flag is `PlayerPrefs` `CosmicSimulation.HintsSeen`,* the fourth key in the project and the third under that prefix. Set on the way **in**, not out: the intro plays every launch, and a player who takes the headset off mid-hint should not meet the cards again every time. `HintCards.Replay()` bypasses it; `HintCards.Forget()` clears it.
+*Run 12 Sep 2026, terminal session.* `hint_cards.asset` now exists at `Assets/scriptable_objects/Resources/hint_cards.asset`; `HintCards.ShowIfFirstRun()` no longer logs an error. Nothing has shown a card in play mode yet.
 *What the terminal track owes, beyond compiling it.* (1) Run **Cosmic Simulation → Build Hint Cards** once — until it runs, `ShowIfFirstRun` logs an error and shows nothing. (2) **CS-074** calls `CosmicSimulation.HintCards.ShowIfFirstRun();` from the intro once the Earth pin is placed — `PlacementControl.OnContentPlaced` is the honest moment; the component is created by the call, so there is nothing to wire. (3) The Help buttons, one line each and **not done here** because both files are owned elsewhere: `DesktopDock.ToggleHelp` and `DockController.Start` (whose `helpButton` has no `OnClick` listener at all today — a separate gap) want `CosmicSimulation.HintCards.Replay();`. (4) A play-mode look at the card in both modes: legibility against a bright wall, whether the card's collider sits between the hand and the thing the card says to grab (it parks 28 cm below eye level to avoid it, and a poke that hits the card dismisses it rather than doing nothing), and the two-line wrap of the longer sentence at 200 mm.
 *Not done, on purpose.* The dock is not hidden while a card is up (GDD §8.1 asks for it) — that is `DockController.SetVisible` state the hint component should not be fighting over, and during onboarding the dock is not shown anyway. No VO, no sound: GDD §9 gives the cards neither.
+*Regression found 12 Sep 2026, verifier pass — CS-108 made this reachable, CS-094 itself has no bug.* `HintCards.WatchManipulation` subscribes to every `ManipulationHandler.OnManipulationStarted` in the scene with no way to tell a body or overlay grab from dock furniture. Before CS-108 the drag bar had no `ManipulationPointerRouter`, so its handler's `OnManipulationStarted` could never fire and the subscription was inert against it; now it fires. A player who pinches the drag bar while card 1 (`hint_grab`, `DismissOn: Grab`) is up satisfies it without ever pulling a planet, and `HintCards.OnManipulationEnded` ignores its source and unconditionally clears `_held`, so releasing the bar mid-`hint_scale` silently drops whatever resize was actually being measured. See **CS-120** above; full detail is in the CS-108 note's check (7) in Phase 5.
 
 ## Phase 7 — Device pass, performance, release
 
@@ -524,8 +607,8 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 | CS-083 | TERM | Passthrough alpha audit of new shaders; dim quad ordering | CS-081 | todo |
 | CS-084 | CC | Store readiness: privacy policy page, About links, description draft | — | done (drafts only) |
 | CS-085 | TERM | Regression: desktop + Quest matrices (GDD §5.3, Technical Overview §12) | CS-082 | todo |
-| CS-095 | TERM | Compile and verify the 25 stereo-macro shader fixes on Link, both eyes | — | todo |
-| CS-096 | CC/TERM | The 8 reachable shaders `docs/SHADER_STEREO_AUDIT.md` could not fix mechanically | CS-095 | todo |
+| CS-095 | TERM | Compile and verify the 25 stereo-macro shader fixes per eye on the standalone Android build | — | doing (compile clean and render-mode settled 12 Sep terminal session; per-eye device check still open) |
+| CS-096 | CC/TERM | The 8 reachable shaders `docs/SHADER_STEREO_AUDIT.md` could not fix mechanically | CS-095 | done (unverified — repo half; per-eye device check open) |
 | CS-086 | TERM | About slate: delete 4 orphaned Microsoft-page `Hyperlink`s (`hl2_for_devs`, `galaxy_explorer`, `original_galaxy_explorer`, `microsoft_services_agreement`), re-point 2 (source code, privacy) — prefab surgery via `PrefabUtility.LoadPrefabContents`, not hand-edited YAML | CS-084 | todo |
 | CS-112 | TERM | Decide the fate of the vendored TouchScript TUIO/OSC module (`OSCsharp.dll`, `TUIOsharp.dll`) before submission — inert today (no `TuioInput` reference anywhere) but an automated APK scan could flag the network capability against a privacy policy that says "no network calls"; remove it or record why it stays in `docs/decisions.md` | CS-084 | todo |
 | CS-113 | CC | Own the version number in `Quest3ProjectSetup`, the same pattern D-001a already set for the bundle id — no version constant exists anywhere today, `PlayerSettings.bundleVersion` is whatever Unity's default is | CS-002 | done |
@@ -533,6 +616,7 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 | CS-115 | TERM | Verify the exported `AndroidManifest.xml` requests only what `docs/store/PRIVACY_POLICY.md` describes and nothing unexpected (e.g. `RECORD_AUDIO`, `INTERNET`) arrived transitively from a package | CS-084, CS-081 | todo |
 | CS-116 | CC | Bundle `License.txt` (the MIT notice) into the build — not confirmed to ship in the APK or be reachable from the About screen today, which is thinner than the licence requires | CS-002 | done (code half; prefab half is CS-117) |
 | CS-117 | TERM | About slate licence page: add a `legal_page` group under `links_offset` holding a `legal_text` (`LegalNoticeText`, notice `GalaxyExplorerLicense`) and an `our_notice_text` (notice `ProjectNotice`), fill `AboutSlate.aboutPage` / `licencePage`, and point one link at `AboutSlate.ToggleLicencePage` — CS-116's in-app half, prefab surgery only | CS-116, CS-086 | todo |
+| CS-118 | TERM | Confirm whether `CommandBuffer.DrawProcedural`'s instance count is doubled under **true Single Pass Instanced** — five call sites default to `instanceCount: 1` (`DrawStars.cs:192`, `OrbitalTrail.cs:238`, `CosmicWebRenderer.cs:391`, and by the same pattern `cosmic_web_points_shader`'s two remaining callers); if Unity does not double it, each renders to one eye only, and the fix is `instanceCount: 2` in C#, not another shader macro. **A passing result on the Android build does not close this** — Android implements the mode as multiview, where the eye index arrives via `gl_ViewID` with no instance doubling involved at all, so it must be tested on a Link session explicitly forced to true single-pass instanced | CS-095 | todo |
 | CS-100 | CC | *(optional, Phase 7)* Remove TouchScript and switch Active Input Handling to Input System only, once nothing depends on it | CS-061, CS-112 | todo |
 | CS-101 | TERM | *(optional, Phase 3)* Re-UV or re-project the Moon and Earth maps so the USGS / Blue Marble upgrades can drop in, or close `dropped` with the reason recorded | CS-005, CS-047 | todo |
 
@@ -542,6 +626,16 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 *CS-113 done (unverified — [CC] track, no editor, compile-checked by reading only).* `Quest3ProjectSetup.AppVersion = "0.9.0"` is now the one place the version lives, written to `PlayerSettings.bundleVersion` by `ConfigureProject()` and, because that script never runs it, directly by `Unity6WindowsBuild` as well, so desktop and Quest cannot show different numbers. The Android version code is **derived** from the string (`major*10000 + minor*100 + patch`, so 900) rather than kept as a second number, since Meta only checks that it increases and two hand-maintained numbers drift; `ConfigureVersion` logs an error if the string is not `major.minor.patch` or if minor/patch exceed 99, which would break the ordering. Why 0.9.0 and not 1.0.0: nothing has been submitted and phases 6-7 are open, so 1.0.0 is reserved for the first store build. `ProjectSettings.asset` still reads `bundleVersion: 1.0` / `AndroidBundleVersionCode: 1` and was deliberately left alone — the point of D-001a is that the build script overwrites it. **[TERM] must confirm** that after one *Configure Project* those two lines become `0.9.0` and `900`, and that `Application.version` reads `0.9.0` in play mode.
 
 *CS-116 done in code; the in-app half needs CS-117 (prefab surgery).* `License.txt` at the repository root is the single source of truth and is now copied verbatim to `Assets/Resources/legal/galaxy_explorer_license.txt` by `Quest3ProjectSetup.EnsureLegalNoticesShip()`, which runs inside `ConfigureProject()` and again as a gate in `Quest3Build.BuildApk` — a build whose notice would not ship now aborts instead of producing an undistributable APK. **Resources, not StreamingAssets**: on Android StreamingAssets lives inside the APK and is only readable through `UnityWebRequest`, and an async read is a bad foundation for text that must always be displayable. Our own copyright is a **separate** file, `cosmic_simulation_xr_notice.txt` — Microsoft's notice is not reworded, trimmed or merged with ours. Runtime access is `LegalNotices` (lazy, cached, logs an error and falls back to the attribution line if the resource is missing) and `LegalNoticeText`, a component that writes a chosen notice into a `TMP_Text` so the About slate needs no new code. `AboutSlate` gained `aboutPage`/`licencePage` arrays and `ToggleLicencePage()`, both inert while the arrays are empty, and its fade cache now uses `GetComponentsInChildren<Renderer>(true)` — without that, anything inactive at `Start` never gets its alpha driven and pops in at full opacity. **Not done, and not claimable without a build:** nobody has opened the APK to see the text asset, and there is no version or licence element on the slate yet (CS-114, CS-117).
+
+*CS-096 done (unverified — [CC] half only, no editor, no compiler; read back as a compiler would and nothing else).* The render-mode question this ticket sat on was settled from the package source during the same wave, and it inverts the risk: `OpenXRRenderSettings` declares `MultiPass = 0, SinglePassInstanced = 1`, and the settings asset holds `1` for **Android** and `0` for **Standalone**. So the shipping Quest 3 build is single-pass instanced and **Link is multi-pass** — a missing stereo macro breaks one eye on device and is invisible on Link. Every shader below was treated as shipping-critical on that basis.
+**Six of the eight were fixed.** `black_hole_gravitational_lensing_disc_optimized_shader` first, as the audit asked: it gets the vertex macros *and* `UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX` in `frag`, because the ray march reads `_WorldSpaceCameraPos` per pixel and that uniform is `unity_StereoWorldSpaceCameraPos[unity_StereoEyeIndex]` under single-pass instanced — without it both eyes march from the left eye's origin and the disc still looks like a black hole, lensed from the wrong place. Shape copied from `nebula_card_shader`. The four procedural-draw shaders (`spiral_stars`, `spiral_stars_negative`, `spiral_stars_cloud`, `orbital_trail`) all had `vert(uint vid : SV_VertexID)` — a bare parameter with nowhere for an instance id to arrive — so each gained the `struct appdata { uint vid : SV_VertexID; UNITY_VERTEX_INPUT_INSTANCE_ID }` that `cosmic_web_points_shader` already uses on the same code path, plus the v2f pair and the frag pair, matched to that reference. In `orbital_trail` the `v2f o = (v2f)0;` was **hoisted to the top of `vert`**, because `UNITY_MATRIX_VP` is built on line three and that is `unity_StereoMatrixVP[unity_StereoEyeIndex]`; the file says so, as the three CS-095 hoists do, since it is exactly the reordering a tidy-up would undo. `occluder_shader` got the semantic fix and the macros together: its `v2f` position is now `SV_POSITION`, not `POSITION`. The old "no parallax to lose" argument for leaving it was wrong under single-pass instanced — without the slice index every fragment lands in eye 0 and only the **left** eye ever fades to black.
+**The screen-compose pair was investigated and deliberately not patched, and the reasoning is now in the two files rather than in anyone's head.** `DrawStars.CreateBuffers` computes `_useDownscaledTarget = renderIntoDownscaledTarget && !XRSettings.isDeviceActive`, so the whole render-to-texture chain is off whenever a headset is attached — a 2D `RenderTexture` cannot feed a stereo eye texture. Only pass 0 of `screen_compose_shader`'s four has a caller at all (the two `CommandBuffer.Blit` calls); passes 1–3 have no consumer anywhere. If that path is ever revived for XR the fix is per-eye render-texture arrays in `DrawStars`, not macros here. `screen_clear_shader` is worse than dead-on-XR: its material is bound to a `screenClearMaterial` key that `milky_way_prefab` still serialises but `SpiralGalaxy.cs` **no longer declares**, so nothing reads it in any mode. It is a deletion candidate, not a stereo fix — worth its own ticket rather than a drive-by here.
+**`#pragma multi_compile_instancing` (acceptance item 5), one answer applied to all five: it is not load-bearing for stereo.** It gates `INSTANCING_ON` — GPU instancing and per-instance property arrays — while the eye index rides on `STEREO_INSTANCING_ON`, which Unity's compiler adds by itself when the render mode calls for it; `TMP_SDF-Mobile` carries the full macro set with no such pragma and draws correctly in both eyes. So `ring_shader`, `intro_shaders/placement_ring_shader` and the two `intro_placement_object_*` shaders were **left without it** (adding it would also require a `UNITY_TRANSFER_INSTANCE_ID` each, for a variant nothing uses), and `sun_shader.shader` keeps its pragma but its **comment is corrected** — dropping a pragma from a shipping shader gains one variant and risks that material's instancing flag for nothing. The four procedural shaders above did not get it either, for the same reason, which does mean they differ from `cosmic_web_points_shader` in that one line; that shader's copy is vestigial and can go whenever someone is in there.
+**Deletions.** The audit's three dead shaders are gone, with both `.shader` and `.shader.meta` removed by `git rm` after a whole-repo grep for each GUID and each shader name (no `Shader.Find`, no builder path, not in Always Included Shaders): `grid_shader`, `intro_earth_placement_shader`, `poi_occlusion_shader`, plus their three materials. `boundry_space_floor_prefab` went with them — it was `grid_material`'s only referrer and nothing at all referenced the prefab, so the four files were a closed dead cluster and deleting the shader without the prefab would have left a dangling material reference behind. That is one file more than the ticket named; say so if it should come back.
+**The two XRI sample shaders: refused, because there is nothing to un-reference.** `DepthOnly.shader` and `BiRP_Fresnel.shader` are reached only by materials **inside** `Assets/Samples/XR Interaction Toolkit/3.6.0/`, and no prefab, scene or asset of ours references any of those four materials; the sample scenes are not in `EditorBuildSettings`, so none of it enters a player build. The audit's "reachable" for these two means "a material exists", not "a build scene reaches it". The real ticket is whether the `Assets/Samples` tree should be in the repo at all — an asset-database delete, so [TERM].
+**Compile confirmed 12 Sep 2026, terminal session, across the whole project, not just these eight.** `ShaderUtil.GetShaderMessages` was run against every shader under `Assets/` (excluding `Assets/Samples/`): **70 scanned, 0 with errors.** Only three carry warnings, all pre-existing and third party — `TMP_SDF-Mobile` and `TMP_SDF-Mobile SpaceWarp` (a deprecated `enable_d3d11_debug_symbols` pragma) and MRTK's `MixedRealityStandard` (`unknown attribute earlydepthstencil`). Item (1) below is satisfied for the compile half; the per-eye half is unchanged and still open.
+**What only a device can settle, and it must be the standalone Android build or Link explicitly forced to Single Pass Instanced — a default Link session is multi-pass and would hand back a false all-clear:** (1) all eight files compile with zero errors and no new warnings; (2) the galactic centre's lensing disc, per eye, with the other closed — the disc must be lensed *differently* in each eye, which is the one case where a wrong eye index still looks plausible, so compare against a screenshot rather than a memory; (3) the galaxy view's three star layers and Andromeda's, which `AndromedaBuilder` builds from the same three shaders by path, per eye; (4) all ten orbital trails, per eye, and specifically that the hoisted `v2f o` did not change the mitre — the trail geometry is built in screen space from `UNITY_MATRIX_VP`, so an error shows as a wrong-width or kinked line, not a missing one; (5) the `LogoFader` quad in `core_systems_scene` — the intro logo fade, and `occluder_material`'s only consumer — blacking out **both** eyes, which is what the `occluder_shader` semantic change buys; (6) **the one thing no amount of reading can decide, and Android cannot be the test for it** — whether a custom `CommandBuffer.DrawProcedural` (five sites: `DrawStars`, `OrbitalTrail`, `CosmicWebRenderer`) has its instance count doubled by Unity under **true single-pass instanced**. Android implements its Single Pass Instanced setting as multiview, where the eye index arrives through `gl_ViewID` and no instance doubling is involved at all, so a clean result on device says nothing here — this has to be checked on a Link session explicitly forced to single-pass instanced. If Unity does not double the count there, every one of these five draws renders one eye only under that mode, and the fix is `instanceCount: 2` in C#, not more macros in the shader — `cosmic_web_points_shader` has the same exposure today. Check that before trusting any of the five.
+*CS-118 (new, 12 Sep 2026, terminal session; qualified further after the verifier pass).* Raised because today's render-mode finding puts Android — the shipping platform — on Single Pass Instanced, which makes item (6) above matter more than it did when Link (Multi Pass) was thought to be the risk surface. Five `CommandBuffer.DrawProcedural` call sites use the five-argument overload, where `instanceCount` defaults to 1: `DrawStars.cs:192`, `OrbitalTrail.cs:238`, `CosmicWebRenderer.cs:391`, and by the same pattern `cosmic_web_points_shader`'s two remaining callers. **A passing result on the Android build does not close this ticket**: Android's Single Pass Instanced is multiview under the hood, so no instance doubling question even arises there; the question only exists on true single-pass instanced, which on this project means a Link session with the mode forced rather than left at its Multi Pass default. See the table row in this phase and the dated session note near the end of this file.
 
 **CS-117 — About slate licence page (CS-116's in-app half). Prefab surgery only; no code should be needed.**
 Context: the MIT notice now ships inside the player (`Assets/Resources/legal/galaxy_explorer_license.txt`) but nothing on screen shows it. Do this with a `PrefabUtility.LoadPrefabContents` script on `Assets/prefabs/about_slate_prefabs/about_slate_prefab.prefab`, per the working rule. Best done **after CS-086**, which deletes four of the six links and frees the rows at local Y 13, 4 and -2.
@@ -554,15 +648,15 @@ Steps:
 Sizing, which could **not** be worked out from the YAML: `intro_text` is `fontSize 6` in a 32×1 rect with auto-sizing off and word wrap on, holding 268 characters. The MIT text is **1082 characters** — four times that — so it will not fit at the same size. Expect to drop the licence page's font, widen the rect, or split it across two pages, and judge it in the headset rather than from numbers.
 Checks: open the slate in play mode, toggle to the licence page and back, and confirm (a) the MIT text appears **in full and unaltered**, (b) our notice is a separate block, (c) both fade with the rest of the slate rather than popping in at full opacity — `AboutSlate` now caches renderers with `GetComponentsInChildren<Renderer>(true)` precisely so an inactive page is included, and this is the check that proves it, and (d) closing and reopening the slate lands on the About page, not the licence page.
 
-**CS-095 — Compile and verify the 25 stereo-macro shader fixes on Link, both eyes.**
+**CS-095 — Compile and verify the 25 stereo-macro shader fixes per eye on the standalone Android build.**
 Context: `docs/SHADER_STEREO_AUDIT.md`. 36 of the 47 project shaders carried **no** stereo macros at all; 25 reachable ones were fixed in the [CC] track on 12 Sep 2026 **without a compiler**. Nothing below has been compiled.
 Acceptance:
 1. **Compile.** Refresh, then confirm zero shader errors *and* zero new warnings for the 25 files listed in audit §4b. A partially-initialised `v2f` or a misplaced macro shows up here first.
-2. **Settle the render mode question.** Read `OpenXRSettings.RenderMode` from the package source and confirm the audit's reading of `Assets/XR/Settings/OpenXR Package Settings.asset`: Android = Multi Pass (`1`), Standalone = Single Pass Instanced (`0`). If confirmed, **correct `CLAUDE.md` §Build**, which states the opposite, and decide separately whether Android should move to Single Pass Instanced (CS-082 territory — CS-095 and CS-096 both block that move).
-3. **Verify in both eyes on Link**, which is where the breakage actually lives. For each of: solar system view (planets, LOD meshes, rings, clouds, halos, Sun + flares + glow card, asteroid belt), galaxy view (centre plane, magic window), galactic centre (Sgr A* glow card), POI cards and marker pins in all three views, the boundary star dome, the intro placement scene (Earth, clouds, depth occluder), the hand menu cards and the About slate — close one eye, then the other, and confirm the object sits at a **different** screen position in each. Identical position in both eyes is the bug still present. Screenshots of before/after are worth keeping for the two worst cases (`planet_shader`, `poi_transparent_shader`).
-4. **Confirm nothing regressed on Android**, which was already correct because it is multi-pass: one APK run through the same list.
+2. **Settle the render mode question — done 12 Sep 2026, terminal session, and it reverses this item's own original reading.** `OpenXRSettings.RenderMode` declares `MultiPass = 0, SinglePassInstanced = 1` (`Library/PackageCache/com.unity.xr.openxr@b5b77b4027be/Runtime/Settings/OpenXRRenderSettings.cs:16-27`), and `Assets/XR/Settings/OpenXR Package Settings.asset` holds `1` for **Android** and `0` for **Standalone**. So Android is Single Pass Instanced (a missing macro breaks one eye on device) and Standalone/Link is Multi Pass (the same bug is invisible there) — the opposite of what this acceptance item and the audit used to say, and exactly what `CLAUDE.md` already said before a stale note claimed otherwise. `CLAUDE.md` needed no correction; the note did. Whether Android should ever move away from Single Pass Instanced (the old CS-082 question) is moot — it already is.
+3. **Verify in both eyes on the standalone Android build, or on Link explicitly forced to Single Pass Instanced** — that is where the breakage actually lives; a default Link session is Multi Pass and would hand back a false all-clear. For each of: solar system view (planets, LOD meshes, rings, clouds, halos, Sun + flares + glow card, asteroid belt), galaxy view (centre plane, magic window), galactic centre (Sgr A* glow card), POI cards and marker pins in all three views, the boundary star dome, the intro placement scene (Earth, clouds, depth occluder), the hand menu cards and the About slate — close one eye, then the other, and confirm the object sits at a **different** screen position in each. Identical position in both eyes is the bug still present. Screenshots of before/after are worth keeping for the two worst cases (`planet_shader`, `poi_transparent_shader`).
+4. **Confirm nothing regressed on Windows/Link**, which is Multi Pass, where a missing macro is invisible rather than broken — a sanity pass, not the verification; item 3 above is where this bug actually shows.
 5. **Answer the `#pragma multi_compile_instancing` question** (audit §4e) and apply one answer to all five affected files, `sun_shader.shader` included — either the pragma is load-bearing and `ring_shader`, `placement_ring_shader` and the two `intro_placement_object_*` shaders get it (each also needing `UNITY_TRANSFER_INSTANCE_ID(v, o)`), or it is not and the Sun's comment is corrected.
-Files: the 25 listed in audit §4b, plus `CLAUDE.md` and `docs/TECHNICAL_OVERVIEW.md` §7.1 if step 2 confirms.
+Files: the 25 listed in audit §4b. `CLAUDE.md` and `docs/TECHNICAL_OVERVIEW.md` §7.1 needed no correction from step 2 after all — see item 2 above — but were corrected centrally regardless once a stale note had put the wrong reading in both.
 
 **CS-096 — The 8 reachable shaders the audit could not fix mechanically.**
 Context: audit §4a. Each was left alone on purpose; none is a drive-by.
@@ -595,3 +689,166 @@ under `docs/store/` (`6e4a6fd`). CS-084 reads **done (drafts only)** on purpose 
 listing, About copy and checklist are written and sourced from what the repo actually does, but
 hosting the policy, supplying real company and contact details, and the Meta age-rating
 questionnaire are all owner actions, and the About-slate link surgery is CS-086 [TERM].
+
+## Session note (12 Sep 2026, first terminal run against the live editor)
+
+This was the first session in which `tools/mcp/umcp.js` actually talked to a live Unity
+editor rather than a stand-in. It worked the `[TERM]` priority queue from the top and
+got through steps 1, 2 and 4 through 10, plus step 21 — the queue's own update note
+above says exactly which. Nothing from step 11 onward ran, except that items 22 through
+24 were corrected rather than completed (below, and in the queue). **No play-mode
+session and no device run happened today.** Everything below was checked structurally
+in the editor or in the serialised assets, never seen actually working at runtime — that
+distinction matters more here than usual, because several of today's findings read like
+"it works" and are not that.
+
+**Compile, twice, zero errors.** The whole 12 Sep wave — about 13,000 lines across
+eighteen commits, none of it previously near a compiler — built with zero `error CS`
+lines the first time it was run, and again after CS-108's and CS-096's edits landed on
+top. This was the wave's single biggest unknown going in.
+
+**The queue's own flagged highest-risk item turned out to be dead.**
+`UiEventSystemInstaller.EnsureDefaultActions` (CS-061) compiles as written: Input System
+**1.20.0** declares both `public InputActionAsset actionsAsset`
+(`InputSystemUIInputModule.cs:2556`) and `public void AssignDefaultActions()` (line
+1541). The documented fallback — delete the method and its one call site — is not
+needed against this package version.
+
+**Build Nebula Prefabs, re-run, verified by GUID rather than by eye.** All seven
+`nebula_*_prefab`s went from zero to one reference each to `ManipulationPointerRouter`
+(guid `c9080a9df18d4c4caaaafc7a7d8cd400`) and `FreePlacementAnchor` (guid
+`64e1ba70b56d49b3917223e4351fffdd`). They really were stale and ungrabbable before —
+the code had landed in the repo but never in these committed prefabs.
+
+**Build Cosmic Web Content, first run ever.** `cosmic_web_content_prefab` did not exist
+until today. The build also needed `cosmic_web_points_shader` added to
+`m_AlwaysIncludedShaders` in `ProjectSettings/GraphicsSettings.asset` — a
+`DrawProcedural` shader has no material reference for the build pipeline to find, so
+without that entry it would be silently stripped from a player build.
+
+**Build Andromeda Content, first run ever.** `andromeda_content_prefab` built, along
+with its three materials and three `StarsData` scriptable objects.
+
+**MoonBuilder passed, including the one documented risk.** Nine `MoonOrbit`
+components; six moons active (Earth/Moon, Jupiter/Ganymede+Callisto,
+Saturn/Titan+Mimas+Iapetus), three built but switched off (Io, Europa, Enceladus), none
+skipped. The feared "moons with no panels" did not happen — all nine `moon_panel_*`
+instances exist as nested `info_panel_prefab` instances. **Gotcha worth keeping:** a
+nested prefab instance stores its own name in `m_Modifications`, not in `m_Name`, so
+grepping `m_Name: moon_panel_` returns nothing on a perfectly good prefab and looks
+like a failure. Check `m_Modifications`, or ask the editor, before concluding a nested
+instance is missing — this trap will catch the next person too.
+
+**Build Hint Cards ran.** `hint_cards.asset` now exists at
+`Assets/scriptable_objects/Resources/hint_cards.asset`, so `HintCards.ShowIfFirstRun()`
+no longer logs an error and shows nothing.
+
+**Wire Scene Panel ran, on the second attempt.** It first failed with "no
+`ExperienceDirector` in any open scene" because `core_systems_scene` was not open. It
+had to be opened **additively**, never Single — unloading a dirty scene raises a modal
+dialog that blocks the relay outright. Once open, `core_systems_scene.unity:1349` now
+reads `scenePanelPrefab: {fileID: 284596933589354139, guid:
+782d1fee663b8e841b4659df5742eb48}`, which is `info_panel_prefab`.
+
+**Install Runtime Systems, re-run, confirmed rather than assumed.** `MusicController`
+sits on `cosmic_systems` (`m_Enabled: 1`, owner `m_IsActive: 1`, so it will actually
+run) with three unique clips across the four room states, a 2 s crossfade and a 0.55
+narration duck. The legacy `MusicAudioSources` root reads `m_IsActive: 0` — genuinely
+deactivated with `SetActive(false)`, not merely muted by a mixer snapshot, which is
+exactly what CS-073's note asked someone to confirm. `desktop_dock_prefab` is
+referenced 23 times in `core_systems_scene`.
+
+**CS-108 verified in the rebuilt prefab.** `dock_prefab`'s `drag_bar` now carries
+`ManipulationPointerRouter`, `manipulationType: 0`, `playGrabSounds: 1`, and a
+`hostTransform` resolving to the dock root (`m_Father: 0`) while the handler itself
+stays on `drag_bar` — dragging the bar moves the dock, not itself. `DockController`'s
+own references (buttons, utility window prefab) survived the rebuild.
+
+**Shaders compile clean, project-wide.** `ShaderUtil.GetShaderMessages` was run across
+every shader under `Assets/` (excluding `Assets/Samples/`): **70 scanned, 0 with
+errors.** Three carry warnings, all pre-existing and third party — `TMP_SDF-Mobile`
+and `TMP_SDF-Mobile SpaceWarp` (a deprecated `enable_d3d11_debug_symbols` pragma) and
+MRTK's `MixedRealityStandard` (`unknown attribute earlydepthstencil`). "Zero errors,
+zero new warnings" is satisfied for the compile half of CS-095 and CS-096; the per-eye
+device half of both is unchanged and still open.
+
+**The render-mode reading was inverted, and this reverses a decision, not just a
+ticket note.** Verified from the package source and the settings asset, not inferred:
+`OpenXRSettings.RenderMode` is declared `MultiPass = 0, SinglePassInstanced = 1` in
+`Library/PackageCache/com.unity.xr.openxr@b5b77b4027be/Runtime/Settings/OpenXRRenderSettings.cs:16-27`
+(field default `SinglePassInstanced`), and `Assets/XR/Settings/OpenXR Package
+Settings.asset` holds `m_renderMode: 1` under `Android` and `m_renderMode: 0` under
+`Standalone` (and `1` under `WebGL`, which does not ship). So **Android — the shipping
+Quest 3 build — is Single Pass Instanced**, where a missing stereo macro breaks one eye
+on the real device, and **Windows/Link is Multi Pass**, where the same bug is
+invisible. `CLAUDE.md`'s original "Android multiview; Windows/Link multi-pass" line
+was right all along; the 12 Sep note that called it backwards, and the CS-095 queue
+items built on that note (22 through 24 above), were themselves wrong. See **D-008** in
+`docs/decisions.md`. One consequence worth restating: the queue's "close-one-eye check
+on Link" (old item 23) proves nothing about the shipping build — it has to be the
+standalone Android build, or Link explicitly forced to Single Pass Instanced.
+
+**Three things about the harness itself, worth keeping for the next session — none of
+them are app bugs.**
+`tools/mcp/compile.ps1` had never actually been run before today, and did not work:
+`$PSScriptRoot` is empty inside a parameter default — both directly and under
+`powershell -File` with a relative path — so it died on the first `Join-Path` before
+doing anything. Fixed by resolving the script's own root once in the body and deriving
+`$ProjectPath` and the path to `umcp.js` from that, rather than from the parameter
+default. It now works, and correctly refuses to run while the editor is in play mode.
+Separately: this project was found already sitting in play mode when the session
+opened, so the very first compile attempt was refused (exit 3) until
+`leave_play_mode.cs` ran — check `playing=` before assuming the editor is idle for you.
+`tools/mcp/smoke.cs` had never run either, and did not compile: two helper classes,
+`Check` and `Entry`, were declared `private sealed class` at what the runner's namespace
+wrapper turns into file scope, where `private` is illegal (`error CS1527`, two sites).
+Fixed by making both `internal`. See the CS-098 note above for the rule this leaves
+behind for anyone else writing into `tools/mcp/*.cs`.
+
+**This is the honest reason queue steps 11 through 20 did not run today — not a choice
+to skip them.** Once `smoke.cs` compiled, play mode itself would not stick through the
+relay. `enter_play_mode.cs` returns "PLAY: requested" and the domain reloads as
+expected, but the next command still reports `playing=False`, and a `smoke.cs` run is
+then refused outright with `UNEXPECTED_ERROR: User interactions are not supported for
+MCP tool calls`. A trivial command in the same state succeeds and confirms
+`playing=False`, so the refusal is about the play-mode transition itself, not about
+`smoke.cs`, which by then compiled cleanly. Tried twice, same result both times. The
+likely cause is the fragility `leave_play_mode.cs`'s own comments already flag: setting
+`EditorApplication.isPlaying` from inside a command whose assembly the resulting domain
+reload then unloads mid-flight means the request can simply be dropped. The editor can
+hold play mode fine — it came up already in it when this session opened, which is why
+the very first `compile.ps1` run correctly refused with exit 3 — the failure is
+specifically in *entering* play mode from a relay command. The practical workaround,
+matching the README's own step 1: a human presses Play in the editor, and only then is
+`smoke.cs` polled from the terminal; it cannot be driven end to end as written today.
+See **CS-119** in Phase 2 above.
+
+**The relay reports NOT-OK on any warning, and this project has two permanent sources
+of one.** The TouchScript `PluginImporter` meta-version warnings
+(`Assets/external/TouchScript/Plugins/WindowsTouch/*.dll.meta`, "below the supported
+minimum (2)") and TMP `CanvasRenderer` warnings fire on nearly every command. A raw
+NOT-OK from the relay does not mean the command it ran actually failed — read the log
+line behind it before concluding that. (The TouchScript warning is more context for
+CS-112.)
+
+**One CS-096 question still cannot be settled by reading, and matters more now than it
+did — but Android cannot be the platform that settles it.** Whether a custom
+`CommandBuffer.DrawProcedural` gets its instance count doubled under **true**
+single-pass instanced. Five call sites use the five-argument overload, where
+`instanceCount` defaults to 1: `DrawStars.cs:192`, `OrbitalTrail.cs:238`,
+`CosmicWebRenderer.cs:391`, and by the same pattern `cosmic_web_points_shader`'s two
+remaining callers. Today's finding puts Android — the shipping platform — on Single
+Pass Instanced, but Android implements that mode as multiview, where the eye index
+arrives via `gl_ViewID` and no instance doubling is involved at all — so a clean
+result on the Android build must not be read as clearing this question. It has to be
+checked on a Link session explicitly forced to true single-pass instanced. If Unity
+does not double the count there, every one of these draws renders to one eye only
+under that mode, and the fix is `instanceCount: 2` in C#, not another shader macro.
+Given its own ticket, **CS-118**, [TERM], depends CS-095.
+
+**What is still open, stated plainly so it is not mistaken for finished work.**
+Everything from queue step 11 onward: all ten play-mode checks (11 through 20), and
+the device pass (27, 28) — not skipped by choice, but blocked by the play-mode harness
+gap above (CS-119). Step 3 (confirm exactly one live `EventSystem` after boot) also did
+not run, for the same reason. Nothing in this session put a headset on, ran an APK, or
+watched anything move on screen.

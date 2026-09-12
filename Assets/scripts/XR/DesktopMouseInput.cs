@@ -14,6 +14,10 @@ namespace GalaxyExplorer.XR
     /// - Left drag on a pulled planet: move it. Right drag on it: spin it. Wheel over it: scale it.
     /// - Right drag on two-handed content (a nebula, the Cosmic Web): turn it. Wheel over it: scale it, inside
     ///   its own <c>ScaleLimits</c>. This is the desktop half of the GDD's two-hand rotate and scale.
+    /// - Left drag on the world dock's drag bar: move the whole dock, upright and dock-sized (right drag and the
+    ///   wheel stay on the view there — see <c>ManipulatedHandler</c>). The world dock parks below the
+    ///   desktop frustum on purpose, so the dock a monitor player actually uses is <c>DesktopDock</c>, which is
+    ///   pinned to the screen and has nothing to drag.
     /// - Left drag on empty space: orbit the view. Right drag: pan. Wheel: zoom.
     /// - R: restore the arrangement. Home: recenter. P: passthrough preview. Esc: close a panel or the overlay.
     /// - 1-9, 0: pull the Sun through Pluto (again to send that one back). M: the Moon.
@@ -292,7 +296,10 @@ namespace GalaxyExplorer.XR
             }
         }
 
-        /// <summary>The <see cref="ManipulationHandler"/> above an interactable that is not pulled by a force solver.</summary>
+        /// <summary>
+        /// The <see cref="ManipulationHandler"/> above an interactable that is not pulled by a force solver and
+        /// that two hands could turn or scale — the pair of gestures the right-drag and the wheel stand in for.
+        /// </summary>
         private static ManipulationHandler ManipulatedHandler(GEInteractable target)
         {
             if (target == null || target.GetComponentInParent<ForceSolver>() != null)
@@ -301,7 +308,17 @@ namespace GalaxyExplorer.XR
             }
 
             var handler = target.GetComponentInParent<ManipulationHandler>();
-            return handler != null && handler.isActiveAndEnabled ? handler : null;
+            if (handler == null || !handler.isActiveAndEnabled)
+            {
+                return null;
+            }
+
+            // A one-handed handle has no two-handed gesture to mirror, and mirroring one anyway would be worse
+            // than nothing: the dock's drag bar moves the dock, so a right-drag would leave the whole dock
+            // rolled over at an angle nothing brings back, and a wheel notch would resize its millimetre canvas
+            // without limit. Both gestures fall back to panning and zooming the view, as they did before the bar
+            // could be dragged at all. The left drag is unaffected — that arrives through GEInteractable.
+            return handler.ManipulationType == ManipulationHandler.HandMovementType.OneHandedOnly ? null : handler;
         }
 
         /// <summary>The transform such a handler would move, or null.</summary>

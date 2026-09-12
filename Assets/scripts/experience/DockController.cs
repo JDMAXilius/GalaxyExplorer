@@ -187,6 +187,10 @@ namespace CosmicSimulation
             {
                 utilityButton.OnClick.AddListener(ToggleUtility);
             }
+
+            // Wired here as well as lazily, so the bar is draggable from the first frame rather than from the
+            // first LateUpdate. See the drag bar section for what this corrects and why.
+            DragHandler();
         }
 
         /// <summary>Replays the one-time hint cards. F-05 and F-32: Help is how a player asks to see them again.</summary>
@@ -372,7 +376,11 @@ namespace CosmicSimulation
             return false;
         }
 
-        /// <summary>Moves the whole dock, for the drag bar underneath it.</summary>
+        /// <summary>
+        /// Moves the whole dock, for anything that wants to place it in one step. The hand drag does not come
+        /// through here — the bar's <see cref="ManipulationHandler"/> writes the transform itself, frame by
+        /// frame, and this class only holds the parts of that pose the dock owns (see the drag bar section).
+        /// </summary>
         public void MoveTo(Vector3 worldPosition)
         {
             transform.position = worldPosition;
@@ -383,7 +391,13 @@ namespace CosmicSimulation
         {
             if (_camera == null)
             {
-                return;
+                // Resolved again here, not only in Awake: a dock that is dragged before the main camera exists
+                // would otherwise keep whatever tilt the hand happened to leave it at.
+                _camera = Camera.main;
+                if (_camera == null)
+                {
+                    return;
+                }
             }
 
             var toPlayer = _camera.transform.position - transform.position;
@@ -395,6 +409,99 @@ namespace CosmicSimulation
 
             transform.rotation = Quaternion.LookRotation(-toPlayer.normalized, Vector3.up) *
                                  Quaternion.Euler(-tiltDegrees, 0f, 0f);
+        }
+
+        // ---------- the drag bar
+        //
+        // GDD 8.1: the 60 mm bar under the dock "moves the whole dock (it re-tilts toward the player)". Three
+        // things have to be true for that and none of them was, which is why the bar has never moved anything.
+        //
+        // 1. The pinch has to arrive. ManipulationHandler is deliberately not an IGEPointerHandler — on a body
+        //    the ForceSolver is the handler ExecuteHierarchy finds and it forwards the grab itself, at the point
+        //    its state machine allows one — so a handler with no solver above it is reached only through
+        //    ManipulationPointerRouter (CS-106). The bar had the handler and no router.
+        // 2. The handler has to drag the dock. Its host defaults to its own transform, so the first working
+        //    pinch would have pulled the bar out from under the dock and left the dock where it stood.
+        // 3. The dock has to stay upright and dock-sized while it is dragged. The handler's one-handed path
+        //    writes rotation from the hand pose and its two-handed path writes scale; a dock that rolls with a
+        //    wrist or grows by the hand span is not a dock. Held below in LateUpdate rather than by asking the
+        //    handler for an exception, because LateUpdate runs after every Update and so cannot lose the race
+        //    with the handler's own.
+        //
+        // 1 and 2 are written by UiPrefabBuilder.BuildDock, which is the durable form; they are re-asserted
+        // here because the dock prefab in the repo predates them and a fix that waits for a menu item to be
+        // re-run is not a fix. The grab sound is the one part that does wait for the rebuild: playing it from
+        // here as well would double it once the prefab carries playGrabSounds.
+
+        private ManipulationHandler _dragHandler;
+        private bool _dragBarWired;
+        private bool _dragging;
+        private Vector3 _dragScale;
+
+        /// <summary>
+        /// The handler on the drag bar, wired to drag this dock. Resolved from the first caller rather than in
+        /// Awake, because the router it adds may be added the same frame it is used.
+        /// </summary>
+        private ManipulationHandler DragHandler()
+        {
+            if (_dragBarWired)
+            {
+                return _dragHandler;
+            }
+
+            _dragBarWired = true;
+            if (dragBar == null)
+            {
+                return null;
+            }
+
+            _dragHandler = dragBar.GetComponent<ManipulationHandler>();
+            if (_dragHandler == null)
+            {
+                // A dock whose bar is only a decoration. Nothing to drag with, so nothing to correct either.
+                return null;
+            }
+
+            _dragHandler.HostTransform = transform;
+            _dragHandler.ManipulationType = ManipulationHandler.HandMovementType.OneHandedOnly;
+
+            if (dragBar.GetComponent<ManipulationPointerRouter>() == null)
+            {
+                dragBar.gameObject.AddComponent<ManipulationPointerRouter>();
+            }
+
+            return _dragHandler;
+        }
+
+        // Runs after every Update, including the manipulation handler's, so what it writes is what the frame
+        // ends with. The handler is left owning the position — that is the whole gesture — and the dock keeps
+        // the two parts of its pose that are not the player's to set by hand.
+        private void LateUpdate()
+        {
+            // Unity's null comparison deliberately, not a type pattern: a handler destroyed with a bar that was
+            // torn down under us is not null to the CLR, and asking it anything would throw.
+            var handler = DragHandler();
+            var dragging = handler != null && handler.IsManipulating;
+
+            if (dragging && !_dragging)
+            {
+                // Captured per grab, not once at startup, so this can never undo a size set between grabs.
+                _dragScale = transform.localScale;
+            }
+
+            if (dragging)
+            {
+                transform.localScale = _dragScale;
+            }
+
+            // On the release frame too, so the last word on the tilt belongs to the dock rather than to the hand
+            // that let go — the re-tilt GDD 8.1 asks for.
+            if (dragging || _dragging)
+            {
+                FaceThePlayer();
+            }
+
+            _dragging = dragging;
         }
 
         // ---------- visibility
@@ -481,6 +588,16 @@ namespace CosmicSimulation
 
         private void WatchPalm()
         {
+            // Hiding the dock switches the drag bar's GameObject off, which ends the grab where it stands. A
+            // left palm that drifts upward while the right hand is placing the dock must not do that, so the
+            // dwell is simply not counted during a drag. The latch is left alone: a palm still up when the drag
+            // ends has to turn over and back before it toggles.
+            if (_dragging)
+            {
+                _palmTimer = 0f;
+                return;
+            }
+
             var rig = XRInputRig.Instance;
             if (rig == null || !rig.LeftHandTracked || rig.LeftPalm == null)
             {

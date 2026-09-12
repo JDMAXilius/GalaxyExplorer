@@ -22,29 +22,36 @@ only through four macros:
 Without them, a shader compiled with `STEREO_INSTANCING_ON` silently draws **both eyes with eye 0's
 matrices** — every object sits at the left eye's position, with no stereo disparity and no depth.
 
-**The render mode in this repo is the opposite of what `CLAUDE.md` says.** `Assets/XR/Settings/OpenXR Package Settings.asset`:
+**Render mode, confirmed against the package source on 12 Sep 2026.** `Assets/XR/Settings/OpenXR Package Settings.asset`:
 
 | Build target | `m_renderMode` | Reading |
 |---|---|---|
-| Android (Quest standalone) | `1` | **Multi Pass** |
-| Standalone (Windows / Quest Link) | `0` | **Single Pass Instanced** |
+| Android (Quest standalone) | `1` | **Single Pass Instanced** |
+| Standalone (Windows / Quest Link) | `0` | **Multi Pass** |
+| WebGL | `1` | Single Pass Instanced (not a target of ours) |
 
-(`OpenXRSettings.RenderMode` is `SinglePassInstanced = 0`, `MultiPass = 1`. Confirm this in the editor —
-it is the one fact in this document that could not be checked against the package source, which is not
-vendored in the repo. §6 covers it.)
+The enum is declared `MultiPass = 0, SinglePassInstanced = 1` in
+`Library/PackageCache/com.unity.xr.openxr@b5b77b4027be/Runtime/Settings/OpenXRRenderSettings.cs:16-27`,
+and the field's own default is `SinglePassInstanced`. The three settings blocks are keyed by `m_Name`:
+`Android`, `Standalone`, `WebGL`.
 
-`CLAUDE.md` §Build says "Android multiview; Windows/Link multi-pass", which is backwards. That single
-inversion explains why a bug this large went unnoticed: **on-device Quest builds are multi-pass**, where
-each eye gets its own draw and the missing macros cost nothing; the breakage is on **Link**, which is
-where the least testing happens, and desktop mono, where it cannot appear at all.
+**An earlier revision of this document had that table inverted, and the correction matters more than
+the error did.** It assumed `SinglePassInstanced = 0, MultiPass = 1`, flagged at the time as the one
+fact that could not be checked because the OpenXR package was believed not to be vendored. It is
+vendored, in the package cache, and the assumption was wrong. `CLAUDE.md` §Build's original line —
+"Android multiview; Windows/Link multi-pass" — was **right all along**; multiview is the mobile
+spelling of single-pass instanced.
 
-Two consequences worth being loud about:
+So the risk runs the other way from what this document used to claim, and this is the loud part:
 
-- Link sessions have been rendering ~33 of the project's shaders mono-on-both-eyes. Anyone who said
-  "the planets look flat on Link" was right.
-- The moment someone flips Android to Single Pass Instanced — which is the standard Quest performance
-  win, and what `CLAUDE.md` already claims is in force — the shipping build breaks the same way.
-  **Fixing the shaders is a prerequisite for that change, not a follow-up to it.**
+- **Android, the shipping Quest 3 build, is single-pass instanced.** A shader missing the macros
+  **breaks one eye on the real device, today.** This is not a latent problem waiting on a settings
+  flip; it is the configuration that ships.
+- **Link is multi-pass, where a missing macro is invisible.** Each eye gets its own draw, so a Link
+  session renders a broken shader correctly and hands back a false all-clear. **Per-eye verification
+  of this work cannot be done on a default Link session** — it needs the standalone Android build, or
+  Link explicitly forced to single-pass instanced.
+- Desktop mono cannot show it at all, which is why this survived so long.
 
 ---
 
@@ -246,10 +253,11 @@ fragment shader, no `.mat`, no `.meta`.
 
 ## 6. Follow-up tickets
 
-Both are proposed for Phase 7 (device pass), and **CS-095 blocks any attempt to switch Android to
-Single Pass Instanced.**
+Both are proposed for Phase 7 (device pass). Android already **is** Single Pass Instanced, so these
+are not preparation for a future settings change — they fix the build that ships.
 
-- **CS-095 [TERM] — Compile and verify the 25 stereo-macro shader fixes on Link, both eyes.**
+- **CS-095 [TERM] — Compile and verify the 25 stereo-macro shader fixes per eye on the standalone
+  Android build** (a default Link session is multi-pass and cannot show the defect).
   Full detail in `docs/BACKLOG.md`.
 - **CS-096 [CC/TERM] — The 8 reachable shaders the audit could not fix mechanically.**
   Full detail in `docs/BACKLOG.md`.

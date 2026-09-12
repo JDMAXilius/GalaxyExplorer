@@ -90,7 +90,7 @@ internal static class CosmicSmoke
 
     // ---------------------------------------------------------------- state (this assembly only)
 
-    private sealed class Check
+    internal sealed class Check
     {
         public string Module;
         public string Clause;
@@ -98,7 +98,7 @@ internal static class CosmicSmoke
         public string Detail;
     }
 
-    private sealed class Entry
+    internal sealed class Entry
     {
         public UnityEngine.LogType Type;
         public string Module;

@@ -193,6 +193,8 @@ GameObject:
   - component: {fileID: 5365898905077304802}
   - component: {fileID: 5306265735162105412}
   - component: {fileID: 8263847098387129292}
+  - component: {fileID: 8478646520117373932}
+  - component: {fileID: 6425281444104257455}
   - component: {fileID: 3265759929807285402}
   m_Layer: 0
   m_Name: nebula_orion_prefab
@@ -354,6 +356,7 @@ MonoBehaviour:
   allowFarManipulation: 1
   smoothingActive: 1
   smoothingTime: 0.05
+  playGrabSounds: 1
   OnManipulationStarted:
     m_PersistentCalls:
       m_Calls: []
@@ -366,6 +369,31 @@ MonoBehaviour:
   OnHoverExited:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &8478646520117373932
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6832103769052129594}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c9080a9df18d4c4caaaafc7a7d8cd400, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GalaxyExplorer.XR.ManipulationPointerRouter
+--- !u!114 &6425281444104257455
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6832103769052129594}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64e1ba70b56d49b3917223e4351fffdd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.FreePlacementAnchor
+  restoreSeconds: 0.8
 --- !u!114 &3265759929807285402
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -382,6 +410,7 @@ MonoBehaviour:
   customMinMetres: 0.05
   customMaxMetres: 3
   measureFrom: {fileID: 0}
+  authoredMetresAtUnitScale: 0
 --- !u!1 &7364952443839992356
 GameObject:
   m_ObjectHideFlags: 0

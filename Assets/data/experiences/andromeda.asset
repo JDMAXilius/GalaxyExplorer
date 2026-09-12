@@ -18,7 +18,7 @@ MonoBehaviour:
   SecondLine: 
   DockThumbnail: {fileID: 21300000, guid: 50fc52dfd109e5c48a445d12cfc4cb7b, type: 3}
   SceneName: 
-  ContentPrefab: {fileID: 0}
+  ContentPrefab: {fileID: 5370908575843888580, guid: 3c5149773c11d1544a7995f4eee6a927, type: 3}
   Environment: 1
   Panel:
     Title: Andromeda (M31)

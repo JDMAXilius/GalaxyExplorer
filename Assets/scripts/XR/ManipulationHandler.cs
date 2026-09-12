@@ -110,6 +110,35 @@ namespace GalaxyExplorer.XR
 
                 return hostTransform;
             }
+
+            // Settable because a grab handle is not the thing being moved: the dock's drag bar drags the dock
+            // root (GDD 8.1), and the committed dock prefab predates that, so DockController points this at the
+            // dock on its way up rather than waiting for the UI prefab builder to be re-run. Re-captures the
+            // grab offsets if a hand is already on it, because they were measured against the old host.
+            set
+            {
+                if (hostTransform == value)
+                {
+                    return;
+                }
+
+                hostTransform = value;
+                if (_pointers.Count > 0)
+                {
+                    CaptureGrabState();
+                }
+            }
+        }
+
+        /// <summary>
+        /// How many hands may drive this handler. Settable for the same reason <see cref="HostTransform"/> is,
+        /// and readable because the desktop mirror has to know: right-drag and the wheel stand in for the
+        /// <i>two-handed</i> turn and scale, so a one-handed handle has nothing there to mirror.
+        /// </summary>
+        public HandMovementType ManipulationType
+        {
+            get => manipulationType;
+            set => manipulationType = value;
         }
 
         public bool IsManipulating => _pointers.Count > 0;
