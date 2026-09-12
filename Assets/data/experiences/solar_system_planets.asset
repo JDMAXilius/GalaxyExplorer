@@ -26,6 +26,8 @@ MonoBehaviour:
     - Every world of the solar system, lined up within reach. In this view they share a size so you can compare their surfaces.
     - 'Switch to relative size to see the truth of it: the Sun fills the room, Jupiter is a beach ball, and Earth sits in your palm.'
     Instruction: Pinch a planet to lift it out, two hands to grow it, let go to leave it.
-  Layouts: []
+  Layouts:
+  - {fileID: 11400000, guid: 423f56aeb16f3a443b71d5b1ac875d75, type: 2}
+  - {fileID: 11400000, guid: 83fdc1f486c703147b508758964fccca, type: 2}
   Narration: {fileID: 0}
   Ambience: {fileID: 0}

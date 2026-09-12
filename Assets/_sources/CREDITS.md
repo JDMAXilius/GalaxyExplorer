@@ -33,17 +33,35 @@ NASA does not endorse this app; NASA imagery is used only as imagery.
 | `Assets/ui/figma/ui_rounded_r{8,16,32,48,64}.png` | Nine-slice rounded plates, 1/2/4/6/8 mm | Drawn by us in Figma `qWxL0ZGiyI7aRjnQAVISoI`, page **Export - Unity** | Ours | 2026-09-11 | White only, tinted at runtime; 8 px per mm |
 | `Assets/ui/figma/ui_tile_foot.png` | Dark foot under a dock tile name | Drawn by us in Figma, same page | Ours | 2026-09-11 | 32x208, transparent to 75% black |
 | `Assets/ui/figma/icon_{passthrough,recenter,help,mute,close,back}.png` | Dock and control icons | Drawn by us in Figma as SVG, same page | Ours | 2026-09-11 | 128x128 white line art; SVG sources in `Assets/_sources/figma_svg/` |
+| `Assets/Textures/nebulae/helix_texture.jpg` | Helix Nebula (NGC 7293), destination `helix` | ESA/Hubble release `heic0307a` — NASA, NOAO, ESA, the Hubble Helix Nebula Team, M. Meixner (STScI), and T.A. Rector (NRAO) — https://esahubble.org/images/heic0307a/ | CC BY 4.0 | 2026-09-11 | Original 8000x8000; centre-cropped square (already square) and downscaled to 2048x2048, JPEG q92 |
+| `Assets/Textures/nebulae/orion_texture.jpg` | Orion Nebula (M42), destination `orion` | ESA/Hubble release `heic0601a` — NASA, ESA, M. Robberto (STScI/ESA) and the Hubble Space Telescope Orion Treasury Project Team — https://esahubble.org/images/heic0601a/ | CC BY 4.0 | 2026-09-11 | Original 18000x18000; downscaled to 2048x2048, JPEG q92 |
+| `Assets/Textures/nebulae/crab_texture.jpg` | Crab Nebula (M1), destination `crab` — clean replacement for `Assets/Textures/crab_nebula_texture.jpg` (which has a credit line burnt into the corner) | ESA/Hubble release `heic0515a` — NASA, ESA and Allison Loll/Jeff Hester (Arizona State University); acknowledgement Davide De Martin (ESA/Hubble) — https://esahubble.org/images/heic0515a/ | CC BY 4.0 | 2026-09-11 | Original 3864x3864; downscaled to 2048x2048, JPEG q92 |
+| `Assets/Textures/nebulae/homunculus_texture.jpg` | Homunculus / Eta Carinae, destination `homunculus` — clean replacement for `Assets/Textures/homunculus_texture.jpg` (burnt-in credit line) | ESA/Hubble release `heic1912a` — NASA, ESA, N. Smith (University of Arizona, Tucson), and J. Morse (BoldlyGo Institute, New York) — https://esahubble.org/images/heic1912a/ | CC BY 4.0 | 2026-09-11 | Original 1779x1805 (no larger release available); centre-cropped square and downscaled to 1024x1024, JPEG q92 |
+| `Assets/Textures/galaxies/deep_field_hubble_udf_texture.jpg` | Hubble Ultra Deep Field — source plate for the galaxy sprite atlas (CS-063) | ESA/Hubble release `heic0611b` — NASA, ESA, and S. Beckwith (STScI) and the HUDF Team — https://esahubble.org/images/heic0611b/ | CC BY 4.0 | 2026-09-11 | Original 6200x6200; downscaled to 2048x2048, JPEG q92 |
+| `Assets/Textures/galaxies/deep_field_webb_smacs0723_texture.jpg` | Webb's First Deep Field (SMACS 0723) — second source plate for the galaxy sprite atlas | ESA/Webb release `webb-first-deep-field` — NASA, ESA, CSA, and STScI — https://esawebb.org/images/webb-first-deep-field/ | CC BY 4.0 | 2026-09-11 | Original 4537x4630; centre-cropped square and downscaled to 2048x2048, JPEG q92 |
+
+Import settings for the six files above are applied automatically by
+`Assets/scripts/Editor/AstronomyTextureImporter.cs` — mip maps on, Read/Write
+off, and ASTC 6x6 on Android — so a re-downloaded or re-cropped plate cannot
+come back uncompressed and readable. Menu **Cosmic Simulation → Reimport
+Astronomy Textures** forces a pass.
+
+## Reused instead of sourced (ticket CS-005)
+
+These rows in the old pending table are already covered by textures inherited
+from the MIT project, so nothing was downloaded for them:
+
+| Subject | Existing file | Size |
+|---|---|---|
+| Pillars of Creation | `Assets/Textures/pillars_texture.tga` | 1774x1751 |
+| NGC 1501 | `Assets/Textures/ngc1501_texture.jpg` | 690x691 |
+| Trumpler 14 | `Assets/Textures/trumpler_texture.jpg` | 1200x1200 |
+| Crab Nebula (old plate, still wired into `poi_magic_window_crab_nebula_material`) | `Assets/Textures/crab_nebula_texture.jpg` | 3864x2923 |
+| Homunculus (old plate, still wired into `poi_magic_window_homunculus_nebula_material`) | `Assets/Textures/homunculus_texture.jpg` | 1600x1580 |
 
 ## Pending (ticket CS-005)
 
-Imagery still to source, with the intended origin:
-
-| Needed for | Subject | Intended source |
-|---|---|---|
-| Nebula overlay | Helix Nebula (NGC 7293) | NASA/ESA Hubble |
-| Nebula overlay | Orion Nebula (M42) | NASA/ESA Hubble |
-| Nebula overlay (upgrade) | Crab Nebula (M1) | NASA/ESA Hubble — project texture exists |
-| Nebula overlay (upgrade) | Homunculus (Eta Carinae) | NASA/ESA Hubble — project texture exists |
-| Galaxies field | 20+ galaxy cutouts | Hubble Ultra Deep Field / Webb deep field |
-| Planet map (optional upgrade) | Moon | USGS Astrogeology LROC |
-| Planet map (optional upgrade) | Earth | NASA Blue Marble |
+| Needed for | Subject | Intended source | Note |
+|---|---|---|---|
+| Planet map (optional upgrade) | Moon | USGS Astrogeology LROC | Deferred. `Assets/Textures/moon_diffuse_speculare_texture.tga` is 4096x2048 but is **not** an equirectangular map — it is an atlas laid out for the custom `moon_model` UVs, with specular in the alpha channel. A USGS LROC map is not a drop-in; swapping it needs a re-UV or a re-projection plus specular repacking, which belongs with the Phase 3 material work, not with sourcing. |
+| Planet map (optional upgrade) | Earth | NASA Blue Marble | Deferred for the same reason: `Assets/Textures/earth_diffude_specular_texture.tga` is a 4096x4096 atlas (not 2:1 equirect) with specular in alpha, and there are matching normal/cloud plates keyed to the same layout. |

@@ -15,7 +15,9 @@ namespace CosmicSimulation
         public Vector3 LocalPosition;
         public Vector3 LocalEuler;
 
-        [Tooltip("Uniform scale multiplier applied to the body's own scale.")]
+        [Tooltip("The body's diameter in metres. Body prefabs are normalised to a 1 m diameter, so this is " +
+                 "also the uniform scale to set. It is a real size, not a multiplier of whatever the prefab " +
+                 "happens to be authored at.")]
         public float Scale;
     }
 

@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1ae02ed3d840144288da23a573561b4, type: 3}
+  m_Name: relative_size
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.LayoutPreset
+  Id: relative_size
+  DisplayName: Relative Size
+  SecondLine: True sizes next to each other
+  TransitionSeconds: 0.8
+  Slots:
+  - BodyId: sun
+    LocalPosition: {x: -1.7441145, y: 1.55, z: 0.97880775}
+    LocalEuler: {x: 0, y: 119.30141, z: 0}
+    Scale: 3
+  - BodyId: mercury
+    LocalPosition: {x: -0.26990682, y: 1.2, z: 1.9817039}
+    LocalEuler: {x: 0, y: 172.24408, z: 0}
+    Scale: 0.0105
+  - BodyId: venus
+    LocalPosition: {x: -0.10463739, y: 1.2, z: 1.9972609}
+    LocalEuler: {x: 0, y: 177.00099, z: 0}
+    Scale: 0.026
+  - BodyId: earth
+    LocalPosition: {x: 0.06135288, y: 1.2, z: 1.9990587}
+    LocalEuler: {x: 0, y: 181.7579, z: 0}
+    Scale: 0.0275
+  - BodyId: mars
+    LocalPosition: {x: 0.22692049, y: 1.2, z: 1.9870851}
+    LocalEuler: {x: 0, y: 186.51482, z: 0}
+    Scale: 0.015
+  - BodyId: jupiter
+    LocalPosition: {x: 0.51965445, y: 1.2, z: 1.9313103}
+    LocalEuler: {x: 0, y: 195.05981, z: 0}
+    Scale: 0.3
+  - BodyId: saturn
+    LocalPosition: {x: 1.0530381, y: 1.2, z: 1.7003267}
+    LocalEuler: {x: 0, y: 211.77057, z: 0}
+    Scale: 0.25
+  - BodyId: uranus
+    LocalPosition: {x: 1.4676565, y: 1.2, z: 1.3586701}
+    LocalEuler: {x: 0, y: 227.2083, z: 0}
+    Scale: 0.11
+  - BodyId: neptune
+    LocalPosition: {x: 1.6426204, y: 1.2, z: 1.1409637}
+    LocalEuler: {x: 0, y: 235.21617, z: 0}
+    Scale: 0.106
+  - BodyId: pluto
+    LocalPosition: {x: 1.7441146, y: 1.2, z: 0.9788075}
+    LocalEuler: {x: 0, y: 240.69861, z: 0}
+    Scale: 0.005

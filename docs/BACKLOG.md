@@ -24,7 +24,7 @@ Status values: `todo` · `doing` · `done` · `blocked-term` · `blocked-cc` · 
 | CS-002 | CC | Rebrand: product name, bundle id, About copy | — | done |
 | CS-003 | CC | Repo hygiene: `.gitattributes`, `Assets/_sources/CREDITS.md`, `docs/decisions.md` | — | done |
 | CS-004 | TERM | Create the Figma file and pages | — | done |
-| CS-005 | TERM | Source public-domain imagery (Helix, Orion, Crab, Homunculus, deep field, planet maps) and log credits | CS-003 | todo |
+| CS-005 | TERM | Source public-domain imagery (Helix, Orion, Crab, Homunculus, deep field, planet maps) and log credits | CS-003 | done |
 | CS-006 | CC | Write the copy deck (`docs/copy/*.md`) | — | done |
 | CS-007 | TERM | Verify in the editor: backups import, build list clean, identity applied; commit generated `.meta` files | CS-001 | done |
 
@@ -35,6 +35,9 @@ Status values: `todo` · `doing` · `done` · `blocked-term` · `blocked-cc` · 
 *Fixed in passing:* `main_scene` and `core_systems_scene` were each listed twice in `EditorBuildSettings`; duplicates removed.
 *CS-007 done:* editor verification — six backup scenes import with fresh GUIDs (the owner's copy keeps its original), build list holds exactly the six shipping scenes with no duplicates and no backups, product name and both bundle ids applied. `.meta` files committed.
 *CS-004 done:* Figma file **Cosmic Simulation XR** — `https://www.figma.com/design/qWxL0ZGiyI7aRjnQAVISoI` — with pages *Design System* and *Front End - Screens*. It sits in the owner's drafts; move it into a team project when convenient.
+*CS-005 done:* five subjects were already covered by textures inherited from the MIT project (Pillars, NGC 1501, Trumpler 14, and the old Crab and Homunculus plates) — reuse before sourcing. Six clean plates were then downloaded from ESA/Hubble and ESA/Webb into `Assets/Textures/nebulae/` and `Assets/Textures/galaxies/`, all CC BY 4.0, centre-cropped and downscaled to 2048 (Homunculus 1024, no larger release exists), each logged in `CREDITS.md` with its release URL and original resolution. The existing Crab and Homunculus plates have "IMAGE COURTESY - NASA" burnt into a corner, which is why clean replacements were worth taking; the originals stay because `poi_magic_window_*` materials reference them.
+*Import settings are enforced, not hand-set:* `Assets/scripts/Editor/AstronomyTextureImporter.cs` applies mip maps, non-readable, and ASTC 6x6 on Android to anything in those two folders, so a re-downloaded plate cannot come back as an uncompressed readable 2048. Verified on all six.
+*Still pending, and not a sourcing problem:* the optional Moon and Earth map upgrades. Neither existing texture is equirectangular — both are atlases laid out for the custom model UVs with specular packed into alpha, so a USGS or Blue Marble map is not a drop-in. It needs a re-UV or re-projection plus specular repacking, which belongs with the Phase 3 material work.
 *Resolved 11 Sep 2026:* `companyName` was still "Microsoft Corporation"; set to **JDMAXilius** to match the bundle id. It sets the save-data path (`%USERPROFILE%\AppData\LocalLow\<company>\<product>`) and the publisher the store shows. `Quest3ProjectSetup` writes only the identifier, not the company, so this sticks across builds.
 
 ## Phase 0/1 note on the build (11 Sep 2026)
@@ -126,16 +129,25 @@ Design contract: GDD §3, §5, §8; architecture: Technical Overview §5.5–5.6
 
 | ID | Track | Title | Depends | Status |
 |---|---|---|---|---|
-| CS-040 | CC | `LayoutPreset` generator for SolarRow and RelativeSize (GDD §4.1 numbers) | CS-020 | todo |
+| CS-040 | CC | `LayoutPreset` generator for SolarRow and RelativeSize (GDD §4.1 numbers) | CS-020 | done |
 | CS-041 | TERM | Create `solar_row_scene` from `solar_system_view_scene`; wire presets and pop-up | CS-040, CS-032 | todo |
-| CS-042 | CC | `BodyInfo` assets for 10 bodies (from copy deck) | CS-021 | todo |
+| CS-042 | CC | `BodyInfo` assets for 10 bodies (from copy deck) | CS-021 | done |
 | CS-043 | TERM | Add moons via the `MoonForceSolver` pattern: Ganymede, Callisto, Titan, Mimas, Iapetus (+ optional 5) | CS-032 | todo |
-| CS-044 | CC | `MoonLabel` (small/large) | — | todo |
+| CS-044 | CC | `MoonLabel` (small/large) | — | done |
 | CS-045 | TERM | Schematic/Realistic wiring on the orbit model; name labels; Asteroid Belt label | CS-032 | todo |
-| CS-046 | CC | `SunTouchResponse` (brightness pulse + rumble while a hand is inside) | — | todo |
+| CS-046 | CC | `SunTouchResponse` (brightness pulse + rumble while a hand is inside) | — | done |
 | CS-047 | CC | Earth atmosphere rim material (reuse `halo_shader`) | — | todo |
 | CS-048 | TERM | Two-hand room-scale tuning (Saturn rings around the user) on Link | CS-025, CS-041 | todo |
 | CS-049 | TERM | Desktop: number keys in row order, moon clicks; run smoke | CS-041 | todo |
+
+**Phase 3 notes (11 Sep 2026).**
+*CS-040 done:* `Assets/scripts/Editor/LayoutPresetBuilder.cs`, menu **Cosmic Simulation → Build Layout Presets**, writes `Assets/data/layouts/{solar_row,relative_size}.asset` and attaches both to `solar_system_planets`, which is what finally makes `HasLayoutChoice` true and wakes the dock pop-up. Spacing is derived rather than tabulated: Solar Row treats the GDD's 25 cm as a straight chord on the 1.1 m arc, Relative Size spaces each body by its own occupied span with a 10% plus 10 cm gap. Verified run — Solar Row 10 bodies, 15 cm each, 1.88 m end to end; Relative Size 0.5 cm to 3 m, 3.49 m end to end, no overlaps, only the Sun lifted to clear the floor.
+*Convention this sets, and CS-041 must honour:* a `LayoutSlot.Scale` is **the body's diameter in metres**, so body prefabs have to be normalised to a 1 m diameter for a layout to measure true. Slots are local to a content root sitting at the player's start position on the floor.
+*The tightest clearance in the whole layout, worth knowing before touching Saturn:* at Solar Row's 15 cm diameter and a 2.3x ring span, Saturn's rings reach 17.25 cm from its centre and Jupiter's near surface sits at 17.5 cm — **2.5 mm apart**. They do not overlap, but any Saturn model whose rings exceed 2.3x the planet diameter will intersect both neighbours. Fix that by narrowing the ring span, not by widening the GDD's 25 cm pitch.
+*One for CS-041 to see coming:* Relative Size puts the Sun's top at y = 3.05 m, through the ceiling of most real rooms in passthrough. That follows the GDD's 3.0 m Sun, so it is the spec's consequence rather than a builder error — but it will be the first thing anyone notices on the Quest.
+*CS-044 done:* `MoonLabel` — 5 mm under an orbiting moon, 18 mm bold once it is held, cross-faded. Placement is deliberately copied from `InfoPanel` (world-space follow, camera facing, constant physical size) rather than reinvented.
+*CS-046 done:* `SunTouchResponse` — the Sun brightens and a rumble swells while a hand is inside it. Also answers to controllers, since a Quest user holding controllers has no palm joint, and to the mouse on desktop through the existing focus routing rather than a second raycast loop. It must sit on the same GameObject as the Sun's `ForceSolver`, because that is where `ExecuteHierarchy` stops. Its `brightnessProperty` defaults to `_TouchBrightness`, which the Sun's shader does not expose yet, so it degrades to rumble-only until Phase 3 material work adds it.
+*CS-042 done, by CS-021 rather than by hand:* `CopyImporter` already writes all ten `BodyInfo` assets from `docs/copy/bodies.md`. Verified on disk — ten assets, each with a paragraph and four stats. Nothing further was needed, and the ticket should not be reopened to duplicate them.
 
 ## Phase 4 — Milky Way destinations, nebulae, black hole
 
