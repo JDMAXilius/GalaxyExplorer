@@ -151,10 +151,14 @@ LayoutPreset : ScriptableObject
 | `galaxy_view_scene` | `GalaxyContent` | `milky_way_prefab` (DrawStars ×3 layers), `galaxy_pois_prefab` (POI cards → become `LabelButton` tags) | Milky Way |
 | `solar_system_view_scene` | `SolarSystemContent/AllContent/HeroView/solar_system_prefab/poi_planet_focus_manager` | `poi_<body>_prefab` ×10, orbit trails, `ForceSolverFocusManager` | Solar System |
 | `galactic_center_view_scene` | galactic center content | `poi_sagittarius_a_prefab`, `poi_s2_prefab`, `poi_s102_prefab` | Sagittarius A\* |
-| `solar_row_scene` [planned, from solar] | same prefabs, `LayoutPreset`s | Planets |
+| *(no scene)* | `solar_system_planets_content_prefab` — `LayoutRig`, 10 `body_<id>` roots, home anchors, panels | Planets |
 | `andromeda_scene` [planned, from galaxy] | `andromeda_prefab` (DrawStars params) | Andromeda |
 | `galaxies_scene` [planned] | `galaxy_field_prefab` (instanced billboards) | Galaxies |
 | `cosmic_web_scene` [planned, from galactic center] | `cosmic_web_prefab` (procedural point cloud) | Cosmic Web |
+
+Four of the seven places have **no scene**: since CS-036 `ExperienceDirector` opens a module from its
+`ContentPrefab` when it names none, spawning it under a content root that hangs off the `ViewLoader` and
+destroying it on the way out. Planets is the first of them (CS-041).
 
 **Body prefab pattern** (`poi_earth_prefab`, the template for all bodies):
 ```
@@ -175,6 +179,31 @@ poi_earth_prefab
   earth_info_card, moon_info_card [PlanetInfoCard]
 ```
 New moons follow `moon_force_grab_root` exactly (script `buildmoon.cs` pattern: add collider + `ManipulationHandler` + `PostManipulationResetter` + `GEInteractable` to the mesh, a `MoonForceSolver` root with copied tuning, a highlighter, a `UiPreviewTarget`, and a card).
+
+**Arrangeable body pattern** (`SolarRowBuilder`, the Planets experience). The orbit model's bodies are reused
+for their geometry only: the builder lifts each `poi_<id>_prefab`'s `*_tilt` subtree — axial tilt, rotation node,
+sphere, clouds, rings, glow, flares — and leaves the POI card, orbit trail, LOD shell, scale controller,
+highlighter and moons behind, stripping the interaction components that were on the mesh.
+```
+solar_system_planets_content_prefab [LayoutRig]
+  controller_tracker [ControllerTransformTracker]        one for all ten ForceSolvers
+  homes / home_<id>                                       ForceSolver.RootTransform; the layout moves these
+  bodies / body_<id>   localScale = diameter in metres
+      [SphereCollider(r 0.5) + GEInteractable, ManipulationHandler(host=self, MoveRotateScale),
+       ScaleLimits(Body, measureFrom=surface renderer), SolverHandler, ForceSolver, FreePlacementSolver]
+      visual   localScale = 1 / measured source diameter  ← normalisation to a 1 m body
+        <id>_tilt / axis_rotator / <id>_sphere_mesh, _clouds_mesh, _rings_mesh, _glow_mesh
+  panels / panel_<id> [InfoPanel(body=that ForceSolver, target=body root)]
+```
+Three rules this pattern is built on. **A `LayoutSlot.Scale` is a diameter in metres**, so a body must be 1 m
+across at `localScale` 1 — hence the `visual` node, whose scale is measured from the body's own sphere mesh per
+axis in mesh space (a world AABB would be inflated by the axial tilt). **Collider, `ManipulationHandler` and
+`ScaleLimits` share one GameObject**, because the handler finds its scale constraint with `GetComponent` and
+`ScaleLimits` measures the transform it is on. **The plain `ForceSolver`, not `PlanetForceSolver`**: the subclass
+pins `GoalScale` to `Vector3.one` in its Root state, which would blow every body up to 1 m, and dereferences a
+`PlanetHighlighter` unguarded. `LayoutRig` supplies what is worth keeping — the 25 cm pull-out growth and the
+6 cm minimum grab sphere (widened collider radius, not a second shape) — and animates the home anchors between
+arrangements, which the force solvers then follow.
 
 ---
 
@@ -338,7 +367,7 @@ Needed (new): nebula layer sets ×4, galaxy sprite atlas, halo gradient (procedu
 | 0 | Backups, rename, docs, Figma file, credits |
 | 1 | Figma design system and exports |
 | 2 | `experience/`, `EnvironmentController`, `DockController`/`DockPopup`, `InfoPanel`, `FreePlacementSolver`, `LabelButton`, `DesktopDock`, module migration, smoke test |
-| 3 | `solar_row_scene`, `LayoutPreset`s, all moons, body panels, Sun touch, two-hand tuning |
+| 3 | `solar_system_planets_content_prefab` + `LayoutRig`, `LayoutPreset`s, all moons, body panels, Sun touch, two-hand tuning |
 | 4 | Tags, nebula overlay renderer + assets, halo, Sagittarius A\* module |
 | 5 | Andromeda `StarsData`, galaxy field renderer, Cosmic Web generator |
 | 6 | Audio map, narration, `MusicController`, onboarding cards, branding, About |

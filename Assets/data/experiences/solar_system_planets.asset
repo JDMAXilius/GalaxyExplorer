@@ -18,7 +18,7 @@ MonoBehaviour:
   SecondLine: 
   DockThumbnail: {fileID: 21300000, guid: 6fbc6be8c421ffb41a23fd29ed5b9866, type: 3}
   SceneName: 
-  ContentPrefab: {fileID: 0}
+  ContentPrefab: {fileID: 653736665684528876, guid: e4b9476118d76ae45a03d0af6138cf12, type: 3}
   Environment: 1
   Panel:
     Title: Solar System Planets

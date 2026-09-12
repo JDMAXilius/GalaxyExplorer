@@ -35,14 +35,24 @@ namespace CosmicSimulation
         private float growInSeconds = 0.6f;
 
         [SerializeField]
+        [Tooltip("Seconds to wait for a scene before giving up on it and handing the room back to the player.")]
+        private float loadTimeoutSeconds = 20f;
+
+        [SerializeField]
         [Tooltip("Where a module's ContentPrefab is spawned. One is made at the origin when this is left empty.")]
         private Transform contentRoot;
+
+        /// <summary>How long the intro's own last-stage load is given to appear before we stop waiting for one.</summary>
+        private const float IntroSettleGrace = 0.5f;
 
         private readonly List<GameObject> _destinationObjects = new List<GameObject>();
         private readonly HashSet<ExperienceModule> _warnedEmpty = new HashSet<ExperienceModule>();
         private GameObject _prefabContent;
         private bool _ownsContentRoot;
         private Coroutine _switching;
+        private bool _switchFinished;
+        private IntroFlow _introFlow;
+        private bool _introFinished;
 
         public static ExperienceDirector Instance { get; private set; }
 
@@ -50,19 +60,53 @@ namespace CosmicSimulation
 
         public ExperienceModule Current { get; private set; }
 
-        /// <summary>Raised once the new experience's scene is loaded and its content is growing in.</summary>
+        /// <summary>
+        /// Raised once the new experience's scene is loaded and its content is growing in, and with <c>null</c>
+        /// when a switch was abandoned and nothing is open — so nothing goes on claiming to be the current place.
+        /// </summary>
         public static event Action<ExperienceModule> ExperienceChanged;
 
         /// <summary>True while a switch is in flight; the dock ignores pokes during one.</summary>
         public bool IsSwitching => _switching != null;
 
-        private void Awake() => Instance = this;
+        /// <summary>
+        /// True while the app is still in onboarding. There is no flag anywhere that says so: <see cref="IntroFlow"/>
+        /// keeps its stage in a private field, <c>TransitionManager.IsInIntroFlow</c> is already false on the intro's
+        /// last stage, and <c>ViewLoader.IsIntro()</c> goes false as soon as the intro loads the solar system. What is
+        /// honest is the intro's own end event, so this reads "an IntroFlow exists and it has not raised it yet".
+        /// </summary>
+        public bool IntroRunning
+        {
+            get
+            {
+                if (_introFinished)
+                {
+                    return false;
+                }
+
+                // Bound lazily as well as in Awake: an IntroFlow lives in the boot scene while this lives in
+                // core_systems, and nothing guarantees the load order between them stays that way.
+                BindIntro();
+                return _introFlow != null;
+            }
+        }
+
+        private void Awake()
+        {
+            Instance = this;
+            BindIntro();
+        }
 
         private void OnDestroy()
         {
             if (Instance == this)
             {
                 Instance = null;
+            }
+
+            if (_introFlow != null)
+            {
+                _introFlow.OnIntroFinished -= HandleIntroFinished;
             }
 
             if (_ownsContentRoot && contentRoot != null)
@@ -84,13 +128,179 @@ namespace CosmicSimulation
             return null;
         }
 
-        /// <summary>Opens the module the app starts on. Called once the intro has finished.</summary>
+        // ---------- onboarding
+
+        /// <summary>
+        /// Subscribes to the intro's own end signal, which is also the only thing that says onboarding is over.
+        /// <c>IntroFlow.OnIntroFinished</c> is raised when the flow reaches its galaxy stage — the last stage of
+        /// <c>flow_manager_prefab</c>, reached from the solar-system stage by its 8 s auto-transition on both the
+        /// desktop and the headset path — and by the editor quick start, which skips the flow entirely.
+        /// </summary>
+        private void BindIntro()
+        {
+            if (_introFlow != null || _introFinished)
+            {
+                return;
+            }
+
+            _introFlow = FindAnyObjectByType<IntroFlow>(FindObjectsInactive.Include);
+            if (_introFlow != null)
+            {
+                _introFlow.OnIntroFinished += HandleIntroFinished;
+            }
+        }
+
+        private void HandleIntroFinished()
+        {
+            if (_introFinished)
+            {
+                return;
+            }
+
+            _introFinished = true;
+            StartCoroutine(OpenStartModuleWhenSettled());
+        }
+
+        /// <summary>
+        /// Opens the first experience once the intro has actually let go of the room.
+        ///
+        /// The intro's last stage raises <c>OnIntroFinished</c> from the stage transition itself, while that same
+        /// stage's own events — <c>TransitionManager.OnIntroFinished</c> and <c>LoadNextScene("galaxy_view_scene")</c>
+        /// — run a frame or more later, because FlowManager fires stage events from a delayed coroutine. Opening the
+        /// start module on the signal alone would race that load and stack two galaxies on each other. So: wait for
+        /// the intro's transition to appear, wait for it to end, and only then adopt what it opened.
+        /// </summary>
+        private IEnumerator OpenStartModuleWhenSettled()
+        {
+            var transitions = GalaxyExplorerManager.IsInitialized
+                ? GalaxyExplorerManager.Instance.TransitionManager
+                : null;
+
+            var waited = 0f;
+            while (transitions != null && !transitions.InTransition && waited < IntroSettleGrace)
+            {
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            // Bounded, and we open anyway if it expires: a transition that never ends is a broken intro, and
+            // leaving the player in an empty room with no place open is the failure this is here to avoid.
+            waited = 0f;
+            while (transitions != null && transitions.InTransition && waited < loadTimeoutSeconds)
+            {
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            OpenStartModule();
+        }
+
+        /// <summary>
+        /// Opens the place the app starts in, once onboarding is over.
+        ///
+        /// Whatever the app is already showing wins over <see cref="startModule"/> when it is one of ours. The intro
+        /// ends by opening a place of its own — it loads the galaxy itself — and the editor quick start opens
+        /// whichever view the developer pressed Play in. Running the full switch over either would clear the room
+        /// the intro has just filled, grow its content in from a point a second time and play the module's narration
+        /// on top of the intro's own. So that case is recorded rather than re-opened.
+        /// </summary>
         public void OpenStartModule()
         {
-            if (startModule != null && Current == null)
+            if (Current != null)
+            {
+                return;
+            }
+
+            var open = ModuleForOpenScene();
+            if (open != null)
+            {
+                Adopt(open);
+                return;
+            }
+
+            if (startModule != null)
             {
                 Switch(startModule);
             }
+        }
+
+        /// <summary>
+        /// Records a place the app is already showing as the open one: the dock highlights its tile, later switches
+        /// know what they are leaving, and the room takes the environment that place asks for. No content moves.
+        /// </summary>
+        private void Adopt(ExperienceModule module)
+        {
+            Current = module;
+
+            if (EnvironmentController.Instance != null)
+            {
+                EnvironmentController.Instance.Set(module.Environment);
+            }
+
+            ExperienceChanged?.Invoke(module);
+        }
+
+        /// <summary>The module whose scene is already loaded, if any: the place the app is in fact showing.</summary>
+        private ExperienceModule ModuleForOpenScene()
+        {
+            // The last view anybody asked for is checked first. The intro passes through the solar system on its way
+            // to the galaxy and can leave both loaded for a moment, and the one it asked for last is where it is
+            // heading; walking the scene list alone would sometimes name the one it is leaving.
+            var current = ViewLoader.CurrentView;
+            if (IsSceneLoaded(current))
+            {
+                var asked = FindModuleByScene(current);
+                if (asked != null)
+                {
+                    return asked;
+                }
+            }
+
+            for (var i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (!scene.isLoaded)
+                {
+                    continue;
+                }
+
+                var module = FindModuleByScene(scene.name);
+                if (module != null)
+                {
+                    return module;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool IsSceneLoaded(string sceneName)
+        {
+            if (string.IsNullOrEmpty(sceneName))
+            {
+                return false;
+            }
+
+            var scene = SceneManager.GetSceneByName(sceneName);
+            return scene.IsValid() && scene.isLoaded;
+        }
+
+        private ExperienceModule FindModuleByScene(string sceneName)
+        {
+            if (string.IsNullOrEmpty(sceneName))
+            {
+                return null;
+            }
+
+            foreach (var module in modules)
+            {
+                if (module != null && module.SceneName == sceneName)
+                {
+                    return module;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>Goes to a place. Ignored if it is already open or a switch is running.</summary>
@@ -98,6 +308,16 @@ namespace CosmicSimulation
         {
             if (module == null || module == Current || IsSwitching)
             {
+                return;
+            }
+
+            // The dock is meant to be hidden during onboarding, so this is the backstop for the poke that gets
+            // through anyway. A switch mid-intro pulls the placement scene out from under IntroFlow and leaves the
+            // flow driving content that is no longer there. Refused rather than queued: the intro ends by opening a
+            // place of its own, and a poke made a minute earlier arriving on top of that would be a surprise.
+            if (IntroRunning)
+            {
+                Debug.Log($"ExperienceDirector: '{module.Id}' ignored, the intro is still running.", this);
                 return;
             }
 
@@ -116,70 +336,156 @@ namespace CosmicSimulation
                 return;
             }
 
-            _switching = StartCoroutine(SwitchRoutine(module));
+            // StartCoroutine runs the routine up to its first yield before it hands the handle back, so a switch
+            // that fails that early — ViewLoader throws outright when a scene is missing from Build Settings — has
+            // already run its finally by the time we get here. Storing the handle then would leave IsSwitching true
+            // for the rest of the session and refuse every later poke: the wedge this pair of flags exists to stop.
+            _switchFinished = false;
+            var routine = StartCoroutine(SwitchRoutine(module));
+            _switching = _switchFinished ? null : routine;
         }
 
         public void Switch(string id) => Switch(Find(id));
 
         private IEnumerator SwitchRoutine(ExperienceModule module)
         {
-            Current = module;
-
-            // Whatever the player pulled out belongs to the place they are leaving.
-            ClearDestinations();
-            RestoreEverything();
-
-            var vo = GalaxyExplorerManager.IsInitialized ? GalaxyExplorerManager.Instance.VoManager : null;
-            if (vo != null)
+            // Everything below is inside a try/finally purely so that _switching clears on every exit — the timeout,
+            // a throw out of the loader, a throw out of anything the new content runs. A switch that ends without
+            // clearing it takes the dock with it, and the room is already empty by then.
+            try
             {
-                vo.Stop(true);
+                Current = module;
+
+                // Whatever the player pulled out belongs to the place they are leaving.
+                ClearDestinations();
+                RestoreEverything();
+
+                var vo = GalaxyExplorerManager.IsInitialized ? GalaxyExplorerManager.Instance.VoManager : null;
+                if (vo != null)
+                {
+                    vo.Stop(true);
+                }
+
+                if (EnvironmentController.Instance != null)
+                {
+                    EnvironmentController.Instance.Set(module.Environment);
+                }
+
+                // Everything the last place put in the room goes now, and a prefab instance goes at the same beat a
+                // scene is unloaded. Which module we think was previous is not enough to go on: the original Galaxy
+                // Explorer boot flow opens view scenes of its own, and leaving those behind stacked duplicate content
+                // and duplicate singletons on top of each other.
+                var adopted = UnloadOtherViews(module.SceneName);
+                DestroyPrefabContent();
+
+                if (!string.IsNullOrEmpty(module.SceneName))
+                {
+                    if (!adopted.IsValid())
+                    {
+                        var loaded = false;
+                        var failure = BeginLoad(module.SceneName, () => loaded = true);
+
+                        // Bounded, because the callback is not guaranteed to arrive at all: ViewLoader raises it from
+                        // inside its own coroutine, and a coroutine that threw is simply never resumed.
+                        var waited = 0f;
+                        while (failure == null && !loaded && waited < loadTimeoutSeconds)
+                        {
+                            waited += Time.unscaledDeltaTime;
+                            yield return null;
+                        }
+
+                        if (failure == null && !loaded)
+                        {
+                            failure = $"it was still not loaded after {loadTimeoutSeconds:0} s";
+                        }
+
+                        if (failure != null)
+                        {
+                            AbandonSwitch(module, failure);
+                            yield break;
+                        }
+                    }
+                }
+                else
+                {
+                    _prefabContent = Instantiate(module.ContentPrefab, ContentRoot());
+                    _prefabContent.name = module.Id;
+                }
+
+                yield return null; // let the new content's own Awake/Start run before we touch it
+
+                var content = ResolveContent(adopted);
+                if (content != null && growInSeconds > 0f)
+                {
+                    yield return GrowIn(content.transform, growInSeconds);
+                }
+
+                if (vo != null && module.Narration != null)
+                {
+                    vo.PlayClip(module.Narration, allowReplay: true, replaceQueue: true);
+                }
             }
+            finally
+            {
+                _switching = null;
+                _switchFinished = true;
+            }
+
+            ExperienceChanged?.Invoke(module);
+        }
+
+        /// <summary>
+        /// Starts the additive load and reports why it could not start, rather than letting the failure escape.
+        /// <see cref="ViewLoader"/> throws when <c>SceneManager.LoadSceneAsync</c> comes back null — a scene missing
+        /// from Build Settings, or a typo in a module's SceneName — and that throw lands on this stack, because
+        /// StartCoroutine runs a coroutine up to its first yield inline. Returns null when the load is under way.
+        /// </summary>
+        private static string BeginLoad(string sceneName, SceneLoaded onLoaded)
+        {
+            var loader = GalaxyExplorerManager.IsInitialized
+                ? GalaxyExplorerManager.Instance.ViewLoaderScript
+                : null;
+
+            if (loader == null)
+            {
+                return "there is no ViewLoader to load it with";
+            }
+
+            try
+            {
+                loader.LoadViewAsync(sceneName, onLoaded);
+                return null;
+            }
+            catch (Exception e)
+            {
+                return $"the loader refused it ({e.Message})";
+            }
+        }
+
+        /// <summary>
+        /// Gives up on a switch whose scene never arrived, in one log line naming the scene.
+        ///
+        /// The place the player was in is unloaded well before this point, so going back is not on offer: the best
+        /// state left is the room itself. Passthrough rather than the module's own environment, because the
+        /// alternative is a dimmed or fully black void with nothing in it — on a headset the real room is never
+        /// nothing, and on desktop it is the plainest of the four. <see cref="Current"/> is cleared so that no tile
+        /// reads as open, and so the same tile can be poked again once the scene is put back in Build Settings.
+        /// </summary>
+        private void AbandonSwitch(ExperienceModule module, string reason)
+        {
+            Debug.LogError(
+                $"ExperienceDirector: scene '{module.SceneName}' for module '{module.Id}' did not open — {reason}. " +
+                "Check that it is enabled in Build Settings and that the module's SceneName matches it. Handing the " +
+                "room back in passthrough; the dock stays live and the tile can be poked again.", this);
+
+            Current = null;
 
             if (EnvironmentController.Instance != null)
             {
-                EnvironmentController.Instance.Set(module.Environment);
+                EnvironmentController.Instance.Set(EnvironmentMode.Passthrough);
             }
 
-            // Everything the last place put in the room goes now, and a prefab instance goes at the same beat a
-            // scene is unloaded. Which module we think was previous is not enough to go on: the original Galaxy
-            // Explorer boot flow opens view scenes of its own, and leaving those behind stacked duplicate content
-            // and duplicate singletons on top of each other.
-            var adopted = UnloadOtherViews(module.SceneName);
-            DestroyPrefabContent();
-
-            if (!string.IsNullOrEmpty(module.SceneName))
-            {
-                if (!adopted.IsValid())
-                {
-                    var loaded = false;
-                    GalaxyExplorerManager.Instance.ViewLoaderScript.LoadViewAsync(module.SceneName, () => loaded = true);
-                    while (!loaded)
-                    {
-                        yield return null;
-                    }
-                }
-            }
-            else
-            {
-                _prefabContent = Instantiate(module.ContentPrefab, ContentRoot());
-                _prefabContent.name = module.Id;
-            }
-
-            yield return null; // let the new content's own Awake/Start run before we touch it
-
-            var content = ResolveContent(adopted);
-            if (content != null && growInSeconds > 0f)
-            {
-                yield return GrowIn(content.transform, growInSeconds);
-            }
-
-            if (vo != null && module.Narration != null)
-            {
-                vo.PlayClip(module.Narration, allowReplay: true, replaceQueue: true);
-            }
-
-            _switching = null;
-            ExperienceChanged?.Invoke(module);
+            ExperienceChanged?.Invoke(null);
         }
 
         /// <summary>Scales content up from nothing, the one transition this app uses.</summary>
@@ -276,7 +582,9 @@ namespace CosmicSimulation
         ///
         /// The intro scenes have to be named, though. They are additively loaded like a view but the intro flow
         /// is standing on them: unloading the placement scene pulls <c>PlacementControl</c> out from under
-        /// <c>IntroFlow</c> mid-sequence, and nothing yet stops a dock poke during onboarding.
+        /// <c>IntroFlow</c> mid-sequence. <see cref="Switch"/> now refuses outright while <see cref="IntroRunning"/>,
+        /// so this list is the second line of defence rather than the only one — kept because anything that reaches
+        /// an unload without going through Switch would still take the intro's floor away.
         /// </summary>
         private static readonly string[] IntroScenes =
         {

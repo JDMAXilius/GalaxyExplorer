@@ -144,15 +144,9 @@ namespace CosmicSimulation
 
             _tiles.Clear();
 
-            var modules = ExperienceDirector.Instance.Modules;
             var count = 0;
-            foreach (var module in modules)
+            foreach (var module in TileModules())
             {
-                if (module == null || module.Kind != ExperienceKind.DockTile)
-                {
-                    continue;
-                }
-
                 var tile = Instantiate(tilePrefab, tileRow);
                 tile.name = "tile_" + module.Id;
                 tile.Bind(module);
@@ -323,8 +317,35 @@ namespace CosmicSimulation
         }
 
         // ---------- choices
+        //
+        // The four static helpers below are the parts the desktop mirror (<see cref="DesktopDock"/>) has to
+        // agree with: which modules get a tile and in what order, what a tile means when it is chosen, what a
+        // layout choice does, and which tile is underlined. They live here so a change to the dock is a change
+        // to both docks and the mirror cannot quietly grow a second opinion.
 
-        private void OnTileChosen(DockTile tile)
+        /// <summary>The modules that get a tile, in dock order.</summary>
+        public static IEnumerable<ExperienceModule> TileModules()
+        {
+            var director = ExperienceDirector.Instance;
+            if (director == null)
+            {
+                yield break;
+            }
+
+            foreach (var module in director.Modules)
+            {
+                if (module != null && module.Kind == ExperienceKind.DockTile)
+                {
+                    yield return module;
+                }
+            }
+        }
+
+        /// <summary>
+        /// What choosing a tile does: a place offering more than one arrangement opens its pop-up, anything
+        /// else switches straight over.
+        /// </summary>
+        public static void Choose(DockTile tile, DockPopup popup)
         {
             if (tile == null || tile.Module == null)
             {
@@ -345,7 +366,8 @@ namespace CosmicSimulation
             ExperienceDirector.Instance?.Switch(tile.Module);
         }
 
-        private void OnLayoutChosen(ExperienceModule module, LayoutPreset layout)
+        /// <summary>Commits the layout the player picked in a pop-up.</summary>
+        public static void ChooseLayout(ExperienceModule module, LayoutPreset layout)
         {
             var director = ExperienceDirector.Instance;
             if (director == null)
@@ -362,14 +384,10 @@ namespace CosmicSimulation
             LayoutRequested?.Invoke(module, layout);
         }
 
-        /// <summary>Raised when the player picks a layout for an experience.</summary>
-        public static event System.Action<ExperienceModule, LayoutPreset> LayoutRequested;
-
-        private void OnExperienceChanged(ExperienceModule module) => MarkActive(module);
-
-        private void MarkActive(ExperienceModule module)
+        /// <summary>Underlines the tile for the open place and clears the rest.</summary>
+        public static void MarkActive(IEnumerable<DockTile> tiles, ExperienceModule module)
         {
-            foreach (var tile in _tiles)
+            foreach (var tile in tiles)
             {
                 if (tile != null)
                 {
@@ -377,6 +395,17 @@ namespace CosmicSimulation
                 }
             }
         }
+
+        private void OnTileChosen(DockTile tile) => Choose(tile, popup);
+
+        private void OnLayoutChosen(ExperienceModule module, LayoutPreset layout) => ChooseLayout(module, layout);
+
+        /// <summary>Raised when the player picks a layout for an experience.</summary>
+        public static event System.Action<ExperienceModule, LayoutPreset> LayoutRequested;
+
+        private void OnExperienceChanged(ExperienceModule module) => MarkActive(module);
+
+        private void MarkActive(ExperienceModule module) => MarkActive(_tiles, module);
 
         private void TogglePassthrough() => EnvironmentController.Instance?.TogglePassthrough();
     }

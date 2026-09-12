@@ -35,6 +35,7 @@ namespace CosmicSimulation
 
         private LayoutPreset[] _layouts = new LayoutPreset[0];
         private int _chosen = -1;
+        private bool _opening;
 
         /// <summary>The tile this belongs to, or null when closed.</summary>
         public DockTile Owner { get; private set; }
@@ -60,7 +61,14 @@ namespace CosmicSimulation
                 closeButton.OnClick.AddListener(Close);
             }
 
-            gameObject.SetActive(false);
+            // Start closed — but only if we are not being opened right now. A pop-up saved inactive in the
+            // scene does not run Awake until something activates it, and the thing that activates it is Open.
+            // Deactivating unconditionally here shut the pop-up in the same frame it was asked for, which is
+            // why the world dock's layout pop-up could never appear.
+            if (!_opening)
+            {
+                gameObject.SetActive(false);
+            }
         }
 
         public void Open(DockTile tile)
@@ -71,6 +79,7 @@ namespace CosmicSimulation
                 return;
             }
 
+            _opening = true;
             Owner = tile;
             _layouts = tile.Module.Layouts;
             _chosen = _layouts.Length > 0 ? 0 : -1;
@@ -97,6 +106,7 @@ namespace CosmicSimulation
         public void Close()
         {
             Owner = null;
+            _opening = false;
             gameObject.SetActive(false);
         }
 
