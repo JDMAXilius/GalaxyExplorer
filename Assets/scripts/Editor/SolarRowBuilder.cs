@@ -266,6 +266,11 @@ namespace CosmicSimulation.EditorTools
             var group = Group("bodies", root.transform);
             var panels = Group("panels", root.transform);
 
+            // GDD 4.1's acceptance line is "ten bodies present and named", and until now they were present
+            // and anonymous - the moons had labels and the bodies they orbit did not. Same group shape as
+            // panels so the two stay siblings.
+            var labels = Group("labels", root.transform);
+
             var built = new List<Built>();
             var missing = new List<string>();
 
@@ -277,7 +282,7 @@ namespace CosmicSimulation.EditorTools
                     continue;
                 }
 
-                var entry = BuildBody(body, layout, group, homes, panels, panelPrefab, beam, tracker);
+                var entry = BuildBody(body, layout, group, homes, panels, labels, panelPrefab, beam, tracker);
                 if (entry == null)
                 {
                     missing.Add(body.Id);
@@ -320,7 +325,7 @@ namespace CosmicSimulation.EditorTools
         // ---------- one body
 
         private static Built BuildBody(SystemBody body, LayoutPreset layout, Transform group, Transform homes,
-                                       Transform panels, GameObject panelPrefab, GameObject beam,
+                                       Transform panels, Transform labels, GameObject panelPrefab, GameObject beam,
                                        ControllerTransformTracker tracker)
         {
             var id = body.Id;
@@ -498,6 +503,7 @@ namespace CosmicSimulation.EditorTools
             grab.radius = Mathf.Max(0.5f, GrabDiameter * 0.5f / Mathf.Max(0.0001f, slot.Value.Scale));
 
             var panel = BuildPanel(id, info, panelPrefab, panels, bodyRoot.transform, surfaceRenderer, force);
+            BuildBodyLabel(id, info, labels, bodyRoot.transform, surfaceRenderer, force, panelPrefab);
 
             var renderers = visual.GetComponentsInChildren<MeshRenderer>(true);
             var vertices = 0;
@@ -898,6 +904,90 @@ namespace CosmicSimulation.EditorTools
         }
 
         // ---------- shared parts and cross-body wiring
+
+        /// <summary>
+        /// A floating name over a body, so the row reads as named worlds rather than ten spheres.
+        /// <para>
+        /// This deliberately reuses <c>MoonLabel</c> rather than introducing a second label component. The
+        /// behaviour a body needs is the behaviour a moon already has - track the object, face the player,
+        /// grow and embolden while it is held - and the one real difference is the resting size. Two
+        /// components doing the same job is how a project ends up with two labels that drift apart in style.
+        /// </para>
+        /// <para>
+        /// GDD 11 specifies a body name label as plain white text at 6 mm with no pill, against a moon's
+        /// 5 mm; both switch to 18 mm bold once held, which is what makes a pulled-out body read at arm's
+        /// length. A body always has a <c>ForceSolver</c>, so the held state works exactly as a moon's does.
+        /// </para>
+        /// </summary>
+        private static void BuildBodyLabel(string id, BodyInfo info, Transform labels, Transform target,
+                                           Renderer bounds, ForceSolver force, GameObject panelPrefab)
+        {
+            if (labels == null || target == null)
+            {
+                return;
+            }
+
+            var go = new GameObject("label_" + id, typeof(RectTransform));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(labels, false);
+
+            // The canvas goes on before the rect is sized: adding one rewrites the RectTransform it lands on.
+            var canvas = go.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            go.AddComponent<UnityEngine.UI.CanvasScaler>().dynamicPixelsPerUnit = 4f;
+            go.AddComponent<CanvasGroup>();
+
+            rt.sizeDelta = new Vector2(240f, 40f);
+            rt.localScale = Vector3.one * 0.001f;   // one canvas unit is a millimetre
+
+            var textGo = new GameObject("name", typeof(RectTransform));
+            var textRt = (RectTransform)textGo.transform;
+            textRt.SetParent(rt, false);
+            textRt.sizeDelta = new Vector2(240f, 40f);
+
+            var text = textGo.AddComponent<TMPro.TextMeshProUGUI>();
+            text.text = info != null ? info.DisplayName : id;
+            text.fontSize = 6f;                     // GDD 11: body name label is 6 mm
+            text.color = Color.white;
+            text.alignment = TMPro.TextAlignmentOptions.Center;
+            text.raycastTarget = false;             // a label must never eat a pinch meant for the body
+
+            // Take the font from the panel prefab rather than naming one, so the label follows whatever
+            // Build UI Prefabs decided - which is how it stayed correct when the UI moved off Segoe UI.
+            var reference = panelPrefab != null ? panelPrefab.GetComponentInChildren<TMPro.TMP_Text>(true) : null;
+            if (reference != null)
+            {
+                text.font = reference.font;
+                // The shared material, not outlineWidth/outlineColor: those setters instance a material and
+                // a per-body instance would be baked into this prefab.
+                text.fontSharedMaterial = reference.fontSharedMaterial;
+            }
+
+            var label = go.AddComponent<MoonLabel>();
+            var so = new SerializedObject(label);
+            SetReference(so, "label", text);
+            SetReference(so, "info", info);
+            SetReference(so, "moon", force);
+            SetReference(so, "target", target);
+            SetReference(so, "targetBounds", bounds);
+
+            var orbiting = so.FindProperty("orbitingSize");
+            if (orbiting != null) { orbiting.floatValue = 6f; }
+
+            var held = so.FindProperty("heldSize");
+            if (held != null) { held.floatValue = 18f; }
+
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void SetReference(SerializedObject so, string name, Object value)
+        {
+            var property = so.FindProperty(name);
+            if (property != null)
+            {
+                property.objectReferenceValue = value;
+            }
+        }
 
         private static Transform Group(string name, Transform parent)
         {
