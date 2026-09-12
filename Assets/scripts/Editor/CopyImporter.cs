@@ -47,18 +47,15 @@ namespace CosmicSimulation.EditorTools
 
         private static void EnsureFolders()
         {
+            // Create through the file system, not AssetDatabase.CreateFolder: inside StartAssetEditing the
+            // database is not refreshed, so IsValidFolder still reports a folder we just made as missing and
+            // CreateFolder happily makes "data 1", "data 2", ... beside it.
             foreach (var sub in new[] { "experiences", "destinations", "bodies", "moons", "layouts" })
             {
-                var path = $"{DataFolder}/{sub}";
-                if (!AssetDatabase.IsValidFolder(path))
-                {
-                    if (!AssetDatabase.IsValidFolder(DataFolder))
-                    {
-                        AssetDatabase.CreateFolder("Assets", "data");
-                    }
-                    AssetDatabase.CreateFolder(DataFolder, sub);
-                }
+                Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), DataFolder, sub));
             }
+
+            AssetDatabase.Refresh();
         }
 
         private static string[] ReadLines(string file)
