@@ -81,6 +81,14 @@ namespace CosmicSimulation.EditorTools
         /// <summary>GDD 4.1 / 8.7: a layout change takes 0.8 s, and so does a body coming home.</summary>
         private const float RestoreSeconds = 0.8f;
 
+        /// <summary>
+        /// CS-060: how much room a ring's edge is left from whatever stands next to it, in metres. The GDD fixes
+        /// the pitch (25 cm) and the planet diameter (15 cm) but says nothing about ring span, and Saturn's rings
+        /// are 2.26 planet diameters wide, so in Solar Row the two ring systems intersect. <see cref="LayoutRig"/>
+        /// shrinks them to what the arrangement leaves room for; this is the only number that decision needs.
+        /// </summary>
+        private const float RingClearance = 0.01f;
+
         /// <summary>The ten bodies, in the order GDD 4.1 lists them.</summary>
         private static readonly string[] Order =
         {
@@ -119,6 +127,8 @@ namespace CosmicSimulation.EditorTools
             public SphereCollider Grab;
             public InfoPanel Panel;
             public Transform SurfaceNode;
+            public Transform Rings;
+            public Vector3 RingBase;
 
             // Everything the report prints is a copy taken while the hierarchy was alive: the report runs after
             // the temporary objects have been destroyed, and a destroyed Transform cannot even be asked its name.
@@ -127,10 +137,13 @@ namespace CosmicSimulation.EditorTools
             public string SurfaceName;
             public string Mesh;
             public string Material;
+            public string RingName;
+            public bool HasRings;          // Rings itself is a destroyed Transform by the time the report runs
 
             public float SourceDiameter;   // as authored, in the source prefab's own units
             public float Normalised;       // measured after normalisation; should read 1.000
             public float VisualSpan;       // widest solid extent (rings, clouds) as a multiple of the diameter
+            public float RingSpan;         // the ring mesh alone, as a multiple of the diameter; 0 without rings
             public float Diameter;         // final, from the layout slot
             public Vector3 Position;       // final, local to the content root
             public int Stripped;
@@ -310,6 +323,11 @@ namespace CosmicSimulation.EditorTools
             Measure(bodyRoot.transform, surface, out var normalised, out var offsetMillimetres);
             Measure(bodyRoot.transform, visual.transform, out var visualSpan, out _);
 
+            // Measured here, before the body root is scaled to its slot, so every span below is already a
+            // multiple of the body's own diameter and holds at whatever size a layout later gives it.
+            var rings = FindRings(visual.transform, surface, normalised, out var ringSpan);
+            var ringRatio = rings != null ? ringSpan / Mathf.Max(0.0001f, normalised) : 0f;
+
             if (offsetMillimetres > 1f)
             {
                 Debug.LogWarning($"SolarRowBuilder: '{id}' still sits {offsetMillimetres:F1} mm off its own root " +
@@ -411,6 +429,11 @@ namespace CosmicSimulation.EditorTools
                 Grab = grab,
                 Panel = panel,
                 SurfaceNode = surface,
+                Rings = rings,
+                RingBase = rings != null ? rings.localScale : Vector3.one,
+                RingName = rings != null ? rings.name : "none",
+                HasRings = rings != null,
+                RingSpan = ringRatio,
                 Source = sourcePath,
                 TiltNode = tilt.name,
                 SurfaceName = surface.name,
@@ -679,6 +702,69 @@ namespace CosmicSimulation.EditorTools
             return offset;
         }
 
+        /// <summary>
+        /// The body's ring mesh, when it has one, and how wide it is in <paramref name="visual"/>'s space.
+        ///
+        /// Two tests, both needed. The name — on the object, its mesh or its material — because a ring is the
+        /// one piece of a body that may legitimately be shrunk, and a cloud shell or an atmosphere sitting a few
+        /// per cent outside the planet must never be picked up by mistake. And the width, because a "ring" that
+        /// is no wider than the planet is nothing the arrangement has to make room for. A body with neither is
+        /// simply a body without rings: the clamp does nothing for it and the run says so.
+        /// </summary>
+        private static Transform FindRings(Transform visual, Transform surface, float sphereDiameter, out float span)
+        {
+            Transform best = null;
+            span = 0f;
+
+            foreach (var filter in visual.GetComponentsInChildren<MeshFilter>(true))
+            {
+                var mesh = filter.sharedMesh;
+                var renderer = filter.GetComponent<MeshRenderer>();
+                if (mesh == null || renderer == null || !renderer.enabled || !filter.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                if (filter.transform == surface || !IsGeometry(filter.transform))
+                {
+                    continue;
+                }
+
+                var material = renderer.sharedMaterial;
+                if (!NamesRings(filter.gameObject.name) && !NamesRings(mesh.name) &&
+                    !(material != null && NamesRings(material.name)))
+                {
+                    continue;
+                }
+
+                var scale = filter.transform.lossyScale;
+                var size = mesh.bounds.size;
+                var widest = Mathf.Max(size.x * Mathf.Abs(scale.x),
+                    Mathf.Max(size.y * Mathf.Abs(scale.y), size.z * Mathf.Abs(scale.z)));
+
+                if (widest <= sphereDiameter * 1.05f || widest <= span)
+                {
+                    continue;
+                }
+
+                span = widest;
+                best = filter.transform;
+            }
+
+            if (best == null)
+            {
+                span = 0f;
+            }
+
+            return best;
+        }
+
+        private static bool NamesRings(string name)
+        {
+            return !string.IsNullOrEmpty(name) &&
+                   name.IndexOf("ring", System.StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
         private static Renderer LargestRenderer(Transform subject)
         {
             Renderer best = null;
@@ -787,6 +873,7 @@ namespace CosmicSimulation.EditorTools
             so.FindProperty("minGrabDiameter").floatValue = GrabDiameter;
             so.FindProperty("pullDiameter").floatValue = PullDiameter;
             so.FindProperty("pullGrowSeconds").floatValue = 0.35f;
+            so.FindProperty("ringClearance").floatValue = RingClearance;
 
             var list = so.FindProperty("bodies");
             list.arraySize = built.Count;
@@ -802,6 +889,10 @@ namespace CosmicSimulation.EditorTools
                 element.FindPropertyRelative("Placement").objectReferenceValue = entry.Placement;
                 element.FindPropertyRelative("Grab").objectReferenceValue = entry.Grab;
                 element.FindPropertyRelative("Panel").objectReferenceValue = entry.Panel;
+                element.FindPropertyRelative("Rings").objectReferenceValue = entry.Rings;
+                element.FindPropertyRelative("RingSpanRatio").floatValue = entry.RingSpan;
+                element.FindPropertyRelative("RingBaseScale").vector3Value = entry.RingBase;
+                element.FindPropertyRelative("SpanRatio").floatValue = entry.VisualSpan;
             }
 
             so.ApplyModifiedPropertiesWithoutUndo();
@@ -908,6 +999,12 @@ namespace CosmicSimulation.EditorTools
                 text.AppendLine($"           mesh {entry.Mesh}");
                 text.AppendLine($"           material {entry.Material}");
 
+                if (entry.HasRings)
+                {
+                    text.AppendLine($"           rings {entry.RingName}, true span {entry.RingSpan:F3}x the " +
+                                    "body's diameter at any size");
+                }
+
                 vertices += entry.Vertices;
                 renderers += entry.Renderers;
             }
@@ -931,8 +1028,6 @@ namespace CosmicSimulation.EditorTools
 
             var closestBody = float.MaxValue;
             var closestBodyPair = "none";
-            var closestVisual = float.MaxValue;
-            var closestVisualPair = "none";
 
             for (var i = 0; i < built.Count; i++)
             {
@@ -946,23 +1041,15 @@ namespace CosmicSimulation.EditorTools
                         closestBody = bodyGap;
                         closestBodyPair = $"{built[i].Id}/{built[j].Id}";
                     }
-
-                    var visualGap = distance
-                                    - (built[i].VisualSpan * built[i].Diameter
-                                       + built[j].VisualSpan * built[j].Diameter) * 0.5f;
-                    if (visualGap < closestVisual)
-                    {
-                        closestVisual = visualGap;
-                        closestVisualPair = $"{built[i].Id}/{built[j].Id}";
-                    }
                 }
             }
 
             text.AppendLine(
                 $"  spacing: centre to centre {minStep * 100f:F1}-{maxStep * 100f:F1} cm; " +
-                $"closest surfaces {closestBody * 100f:F2} cm ({closestBodyPair}); " +
-                $"closest including rings and clouds {closestVisual * 100f:F2} cm ({closestVisualPair})" +
-                (closestVisual < 0f ? "  OVERLAP" : string.Empty) + ".");
+                $"closest planet surfaces {closestBody * 100f:F2} cm ({closestBodyPair}).");
+
+            ReportRings(text, built, module, layout);
+
             text.AppendLine(
                 $"  weight: {renderers} renderers, {vertices} vertices across the ten bodies.");
             text.AppendLine(
@@ -970,6 +1057,100 @@ namespace CosmicSimulation.EditorTools
                 $"{PullDiameter * 100f:F0} cm; two hands are limited to 5 cm - 3 m (ScaleLimits.Kind.Body).");
 
             Debug.Log(text.ToString());
+        }
+
+        /// <summary>
+        /// CS-060, per arrangement: what each ring system would be without the clamp, what
+        /// <see cref="LayoutRig"/> will leave it, and the closest any two bodies then come to touching. It runs
+        /// the rig's own <see cref="LayoutRig.RingFactor"/> rather than restating the rule, so a run cannot report
+        /// numbers the headset will not show, and it covers every layout the module offers rather than only the
+        /// one the prefab is authored in — a clamp that is right in Solar Row and wrong in Relative Size is
+        /// exactly the failure worth catching here.
+        /// </summary>
+        private static void ReportRings(StringBuilder text, List<Built> built, ExperienceModule module,
+                                        LayoutPreset authored)
+        {
+            var layouts = module.Layouts != null && module.Layouts.Length > 0
+                ? module.Layouts
+                : new[] { authored };
+
+            foreach (var preset in layouts)
+            {
+                if (preset == null)
+                {
+                    continue;
+                }
+
+                var extents = new List<LayoutRig.Extent>();
+                var owners = new List<Built>();
+
+                foreach (var entry in built)
+                {
+                    var slot = preset.Find(entry.Id);
+                    if (!slot.HasValue)
+                    {
+                        continue;
+                    }
+
+                    extents.Add(new LayoutRig.Extent
+                    {
+                        Position = slot.Value.LocalPosition,
+                        Diameter = Mathf.Max(0.0001f, slot.Value.Scale),
+                        SpanRatio = entry.VisualSpan,
+                        RingRatio = entry.HasRings ? entry.RingSpan : 0f,
+                    });
+                    owners.Add(entry);
+                }
+
+                if (extents.Count < 2)
+                {
+                    continue;
+                }
+
+                var halves = new float[extents.Count];
+                var rings = new StringBuilder();
+
+                for (var i = 0; i < extents.Count; i++)
+                {
+                    var extent = extents[i];
+                    if (extent.RingRatio <= 0f)
+                    {
+                        halves[i] = extent.HalfExtent;
+                        continue;
+                    }
+
+                    var factor = LayoutRig.RingFactor(i, extents, RingClearance);
+                    var trueSpan = extent.Diameter * extent.RingRatio;
+                    var clamped = trueSpan * factor;
+
+                    // The planet is still there when its rings have been pulled in past it.
+                    halves[i] = Mathf.Max(extent.Diameter, clamped) * 0.5f;
+
+                    rings.Append(rings.Length > 0 ? ", " : string.Empty);
+                    rings.Append($"{owners[i].Id} {trueSpan * 100f:F2} -> {clamped * 100f:F2} cm (x{factor:F3})");
+                }
+
+                var closest = float.MaxValue;
+                var pair = "none";
+
+                for (var i = 0; i < extents.Count; i++)
+                {
+                    for (var j = i + 1; j < extents.Count; j++)
+                    {
+                        var gap = Vector3.Distance(extents[i].Position, extents[j].Position) - halves[i] - halves[j];
+                        if (gap < closest)
+                        {
+                            closest = gap;
+                            pair = $"{owners[i].Id}/{owners[j].Id}";
+                        }
+                    }
+                }
+
+                text.AppendLine(
+                    $"  rings in '{preset.Id}': {(rings.Length > 0 ? rings.ToString() : "no ringed body placed")}; " +
+                    $"closest surfaces including rings and clouds {closest * 100f:F2} cm ({pair})" +
+                    (closest < 0f ? "  OVERLAP" : string.Empty) + ".");
+            }
         }
     }
 }

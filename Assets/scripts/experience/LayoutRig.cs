@@ -1,6 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicSimulation
@@ -27,6 +28,17 @@ namespace CosmicSimulation
     /// only means anything because every body prefab is normalised to a 1 m diameter (CS-041, and the convention
     /// CS-040 set). So the rig writes it straight into <c>localScale</c> and can read <c>lossyScale</c> back as a
     /// measurement in metres.</para>
+    ///
+    /// <para><b>Rings are clamped to the arrangement, not to a table.</b> Saturn's ring mesh is 2.26 times the
+    /// planet's own diameter and Uranus's is 1.99, so in an arrangement that stands the bodies 25 cm apart the two
+    /// ring discs pass straight through each other (CS-060). The rings are therefore scaled down to whatever the
+    /// arrangement leaves room for: for each pair the gap between their centres, less
+    /// <see cref="ringClearance"/>, has to hold both bodies' widest extents, and a ring system that does not fit
+    /// is shrunk until it does. Two ring systems in the same gap shrink by the same factor — neither has a better
+    /// claim on the space — while against a solid neighbour, which cannot give, the rings absorb the whole
+    /// shortfall. Nothing is tabulated: the numbers come out of the layout being applied, so a change to the GDD's
+    /// pitch changes the clamp with it, and in an arrangement whose bodies stand well apart (Relative Size) no
+    /// pair is short of room and every ring keeps its true proportions.</para>
     ///
     /// <para><b>Two things it keeps true every frame.</b> A body is never smaller to the hand than
     /// <see cref="minGrabDiameter"/> — GDD 4.1 asks for a 6 cm invisible grab sphere so a 5 mm Pluto can still be
@@ -62,6 +74,21 @@ namespace CosmicSimulation
             [Tooltip("The panel that opens beside it. Bound to Info on Awake.")]
             public InfoPanel Panel;
 
+            [Tooltip("The body's ring mesh, when it has one. Left empty for a body without rings.")]
+            public Transform Rings;
+
+            [Tooltip("The rings' true span as a multiple of the body's diameter, measured when the prefab was " +
+                     "built. A ratio rather than a length, so it holds at whatever size a layout gives the body.")]
+            public float RingSpanRatio;
+
+            [Tooltip("The rings' authored local scale. A clamp multiplies this rather than replacing it, so a " +
+                     "ring mesh that was not authored at scale one survives.")]
+            public Vector3 RingBaseScale = Vector3.one;
+
+            [Tooltip("Widest solid geometry as a multiple of the body's diameter — the rings on a ringed body, " +
+                     "the clouds otherwise. What its neighbours have to keep clear of.")]
+            public float SpanRatio = 1f;
+
             [NonSerialized] public Vector3 FromPosition;
             [NonSerialized] public Vector3 ToPosition;
             [NonSerialized] public Quaternion FromRotation;
@@ -78,8 +105,45 @@ namespace CosmicSimulation
             /// <summary>True while the body is still growing to its pulled-out size.</summary>
             [NonSerialized] public bool Growing;
 
+            [NonSerialized] public float FromRingFactor;
+            [NonSerialized] public float ToRingFactor;
+
+            /// <summary>
+            /// What the arrangement last left the rings, as a fraction of their true span; 1 is untouched. Read
+            /// it rather than the transform when something else has to agree with the clamp — the ring shadow
+            /// band on the planet's own material is driven separately (CS-048) and will want this factor.
+            /// </summary>
+            [NonSerialized] public float RingFactor = 1f;
+
             /// <summary>True when there is enough here to place.</summary>
             public bool IsUsable => Root != null && Home != null && !string.IsNullOrEmpty(Id);
+
+            /// <summary>True when this body has rings a layout can clamp.</summary>
+            public bool HasRings => Rings != null && RingSpanRatio > 0.0001f;
+        }
+
+        /// <summary>
+        /// One body reduced to what the ring clamp needs to know about it: where an arrangement puts it, how big,
+        /// and how far its geometry reaches. Public so the editor builder can run the same arithmetic against a
+        /// <see cref="LayoutPreset"/> and report the spans a run will actually produce.
+        /// </summary>
+        public struct Extent
+        {
+            /// <summary>Where the arrangement puts the body, in the rig's own space.</summary>
+            public Vector3 Position;
+
+            /// <summary>The body's diameter in metres — a <see cref="LayoutSlot.Scale"/>.</summary>
+            public float Diameter;
+
+            /// <summary>Widest solid geometry as a multiple of the diameter.</summary>
+            public float SpanRatio;
+
+            /// <summary>Ring span as a multiple of the diameter, or zero for a body without rings.</summary>
+            public float RingRatio;
+
+            /// <summary>Half the width this body needs kept clear, in metres.</summary>
+            public float HalfExtent =>
+                Diameter * Mathf.Max(1f, RingRatio > 0f ? RingRatio : SpanRatio) * 0.5f;
         }
 
         [SerializeField]
@@ -105,9 +169,18 @@ namespace CosmicSimulation
         [Tooltip("Seconds the pull-out growth takes.")]
         private float pullGrowSeconds = 0.35f;
 
+        [SerializeField]
+        [Tooltip("Gap left between a ring's edge and whatever stands next to it, in metres.")]
+        private float ringClearance = 0.01f;
+
         private float _elapsed;
         private float _duration;
         private bool _running;
+
+        // Rebuilt on each layout change rather than allocated there: ten bodies, but a layout can be asked for
+        // from a dock button held down, and this runs the pair loop every time.
+        private readonly List<Extent> _extents = new List<Extent>();
+        private readonly List<int> _extentOwners = new List<int>();
 
         /// <summary>The arrangement the rig last applied.</summary>
         public LayoutPreset Current { get; private set; }
@@ -251,10 +324,25 @@ namespace CosmicSimulation
                 }
             }
 
+            // After the loop, because a ring is clamped against where its neighbours are *going*, not where they
+            // happen to be standing halfway through the last change.
+            PlanRings();
+
             Current = layout;
             _elapsed = 0f;
             _duration = duration;
             _running = duration > 0f;
+
+            if (!_running)
+            {
+                foreach (var body in bodies)
+                {
+                    if (body != null && body.IsUsable)
+                    {
+                        StepRings(body, 1f);
+                    }
+                }
+            }
 
             LayoutApplied?.Invoke(layout);
         }
@@ -297,22 +385,181 @@ namespace CosmicSimulation
 
             foreach (var body in bodies)
             {
-                if (body == null || !body.Moving || !body.IsUsable)
+                if (body == null || !body.IsUsable)
                 {
                     continue;
                 }
 
-                body.Home.localPosition = Vector3.Lerp(body.FromPosition, body.ToPosition, eased);
-                body.Home.localRotation = Quaternion.Slerp(body.FromRotation, body.ToRotation, eased);
-
-                // A body the player grabbed mid-transition is theirs, not the rig's, until they let go.
-                var stillOurs = body.Force == null || body.Force.ForceState == ForceSolver.State.Root;
-                if (body.ScaleDrivenHere && stillOurs)
+                if (body.Moving)
                 {
-                    body.Root.localScale = Vector3.one * Mathf.Lerp(body.FromDiameter, body.ToDiameter, eased);
+                    body.Home.localPosition = Vector3.Lerp(body.FromPosition, body.ToPosition, eased);
+                    body.Home.localRotation = Quaternion.Slerp(body.FromRotation, body.ToRotation, eased);
+
+                    // A body the player grabbed mid-transition is theirs, not the rig's, until they let go.
+                    var stillOurs = body.Force == null || body.Force.ForceState == ForceSolver.State.Root;
+                    if (body.ScaleDrivenHere && stillOurs)
+                    {
+                        body.Root.localScale = Vector3.one * Mathf.Lerp(body.FromDiameter, body.ToDiameter, eased);
+                    }
                 }
+
+                // Rings follow the arrangement whether or not this body is moving into it, and whether or not the
+                // player is holding it: a body out in the room is one the arrangement will take back, and a
+                // neighbour's move can free up room for a body that never moved itself. Once the change is over
+                // nothing here writes the ring scale again, so a held body simply keeps what the layout gave it.
+                StepRings(body, eased);
             }
         }
+
+        /// <summary>Moves one body's rings towards the span this arrangement allows them.</summary>
+        private static void StepRings(Body body, float eased)
+        {
+            if (body.Rings == null)
+            {
+                return;
+            }
+
+            body.RingFactor = Mathf.Lerp(body.FromRingFactor, body.ToRingFactor, eased);
+            body.Rings.localScale = RingBaseScaleOf(body) * body.RingFactor;
+        }
+
+        // ---------- rings
+
+        /// <summary>
+        /// Works out what each ring system is allowed in the arrangement that has just been asked for, and sets
+        /// up the animation to it from wherever the rings are now.
+        /// </summary>
+        private void PlanRings()
+        {
+            _extents.Clear();
+            _extentOwners.Clear();
+
+            for (var i = 0; i < bodies.Length; i++)
+            {
+                var body = bodies[i];
+                if (body == null || !body.IsUsable)
+                {
+                    continue;
+                }
+
+                TargetOf(body, out var position, out var diameter);
+                _extents.Add(new Extent
+                {
+                    Position = position,
+                    Diameter = diameter,
+                    SpanRatio = body.SpanRatio,
+                    RingRatio = body.HasRings ? body.RingSpanRatio : 0f,
+                });
+                _extentOwners.Add(i);
+            }
+
+            for (var i = 0; i < _extents.Count; i++)
+            {
+                var body = bodies[_extentOwners[i]];
+                if (body.Rings == null)
+                {
+                    continue;
+                }
+
+                // Read the starting factor off the transform rather than off the last one we wrote: it is the
+                // one thing here that cannot be out of date, and it makes an interrupted change animate from
+                // where the rings actually are instead of jumping.
+                var authored = RingBaseScaleOf(body);
+                body.FromRingFactor = authored.x > 0.0001f ? body.Rings.localScale.x / authored.x : 1f;
+                body.ToRingFactor = body.HasRings ? RingFactor(i, _extents, ringClearance) : 1f;
+            }
+        }
+
+        /// <summary>
+        /// Where this arrangement puts a body and how big it makes it. A body the arrangement does not name is
+        /// staying where it is, so it is measured where it stands.
+        /// </summary>
+        private static void TargetOf(Body body, out Vector3 position, out float diameter)
+        {
+            if (body.Moving)
+            {
+                position = body.ToPosition;
+                diameter = Mathf.Max(0.0001f, body.ToDiameter);
+                return;
+            }
+
+            position = body.Home.localPosition;
+            diameter = Mathf.Max(0.0001f, body.Root.localScale.x);
+        }
+
+        /// <summary>
+        /// The rings' authored scale. A prefab built before CS-060 serialises none, so it is read off the
+        /// transform the first time it is wanted — which is before anything has written a clamp to it.
+        /// </summary>
+        private static Vector3 RingBaseScaleOf(Body body)
+        {
+            if (body.RingBaseScale.sqrMagnitude < 0.000001f)
+            {
+                body.RingBaseScale = body.Rings != null ? body.Rings.localScale : Vector3.one;
+            }
+
+            return body.RingBaseScale;
+        }
+
+        /// <summary>
+        /// How much of their true span the rings of <paramref name="subject"/> may keep in this arrangement, from
+        /// 0 to 1. Nothing is tabulated: every number comes out of the arrangement, so the clamp follows a change
+        /// to the GDD's spacing with no edit here.
+        ///
+        /// <para>The rule is one constraint per pair — the distance between two bodies, less
+        /// <paramref name="clearance"/>, has to hold both of their widest extents. Where the neighbour also has
+        /// rings the pair shares the shortfall equally, since neither has a better claim on the gap; where it is
+        /// solid geometry that cannot be shrunk, the rings absorb all of it. A pair that already fits imposes
+        /// nothing, which is what keeps an arrangement with room to spare — Relative Size — at true ring
+        /// proportions rather than trimming rings that were never in anyone's way.</para>
+        ///
+        /// <para>The floor is the body itself: rings smaller than the planet they belong to would be hidden
+        /// inside it, and an arrangement tight enough to ask for that is one whose planets already overlap, which
+        /// is a fault in the layout rather than something to hide.</para>
+        /// </summary>
+        public static float RingFactor(int subject, IList<Extent> arrangement, float clearance)
+        {
+            if (arrangement == null || subject < 0 || subject >= arrangement.Count)
+            {
+                return 1f;
+            }
+
+            var self = arrangement[subject];
+            var ringHalf = self.Diameter * self.RingRatio * 0.5f;
+            if (ringHalf <= 0.0001f)
+            {
+                return 1f;
+            }
+
+            clearance = Mathf.Max(0f, clearance);
+            var allowed = 1f;
+
+            for (var i = 0; i < arrangement.Count; i++)
+            {
+                if (i == subject)
+                {
+                    continue;
+                }
+
+                var other = arrangement[i];
+                var otherHalf = other.HalfExtent;
+                var available = Vector3.Distance(self.Position, other.Position) - clearance;
+
+                var limit = other.RingRatio > 0f
+                    ? available / (ringHalf + otherHalf)   // two ring systems shrink by the same factor
+                    : (available - otherHalf) / ringHalf;  // a solid neighbour cannot give: take the whole hit
+
+                if (limit < allowed)
+                {
+                    allowed = limit;
+                }
+            }
+
+            var floor = self.RingRatio > 1f ? 1f / self.RingRatio : 1f;
+            return Mathf.Clamp(allowed, floor, 1f);
+        }
+
+        // ---------- reach
 
         /// <summary>
         /// Keeps every body pinchable and grows the one being pulled.

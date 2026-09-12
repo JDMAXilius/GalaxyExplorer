@@ -154,11 +154,24 @@ namespace CosmicSimulation.EditorTools
                 }
             }
 
+            // The desktop mirror. The world dock parks below eye level, which reads correctly in a headset and
+            // is simply off-screen on a monitor, so without this a desktop player cannot reach the dock at all.
+            // It hides itself when an XR device is present, so it costs nothing in the headset.
+            var desktopAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/prefabs/ui/desktop_dock_prefab.prefab");
+            var desktopDock = root.GetComponentInChildren<DesktopDock>(true);
+            if (desktopDock == null && desktopAsset != null)
+            {
+                var instance = (GameObject)PrefabUtility.InstantiatePrefab(desktopAsset, root.transform);
+                instance.name = "desktop_dock";
+                desktopDock = instance.GetComponent<DesktopDock>();
+            }
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
 
             Debug.Log($"ExperienceWiring: systems installed in {scene.name} " +
-                      $"({ordered.Length} tiles, {destinations.Length} destinations, dock={(dock != null ? "yes" : "MISSING")}).");
+                      $"({ordered.Length} tiles, {destinations.Length} destinations, " +
+                      $"dock={(dock != null ? "yes" : "MISSING")}, desktop={(desktopDock != null ? "yes" : "MISSING")}).");
         }
 
         private static System.Collections.Generic.Dictionary<string, ExperienceModule> LoadModules()
