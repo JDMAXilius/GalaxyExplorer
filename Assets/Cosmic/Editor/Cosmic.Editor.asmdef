@@ -1,0 +1,19 @@
+{
+    "name": "Cosmic.Editor",
+    "rootNamespace": "Cosmic.Editor",
+    "references": [
+        "Cosmic.Runtime",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
