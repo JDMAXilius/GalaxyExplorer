@@ -128,11 +128,26 @@ namespace CosmicSimulation
             if (isActiveAndEnabled)
             {
                 _press = 1f;
+
+                // Desktop reaches Choose straight from a uGUI Button, bypassing the GEButton that sounds the
+                // select in headset mode, so the tile has to sound it too or the mouse dock is silent. In
+                // headset mode both fire in the same frame and AudioService's same-clip cool-down (50 ms)
+                // collapses them into one — which is why this is safe to call unconditionally.
+                AudioService.Instance?.PlayClip(AudioId.Select);
                 onChosen.Invoke(this);
             }
         }
 
-        public void OnFocusEnter(GEFocusEventData eventData) => _hovered = true;
+        public void OnFocusEnter(GEFocusEventData eventData)
+        {
+            // Two hands can point at the same tile; only the first arrival is a hover.
+            if (!_hovered)
+            {
+                AudioService.Instance?.PlayClip(AudioId.Focus);
+            }
+
+            _hovered = true;
+        }
 
         public void OnFocusExit(GEFocusEventData eventData) => _hovered = false;
 

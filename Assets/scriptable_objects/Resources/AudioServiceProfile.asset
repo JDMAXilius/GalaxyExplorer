@@ -45,3 +45,15 @@ MonoBehaviour:
   - audioId: 8
     clip: {fileID: 8300000, guid: bd274d0eff4d39f46a7f8d6eeea1bb4a, type: 3}
     volume: 1
+  - audioId: 11
+    clip: {fileID: 8300000, guid: aaf351806a67746488c412cbe43e931b, type: 3}
+    volume: 1
+  - audioId: 12
+    clip: {fileID: 8300000, guid: b219e002e581bf647a2921b0ec998d27, type: 3}
+    volume: 1
+  - audioId: 13
+    clip: {fileID: 8300000, guid: a5c2761a9f6a00e42ad60b05c8d7af32, type: 3}
+    volume: 1
+  - audioId: 14
+    clip: {fileID: 0}
+    volume: 1

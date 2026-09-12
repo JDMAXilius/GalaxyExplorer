@@ -198,6 +198,13 @@ namespace CosmicSimulation
 
         public void OnFocusEnter(GEFocusEventData eventData)
         {
+            // Guarded on the flag rather than fired blind: both hands can be pointing at the same tag, and the
+            // second one arriving is not a new hover.
+            if (!_hovered)
+            {
+                AudioService.Instance?.PlayClip(AudioId.Focus);
+            }
+
             _hovered = true;
         }
 
@@ -236,6 +243,9 @@ namespace CosmicSimulation
 
             _lastClick = Time.unscaledTime;
             eventData?.Use();
+
+            // A label is not a GEButton — it handles pointers itself — so it has to sound its own select.
+            AudioService.Instance?.PlayClip(AudioId.Select);
             onPicked.Invoke(this);
         }
     }

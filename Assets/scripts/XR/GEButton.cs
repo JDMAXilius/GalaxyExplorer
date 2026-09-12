@@ -49,9 +49,19 @@ namespace GalaxyExplorer.XR
                 _pressVisual.Press();
             }
 
-            if (clickSound != null && AudioService.Instance != null)
+            if (AudioService.Instance != null)
             {
-                AudioService.Instance.PlayClip(clickSound, transform);
+                // GDD 9 asks every button to click, not just the handful whose prefab happened to get a clip
+                // assigned, so an unassigned clickSound falls through to the app's select sound rather than
+                // to silence. An authored clip still wins, and still plays at the button.
+                if (clickSound != null)
+                {
+                    AudioService.Instance.PlayClip(clickSound, transform);
+                }
+                else
+                {
+                    AudioService.Instance.PlayClip(AudioId.Select);
+                }
             }
 
             OnClick.Invoke();
@@ -70,6 +80,12 @@ namespace GalaxyExplorer.XR
 
         public void OnPointerUp(GEPointerEventData eventData)
         {
+            // The press already sounded on the way in, from OnPointerDown. This is the finger lifting back off
+            // a button it pushed; a ray has no such moment, so only a poke gets the release tick.
+            if (Enabled && isActiveAndEnabled && eventData?.Pointer != null && eventData.Pointer.IsPoke)
+            {
+                AudioService.Instance?.PlayClip(AudioId.PokeRelease);
+            }
         }
 
         public void OnPointerClicked(GEPointerEventData eventData)

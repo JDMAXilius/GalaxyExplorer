@@ -75,6 +75,13 @@ namespace GalaxyExplorer.XR
         [Tooltip("Seconds to close most of the distance to the hands when smoothing.")]
         private float smoothingTime = 0.05f;
 
+        [SerializeField]
+        [Tooltip("Play the grab and release sounds from here. Leave off on anything a ForceSolver pulls — the " +
+                 "solver already plays them as it enters and leaves its Manipulation state, and a second " +
+                 "emitter would double them. Turn it on for things grabbed directly: the nebula overlays, the " +
+                 "cosmic web, the dock's drag bar.")]
+        private bool playGrabSounds = false;
+
         public ManipulationEvent OnManipulationStarted = new ManipulationEvent();
         public ManipulationEvent OnManipulationEnded = new ManipulationEvent();
         public ManipulationEvent OnHoverEntered = new ManipulationEvent();
@@ -107,6 +114,13 @@ namespace GalaxyExplorer.XR
 
         public bool IsManipulating => _pointers.Count > 0;
 
+        /// <summary>
+        /// Applies this object's scale constraint, if it has one, to a scale someone else worked out. Desktop
+        /// mode scales with the wheel rather than with two hands, and must land inside the same limits.
+        /// </summary>
+        public Vector3 ClampScale(Vector3 desiredLocalScale) =>
+            ScaleConstraint()?.ClampScale(desiredLocalScale) ?? desiredLocalScale;
+
         public void OnPointerDown(GEPointerEventData eventData)
         {
             var pointer = eventData?.Pointer;
@@ -128,6 +142,11 @@ namespace GalaxyExplorer.XR
             _pointers.Add(pointer);
             if (_pointers.Count == 1)
             {
+                if (playGrabSounds)
+                {
+                    AudioService.Instance?.PlayClip(AudioId.ManipulationStart);
+                }
+
                 OnManipulationStarted.Invoke(new ManipulationEventData { ManipulationSource = gameObject, Pointer = pointer });
             }
 
@@ -145,6 +164,11 @@ namespace GalaxyExplorer.XR
 
             if (_pointers.Count == 0)
             {
+                if (playGrabSounds)
+                {
+                    AudioService.Instance?.PlayClip(AudioId.ManipulationEnd);
+                }
+
                 OnManipulationEnded.Invoke(new ManipulationEventData { ManipulationSource = gameObject, Pointer = pointer });
             }
             else

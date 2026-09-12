@@ -39,6 +39,24 @@ public enum AudioId
     ForceDwell,
     ManipulationStart,
     ManipulationEnd,
+
+    // --- appended for CS-070; everything above keeps its number.
+    //
+    // Six of the ids above already point at the clip a GDD 9 slot asks for, so those slots reuse them rather
+    // than growing this list. The names are the ones the original app gave them, which is why a couple read
+    // oddly now:
+    //   Focus                      hover tick (labels, dock tiles, points of interest)
+    //   Select                     select / poke press, on every GEButton and every label
+    //   CardSelect / CardDeselect  the body info panel opening and closing — a "card" is a panel here
+    //   ToolboxShow / ToolBoxHide  the dock's layout pop-up opening and closing; the toolbox itself is gone,
+    //                              and these two ids had no caller left, so the pop-up inherits them
+    //   ForceDwell                 the force-pull beam (ui_tractor_beam)
+    //   ManipulationStart / End    grab-and-hold and release (ui_forcegrab_hold / _release)
+    PokeRelease,        // ui_touch_deselect — a fingertip coming back off a button
+    DockShow,           // ui_handmenu_appear
+    DockHide,           // ui_handmenu_disappear
+    GrowIn,             // GDD 8.7 "soft whoosh". No clip owns this yet; see the sourcing ticket in BACKLOG.
+                        // Unassigned is the right state for it: PlayClip no-ops on an id with no clip.
 }
 
 [Serializable]

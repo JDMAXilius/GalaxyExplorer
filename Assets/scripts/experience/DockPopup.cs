@@ -101,13 +101,28 @@ namespace CosmicSimulation
             gameObject.SetActive(true);
             PlaceAbove(tile);
             Repaint();
+
+            // ToolboxShow/Hide are the original app's names for this pair of clips; the toolbox is gone and
+            // this pop-up is what they describe now. See the mapping note on AudioId.
+            AudioService.Instance?.PlayClip(AudioId.ToolboxShow);
         }
 
         public void Close()
         {
+            // Close is also the "make sure it is shut" call — DockController.SetVisible(false) and a tile with
+            // no layout choice both land here — so only a pop-up that was actually open sounds a close.
+            var wasOpen = IsOpen;
+
             Owner = null;
             _opening = false;
             gameObject.SetActive(false);
+
+            if (wasOpen)
+            {
+                // No target: the pooled source would be parented to this object and cut off by the
+                // SetActive(false) above.
+                AudioService.Instance?.PlayClip(AudioId.ToolBoxHide);
+            }
         }
 
         /// <summary>Marks which option is in use, for when a layout changes from somewhere else.</summary>

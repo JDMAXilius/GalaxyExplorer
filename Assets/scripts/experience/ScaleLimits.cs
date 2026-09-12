@@ -51,6 +51,10 @@ namespace CosmicSimulation
         [Tooltip("Measured from the renderers when empty. Set it for an object whose bounds are misleading.")]
         private Renderer measureFrom;
 
+        [SerializeField]
+        [Tooltip("Width in metres this object has at local scale 1. Only for content with no Renderer to measure, such as a procedurally drawn point cloud. Zero measures the renderers instead.")]
+        private float authoredMetresAtUnitScale;
+
         private float _metresPerScaleUnit;
 
         /// <summary>Current width in metres, as the player sees it. Measures the object if it has not been yet.</summary>
@@ -121,6 +125,13 @@ namespace CosmicSimulation
             }
 
             var desiredMetres = desiredLocalScale.x * _metresPerScaleUnit;
+            if (desiredMetres <= 0f)
+            {
+                // Nothing to scale towards, and the correction below would divide by it. Reachable now that an
+                // authored width measures fine at local scale zero, which is where a grow-in starts.
+                return desiredLocalScale;
+            }
+
             var clamped = Mathf.Clamp(desiredMetres, MinMetres, MaxMetres);
             if (Mathf.Approximately(clamped, desiredMetres))
             {
@@ -137,6 +148,16 @@ namespace CosmicSimulation
 
         private void Measure()
         {
+            // Some content has no Renderer at all — the Cosmic Web is a ComputeBuffer drawn by a command
+            // buffer — so there is nothing to measure and the limits would silently do nothing. Its builder
+            // knows its own width, so it states it instead. Checked before the scale guard: an authored width
+            // is independent of the current scale, and the object may be mid grow-in at scale zero.
+            if (authoredMetresAtUnitScale > 0f)
+            {
+                _metresPerScaleUnit = authoredMetresAtUnitScale;
+                return;
+            }
+
             var scale = transform.localScale.x;
             if (Mathf.Approximately(scale, 0f))
             {
