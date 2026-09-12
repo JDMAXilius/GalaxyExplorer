@@ -216,7 +216,42 @@ namespace GalaxyExplorer.XR
 
         private void Update()
         {
+            // A pointer can vanish without an OnPointerUp: a hand leaves tracking, a ray loses its target,
+            // the mouse button is released over something that ate the event, or the pointer object is
+            // destroyed. Pruning it silently was a real bug - the grab offsets stayed captured for a grab
+            // that no longer existed, so the object jumped or stuck the moment the remaining pointer moved,
+            // and OnManipulationEnded never fired, so every listener went on believing a manipulation was
+            // still running. That is the "it works at first, then goes buggy once you use everything back
+            // and forth" failure: the stale state accumulates across interactions rather than resetting.
+            //
+            // So a silent loss now ends exactly as a clean release does.
+            var before = _pointers.Count;
             _pointers.RemoveAll(p => p == null || !p.IsActive);
+            var lost = before - _pointers.Count;
+
+            if (lost > 0)
+            {
+                if (_pointers.Count == 0)
+                {
+                    if (playGrabSounds)
+                    {
+                        AudioService.Instance?.PlayClip(AudioId.ManipulationEnd);
+                    }
+
+                    // Pointer is null because the one that went away is exactly what we no longer have.
+                    // Listeners that match on ManipulationSource still work; those that match on Pointer
+                    // have to tolerate null, which is the honest report of "we do not know which".
+                    OnManipulationEnded.Invoke(
+                        new ManipulationEventData { ManipulationSource = gameObject, Pointer = null });
+                }
+                else
+                {
+                    // Still held, but by fewer hands than the offsets were captured for. Re-capture, or the
+                    // object snaps as the two-handed midpoint collapses onto one pointer.
+                    CaptureGrabState();
+                }
+            }
+
             if (_pointers.Count == 0)
             {
                 return;

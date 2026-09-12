@@ -73,6 +73,20 @@ namespace CosmicSimulation
 
         private bool _ready;
         private CanvasGroup _group;
+
+        /// <summary>
+        /// Whether name labels are shown at all, across every body and moon at once.
+        /// <para>
+        /// Separate from each label's own <c>_shown</c>, which decides whether <i>this</i> label has anything
+        /// to say right now - a moon's label hides while the moon is tucked against its planet. This is the
+        /// player's preference on top of that, so turning labels off hides them all and turning them back on
+        /// returns each to whatever its own state had decided. The two are ANDed rather than one overwriting
+        /// the other, which is why toggling does not strand a label visible over a hidden moon.
+        /// </para>
+        /// <para>Static because it is one preference for the whole app, not a per-label setting, and because
+        /// a label can be created long after the player set it.</para>
+        /// </summary>
+        public static bool ShowLabels = true;
         private Camera _camera;
         private FontStyles _baseStyle;
         private float _style;          // 0 small, 1 large
@@ -230,7 +244,7 @@ namespace CosmicSimulation
 
             if (_group != null)
             {
-                var wanted = _shown ? 1f : 0f;
+                var wanted = _shown && ShowLabels ? 1f : 0f;
                 if (!Mathf.Approximately(_group.alpha, wanted))
                 {
                     _group.alpha = fadeSeconds <= 0f

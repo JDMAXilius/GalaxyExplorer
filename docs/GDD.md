@@ -229,6 +229,7 @@ Each experience is specified by: what you see, placement and scale, objects, int
 | Zoom view | Wheel on empty |
 | Pull Sun … Pluto | `1`–`9`, `0` |
 | Pull the Moon | `M` |
+| Show / hide name labels | `L` |
 | Restore layout | `R` |
 | Recenter view | `Home` |
 | Passthrough toggle (preview) | `P` |

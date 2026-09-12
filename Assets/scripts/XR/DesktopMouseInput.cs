@@ -133,6 +133,19 @@ namespace GalaxyExplorer.XR
                 return;
             }
 
+            // Recover from a button release we never saw.
+            //
+            // CancelInteraction only ran when input was disabled, so any drag state that started but never
+            // got its matching release stayed set for the rest of the session: press on an object and
+            // release outside the Game view, or over a uGUI panel that swallowed the up-event, and _pressed
+            // / _orbiting / _panning were still true afterwards. From then on the guards at the top of each
+            // handler ("if _pressed == null && !_orbiting ...") refused every new interaction, which is
+            // exactly the reported "works at first, then rotation and zoom get stuck once you have used
+            // everything back and forth".
+            //
+            // The button is the authority, not our bookkeeping: if it is not down, the drag is over.
+            ReconcileButtons(mouse);
+
             UpdateGrabPoint(ray);
 
             // The desktop menu and the desktop dock are uGUI: leave the mouse to them when the cursor is over
@@ -354,6 +367,14 @@ namespace GalaxyExplorer.XR
 
             // P previews on the desktop what the passthrough button does in the headset: there is no room to
             // show through a monitor, so this toggles the dimming and the black backdrop instead.
+            // L hides and shows the name labels over every body and moon. The owner asked for the labels
+            // to be something that can be turned off, and a key is the desktop half of that; the utility
+            // window is where the headset half belongs.
+            if (keyboard.lKey.wasPressedThisFrame)
+            {
+                CosmicSimulation.MoonLabel.ShowLabels = !CosmicSimulation.MoonLabel.ShowLabels;
+            }
+
             if (keyboard.pKey.wasPressedThisFrame)
             {
                 CosmicSimulation.EnvironmentController.Instance?.TogglePassthrough();
@@ -609,6 +630,35 @@ namespace GalaxyExplorer.XR
 
             solver.ResetToRoot();
             solver.EnableForce = true;
+        }
+
+        /// <summary>
+        /// Ends any drag whose mouse button is no longer held. Cheap, runs every frame, and is the only
+        /// thing standing between a missed release and a session that stops responding.
+        /// </summary>
+        private void ReconcileButtons(Mouse mouse)
+        {
+            if (_pressed != null && !mouse.leftButton.isPressed)
+            {
+                var pressed = _pressed;
+                _pressed = null;
+
+                // Released, but we cannot know it was over the same object, so this is a cancel rather than
+                // a click: raising it as a click here would fire actions the player did not aim at.
+                pressed.RaisePointerUp(_pointer, false);
+            }
+
+            if (_orbiting && !mouse.leftButton.isPressed)
+            {
+                _orbiting = false;
+            }
+
+            if ((_panning || _spinning != null || _spinningHost != null) && !mouse.rightButton.isPressed)
+            {
+                _panning = false;
+                _spinning = null;
+                _spinningHost = null;
+            }
         }
 
         private void CancelInteraction()
