@@ -168,13 +168,13 @@ namespace CosmicSimulation.EditorTools
             {
                 Id = "io", Parent = "jupiter",
                 PrefabPath = "Assets/prefabs/io_jupiter_moon_prefab.prefab",
-                DiameterKm = 3643f, PeriodDays = 1.8f, OrbitRadiusMetres = 0.30f, Ships = false,
+                DiameterKm = 3643f, PeriodDays = 1.8f, OrbitRadiusMetres = 0.30f, Ships = true,
             },
             new Spec
             {
                 Id = "europa", Parent = "jupiter",
                 PrefabPath = "Assets/prefabs/europa_jupiter_moon_prefab.prefab",
-                DiameterKm = 3122f, PeriodDays = 3.6f, OrbitRadiusMetres = 0.34f, Ships = false,
+                DiameterKm = 3122f, PeriodDays = 3.6f, OrbitRadiusMetres = 0.34f, Ships = true,
             },
             new Spec
             {
@@ -194,11 +194,31 @@ namespace CosmicSimulation.EditorTools
                 PrefabPath = "Assets/prefabs/iapetus_saturn_moon_prefab.prefab",
                 DiameterKm = 1469f, PeriodDays = 79f, OrbitRadiusMetres = 0.60f, Ships = true,
             },
+            // Mars's two, added 12 Sep 2026. They were left out originally because GDD 6 did not list
+            // them and the one-to-one contract won; D-010 lifted that contract and the owner asked for
+            // every moon, so they are in. Their BodyInfo assets and prefabs already existed.
+            //
+            // Both are genuinely tiny - Phobos is 22 km across against Mars's 6,779, about 1:300 - so the
+            // size clamp carries them up to SmallestMoonDiameter and the build report flags them as shown
+            // larger than true scale. That is the honest handling: invisible is not a faithful rendering of
+            // a moon you are meant to be able to pinch.
+            new Spec
+            {
+                Id = "phobos", Parent = "mars",
+                PrefabPath = "Assets/prefabs/phobos_mars_moon_prefab.prefab",
+                DiameterKm = 22.5f, PeriodDays = 0.319f, OrbitRadiusMetres = 0.24f, Ships = true,
+            },
+            new Spec
+            {
+                Id = "deimos", Parent = "mars",
+                PrefabPath = "Assets/prefabs/deimos_mars_moon_prefab.prefab",
+                DiameterKm = 12.4f, PeriodDays = 1.263f, OrbitRadiusMetres = 0.31f, Ships = true,
+            },
             new Spec
             {
                 Id = "enceladus", Parent = "saturn",
                 PrefabPath = "Assets/prefabs/enceladus_saturn_moon_prefab.prefab",
-                DiameterKm = 504f, PeriodDays = 1.4f, OrbitRadiusMetres = 0.32f, Ships = false,
+                DiameterKm = 504f, PeriodDays = 1.4f, OrbitRadiusMetres = 0.32f, Ships = true,
             },
         };
 

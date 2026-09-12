@@ -264,7 +264,27 @@ try {
     }
 
     Write-Host ''
-    Write-Host 'COMPILE CLEAN - no compiler errors since the refresh.' -ForegroundColor Green
+    # Cross-check against the console before declaring victory.
+    #
+    # Reading Editor.log alone is not enough and has silently passed a broken build twice: on 12 Sep 2026
+    # both GalaxyLibrary.cs and GalaxyFieldBuilder.cs failed with CS0246, compile.ps1 reported CLEAN, and
+    # the only symptom was that their [MenuItem] never registered - ExecuteMenuItem answered "there is no
+    # menu named ...". The errors were in the editor's console the whole time; they had just not reached
+    # the part of the log this script reads by the time it read it.
+    #
+    # So ask the editor directly. A clean log plus a clean console is the real verdict.
+    $consoleCheck = & node $umcp call Unity_GetConsoleLogs '{"maxEntries":200,"includeStackTrace":false}' @commonArgs 2>&1 | Out-String
+    $consoleErrors = [regex]::Matches($consoleCheck, 'error CS[0-9]+: [^"]{0,200}') |
+        ForEach-Object { $_.Value } | Sort-Object -Unique
+
+    if ($consoleErrors.Count -gt 0) {
+        Write-Host "COMPILE FAILED - $($consoleErrors.Count) error(s) the log did not carry, read from the console:" -ForegroundColor Red
+        $consoleErrors | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+        Write-Host 'A menu item added by a file in this list will NOT be registered, so ExecuteMenuItem will say the menu does not exist.'
+        exit 1
+    }
+
+    Write-Host 'COMPILE CLEAN - no compiler errors since the refresh, and none in the console.' -ForegroundColor Green
     if ($warnings.Count -gt 0) {
         Write-Host "$($warnings.Count) warning line(s). The relay would answer NOT-OK for these; they are not errors."
         if ($ShowWarnings) { $warnings | ForEach-Object { Write-Host "  $_" } }
