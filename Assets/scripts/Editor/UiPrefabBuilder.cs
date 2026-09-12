@@ -39,7 +39,10 @@ namespace CosmicSimulation.EditorTools
             AssetDatabase.Refresh();
 
             var tile = BuildDockTile();
-            BuildDock(tile);
+
+            // Before the dock: the dock prefab holds a reference to it, so it has to exist as an asset first.
+            var utility = BuildUtilityWindow();
+            BuildDock(tile, utility);
             BuildDockPopup();
             BuildInfoPanel();
             BuildLabelButton();
@@ -60,6 +63,12 @@ namespace CosmicSimulation.EditorTools
             }
 
             return sprite;
+        }
+
+        /// <summary>A sprite that may not have been drawn yet. The caller decides what to do about it.</summary>
+        private static Sprite LoadOptional(string name)
+        {
+            return AssetDatabase.LoadAssetAtPath<Sprite>(SpriteFolder + name + ".png");
         }
 
         private static TMP_FontAsset Font()
@@ -209,7 +218,7 @@ namespace CosmicSimulation.EditorTools
 
         // ---------- the dock
 
-        private static void BuildDock(GameObject tilePrefab)
+        private static void BuildDock(GameObject tilePrefab, GameObject utilityWindowPrefab)
         {
             var root = Root("dock_prefab", true);
             var rt = (RectTransform)root.transform;
@@ -243,6 +252,23 @@ namespace CosmicSimulation.EditorTools
             var help = SquareButton("help_button", underRow, 9f, 6f, Load("icon_help"), Plate, Ink);
             ((RectTransform)help.transform).anchoredPosition = new Vector2(408f, 0f);
 
+            // The third small button, left of Recenter. GDD 8.1 lists only Recenter and Help under the dock but
+            // also says mute lives in the utility window, and GDD 11 puts three more settings in there — so
+            // something has to open it, and nothing did. No settings glyph was exported by CS-017 (five rounded
+            // rects, the tile foot and six icons), so the mute icon stands in: it is the control players will be
+            // looking for in there, and the window is where GDD 8.1 says it lives. Drop icon_settings.png into
+            // Assets/ui/figma/ and re-run this menu item to replace it.
+            var settingsGlyph = LoadOptional("icon_settings");
+            if (settingsGlyph == null)
+            {
+                settingsGlyph = Load("icon_mute");
+                Debug.Log("UiPrefabBuilder: no icon_settings sprite, so the dock's settings button wears the " +
+                          "mute glyph. Add Assets/ui/figma/icon_settings.png and re-run to replace it.");
+            }
+
+            var utility = SquareButton("utility_button", underRow, 9f, 6f, settingsGlyph, Plate, Ink);
+            ((RectTransform)utility.transform).anchoredPosition = new Vector2(384f, 0f);
+
             var dock = root.AddComponent<DockController>();
             var so = new SerializedObject(dock);
             so.FindProperty("tilePrefab").objectReferenceValue = tilePrefab != null ? tilePrefab.GetComponent<DockTile>() : null;
@@ -250,6 +276,9 @@ namespace CosmicSimulation.EditorTools
             so.FindProperty("passthroughButton").objectReferenceValue = passthrough;
             so.FindProperty("recenterButton").objectReferenceValue = recenter;
             so.FindProperty("helpButton").objectReferenceValue = help;
+            so.FindProperty("utilityButton").objectReferenceValue = utility;
+            so.FindProperty("utilityWindowPrefab").objectReferenceValue =
+                utilityWindowPrefab != null ? utilityWindowPrefab.GetComponent<UtilityWindow>() : null;
             so.FindProperty("dragBar").objectReferenceValue = bar.transform;
             so.FindProperty("tilePitch").floatValue = 114f;
             so.ApplyModifiedPropertiesWithoutUndo();
@@ -268,6 +297,131 @@ namespace CosmicSimulation.EditorTools
             box.size = new Vector3(size, size, 2f);
             back.gameObject.AddComponent<GEInteractable>();
             return back.gameObject.AddComponent<GEButton>();
+        }
+
+        // ---------- the utility window
+        //
+        // GDD 8.2 sizes this at 120 x 50 mm for a scale slider and a close box. GDD 11 then asks for mute,
+        // narration-only mute and a text size in the same window, which does not fit in 50 mm of height, so it
+        // is 120 x 102 — the width the design gives it, and as much height as four controls need on the 2 mm
+        // grid with the 5 mm padding from docs/ui/spec.md §3. Every number below is a millimetre, because the
+        // canvas Root() builds is scaled 0.001.
+
+        private static GameObject BuildUtilityWindow()
+        {
+            const float width = 120f;
+            const float height = 102f;
+            const float row = 110f; // content width: the plate less 5 mm of padding on each side
+            const float top = height * 0.5f;
+
+            var root = Root("utility_window_prefab", true);
+            var rt = (RectTransform)root.transform;
+            rt.sizeDelta = new Vector2(width, height);
+
+            Panel("plate", rt, width, height, Load("ui_rounded_r48"), Plate).raycastTarget = false;
+
+            var title = Label("title", rt, 100f, 8f, "Settings", 5.6f, Ink, TextAlignmentOptions.Left, FontWeight.SemiBold);
+            title.rectTransform.anchoredPosition = new Vector2(-5f, top - 9f);
+
+            var close = SquareButton("close_button", rt, 9f, 6f, Load("icon_close"), Plate, Ink);
+            ((RectTransform)close.transform).anchoredPosition = new Vector2(width * 0.5f - 9.5f, top - 9.5f);
+
+            // --- the scale rail
+
+            var scaleLabel = Label("scale_label", rt, row, 6f, "SCALE", 4.55f, InkSecondary, TextAlignmentOptions.Left, FontWeight.SemiBold);
+            scaleLabel.characterSpacing = 8f;
+            scaleLabel.rectTransform.anchoredPosition = new Vector2(0f, top - 19f);
+
+            var scaleValue = Label("scale_value", rt, row, 6f, "1.00x", 4.55f, Ink, TextAlignmentOptions.Right, FontWeight.Regular);
+            scaleValue.rectTransform.anchoredPosition = new Vector2(0f, top - 19f);
+
+            var track = Panel("scale_track", rt, row, 2f, Load("ui_rounded_r8"), new Color(1f, 1f, 1f, 0.25f));
+            track.rectTransform.anchoredPosition = new Vector2(0f, top - 26f);
+
+            var fill = Panel("scale_fill", track.rectTransform, row * 0.5f, 2f, Load("ui_rounded_r8"), Cyan);
+            fill.raycastTarget = false;
+            fill.rectTransform.anchorMin = new Vector2(0f, 0.5f);
+            fill.rectTransform.anchorMax = new Vector2(0f, 0.5f);
+            fill.rectTransform.pivot = new Vector2(0f, 0.5f);
+            fill.rectTransform.anchoredPosition = Vector2.zero;
+
+            // An 8 mm square at 4 mm radius is a circle.
+            var knob = Panel("scale_knob", track.rectTransform, 8f, 8f, Load("ui_rounded_r32"), Ink);
+            knob.raycastTarget = false;
+            knob.rectTransform.anchoredPosition = Vector2.zero;
+
+            // The hit area is 12 mm tall over a 2 mm rail: a fingertip or a hand ray cannot be asked to find
+            // two millimetres, and the collider is what both of them actually hit.
+            var trackBox = track.gameObject.AddComponent<BoxCollider>();
+            trackBox.size = new Vector3(row, 12f, 2f);
+            var trackInteractable = track.gameObject.AddComponent<GEInteractable>();
+
+            // --- sound
+
+            var soundLabel = Label("sound_label", rt, row, 6f, "SOUND", 4.55f, InkSecondary, TextAlignmentOptions.Left, FontWeight.SemiBold);
+            soundLabel.characterSpacing = 8f;
+            soundLabel.rectTransform.anchoredPosition = new Vector2(0f, top - 39f);
+
+            var mute = PlateRow("mute_button", rt, row, 12f, 0f, top - 50f, "Sound on", out var muteFill, out var muteLabel);
+            var narration = PlateRow("narration_button", rt, row, 12f, 0f, top - 64f, "Narration on",
+                out var narrationFill, out var narrationLabel);
+
+            // --- text size
+
+            var textLabel = Label("text_size_label", rt, row, 6f, "TEXT SIZE", 4.55f, InkSecondary, TextAlignmentOptions.Left, FontWeight.SemiBold);
+            textLabel.characterSpacing = 8f;
+            textLabel.rectTransform.anchoredPosition = new Vector2(0f, top - 77f);
+
+            var window = root.AddComponent<UtilityWindow>();
+            var so = new SerializedObject(window);
+            var sizeButtons = so.FindProperty("textSizeButtons");
+            var sizeFills = so.FindProperty("textSizeFills");
+            var sizeLabels = so.FindProperty("textSizeLabels");
+            sizeButtons.arraySize = 3;
+            sizeFills.arraySize = 3;
+            sizeLabels.arraySize = 3;
+
+            var captions = new[] { "1.0x", "1.25x", "1.5x" };
+            for (var i = 0; i < 3; i++)
+            {
+                var button = PlateRow($"text_size_{i}", rt, 34f, 14f, (i - 1) * 37f, top - 89f, captions[i],
+                    out var sizeFill, out var sizeLabel);
+
+                sizeButtons.GetArrayElementAtIndex(i).objectReferenceValue = button;
+                sizeFills.GetArrayElementAtIndex(i).objectReferenceValue = sizeFill;
+                sizeLabels.GetArrayElementAtIndex(i).objectReferenceValue = sizeLabel;
+            }
+
+            so.FindProperty("scaleTrack").objectReferenceValue = trackInteractable;
+            so.FindProperty("scaleFill").objectReferenceValue = fill.rectTransform;
+            so.FindProperty("scaleKnob").objectReferenceValue = knob.rectTransform;
+            so.FindProperty("scaleValue").objectReferenceValue = scaleValue;
+            so.FindProperty("muteButton").objectReferenceValue = mute;
+            so.FindProperty("muteFill").objectReferenceValue = muteFill;
+            so.FindProperty("muteLabel").objectReferenceValue = muteLabel;
+            so.FindProperty("narrationButton").objectReferenceValue = narration;
+            so.FindProperty("narrationFill").objectReferenceValue = narrationFill;
+            so.FindProperty("narrationLabel").objectReferenceValue = narrationLabel;
+            so.FindProperty("closeButton").objectReferenceValue = close;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            return Save(root, "utility_window_prefab");
+        }
+
+        /// <summary>A full-width pressable plate with a label on it, as the pop-up's options are.</summary>
+        private static GEButton PlateRow(string name, Transform parent, float w, float h, float x, float y,
+                                         string text, out Image fill, out TMP_Text label)
+        {
+            fill = Panel(name, parent, w, h, Load("ui_rounded_r32"), Plate);
+            fill.rectTransform.anchoredPosition = new Vector2(x, y);
+
+            label = Label("label", fill.rectTransform, w - 6f, h - 2f, text, 5f, Ink, TextAlignmentOptions.Center, FontWeight.Medium);
+            label.rectTransform.anchoredPosition = Vector2.zero;
+
+            var box = fill.gameObject.AddComponent<BoxCollider>();
+            box.size = new Vector3(w, h, 2f);
+            fill.gameObject.AddComponent<GEInteractable>();
+            return fill.gameObject.AddComponent<GEButton>();
         }
 
         // ---------- the layout pop-up

@@ -228,6 +228,7 @@ Each experience is specified by: what you see, placement and scale, objects, int
 | Passthrough toggle (preview) | `P` |
 | Dock show/hide | `Tab` |
 | Help overlay | `H` / `F1` |
+| Utility window (scale, mute, narration, text size) | `U` |
 | Close panel / overlay | `Esc` |
 | Switch experience | HUD dock click or `F2`–`F8` |
 
@@ -307,12 +308,12 @@ All UI is designed in Figma (file *Cosmic Simulation XR — UI*) and exported; s
 - **Tiles (7):** 110 × 62 mm, 4 mm apart. Each tile is a **picture of the place** (rendered from the scene) with its **name written on the image**, bottom-left, over a soft dark foot. Only the three tiles that offer a layout choice carry a second line: Solar System "Orbital view", Solar System Planets "Detail view", Galactic Center "Black hole". States: idle, hover (raise 6 mm, brighten), pressed (depress 4 mm), active (cyan underline along the bottom edge).
 - **Order:** Cosmic Web · Galaxies · Milky Way · Andromeda · Solar System · Solar System Planets · Galactic Center.
 - **Passthrough button:** a white tile closing the row, dark camera glyph over the word **Passthrough**; it reads as the one control that changes the room rather than the place.
-- **Under the dock:** a 60 mm white drag bar centred below it moves the whole dock (it re-tilts toward the player), and two small square buttons sit at the right end — **Recenter** and **Help**. Mute lives in the utility window.
+- **Under the dock:** a 60 mm white drag bar centred below it moves the whole dock (it re-tilts toward the player), and three small square buttons sit at the right end — **Settings**, **Recenter** and **Help**. Mute lives in the utility window, which the Settings button opens.
 - **Show/hide:** palm-up on the left hand for 0.5 s toggles the dock (Quest); `Tab` on desktop. The dock hides during onboarding cards.
 
 ### 8.2 Pop-ups
 - Appear 40 mm above the tile that owns them, 240 × 90 mm, two equal buttons with icon + label: **Schematic / Realistic** (Solar System), **Solar Row / Relative Size** (Planets). The active option is filled cyan.
-- A small **utility window** (120 × 50 mm) beside the pop-up holds a **scale slider** for the current experience and an × to close.
+- A small **utility window** (120 × 102 mm) sits beside the dock and holds four controls and an × to close: a **scale slider** for the current experience, **Mute**, **narration-only mute**, and the **text size** (×1.0 / ×1.25 / ×1.5, §11). It opens from the settings button under the dock, or with `U` on the desktop, and closes with the dock. *(It was drawn at 120 × 50 mm for the slider alone; §11's three further controls do not fit in 50 mm of height, and the slider must reach every place, not only the three that offer a layout pop-up — so it is taller and belongs to the dock rather than to the pop-up.)*
 
 ### 8.3 Info panels
 - **Body variant:** width 161 mm (230 units × 0.7 mm). Title 17 mm cap-height equivalent (24 units), subtitle small caps (8 units, cyan), paragraph 9.5 units, divider, 2 × 2 stat grid: label 6.5 units caps, value 12 units, unit suffix small. Mass renders as `5.97 × 10²⁴ kg` with a true superscript.
@@ -370,7 +371,7 @@ Which of the three tracks plays in which environment mode is not fixed here; the
 - Seated and standing both supported; dock height adapts to the head height at recenter (0.55 × head height, min 0.7 m).
 - No locomotion, no forced camera motion; grow-ins only.
 - Left- and right-hand symmetric; every hand action has a ray alternative.
-- Mute, narration-only mute, and a **text-size** setting (panels ×1.0/×1.25/×1.5) in the utility window.
+- Mute, narration-only mute, and a **text-size** setting (panels ×1.0/×1.25/×1.5) in the utility window. Text size scales the whole panel rather than the font alone, so the layout the panel was designed at is preserved. All three are remembered between sessions; the scale slider is not, since it describes a place rather than a preference.
 - Passthrough available in every experience via the toggle for players who prefer to see the room.
 
 ---

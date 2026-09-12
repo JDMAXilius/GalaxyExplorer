@@ -98,6 +98,50 @@ namespace CosmicSimulation
         public Variant PanelVariant => variant;
         public Transform Target => target;
 
+        // ---------- text size (GDD 11, contract row F-03)
+        //
+        // The setting scales the whole panel, not the fonts. Every row here is laid out in canvas units against
+        // a fixed width — the paragraph is given seven lines at 161 mm and the stat grid starts directly under
+        // it — so raising fontSize alone would reflow the prose into the stats. Scaling the panel keeps the
+        // design exactly as it was signed off and simply makes it bigger, which is what a player asking for
+        // larger text at arm's length actually wants. The panel keeps its 30 mm gap from the body either way.
+        private const string TextScalePrefsKey = "CosmicSimulation.PanelTextScale";
+
+        private static float textScale = 1f;
+        private static bool textScaleLoaded;
+
+        /// <summary>
+        /// How much larger than designed every panel draws. GDD 11 offers x1.0, x1.25 and x1.5; the value is
+        /// read lazily so it is right before any panel's Awake has run, and remembered between sessions.
+        /// </summary>
+        public static float TextScale
+        {
+            get
+            {
+                if (!textScaleLoaded)
+                {
+                    textScale = Mathf.Clamp(PlayerPrefs.GetFloat(TextScalePrefsKey, 1f), 1f, 2f);
+                    textScaleLoaded = true;
+                }
+
+                return textScale;
+            }
+
+            set
+            {
+                var wanted = Mathf.Clamp(value, 1f, 2f);
+                if (textScaleLoaded && Mathf.Approximately(textScale, wanted))
+                {
+                    return;
+                }
+
+                textScale = wanted;
+                textScaleLoaded = true;
+                PlayerPrefs.SetFloat(TextScalePrefsKey, wanted);
+                PlayerPrefs.Save();
+            }
+        }
+
         private void Awake()
         {
             _group = GetComponent<CanvasGroup>();
@@ -373,9 +417,11 @@ namespace CosmicSimulation
             transform.rotation = Quaternion.LookRotation(transform.position - camera.position, camera.up);
 
             // One physical size whatever the target is scaled to: the panel is not parented to the body, but a
-            // prefab may still sit under a scaled rig.
+            // prefab may still sit under a scaled rig. TextScale is folded in here rather than tracked with an
+            // event, because this runs every frame the panel is visible anyway and a panel that is not visible
+            // does not need to have been told.
             var parentScale = transform.parent != null ? transform.parent.lossyScale.x : 1f;
-            var scale = metresPerUnit / Mathf.Max(0.0001f, parentScale);
+            var scale = metresPerUnit * TextScale / Mathf.Max(0.0001f, parentScale);
             transform.localScale = new Vector3(scale, scale, scale);
         }
 

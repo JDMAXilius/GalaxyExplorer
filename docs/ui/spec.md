@@ -84,7 +84,7 @@ Reference: board **A - Dock**.
 | Poke | tile pushes 4 mm in |
 | Open scene | keeps a cyan underline, 0.5 mm |
 | Drag bar | 60 × 1.6 mm, white at 55%, under the plate |
-| Small buttons | 9 mm square, radius 2 mm — Recenter and Help |
+| Small buttons | 9 mm square, radius 2 mm — Settings, Recenter and Help, 12 mm apart |
 
 Each tile is a **picture of the place** with its **name written on the image**, bottom-left, over a soft dark
 foot (`ui_tile_foot`, transparent at the top to 75% black at the bottom, 26 mm tall). Only the three tiles that
@@ -107,6 +107,7 @@ Reference: board **B - Panels, tags, hints**.
 | Tag, hover | grows 15%, fills `accent/cyan`, text goes to `#0E1418` |
 | Tag, selected | `surface/plate` with a 0.5 mm `accent/cyan` outline |
 | Hint card | 110 × 60 mm | radius 8 mm, a 14 mm cyan ring, title, one line of body |
+| Utility window | 120 × 102 mm | `surface/plate`, radius 6 mm. 5 mm padding, so 110 mm of content. Title row, a 110 × 2 mm rail with an 8 mm knob (hit area 12 mm tall), two 110 × 12 mm toggles, three 34 × 14 mm text-size buttons 3 mm apart. Not exported from Figma — built from the tokens above |
 
 A hairline leader runs from a tag to its point on the galaxy. Hint cards appear twice, once, after the intro
 places the Earth pin; each clears when the player does the thing, or after six seconds.

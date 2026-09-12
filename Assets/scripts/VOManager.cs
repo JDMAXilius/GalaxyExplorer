@@ -27,6 +27,65 @@ namespace GalaxyExplorer
             }
         }
 
+        // Narration-only mute (GDD 11, CS-076). Static rather than a field on the instance because the setting
+        // outlives the component: the VOManager lives in a view scene that is loaded and unloaded under the
+        // player, while the preference belongs to the player. Loaded lazily from PlayerPrefs on first read, so
+        // it is correct before any Awake has run.
+        private const string NarrationMutedPrefsKey = "GalaxyExplorer.NarrationMuted";
+
+        private static bool narrationEnabled = true;
+        private static bool narrationLoaded;
+
+        /// <summary>
+        /// Whether spoken narration plays. Off silences the voice alone and leaves music and effects be, which
+        /// is the point: a player who knows the copy still wants the room to sound like something.
+        /// </summary>
+        public static bool NarrationEnabled
+        {
+            get
+            {
+                if (!narrationLoaded)
+                {
+                    narrationEnabled = PlayerPrefs.GetInt(NarrationMutedPrefsKey, 0) == 0;
+                    narrationLoaded = true;
+                }
+
+                return narrationEnabled;
+            }
+
+            set
+            {
+                // Through the getter, so a first write that happens to match the in-memory default still
+                // compares against what was actually stored.
+                if (NarrationEnabled == value)
+                {
+                    return;
+                }
+
+                narrationEnabled = value;
+                PlayerPrefs.SetInt(NarrationMutedPrefsKey, value ? 0 : 1);
+                PlayerPrefs.Save();
+
+                if (!value)
+                {
+                    StopAll();
+                }
+            }
+        }
+
+        /// <summary>Fades out and clears whatever is being said, wherever it is being said from.</summary>
+        private static void StopAll()
+        {
+            foreach (var manager in FindObjectsByType<VOManager>(FindObjectsSortMode.None))
+            {
+                // Stop starts a coroutine, which an inactive component cannot do.
+                if (manager != null && manager.isActiveAndEnabled)
+                {
+                    manager.Stop(true);
+                }
+            }
+        }
+
         [SerializeField]
         private float FadeOutTime = 2.0f;
 
@@ -119,7 +178,9 @@ namespace GalaxyExplorer
         {
             bool clipWillPlay = false;
 
-            if (VOEnabled)
+            // Gated at the queue rather than at the audio source: narration that was never queued cannot
+            // resurface when something later drains the queue.
+            if (VOEnabled && NarrationEnabled)
             {
                 if (replaceQueue)
                 {

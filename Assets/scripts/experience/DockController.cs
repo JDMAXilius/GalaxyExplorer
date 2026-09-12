@@ -3,6 +3,7 @@
 using System.Collections.Generic;
 using GalaxyExplorer.XR;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace CosmicSimulation
 {
@@ -34,7 +35,15 @@ namespace CosmicSimulation
         [SerializeField] private GEButton passthroughButton;
         [SerializeField] private GEButton recenterButton;
         [SerializeField] private GEButton helpButton;
+        [SerializeField] private GEButton utilityButton;
         [SerializeField] private Transform dragBar;
+
+        [Header("Utility window")]
+        [SerializeField]
+        [Tooltip("Settings window opened by the button under the dock. Instantiated on first use as a sibling " +
+                 "of the dock, the way the layout pop-up is, so it does not inherit the dock's tilt or its " +
+                 "millimetre canvas scale.")]
+        private UtilityWindow utilityWindowPrefab;
 
         [Header("Placement")]
         [SerializeField]
@@ -98,6 +107,8 @@ namespace CosmicSimulation
         }
 
         private readonly List<DockTile> _tiles = new List<DockTile>();
+        private UtilityWindow _utility;
+        private bool _warnedNoUtility;
         private Camera _camera;
         private float _palmTimer;
         private bool _palmLatched;
@@ -171,10 +182,53 @@ namespace CosmicSimulation
             {
                 helpButton.OnClick.AddListener(ShowHelp);
             }
+
+            if (utilityButton != null)
+            {
+                utilityButton.OnClick.AddListener(ToggleUtility);
+            }
         }
 
         /// <summary>Replays the one-time hint cards. F-05 and F-32: Help is how a player asks to see them again.</summary>
         public void ShowHelp() => HintCards.Replay();
+
+        // ---------- the utility window
+
+        /// <summary>Opens or closes the settings window (GDD 8.2): scale, mute, narration, text size.</summary>
+        public void ToggleUtility() => EnsureUtility()?.Toggle();
+
+        /// <summary>The settings window, made the first time anybody asks for it. Null if none was assigned.</summary>
+        public UtilityWindow Utility => EnsureUtility();
+
+        // Spawned on demand rather than shipped inside the dock prefab: it is a sibling, not a child, because a
+        // child would inherit both the dock's 25-degree tilt and the 0.001 scale of the dock's own canvas. This
+        // is the same arrangement ExperienceWiring gives the layout pop-up.
+        private UtilityWindow EnsureUtility()
+        {
+            if (_utility != null)
+            {
+                return _utility;
+            }
+
+            if (utilityWindowPrefab == null)
+            {
+                if (!_warnedNoUtility)
+                {
+                    _warnedNoUtility = true;
+                    Debug.LogWarning(
+                        "DockController: no utility window prefab is assigned, so the settings button does " +
+                        "nothing. Run Cosmic Simulation > Build UI Prefabs, which builds it and assigns it.",
+                        this);
+                }
+
+                return null;
+            }
+
+            _utility = Instantiate(utilityWindowPrefab, transform.parent);
+            _utility.name = "utility_window";
+            _utility.gameObject.SetActive(false);
+            return _utility;
+        }
 
         // ---------- building
 
@@ -375,9 +429,21 @@ namespace CosmicSimulation
                 helpButton.gameObject.SetActive(visible);
             }
 
+            if (utilityButton != null)
+            {
+                utilityButton.gameObject.SetActive(visible);
+            }
+
             if (!visible && popup != null)
             {
                 popup.Close();
+            }
+
+            // Hidden with the dock rather than left floating: it opened from the dock and belongs beside it.
+            // Asked for only if one was ever made — this must not be what brings the window into existence.
+            if (!visible && _utility != null)
+            {
+                _utility.Close();
             }
         }
 
@@ -392,6 +458,19 @@ namespace CosmicSimulation
             }
 
             WatchPalm();
+            WatchKeyboard();
+        }
+
+        // The desktop equivalent of the settings button under the dock. Read here rather than in
+        // DesktopMouseInput for the same reason DesktopDock reads Tab for itself: the control belongs to the
+        // dock, and U is not spoken for anywhere else (GDD 5.3).
+        private void WatchKeyboard()
+        {
+            var keyboard = Keyboard.current;
+            if (keyboard != null && keyboard.uKey.wasPressedThisFrame)
+            {
+                ToggleUtility();
+            }
         }
 
         private void WatchPalm()
