@@ -47,6 +47,11 @@ namespace CosmicSimulation
         private string failedMessage = "{0} did not open. Your room is back - pick another place from the menu.";
 
         [SerializeField]
+        [TextArea(1, 3)]
+        [Tooltip("Shown when the intro still has the room and nowhere can be opened yet. {0} is the place's name.")]
+        private string busyMessage = "Just a moment - the introduction is still running. {0} opens as soon as it ends.";
+
+        [SerializeField]
         [Tooltip("Stands in for the name when a module has none, so the sentence still reads.")]
         private string unnamedPlace = "That place";
 
@@ -124,6 +129,23 @@ namespace CosmicSimulation
             if (notice != null)
             {
                 notice.Show(notice.Compose(notice.notReadyMessage, module));
+            }
+        }
+
+        /// <summary>
+        /// Says that the app is not ready to go anywhere yet, because onboarding still has the room.
+        ///
+        /// Added because this case was the one silence nobody could diagnose: while the intro is running,
+        /// <c>ExperienceDirector.Switch</c> refuses every dock tile and every destination tag, and the player
+        /// pinching a tag saw absolutely nothing happen - no movement, no message, no difference between "wait
+        /// a moment" and "this app is broken".
+        /// </summary>
+        public static void Busy(ExperienceModule module)
+        {
+            var notice = Resolve();
+            if (notice != null)
+            {
+                notice.Show(notice.Compose(notice.busyMessage, module));
             }
         }
 

@@ -118,10 +118,30 @@ namespace CosmicSimulation
         public bool IsSwitching => _switching != null;
 
         /// <summary>
+        /// How long onboarding is allowed to claim the app before this stops believing it, in seconds.
+        ///
+        /// The intro is about half a minute: a logo, a placement step, the solar system, then an 8 s
+        /// auto-transition to the galaxy. Forty-five seconds is comfortably longer than any path through it and
+        /// short enough that a player who has hit the stuck case is not left poking a dead app for a minute and
+        /// a half. It is a backstop, not a schedule - a healthy intro raises its own event and this never fires.
+        /// </summary>
+        private const float IntroWatchdogSeconds = 45f;
+
+        /// <summary>
         /// True while the app is still in onboarding. There is no flag anywhere that says so: <see cref="IntroFlow"/>
         /// keeps its stage in a private field, <c>TransitionManager.IsInIntroFlow</c> is already false on the intro's
         /// last stage, and <c>ViewLoader.IsIntro()</c> goes false as soon as the intro loads the solar system. What is
         /// honest is the intro's own end event, so this reads "an IntroFlow exists and it has not raised it yet".
+        ///
+        /// <para><b>With a watchdog, because the honest reading has a failure mode that takes the whole app with
+        /// it.</b> <c>IntroFlow</c> raises its end event from <c>OnStageTransition</c>, which is driven by
+        /// FlowManager's timed stages. If the flow never reaches its galaxy stage - and it does not, for
+        /// instance, when play mode is entered with a view scene already open, so the intro's own placement
+        /// step has nothing to place - the event is never raised, this property is true forever, and
+        /// <see cref="Switch"/> refuses every dock tile and every destination tag for the rest of the session.
+        /// The player sees an app where nothing whatsoever responds and no error anywhere. That is a much worse
+        /// failure than the one refusing a mid-intro switch protects against, so after
+        /// <see cref="IntroWatchdogSeconds"/> this stops waiting and says so once.</para>
         /// </summary>
         public bool IntroRunning
         {
@@ -135,9 +155,41 @@ namespace CosmicSimulation
                 // Bound lazily as well as in Awake: an IntroFlow lives in the boot scene while this lives in
                 // core_systems, and nothing guarantees the load order between them stays that way.
                 BindIntro();
-                return _introFlow != null;
+                if (_introFlow == null)
+                {
+                    return false;
+                }
+
+                // The clock starts the first time anybody asks, not at Awake: before that there may be no
+                // IntroFlow to wait for at all, and starting it early would let a slow scene load eat the grace.
+                if (_introWatchdogStarted <= 0f)
+                {
+                    _introWatchdogStarted = Time.unscaledTime;
+                    return true;
+                }
+
+                if (Time.unscaledTime - _introWatchdogStarted < IntroWatchdogSeconds)
+                {
+                    return true;
+                }
+
+                if (!_saidIntroOverran)
+                {
+                    _saidIntroOverran = true;
+                    Debug.LogWarning(
+                        $"ExperienceDirector: the intro has been running for over {IntroWatchdogSeconds:0} s " +
+                        "without raising OnIntroFinished, so it is being treated as over. Every dock tile and " +
+                        "every destination tag was being refused until now. The usual cause is entering play " +
+                        "mode with a view scene already open, which leaves IntroFlow's placement step with " +
+                        "nothing to place.", this);
+                }
+
+                return false;
             }
         }
+
+        private float _introWatchdogStarted;
+        private bool _saidIntroOverran;
 
         private void Awake()
         {
@@ -372,7 +424,10 @@ namespace CosmicSimulation
             // place of its own, and a poke made a minute earlier arriving on top of that would be a surprise.
             if (IntroRunning)
             {
+                // The player is owed an answer. Logging alone is what made this indistinguishable from a dead
+                // tag: they pinch, nothing happens, nothing anywhere says why.
                 Debug.Log($"ExperienceDirector: '{module.Id}' ignored, the intro is still running.", this);
+                SwitchNotice.Busy(module);
                 return;
             }
 
