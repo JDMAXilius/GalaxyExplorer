@@ -18,7 +18,7 @@ MonoBehaviour:
   SecondLine: 
   DockThumbnail: {fileID: 0}
   SceneName: 
-  ContentPrefab: {fileID: 0}
+  ContentPrefab: {fileID: 8965997080532947227, guid: 964f6970c89bd4f4a96ded09108bd465, type: 3}
   Environment: 2
   Panel:
     Title: Homunculus Nebula

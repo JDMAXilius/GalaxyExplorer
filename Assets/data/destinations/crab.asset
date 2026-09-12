@@ -18,7 +18,7 @@ MonoBehaviour:
   SecondLine: 
   DockThumbnail: {fileID: 0}
   SceneName: 
-  ContentPrefab: {fileID: 0}
+  ContentPrefab: {fileID: 8177246022835991511, guid: e1f1dfd49a05c1c4891c740050355f5e, type: 3}
   Environment: 2
   Panel:
     Title: Crab Nebula

@@ -74,7 +74,7 @@ Builds/Quest3/             GalaxyExplorer.apk (git-ignored)
 3. `ViewLoader` loads view scenes additively and keeps a back stack; `TransitionManager` animates content between views (zoom in/out) and toggles `DesktopMouseInput.InputEnabled` during transitions.
 4. `GlobalMenuManager` decides which menu buttons show per view; platform switch picks the desktop HUD, GGV menu, or the hand menu (Quest3).
 
-**[planned]** `ExperienceDirector` sits on `GEManagers`, owns the list of `ExperienceModule`s, and calls `ViewLoader.LoadViewAsync` / `UnLoadView` directly (no back stack, no zoom). `TransitionManager` remains for the fade and for restoring pulled objects on switch. The original intro (logo → Earth placement → galaxy, `IntroFlow` + `FlowManager`) is kept; two one-time hint cards follow placement (`OnboardingManager` reused); the app then lands in the Milky Way module with the dock shown.
+**[planned]** `ExperienceDirector` sits on `GEManagers`, owns the list of `ExperienceModule`s, and calls `ViewLoader.LoadViewAsync` directly (no back stack, no zoom). A module without a `SceneName` opens from its `ContentPrefab` instead, spawned under a content root the director owns; on every switch the director closes all open view scenes but the target and adopts the target if the boot flow already opened it, so scenes cannot pile up. `TransitionManager` remains for the fade and for restoring pulled objects on switch. The original intro (logo → Earth placement → galaxy, `IntroFlow` + `FlowManager`) is kept; two one-time hint cards follow placement (`OnboardingManager` reused); the app then lands in the Milky Way module with the dock shown.
 
 ---
 
@@ -121,7 +121,9 @@ ExperienceModule : ScriptableObject
 
 ExperienceDirector : MonoBehaviour (GEManagers)
   IReadOnlyList<ExperienceModule> Modules; ExperienceModule Current;
-  void Switch(ExperienceModule m);        // restore current, fade, unload, load, environment, grow-in, narration
+  void Switch(ExperienceModule m);        // restore current, environment, close every other view scene,
+                                          // adopt/load the scene OR spawn ContentPrefab, grow-in, narration
+                                          // (a module with neither warns once and does nothing)
   void ApplyLayout(LayoutPreset p);
   event Action<ExperienceModule> Changed;
 
@@ -194,7 +196,7 @@ New moons follow `moon_force_grab_root` exactly (script `buildmoon.cs` pattern: 
 - Passthrough forced by the dock toggle overrides the module mode until toggled back or the module changes.
 
 ### 7.3 New content renderers **[planned]**
-- **Nebula overlay:** 4–6 alpha planes, 10–20 cm apart along the view axis, each slowly rotating (±0.5°/s), soft-depth fade shader (unlit, `Blend SrcAlpha OneMinusSrcAlpha`, no ZWrite); layers derived from one image by luminance bands + Higgsfield-generated depth variants.
+- **Nebula overlay** *(built, CS-051)*: **4** alpha planes (the low end of the 4–6 range — each is a full-coverage transparent quad and the black halo behind is a fifth layer, so overdraw is the binding cost on Quest), 70 cm wide, **10 cm** apart along the view axis, each turning about its own normal at ±0.5°/s in alternating directions. Built by `Assets/scripts/Editor/NebulaPrefabBuilder.cs` (**Cosmic Simulation → Build Nebula Prefabs**) into `Assets/prefabs/nebulae/nebula_<id>_prefab.prefab` + `Assets/materials/nebulae/`, and assigned to each destination module's `ContentPrefab`, which is what `ExperienceDirector.OpenDestination` instantiates. Runtime half is `CosmicSimulation.NebulaOverlay` (billboards the stack, spaces and spins the cards). Shader `CosmicSimulation/NebulaCard` (`Assets/shaders/nebula_card_shader.shader`): unlit, `Blend SrcAlpha OneMinusSrcAlpha, One OneMinusSrcAlpha` (the separate alpha blend keeps the eye-buffer alpha correct for the passthrough compositor), no ZWrite, target 3.5, stereo macros, no geometry stage. Layers are derived from **one plate by luminance band** — the plates are photographs with no usable alpha, so alpha comes from a feathered luminance window per card, plus a radial edge fade. Two seam fades: a **near fade** (view-space depth, always on) and an **intersection fade** against `_CameraDepthTexture` behind the `NEBULA_SOFT_DEPTH` keyword. `NebulaOverlay` turns that keyword and the camera's `DepthTextureMode.Depth` on together and puts them back on disable, so the depth prepass is paid only while an overlay is open; if the depth texture is missing the shader reads it as "no occluder" and the card simply does not get the intersection fade. CS-052 replaces the plates with purpose-made layer sets; only the band values need retuning.
 - **Galaxy field:** `Graphics.DrawMeshInstanced` billboards (≤ 500) with an unlit alpha atlas shader; per-instance tint/rotation/size in a `MaterialPropertyBlock`; drift in a `Job` or simple per-frame rotation of the parent.
 - **Cosmic Web:** editor script generates ~200 k points along 3D Voronoi cell edges + node clusters → `ComputeBuffer` rendered by the star point-sprite shader with a violet ramp; whole volume rotates via a matrix uniform.
 - **Andromeda:** `milky_way_prefab` duplicate with a new `StarsData` set: flatter distribution, white core colour, dust ring band colour, higher tilt.

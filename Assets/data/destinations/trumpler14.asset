@@ -18,7 +18,7 @@ MonoBehaviour:
   SecondLine: 
   DockThumbnail: {fileID: 0}
   SceneName: 
-  ContentPrefab: {fileID: 0}
+  ContentPrefab: {fileID: 264158519724105097, guid: d773a3bdf7206a544a7c6f0265a9aef9, type: 3}
   Environment: 2
   Panel:
     Title: Trumpler 14

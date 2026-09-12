@@ -5,16 +5,20 @@ using System.Collections;
 using System.Collections.Generic;
 using GalaxyExplorer;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CosmicSimulation
 {
     /// <summary>
-    /// Takes the player from one place to another. The dock asks for a module; this loads its scene, sets how much
-    /// of the room shows, starts its narration and grows the content in. There is no drill-down and no Back: every
-    /// place is one poke away, which is the whole point of the dock.
+    /// Takes the player from one place to another. The dock asks for a module; this opens its content, sets how
+    /// much of the room shows, starts its narration and grows the content in. There is no drill-down and no Back:
+    /// every place is one poke away, which is the whole point of the dock.
     ///
-    /// Scene loading still goes through <see cref="ViewLoader"/>, so the existing content root, faders and camera
-    /// rig keep working; this class owns the ordering and the state.
+    /// A place is either a scene or a prefab. Three of the seven were inherited from Galaxy Explorer as scenes and
+    /// keep loading through <see cref="ViewLoader"/>, so the existing content root, faders and camera rig keep
+    /// working. The rest are prefabs spawned under a root this director owns: adding scenes for them would buy
+    /// nothing but load time and four more things to keep in sync. Both kinds go through the same sequence, so
+    /// nothing downstream has to know which it is.
     /// </summary>
     public class ExperienceDirector : MonoBehaviour
     {
@@ -30,7 +34,14 @@ namespace CosmicSimulation
         [Tooltip("Seconds a new experience takes to grow in from a point.")]
         private float growInSeconds = 0.6f;
 
+        [SerializeField]
+        [Tooltip("Where a module's ContentPrefab is spawned. One is made at the origin when this is left empty.")]
+        private Transform contentRoot;
+
         private readonly List<GameObject> _destinationObjects = new List<GameObject>();
+        private readonly HashSet<ExperienceModule> _warnedEmpty = new HashSet<ExperienceModule>();
+        private GameObject _prefabContent;
+        private bool _ownsContentRoot;
         private Coroutine _switching;
 
         public static ExperienceDirector Instance { get; private set; }
@@ -52,6 +63,11 @@ namespace CosmicSimulation
             if (Instance == this)
             {
                 Instance = null;
+            }
+
+            if (_ownsContentRoot && contentRoot != null)
+            {
+                Destroy(contentRoot.gameObject);
             }
         }
 
@@ -85,6 +101,21 @@ namespace CosmicSimulation
                 return;
             }
 
+            // Refuse before anything moves. Half a switch — room cleared, narration stopped, nothing to look at —
+            // is worse than an unresponsive tile, and the tile stays live for when the content does arrive. Once
+            // per module, or an unfinished tile would fill the log every time the player pokes it.
+            if (string.IsNullOrEmpty(module.SceneName) && module.ContentPrefab == null)
+            {
+                if (_warnedEmpty.Add(module))
+                {
+                    Debug.LogWarning(
+                        $"ExperienceDirector: module '{module.Id}' has neither SceneName nor ContentPrefab, so " +
+                        "there is nothing to open. Its tile does nothing until one is set.", module);
+                }
+
+                return;
+            }
+
             _switching = StartCoroutine(SwitchRoutine(module));
         }
 
@@ -92,7 +123,6 @@ namespace CosmicSimulation
 
         private IEnumerator SwitchRoutine(ExperienceModule module)
         {
-            var previous = Current;
             Current = module;
 
             // Whatever the player pulled out belongs to the place they are leaving.
@@ -110,26 +140,34 @@ namespace CosmicSimulation
                 EnvironmentController.Instance.Set(module.Environment);
             }
 
-            if (previous != null && !string.IsNullOrEmpty(previous.SceneName))
-            {
-                GalaxyExplorerManager.Instance.ViewLoaderScript.UnLoadView(previous.SceneName, true);
-            }
+            // Everything the last place put in the room goes now, and a prefab instance goes at the same beat a
+            // scene is unloaded. Which module we think was previous is not enough to go on: the original Galaxy
+            // Explorer boot flow opens view scenes of its own, and leaving those behind stacked duplicate content
+            // and duplicate singletons on top of each other.
+            var adopted = UnloadOtherViews(module.SceneName);
+            DestroyPrefabContent();
 
             if (!string.IsNullOrEmpty(module.SceneName))
             {
-                var loaded = false;
-                GalaxyExplorerManager.Instance.ViewLoaderScript.LoadViewAsync(module.SceneName, () => loaded = true);
-                while (!loaded)
+                if (!adopted.IsValid())
                 {
-                    yield return null;
+                    var loaded = false;
+                    GalaxyExplorerManager.Instance.ViewLoaderScript.LoadViewAsync(module.SceneName, () => loaded = true);
+                    while (!loaded)
+                    {
+                        yield return null;
+                    }
                 }
             }
+            else
+            {
+                _prefabContent = Instantiate(module.ContentPrefab, ContentRoot());
+                _prefabContent.name = module.Id;
+            }
 
-            yield return null; // let the scene's own Awake/Start run before we touch its content
+            yield return null; // let the new content's own Awake/Start run before we touch it
 
-            var content = GalaxyExplorerManager.Instance.TransitionManager != null
-                ? GalaxyExplorerManager.Instance.TransitionManager.CurrentActiveScene
-                : null;
+            var content = ResolveContent(adopted);
             if (content != null && growInSeconds > 0f)
             {
                 yield return GrowIn(content.transform, growInSeconds);
@@ -159,6 +197,157 @@ namespace CosmicSimulation
             }
 
             content.localScale = target;
+        }
+
+        // ---------- content: a scene, or a prefab under our own root
+
+        /// <summary>
+        /// Where a module's <see cref="ExperienceModule.ContentPrefab"/> is spawned.
+        ///
+        /// It has to hang off the <see cref="ViewLoader"/>, not the world origin. View-scene content is not
+        /// origin-relative: the intro places the experience in the room by moving and rotating the Loader
+        /// itself (<c>WorldAnchorHandler.CreateWorldAnchor</c>), and every view scene's root follows it. A
+        /// prefab spawned at identity would appear at the player's feet, unrotated and unanchored, while every
+        /// scene-backed experience sat two metres away facing them.
+        /// </summary>
+        private Transform ContentRoot()
+        {
+            if (contentRoot == null)
+            {
+                var loader = GalaxyExplorerManager.IsInitialized
+                    ? GalaxyExplorerManager.Instance.ViewLoaderScript
+                    : null;
+
+                contentRoot = new GameObject("experience_content_root").transform;
+                contentRoot.SetParent(loader != null ? loader.transform : null, false);
+                _ownsContentRoot = true;
+            }
+
+            return contentRoot;
+        }
+
+        private void DestroyPrefabContent()
+        {
+            if (_prefabContent != null)
+            {
+                Destroy(_prefabContent);
+            }
+
+            // Cleared straight away rather than after the deferred Destroy, so the rest of the switch does not
+            // mistake a dying instance for the new content.
+            _prefabContent = null;
+        }
+
+        /// <summary>
+        /// Closes every open view scene except one copy of <paramref name="targetSceneName"/>, whoever opened it,
+        /// and returns that survivor — an invalid scene when the target is not open yet and has to be loaded.
+        /// </summary>
+        private Scene UnloadOtherViews(string targetSceneName)
+        {
+            var keep = default(Scene);
+
+            for (var i = SceneManager.sceneCount - 1; i >= 0; i--)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (!scene.isLoaded || IsStructuralScene(scene))
+                {
+                    continue;
+                }
+
+                // Adopt the first copy of the target and drop the rest: the boot flow having already opened the
+                // scene is the normal case at startup, and loading it again is what produced two of everything.
+                if (!keep.IsValid() && !string.IsNullOrEmpty(targetSceneName) && scene.name == targetSceneName)
+                {
+                    keep = scene;
+                    continue;
+                }
+
+                SceneManager.UnloadSceneAsync(scene);
+            }
+
+            return keep;
+        }
+
+        /// <summary>
+        /// Structure, not a place. Mostly derived rather than named: the app boots into the active scene, and
+        /// the scene that loads views — the one holding the ViewLoader, and this director with it — is by
+        /// definition not a place. (<see cref="GalaxyExplorerManager"/> is no help here: <c>Singleton</c> moves
+        /// its root to DontDestroyOnLoad, so it no longer reports the scene it came from.)
+        ///
+        /// The intro scenes have to be named, though. They are additively loaded like a view but the intro flow
+        /// is standing on them: unloading the placement scene pulls <c>PlacementControl</c> out from under
+        /// <c>IntroFlow</c> mid-sequence, and nothing yet stops a dock poke during onboarding.
+        /// </summary>
+        private static readonly string[] IntroScenes =
+        {
+            "intro_earth_placement_scene",
+        };
+
+        private bool IsStructuralScene(Scene scene)
+        {
+            if (scene == SceneManager.GetActiveScene() || scene == gameObject.scene)
+            {
+                return true;
+            }
+
+            if (System.Array.IndexOf(IntroScenes, scene.name) >= 0)
+            {
+                return true;
+            }
+
+            var loader = GalaxyExplorerManager.IsInitialized ? GalaxyExplorerManager.Instance.ViewLoaderScript : null;
+            return loader != null && scene == loader.gameObject.scene;
+        }
+
+        /// <summary>The object the grow-in scales: our prefab instance, or the open scene's content root.</summary>
+        private GameObject ResolveContent(Scene adopted)
+        {
+            var transitions = GalaxyExplorerManager.Instance.TransitionManager;
+
+            if (_prefabContent != null)
+            {
+                // Readers of CurrentActiveScene (StarBackgroundManager, WorldAnchorHandler) would otherwise
+                // still hold the content we destroyed on the way in, and Unity's fake-null slips past `?.`.
+                if (transitions != null)
+                {
+                    transitions.CurrentActiveScene = _prefabContent;
+                }
+
+                return _prefabContent;
+            }
+
+            // A scene we adopted never went through TransitionManager on our account, so its CurrentActiveScene
+            // can still be pointing at content we just unloaded. Find this scene's own root and correct it.
+            if (adopted.IsValid() && adopted.isLoaded)
+            {
+                var content = FindContent(adopted);
+                if (content != null)
+                {
+                    if (transitions != null)
+                    {
+                        transitions.CurrentActiveScene = content;
+                    }
+
+                    return content;
+                }
+            }
+
+            return transitions != null ? transitions.CurrentActiveScene : null;
+        }
+
+        /// <summary>A view scene's content root is the object carrying its <see cref="TransformHandler"/>.</summary>
+        private static GameObject FindContent(Scene scene)
+        {
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                var handler = root.GetComponentInChildren<TransformHandler>(true);
+                if (handler != null)
+                {
+                    return handler.gameObject;
+                }
+            }
+
+            return null;
         }
 
         // ---------- destinations (nebulae opened from the Milky Way map)

@@ -18,7 +18,7 @@ MonoBehaviour:
   SecondLine: 
   DockThumbnail: {fileID: 0}
   SceneName: 
-  ContentPrefab: {fileID: 0}
+  ContentPrefab: {fileID: 8678201033224882983, guid: f77eae3dbe0511a40a96689172f7c934, type: 3}
   Environment: 2
   Panel:
     Title: NGC 1501
