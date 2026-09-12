@@ -333,6 +333,11 @@ namespace CosmicSimulation
                         "there is nothing to open. Its tile does nothing until one is set.", module);
                 }
 
+                // Outside the once-per-module gate above: the log is for us and repeats are noise, but the
+                // player is owed an answer to every poke, and a tile that answers only the first time reads
+                // as broken. Worded as "not built yet" rather than as a failure, because that is what it is —
+                // four of the seven places are legitimately sceneless until their content lands.
+                SwitchNotice.NotReady(module);
                 return;
             }
 
@@ -477,6 +482,10 @@ namespace CosmicSimulation
                 $"ExperienceDirector: scene '{module.SceneName}' for module '{module.Id}' did not open — {reason}. " +
                 "Check that it is enabled in Build Settings and that the module's SceneName matches it. Handing the " +
                 "room back in passthrough; the dock stays live and the tile can be poked again.", this);
+
+            // Said out loud as well as logged. This is the case the player cannot make sense of on their own:
+            // the place they were in is gone, the room has come back, and nothing else would explain why.
+            SwitchNotice.FailedToOpen(module);
 
             Current = null;
 

@@ -90,6 +90,11 @@ fact sheets. NASA does not endorse this app.
 
 **Buttons:** Source code · Privacy · Close
 
+The store-ready version of this block (with version number, MIT attribution
+line and placeholder link URLs) is `docs/store/ABOUT_COPY.md`. The live prefab
+still carries six Microsoft links, not the two above — see
+`docs/store/STORE_READINESS_CHECKLIST.md` (CS-086).
+
 ## Messages
 
 | id | text |
@@ -98,3 +103,12 @@ fact sheets. NASA does not endorse this app.
 | narration_off | Narration off |
 | narration_on | Narration on |
 | layout_restored | Everything back in place |
+| place_not_ready | {0} is not ready yet. It arrives in a later update. |
+| place_failed | {0} did not open. Your room is back - pick another place from the menu. |
+
+`{0}` is the tile's name from the table at the top of this file. The two
+messages are deliberately different: a place with no content yet has not been
+built, which is not a failure and should not read like one, while a place that
+was meant to open and could not also has to account for the room reappearing.
+Both live as defaults on `SwitchNotice` and are shown by `ExperienceDirector`;
+`CopyImporter` does not read this file.

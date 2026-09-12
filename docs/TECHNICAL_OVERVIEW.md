@@ -43,7 +43,7 @@ Assets/
     intro_scripts/         IntroFlow, placement, logo
     controller_tracking_scripts/ ControllerTransformTracker
     Editor/                PlayFromViewScene
-    experience/  [planned] ExperienceModule, ExperienceDirector, EnvironmentController, LayoutPreset
+    experience/  [planned] ExperienceModule, ExperienceDirector, EnvironmentController, LayoutPreset, SwitchNotice
     interaction/ [planned] FreePlacementSolver, LabelButton, TwoHandTransformer
     ui/          [planned] DockController, DockPopup, InfoPanel, MoonLabel
     desktop/     [planned] DesktopDock
@@ -123,9 +123,17 @@ ExperienceDirector : MonoBehaviour (GEManagers)
   IReadOnlyList<ExperienceModule> Modules; ExperienceModule Current;
   void Switch(ExperienceModule m);        // restore current, environment, close every other view scene,
                                           // adopt/load the scene OR spawn ContentPrefab, grow-in, narration
-                                          // (a module with neither warns once and does nothing)
+                                          // (a module with neither warns once and does nothing,
+                                          //  and says so once per poke through SwitchNotice)
   void ApplyLayout(LayoutPreset p);
   event Action<ExperienceModule> Changed;
+
+SwitchNotice : MonoBehaviour (makes itself, DontDestroyOnLoad)
+  static void NotReady(ExperienceModule m);   // "not built yet" - the refusal, before anything moves
+  static void FailedToOpen(ExperienceModule m); // the throw/timeout, after the room came back passthrough
+  void Show(string message); void Dismiss();  // builds its own canvas: world-space in the headset
+                                          //  (parked above the dock, mm scale, no plate), screen-space
+                                          //  above the desktop dock; auto-fades, Escape, or a new place
 
 EnvironmentController : MonoBehaviour (rig)
   void Set(EnvironmentMode m, float fade = .4f);   // dim quad alpha, VR mode, halo pool
@@ -141,6 +149,7 @@ LayoutPreset : ScriptableObject
 ### 5.6 UI layer
 - **[existing]** `PlanetInfoCard` (world-space canvas + `CanvasGroup`; data-driven title/subtitle/facts/description; side-switching, constant size, fades with body state and transitions) on every body prefab; `DesktopMenuManager` (bottom-right HUD; Help/Mute/Recenter/Reset/Back/About; controls overlay; mute in `PlayerPrefs`, `AudioListener.volume`); `UiWorldPreview` planet bar (to be replaced); `AboutSlate`; hand menu prefabs (`hand_menu_offset`, `GEButton`s).
 - **[planned]** `InfoPanel` (rename/extend `PlanetInfoCard`: body/scene/moon variants, superscript mass, outline material), `DockController` (world-space canvas from Figma export; tiles bound to modules; `XRPokeFilter` buttons; grab bar = `ManipulationHandler` on the dock root; palm-up show/hide via `XRInputRig` palm normal), `DockPopup`, `MoonLabel`, `DesktopDock`.
+- **[built, CS-062]** `SwitchNotice` — the player-facing half of the CS-037 recovery. A switch that is refused (no scene and no content prefab) or that fails (the loader throws, or the scene never arrives inside the 20 s bound) used to be log-only, so a tile that cannot open was indistinguishable from a dead one. It has no prefab: it builds its own canvas on first use, world-space above the dock in the headset and screen-space above `DesktopDock` on the monitor, white outlined text with no plate. Nothing interactive and no raycaster, so it can neither block a poke nor delay the next switch.
 
 ---
 
@@ -248,7 +257,7 @@ arrangements, which the force solvers then follow.
 
 - `AudioService` + `AudioServiceProfile` (SO in `Resources`): `AudioId` enum → clip mapping for UI/interaction sounds; 3D sources pooled (`Pools/`).
 - `VOManager`: single narration channel; queue; `allowReplay`; `Stop(true)` on experience switch.
-- Music: `MovableAudioSource`/scene sources today; **[planned]** `MusicController` crossfade by `EnvironmentMode`.
+- Music: `MusicController` (`Assets/scripts/experience/`) on the `cosmic_systems` root — two looping 2D `AudioSource`s it makes itself, crossfaded (2 s) on `EnvironmentController.ModeChanged`, one bed per `EnvironmentMode` (mapping: decisions D-006). Re-entering a state never restarts its bed; a state with no clip fades to silence and stops. Ducks to 55 % while `VOManager.IsPlaying`. Not routed through `AudioServiceProfile.musicAudioMixer`: that mixer's groups exist to be muted and unmuted by the legacy per-view snapshots, which would fight a per-source fade. The five inherited beds under `MusicAudioSources` are switched off by *Install Runtime Systems*.
 - Mute: `AudioListener.volume` (all) — **[planned]** narration-only mute via `VOManager` gain.
 - Import: clips > 20 s **Streaming** (Android override by `Quest3ProjectSetup`), Vorbis q≈0.7; short UI clips Decompress On Load.
 - Placeholder narration: Windows Speech (Zira, 44.1 kHz mono WAV) via `moon_vo.ps1` pattern; real voice via Higgsfield `generate_audio` on approval.
@@ -339,7 +348,7 @@ Rules learned the hard way:
 - Original intro/placement flow and hand-menu buttons remain until the dock replaces them (Phase 2).
 - Galaxy POI cards (`CardPOI`, `poi_text_card_*` textures) are legacy; tags replace them (Phase 4).
 - `UiWorldPreview` planet bar renders each body with a live camera; replaced by `DesktopDock` thumbnails (Phase 2).
-- About links still point at Microsoft's privacy/terms pages; replace before any store submission.
+- About links still point at Microsoft's privacy/terms pages: six `Hyperlink` instances (`Assets/scripts/Hyperlink.cs`) under `links_offset` in `Assets/prefabs/about_slate_prefabs/about_slate_prefab.prefab` (`hl2_for_devs`, `galaxy_explorer`, `github`, `original_galaxy_explorer`, `privacy`, `microsoft_services_agreement`), each a prefab-override on nested `link_prefab.prefab`. `docs/copy/ui.md`'s About section only calls for two (Source code, Privacy) plus Close, so this is prefab surgery — delete four, re-point two — not a text swap; `CopyImporter` does not touch this file, so hand-authoring in the prefab is the only path today. See `docs/store/STORE_READINESS_CHECKLIST.md` (CS-086).
 - Legacy TouchScript remains for touchscreens; mouse is handled by `DesktopMouseInput`.
 - Two `PlanetPreviewController` components on `planet_previews` (one legacy with 20 slots) — remove with the bar.
 - `main_scene - Copy.unity` (user backup) sits in `Assets/scenes`; move to `_backup_original/` in Phase 0.
