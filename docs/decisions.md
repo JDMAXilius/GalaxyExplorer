@@ -8,6 +8,18 @@ you change one, update the affected docs in the same commit.
 
 ## 2026-09-12 — Phase 7 (terminal session)
 
+### D-011 — Source bulk star and galaxy catalogues from AT-HYG and OpenNGC, and treat Gaia DR3's licence as an open question until someone confirms it in writing
+**Constraint on the D-010 expansion, 12 September 2026.** The expansion needs bulk catalogue data to place stars and galaxies at real positions. Gaia is the obvious source and is the wrong first choice.
+
+The research pass (`docs/research/scale_and_rendering.md`) reports **Gaia DR3 data as CC BY-NC 3.0 IGO - non-commercial** - and notes it is widely and wrongly assumed to be BY-SA. **This has not been independently confirmed.** The attempt was made and failed: the ESA Gaia archive page renders its terms client-side and returned nothing fetchable, and this session's web-search budget was already exhausted by the research agents. So it is recorded as unconfirmed.
+
+Unconfirmed is enough to act on here, because the asymmetry is severe. This app is heading for a paid Meta Store listing, so a non-commercial clause on bundled data is a licensing defect that ships inside the APK and is not fixable after release. Against that, the cost of avoiding Gaia is close to zero:
+
+- **AT-HYG** (CC BY-SA 4.0) for stars - permissive, commercial-safe, and already the right shape for a star field.
+- **OpenNGC** for galaxies - and it is the better source regardless, because it hands over Hubble type, position angle, axis ratio and magnitude in a single row, which is very nearly the profile the galaxy builder now takes.
+
+So: **do not pull Gaia bulk data into the build.** If someone later wants it, the gate is a written confirmation of the licence recorded in this file, not an assumption. Every catalogue that does get used is logged in `Assets/_sources/CREDITS.md` with its licence, per the standing rule from D-003.
+
 ### D-010 — The one-to-one contract with the reference app is lifted
 **Owner decision, 12 September 2026, explicit.** "It doesn't matter if it doesn't follow the GDD... we want to expand more."
 

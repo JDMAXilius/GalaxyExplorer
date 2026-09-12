@@ -351,6 +351,8 @@ Sizes and colours: GDD §8. *Acceptance for CS-017:* every frame exported; spec 
 | CS-087 | CC | Desktop key map still points at the retired drill-down navigation (`Backspace` → Back) and at the legacy menu; make GDD §5.3 true and retire the live-camera planet bar | CS-029, CS-061 | done |
 | CS-088 | TERM | Prefab surgery: delete the planet bar from `menu_managers.prefab` (11 `UiWorldPreview` tiles, both `PlanetPreviewController`s, the row itself) and the dead `PlanetPreviewController` block in `ForceSolver.OnPointerDown` | CS-087 | todo |
 | CS-123 | TERM | 90 dangling prefab-instance overrides in `core_systems_scene` target fileIDs that no longer exist in `menu_managers.prefab` (47), `hand_menu_left_prefab` (21), `hand_menu_right_prefab` (21) and `ge_xr_rig.prefab` (1) — pre-existing, inert today because Unity drops an override whose target is gone, but they hide any override that *was* load-bearing and they will be churned by CS-088's and CS-111's surgery anyway | CS-088, CS-111 | todo |
+| CS-124 | CC | `DrawStars` scales badly: `AttachAllInOrder` re-attaches every command buffer on every camera whenever a drawer appears (quadratic in drawer count, and it fires in the frame the player pokes a tile), and `Update` writes ~10 material properties per layer per frame | — | todo |
+| CS-125 | CC | Galaxy LOD by vertex-count truncation is free but currently impossible: `SpiralGalaxy.GenerateEllipses` emits inner-to-outer and concatenates the second arm after the first, so drawing fewer points deletes the outer arms and one whole arm. Shuffle the bake order so a truncated draw thins the galaxy evenly instead | — | todo |
 | CS-089 | TERM | Desktop controls overlay copy is out of date: it lists `Backspace` back and omits `P` and `F2`–`F8`; rewrite `desktop_help_panel` to GDD §5.3 | CS-087 | todo |
 | CS-039 | TERM | Wire the Earth atmosphere shell (1.025 sphere child + `SunLightReceiver`) onto the Earth prefab — nothing references `earth_atmosphere_material` yet — **and compile-check `planet_atmosphere_rim_shader.shader`, which CS-047 shipped without ever compiling it** | CS-047 | done (12 Sep terminal session; built, run and verified in the editor - the on-screen look still wants a headset) |
 | CS-034 | TERM | Quest Link check: dock poke, dim quad, halo, passthrough toggle | CS-032 | todo |
@@ -644,7 +646,7 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 | CS-115 | TERM | Verify the exported `AndroidManifest.xml` requests only what `docs/store/PRIVACY_POLICY.md` describes and nothing unexpected (e.g. `RECORD_AUDIO`, `INTERNET`) arrived transitively from a package | CS-084, CS-081 | todo |
 | CS-116 | CC | Bundle `License.txt` (the MIT notice) into the build — not confirmed to ship in the APK or be reachable from the About screen today, which is thinner than the licence requires | CS-002 | done (code half; prefab half is CS-117) |
 | CS-117 | TERM | About slate licence page: add a `legal_page` group under `links_offset` holding a `legal_text` (`LegalNoticeText`, notice `GalaxyExplorerLicense`) and an `our_notice_text` (notice `ProjectNotice`), fill `AboutSlate.aboutPage` / `licencePage`, and point one link at `AboutSlate.ToggleLicencePage` — CS-116's in-app half, prefab surgery only | CS-116, CS-086 | todo |
-| CS-118 | TERM | Confirm whether `CommandBuffer.DrawProcedural`'s instance count is doubled under **true Single Pass Instanced** — five call sites default to `instanceCount: 1` (`DrawStars.cs:192`, `OrbitalTrail.cs:238`, `CosmicWebRenderer.cs:391`, and by the same pattern `cosmic_web_points_shader`'s two remaining callers); if Unity does not double it, each renders to one eye only, and the fix is `instanceCount: 2` in C#, not another shader macro. **A passing result on the Android build does not close this** — Android implements the mode as multiview, where the eye index arrives via `gl_ViewID` with no instance doubling involved at all, so it must be tested on a Link session explicitly forced to true single-pass instanced | CS-095 | todo |
+| CS-118 | TERM | Stereo instancing for the three `CommandBuffer.DrawProcedural` sites: measure whether BiRP applies its instance multiplier to an app-injected command buffer, then use `CommandBuffer.SetInstanceMultiplier` (**not** a hardcoded `instanceCount: 2`) | CS-095 | doing (answered by research 12 Sep; one BiRP behaviour left to measure on device) |
 | CS-100 | CC | *(optional, Phase 7)* Remove TouchScript and switch Active Input Handling to Input System only, once nothing depends on it | CS-061, CS-112 | todo |
 | CS-101 | TERM | *(optional, Phase 3)* Re-UV or re-project the Moon and Earth maps so the USGS / Blue Marble upgrades can drop in, or close `dropped` with the reason recorded | CS-005, CS-047 | todo |
 
@@ -978,3 +980,53 @@ the opposite of the truth.**
 7.4 sets no triangle ceiling - it budgets <= 150 draw calls - so draw calls and fill are the numbers to
 argue from, and the shells should share one low-poly sphere rather than ten full-density duplicates,
 since the rim is a per-pixel Fresnel gradient and only its silhouette shows tessellation.
+
+---
+
+## Research note (12 Sep 2026): scale, navigation and the rendering budget
+
+Full findings in `docs/research/scale_and_rendering.md`. The parts that change decisions:
+
+**CS-118 is answered, and the ticket was asking for the wrong fix.** There are **three** real
+`DrawProcedural` sites, not five - `DrawStars.cs:192`, `CosmicWebRenderer.cs:391`,
+`OrbitalTrail.cs:238`; the other two "sites" in the old note were prose in comments, and that wrong
+count was propagated from CS-096 into this file. On **Android the shipping build is multiview**, where
+the Khronos `OVR_multiview` spec has the driver instantiate the draw per view, so `instanceCount` 1 is
+**correct** and a hardcoded 2 would double the geometry on the platform that ships. Under **true
+single-pass instanced** (a forced Link session) the count must be doubled, because
+`UnityInstancing.cginc` derives the eye from the instance id and at count 1 the right eye gets nothing.
+So the fix is `CommandBuffer.SetInstanceMultiplier`, which Unity documents as affecting
+`DrawProcedural`, gated on `XRSettings.stereoRenderingMode` - neither that property nor
+`SetInstanceMultiplier` appears anywhere in `Assets/` today. **The one thing still to measure:** URP is
+documented to call the multiplier automatically; BiRP is not, and whether it applies to an app-injected
+command buffer at a `CameraEvent` has to be tested on device.
+
+**The budget is maximal, not conservative, and has never been measured.** 400,000 point sprites is
+1.6 M triangles across both eyes, which is the whole Quest 3 triangle budget (Meta publishes 1.3-1.8 M).
+The Cosmic Web alone claims about 30% of it. Meanwhile `cosmic_web_content_prefab` has never been
+profiled (CS-066), `andromeda_content_prefab` has never been looked at on a device (CS-103), and the
+Galaxies field - the only existing precedent for drawing many galaxies - does not exist (CS-063/064).
+**Sequencing rule for the expansion: land CS-066, CS-103 and CS-064 and take one real OVR Metrics
+frame-time and per-eye fill reading off a Quest before any hierarchy or catalogue code is written.**
+
+**Navigation: nested destinations, and the camera never moves.** The mechanism already ships -
+`ExperienceDirector.OpenDestination` fades the parent, sizes a halo, captures home, spawns the panel,
+plays narration and grows in. Generalising it from "a nebula inside the Milky Way" to "any place inside
+any place" needs one parent reference on `ExperienceModule` and a breadcrumb row on the dock, which
+keeps GDD 3.1's "the dock is the only navigation" literally true without reviving the Back button
+CS-087 retired. There is a commercial reason as well as a comfort one: Meta rates comfort on an app's
+default experience, "Comfortable" means apps that generally avoid camera movement, and this app is
+Comfortable today - **any camera move between galaxies costs that rating.** The honest cost of the
+diorama model is that you never feel a galaxy is bigger than a solar system, since both are about 1.3 m
+wide on your table; the mitigations are a comparison layout, growing the child out of the exact point on
+the parent it came from, and a known reference object in the copy.
+
+**Galaxy LOD has a clean crossover.** A galaxy on the existing path costs 3 draw calls, 3 instantiated
+materials, 3 ComputeBuffers, 17,200 points, ~757 KB. At 19 px/deg per eye a 15 cm galaxy at 1.5 m is
+~107 px across, so those 17,200 points are two per pixel. Point cloud above ~0.6 m apparent, sprite
+below ~0.2 m, truncated cloud between - but see CS-125, because truncation is unusable until the bake
+order is shuffled.
+
+*Good news found while reading:* the additive star path already handles passthrough alpha on purpose -
+both point shaders are `Blend One One` but compute `a = dot(rgb, 1)`, so eye-buffer alpha accumulates
+with brightness. That matters because the Milky Way runs in Dimmed room with passthrough visible.
