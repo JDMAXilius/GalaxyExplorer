@@ -39,6 +39,12 @@ namespace GalaxyExplorer.XR
             Key.Digit6, Key.Digit7, Key.Digit8, Key.Digit9, Key.Digit0, Key.M,
         };
 
+        // The seven dock tiles, in the order they appear on the dock.
+        private static readonly Key[] ExperienceKeys =
+        {
+            Key.F2, Key.F3, Key.F4, Key.F5, Key.F6, Key.F7, Key.F8,
+        };
+
         private Camera _camera;
         private Transform _grabPoint;
         private GlobalMenuManager _menu;
@@ -293,6 +299,22 @@ namespace GalaxyExplorer.XR
                 ResetView();
             }
 
+            // P previews on the desktop what the passthrough button does in the headset: there is no room to
+            // show through a monitor, so this toggles the dimming and the black backdrop instead.
+            if (keyboard.pKey.wasPressedThisFrame)
+            {
+                CosmicSimulation.EnvironmentController.Instance?.TogglePassthrough();
+            }
+
+            // F2 to F8 jump straight to an experience, in dock order.
+            for (var i = 0; i < ExperienceKeys.Length; i++)
+            {
+                if (keyboard[ExperienceKeys[i]].wasPressedThisFrame)
+                {
+                    SwitchExperience(i);
+                }
+            }
+
             if (_desktopMenu != null && _desktopMenu.IsVisible)
             {
                 if (keyboard.tabKey.wasPressedThisFrame)
@@ -314,6 +336,31 @@ namespace GalaxyExplorer.XR
                     {
                         ToggleBody(slot, menu);
                     }
+                }
+            }
+        }
+
+        // Opens the nth dock experience. Counts only the tiles, so destinations never take a function key.
+        private static void SwitchExperience(int index)
+        {
+            var director = CosmicSimulation.ExperienceDirector.Instance;
+            if (director == null || director.IsSwitching)
+            {
+                return;
+            }
+
+            var seen = 0;
+            foreach (var module in director.Modules)
+            {
+                if (module == null || module.Kind != CosmicSimulation.ExperienceKind.DockTile)
+                {
+                    continue;
+                }
+
+                if (seen++ == index)
+                {
+                    director.Switch(module);
+                    return;
                 }
             }
         }

@@ -1,0 +1,247 @@
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using GalaxyExplorer.XR;
+using TMPro;
+using UnityEngine;
+using UnityEngine.Events;
+
+namespace CosmicSimulation
+{
+    /// <summary>
+    /// A name floating over a place you can go: the tags scattered across the Milky Way, and the labels on the
+    /// bodies in the orbit model.
+    ///
+    /// A dark pill with the name in it, a hairline leader running back to the point it belongs to, and three
+    /// states — idle, hover (fifteen per cent larger and filled cyan, with the text going dark so it still
+    /// reads), and selected (a cyan outline, kept while that destination is open). Pinch it, or click it on
+    /// desktop, and it raises <see cref="OnPicked"/>; the Milky Way scene wires that to
+    /// <see cref="ExperienceDirector.OpenDestination"/>.
+    ///
+    /// Hover and click arrive through <see cref="GEInputEvents.ExecuteHierarchy{T}"/> from a
+    /// <see cref="GEInteractable"/> on the collider, the same path every other interactive object uses, so a
+    /// hand ray, a fingertip and the desktop mouse all reach it without special cases.
+    /// </summary>
+    [DisallowMultipleComponent]
+    public class LabelButton : MonoBehaviour, IGEPointerHandler, IGEFocusHandler
+    {
+        private const float HoverScale = 1.15f;
+        private const float HoverSeconds = 0.12f;
+        private const float ClickCooldown = 0.3f;
+
+        [SerializeField]
+        [Tooltip("The pill behind the text. Left empty for a plain label with no plate.")]
+        private Renderer pill;
+
+        [SerializeField]
+        [Tooltip("The name. Its colour flips to dark on hover so it reads against the cyan fill.")]
+        private TMP_Text label;
+
+        [SerializeField]
+        [Tooltip("Hairline running back to the point this names. Optional.")]
+        private Renderer leader;
+
+        [SerializeField]
+        [Tooltip("Scaled on hover. Defaults to this transform.")]
+        private Transform growTarget;
+
+        [SerializeField]
+        [Tooltip("Shown while this destination is the open one. Optional.")]
+        private GameObject selectedOutline;
+
+        [SerializeField]
+        [Tooltip("What this label opens. Read by whatever listens to OnPicked.")]
+        private ExperienceModule destination;
+
+        [SerializeField]
+        [Tooltip("Raised on pinch or click, after the cool-down.")]
+        private UnityEvent<LabelButton> onPicked = new UnityEvent<LabelButton>();
+
+        private Color _idleFill = new Color(0.055f, 0.078f, 0.094f, 0.8f); // surface/plate
+        private Color _accent = new Color(0.424f, 0.812f, 0.867f);          // accent/cyan
+        private Color _idleText = Color.white;
+        private Color _hoverText = new Color(0.055f, 0.078f, 0.094f);
+
+        private MaterialPropertyBlock _block;
+        private Transform _grow;
+        private Vector3 _baseScale;
+        private float _hover;      // 0 idle, 1 hovered
+        private bool _hovered;
+        private float _lastClick = -1f;
+
+        public ExperienceModule Destination => destination;
+
+        /// <summary>Raised when the player picks this label.</summary>
+        public UnityEvent<LabelButton> OnPicked => onPicked;
+
+        /// <summary>True while this label's destination is the open one.</summary>
+        public bool IsSelected { get; private set; }
+
+        private void Awake() => EnsureInit();
+
+        // A label is often bound and selected in the same frame it is spawned, and a caller has no way to know
+        // whether Awake has run yet, so every entry point goes through this rather than trusting it has.
+        private void EnsureInit()
+        {
+            if (_block != null)
+            {
+                return;
+            }
+
+            _grow = growTarget != null ? growTarget : transform;
+            _baseScale = _grow.localScale;
+            _block = new MaterialPropertyBlock();
+
+            if (pill != null)
+            {
+                // Read the authored colour so a designer can retint a label without touching this script.
+                _idleFill = pill.sharedMaterial != null && pill.sharedMaterial.HasProperty("_Color")
+                    ? pill.sharedMaterial.color
+                    : _idleFill;
+            }
+
+            if (label != null)
+            {
+                _idleText = label.color;
+            }
+
+            Apply();
+        }
+
+        private void OnDisable()
+        {
+            // A label hidden mid-hover must not come back still grown.
+            _hovered = false;
+            _hover = 0f;
+            Apply();
+        }
+
+        /// <summary>Marks this label as the open destination, or no longer so.</summary>
+        public void SetSelected(bool selected)
+        {
+            if (IsSelected == selected)
+            {
+                return;
+            }
+
+            IsSelected = selected;
+            Apply();
+        }
+
+        public void SetDestination(ExperienceModule module) => destination = module;
+
+        /// <summary>Points the leader line at a world position and sizes it to reach.</summary>
+        public void PointLeaderAt(Vector3 worldPoint)
+        {
+            if (leader == null)
+            {
+                return;
+            }
+
+            var t = leader.transform;
+            var toPoint = worldPoint - t.position;
+            var distance = toPoint.magnitude;
+            if (distance < 1e-4f)
+            {
+                leader.enabled = false;
+                return;
+            }
+
+            leader.enabled = true;
+            t.rotation = Quaternion.LookRotation(toPoint);
+            var scale = t.localScale;
+            t.localScale = new Vector3(scale.x, scale.y, distance);
+        }
+
+        private void Update()
+        {
+            var target = _hovered ? 1f : 0f;
+            if (Mathf.Approximately(_hover, target))
+            {
+                return;
+            }
+
+            _hover = Mathf.MoveTowards(_hover, target, Time.deltaTime / HoverSeconds);
+            Apply();
+        }
+
+        private void Apply()
+        {
+            EnsureInit();
+            _grow.localScale = _baseScale * Mathf.Lerp(1f, HoverScale, _hover);
+
+            if (pill != null)
+            {
+                // A property block rather than a material instance: there is one of these per destination and
+                // several on screen at once, and instancing a material per label costs a draw call each.
+                pill.GetPropertyBlock(_block);
+                _block.SetColor("_Color", Color.Lerp(_idleFill, _accent, _hover));
+                pill.SetPropertyBlock(_block);
+            }
+
+            if (label != null)
+            {
+                label.color = Color.Lerp(_idleText, _hoverText, _hover);
+                label.fontStyle = IsSelected ? label.fontStyle | FontStyles.Bold : label.fontStyle & ~FontStyles.Bold;
+            }
+
+            if (leader != null && leader.enabled)
+            {
+                leader.GetPropertyBlock(_block);
+                _block.SetColor("_Color", IsSelected || _hover > 0.5f
+                    ? _accent
+                    : new Color(_accent.r, _accent.g, _accent.b, 0.35f)); // line/hairline
+                leader.SetPropertyBlock(_block);
+            }
+
+            if (selectedOutline != null)
+            {
+                selectedOutline.SetActive(IsSelected);
+            }
+        }
+
+        // ---------- input
+
+        public void OnFocusEnter(GEFocusEventData eventData)
+        {
+            _hovered = true;
+        }
+
+        public void OnFocusExit(GEFocusEventData eventData)
+        {
+            _hovered = false;
+        }
+
+        public void OnPointerDown(GEPointerEventData eventData)
+        {
+            // A fingertip has no separate click, so a poke fires here; a ray waits for the release below.
+            if (eventData != null && eventData.IsNear)
+            {
+                Pick(eventData);
+            }
+        }
+
+        public void OnPointerUp(GEPointerEventData eventData)
+        {
+        }
+
+        public void OnPointerClicked(GEPointerEventData eventData)
+        {
+            if (eventData == null || !eventData.IsNear)
+            {
+                Pick(eventData);
+            }
+        }
+
+        private void Pick(GEPointerEventData eventData)
+        {
+            if (!isActiveAndEnabled || Time.unscaledTime - _lastClick < ClickCooldown)
+            {
+                return;
+            }
+
+            _lastClick = Time.unscaledTime;
+            eventData?.Use();
+            onPicked.Invoke(this);
+        }
+    }
+}

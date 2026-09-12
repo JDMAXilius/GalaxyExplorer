@@ -19,6 +19,15 @@ namespace GalaxyExplorer.XR
     }
 
     /// <summary>
+    /// Limits how far two hands may scale an object. Put one on the same GameObject as a
+    /// <see cref="ManipulationHandler"/> and it is picked up automatically; without one, scaling is unbounded.
+    /// </summary>
+    public interface IManipulationScaleConstraint
+    {
+        Vector3 ClampScale(Vector3 desiredLocalScale);
+    }
+
+    /// <summary>
     /// One- and two-handed move/rotate/scale of <see cref="HostTransform"/> driven by the pointers forwarded to
     /// <see cref="OnPointerDown"/>/<see cref="OnPointerUp"/>. Replaces MRTK v2's ManipulationHandler; its serialized
     /// field names and enum values match so existing prefab settings carry over.
@@ -72,6 +81,8 @@ namespace GalaxyExplorer.XR
         public ManipulationEvent OnHoverExited = new ManipulationEvent();
 
         private readonly List<GEPointer> _pointers = new List<GEPointer>();
+        private IManipulationScaleConstraint _scaleConstraint;
+        private bool _lookedForScaleConstraint;
 
         // One-handed grab: host pose relative to the grabbing pointer.
         private Vector3 _oneHandPositionOffset;
@@ -192,6 +203,7 @@ namespace GalaxyExplorer.XR
                 if (scale && _twoHandStartVector.sqrMagnitude > 1e-6f)
                 {
                     targetScale = _hostStartScale * (handVector.magnitude / _twoHandStartVector.magnitude);
+                    targetScale = ScaleConstraint()?.ClampScale(targetScale) ?? targetScale;
                 }
             }
             else if (manipulationType != HandMovementType.TwoHandedOnly)
@@ -217,6 +229,19 @@ namespace GalaxyExplorer.XR
                 host.SetPositionAndRotation(targetPosition, targetRotation);
                 host.localScale = targetScale;
             }
+        }
+
+        // Resolved once and cached, including the "there isn't one" answer: this runs every frame of a two-hand
+        // grab, and GetComponent on an interface is not free.
+        private IManipulationScaleConstraint ScaleConstraint()
+        {
+            if (!_lookedForScaleConstraint)
+            {
+                _scaleConstraint = GetComponent<IManipulationScaleConstraint>();
+                _lookedForScaleConstraint = true;
+            }
+
+            return _scaleConstraint;
         }
 
         private void CaptureGrabState()
