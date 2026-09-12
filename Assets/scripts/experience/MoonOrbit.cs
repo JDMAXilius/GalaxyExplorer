@@ -114,17 +114,39 @@ namespace CosmicSimulation
         private float minGrabDiameter = 0.06f;
 
         private ForceSolver _moon;
+        private bool _ready;
         private bool _wasParentOut;
         private bool _growing;
         private bool _labelShown;
 
-        public BodyInfo Info => info;
+        public BodyInfo Info
+        {
+            get
+            {
+                EnsureInit();
+                return info;
+            }
+        }
 
         /// <summary>Where this moon belongs when it is not in the player's hand.</summary>
-        public Transform Anchor => anchor;
+        public Transform Anchor
+        {
+            get
+            {
+                EnsureInit();
+                return anchor;
+            }
+        }
 
         /// <summary>The moon's own solver.</summary>
-        public ForceSolver Solver => _moon;
+        public ForceSolver Solver
+        {
+            get
+            {
+                EnsureInit();
+                return _moon;
+            }
+        }
 
         /// <summary>
         /// True while the moon is riding its orbit, or being dwelled on from it. Matches
@@ -135,6 +157,8 @@ namespace CosmicSimulation
         {
             get
             {
+                EnsureInit();
+
                 if (_moon == null)
                 {
                     return true;
@@ -162,6 +186,8 @@ namespace CosmicSimulation
         {
             get
             {
+                EnsureInit();
+
                 if (parentBody == null)
                 {
                     return true;
@@ -189,13 +215,26 @@ namespace CosmicSimulation
         {
             get
             {
+                EnsureInit();
+
                 var parentDiameter = parentRoot != null ? parentRoot.localScale.x : 0.25f;
                 return Mathf.Max(minOrbitDiameter, parentDiameter * diameterRatio);
             }
         }
 
-        private void Awake()
+        private void Awake() => EnsureInit();
+
+        // A moon, its label and its panel are bound in the same frame they spawn, and a caller reading InOrbit or
+        // OrbitDiameter has no way to know whether Awake has run yet, so every entry point comes through here
+        // rather than trusting that it has.
+        private void EnsureInit()
         {
+            if (_ready)
+            {
+                return;
+            }
+
+            _ready = true;
             _moon = GetComponent<ForceSolver>();
 
             if (placement == null)
@@ -245,12 +284,17 @@ namespace CosmicSimulation
             _wasParentOut = false;
         }
 
-        private void OnEnable() => Application.onBeforeRender += FollowOrbit;
+        private void OnEnable()
+        {
+            EnsureInit();
+            Application.onBeforeRender += FollowOrbit;
+        }
 
         private void OnDisable() => Application.onBeforeRender -= FollowOrbit;
 
         private void Update()
         {
+            EnsureInit();
             Spin();
 
             var parentOut = ParentIsOut;
@@ -359,6 +403,16 @@ namespace CosmicSimulation
         {
             if (heldDiameter <= 0f || _moon == null)
             {
+                return;
+            }
+
+            // A moon whose planet has gone home is walked back to its orbit by FreePlacementSolver, which lerps
+            // the same localScale down to the orbit size. That runs while the solver is still in Free, which is
+            // a state this method keeps growing in, so without this the two would write the scale in the same
+            // frame all the way home.
+            if (placement != null && placement.IsRestoring)
+            {
+                _growing = false;
                 return;
             }
 
