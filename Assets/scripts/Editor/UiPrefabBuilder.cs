@@ -244,7 +244,38 @@ namespace CosmicSimulation.EditorTools
             var barBox = bar.gameObject.AddComponent<BoxCollider>();
             barBox.size = new Vector3(60f, 8f, 2f);
             bar.gameObject.AddComponent<GEInteractable>();
-            bar.gameObject.AddComponent<ManipulationHandler>();
+
+            var barGrab = bar.gameObject.AddComponent<ManipulationHandler>();
+            var barGrabSo = new SerializedObject(barGrab);
+
+            // The bar moves the *dock*, not itself (GDD 8.1, contract row F-06). Authored here rather than
+            // patched at run time, because the prefab is the deployment story for this file. Left unset,
+            // HostTransform falls back to the bar's own transform on first use and a working grab would peel
+            // the 60 mm bar off the plate it hangs under (CS-108).
+            barGrabSo.FindProperty("hostTransform").objectReferenceValue = root.transform;
+
+            // One hand only. The default is OneAndTwoHanded with MoveRotateScale, and both halves of that are
+            // wrong here: the dock is a fixed-size instrument, GDD 8.1 gives it no scale and no free rotation,
+            // and Recenter writes position and rotation only — a dock a two-handed pinch had scaled would have
+            // no way back to its authored size. One hand moves it; DockController re-tilts it toward the player
+            // while it moves, so the wrist never rolls the plate over.
+            barGrabSo.FindProperty("manipulationType").enumValueIndex =
+                (int)ManipulationHandler.HandMovementType.OneHandedOnly;
+            // Unreachable while the line above says OneHandedOnly — the handler drops the second pointer before
+            // it ever consults this — but set anyway, so that changing the mode later cannot silently hand the
+            // dock a scale gesture.
+            barGrabSo.FindProperty("twoHandedManipulationType").enumValueIndex =
+                (int)ManipulationHandler.TwoHandedManipulation.MoveRotate;
+            // Grabbed directly, with no ForceSolver to sound the grab and release for it — the case the field's
+            // own tooltip names.
+            barGrabSo.FindProperty("playGrabSounds").boolValue = true;
+            barGrabSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // Without this the handler above is unreachable: a select is routed to the nearest enabled
+            // IGEPointerHandler up the hierarchy, ManipulationHandler deliberately is not one, and there is no
+            // ForceSolver here to forward it (CS-106). Ending the pointer walk at the bar costs nothing — the
+            // only handler anywhere above it in this prefab is none at all, and the bar carries no GEButton.
+            bar.gameObject.AddComponent<ManipulationPointerRouter>();
 
             var recenter = SquareButton("recenter_button", underRow, 9f, 6f, Load("icon_recenter"), Plate, Ink);
             ((RectTransform)recenter.transform).anchoredPosition = new Vector2(396f, 0f);
