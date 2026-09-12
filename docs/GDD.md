@@ -1,6 +1,12 @@
 # Cosmic Simulation XR — Game Design Document
 
-*Version 1.0 — 11 September 2026. Companion documents: `docs/TECHNICAL_OVERVIEW.md` (how it is built) and `docs/COSMIC_SIMULATION_XR_ROADMAP.md` (when). This document is the one-to-one contract for the experience: if a behaviour is not described here, it is not in scope.*
+*Version 1.1 — 12 September 2026. Companion documents: `docs/TECHNICAL_OVERVIEW.md` (how it is built) and `docs/COSMIC_SIMULATION_XR_ROADMAP.md` (when). This document is the contract for the experience: if a behaviour is not described here, it is not in scope.*
+
+> **Scope changed on 12 September 2026, by the owner, deliberately.** Version 1.0 of this document was a *one-to-one* contract with the COSMIC XR reference app, and that clause is now **lifted**. The app is no longer bounded by the reference's seven places. It is being extended with other galaxies and other real planetary systems as places the player can see and travel to — see **section 4.8** and `docs/decisions.md` **D-010**.
+>
+> Two things survive the change and are not negotiable by it. **Truthfulness:** new places are built from real published data, and where an appearance is modelled or an artist's impression rather than observed, the copy says so. **Our own words and art only:** nothing is taken from the reference app.
+>
+> The "not described here, not in scope" rule still holds — it is what keeps the project honest. It now means *extend this document first*, not *do not extend the app*. A future session finding content beyond the original seven should read this note rather than treat it as scope creep and remove it.
 
 ---
 

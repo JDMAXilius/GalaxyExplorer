@@ -8,6 +8,22 @@ you change one, update the affected docs in the same commit.
 
 ## 2026-09-12 — Phase 7 (terminal session)
 
+### D-010 — The one-to-one contract with the reference app is lifted
+**Owner decision, 12 September 2026, explicit.** "It doesn't matter if it doesn't follow the GDD... we want to expand more."
+
+Until now the GDD's preamble bound the app to a one-to-one reproduction of the COSMIC XR reference: seven places, matching objects, matching interactions. D-002 had already added three extra Milky Way destinations within that frame. This goes further: **other galaxies, and other real planetary systems inside our own galaxy, as places the player can see and travel to.**
+
+Why record it rather than just build it. The clause was load-bearing in both directions — it is why several tickets were closed as out of scope, and it is the sentence a future session would cite while deleting new content it did not recognise. GDD section 4.8 and this entry exist so that cannot happen quietly.
+
+What does **not** change:
+
+- **Truthfulness.** New places come from real published data (NASA Exoplanet Archive, ESA/Hubble, ESA/Webb, NED). Where an appearance is modelled or an artist's impression rather than measured, the copy says so. This is the reason the research phase came before any building.
+- **Our own name, copy and art.** Unchanged from D-001.
+- **The interaction idiom.** Expansion reuses the existing `ExperienceModule.Kind = Destination` and `ExperienceDirector.OpenDestination` path — a tag in a parent view that opens a place in front of you, which you grab and scale. It does **not** reintroduce the drill-down navigation retired in CS-087, and it does not add camera locomotion between places: flying the viewer between galaxies is both a comfort problem in VR and a different app from the one this is.
+- **The Quest 3 budget.** Technical Overview section 7.4 still binds. New content that cannot hold frame rate is not shipped because it is interesting.
+
+Consequence for the roadmap: this adds a phase beyond Phase 7 rather than reopening Phases 4 and 5, which still owe their existing tickets. The expansion is planned as its own set of tickets so the release path is not blocked by it.
+
 ### D-009 - Remove the vendored TouchScript TUIO/OSC module rather than justify it
 CS-112 offered a choice: remove the module or record why it stays. **Removed.**
 
