@@ -75,27 +75,55 @@ namespace CosmicSimulation.EditorTools
         [MenuItem("Cosmic Simulation/Install Runtime Systems")]
         public static void InstallSystems()
         {
-            // Opening a scene while another is dirty raises a modal that blocks the relay, so refuse rather
-            // than hang. See CLAUDE.md.
-            for (var i = 0; i < SceneManager.sceneCount; i++)
-            {
-                var open = SceneManager.GetSceneAt(i);
-                if (open.isDirty)
-                {
-                    Debug.LogError($"ExperienceWiring: '{open.name}' has unsaved changes. Save or discard first.");
-                    return;
-                }
-            }
-
             if (EditorApplication.isPlayingOrWillChangePlaymode)
             {
                 Debug.LogError("ExperienceWiring: leave play mode first.");
                 return;
             }
 
-            var scene = EditorSceneManager.OpenScene(BootScene, OpenSceneMode.Single);
+            // Work on the boot scene where it already is. Re-opening it would close whatever else is loaded,
+            // and if any of those has unsaved changes Unity raises a modal that blocks the relay outright
+            // (see CLAUDE.md) - which is exactly what happens after a play session leaves main_scene dirty.
+            var scene = default(Scene);
+            for (var i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var open = SceneManager.GetSceneAt(i);
+                if (open.path == BootScene)
+                {
+                    scene = open;
+                    break;
+                }
+            }
 
-            var root = GameObject.Find("cosmic_systems");
+            if (!scene.IsValid())
+            {
+                // Not open, so we have to open it - and that is only safe while nothing else is dirty.
+                for (var i = 0; i < SceneManager.sceneCount; i++)
+                {
+                    var open = SceneManager.GetSceneAt(i);
+                    if (open.isDirty)
+                    {
+                        Debug.LogError($"ExperienceWiring: '{open.name}' has unsaved changes, and the boot scene " +
+                                       "is not open. Save or discard, or open core_systems_scene first.");
+                        return;
+                    }
+                }
+
+                scene = EditorSceneManager.OpenScene(BootScene, OpenSceneMode.Single);
+            }
+
+            // Scoped to the boot scene's own roots: GameObject.Find searches every loaded scene, and now that
+            // we no longer close the others it could pick up a same-named object from a view scene.
+            GameObject root = null;
+            foreach (var candidate in scene.GetRootGameObjects())
+            {
+                if (candidate.name == "cosmic_systems")
+                {
+                    root = candidate;
+                    break;
+                }
+            }
+
             if (root == null)
             {
                 root = new GameObject("cosmic_systems");

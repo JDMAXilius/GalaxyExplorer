@@ -147,7 +147,7 @@ Design contract: GDD §3, §5, §8; architecture: Technical Overview §5.5–5.6
 | CS-040 | CC | `LayoutPreset` generator for SolarRow and RelativeSize (GDD §4.1 numbers) | CS-020 | done |
 | CS-041 | TERM | Create `solar_row_scene` from `solar_system_view_scene`; wire presets and pop-up | CS-040, CS-032 | done |
 | CS-042 | CC | `BodyInfo` assets for 10 bodies (from copy deck) | CS-021 | done |
-| CS-043 | TERM | Add moons via the `MoonForceSolver` pattern: Ganymede, Callisto, Titan, Mimas, Iapetus (+ optional 5) | CS-032 | todo |
+| CS-043 | TERM | Add moons via the `MoonForceSolver` pattern: Ganymede, Callisto, Titan, Mimas, Iapetus (+ optional 5) | CS-032 | doing |
 | CS-044 | CC | `MoonLabel` (small/large) | — | done |
 | CS-045 | TERM | Schematic/Realistic wiring on the orbit model; name labels; Asteroid Belt label | CS-032 | todo |
 | CS-046 | CC | `SunTouchResponse` (brightness pulse + rumble while a hand is inside) | — | done |
@@ -171,6 +171,20 @@ Design contract: GDD §3, §5, §8; architecture: Technical Overview §5.5–5.6
 *CS-060 done — the owner chose to shrink the rings in Solar Row only, keeping the GDD's uniform 25 cm pitch.* `LayoutRig` clamps a ring's scale per layout and animates it with the rest of the move. The rule is derived from the arrangement rather than tabulated, so it follows the pitch if the pitch ever changes. It is stated **per pair**, not per body, and that distinction matters: the obvious per-body form (span must fit the nearest-neighbour distance) also bites in Relative Size, where Saturn and Uranus sit 53.7 cm apart while Saturn's true rings span 56.4 cm — it would have trimmed them 6.6% and broken the other half of the requirement. Per pair, a gap must hold both neighbours' widest extents, a pair that already fits imposes nothing, and two ring systems facing each other share the shortfall. Measured with the rig driven: Solar Row Saturn 33.86 → 25.51 cm and Uranus 29.86 → 22.49 cm, closest surfaces **−6.86 cm → +1.00 cm**; Relative Size unchanged at Saturn's true 56.43 cm. Planet spheres and spacing untouched.
 *CS-042 done, by CS-021 rather than by hand:* `CopyImporter` already writes all ten `BodyInfo` assets from `docs/copy/bodies.md`. Verified on disk — ten assets, each with a paragraph and four stats. Nothing further was needed, and the ticket should not be reopened to duplicate them.
 
+
+## Where this session stopped (12 Sep 2026)
+
+Work was halted mid-wave at the owner's request and everything outstanding is a ticket below. Read this first.
+
+**CS-043 is half-landed and UNVERIFIED.** `Assets/scripts/experience/MoonOrbit.cs` (347 lines) is committed but **has never been compiled** - the session was stopped before the editor pass. Its companion `Assets/scripts/Editor/MoonBuilder.cs` was never written, so nothing creates moons yet and the component is inert. Compile first; expect to fix it. The plan it was written against: MoonBuilder is a **post-pass** that opens `Assets/prefabs/experiences/solar_system_planets_content_prefab.prefab` with `PrefabUtility.LoadPrefabContents`, adds moons under the right bodies and saves it back, so it must run *after* SolarRowBuilder and must not edit `SolarRowBuilder.cs`.
+
+**CS-061 and CS-062 were dispatched but produced nothing** - no files were written. Start them fresh.
+
+**CS-065 was dispatched but produced nothing** - no files were written. Start it fresh. The approach it was given: reuse the `DrawStars.cs` / `spiral_stars*` StructuredBuffer + DrawProcedural path rather than a second particle system, since the cosmic web is the same problem with a different point distribution.
+
+**Also uncommitted-but-done:** `ExperienceWiring.InstallSystems` now works on the boot scene where it already sits instead of re-opening it, which is what let it run at all after a play session leaves `main_scene` dirty; and it installs `desktop_dock_prefab`.
+
+*Nothing in this session was pushed without being compiled except `MoonOrbit.cs`, which is called out above.*
 ## Phase 4 — Milky Way destinations, nebulae, black hole
 
 | ID | Track | Title | Depends | Status |
