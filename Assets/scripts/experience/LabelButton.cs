@@ -146,6 +146,15 @@ namespace CosmicSimulation
         /// For a label whose subject moves relative to it. The Milky Way tags do not use this: they hang a
         /// fixed distance straight above a fixed point on the disc, so <c>DestinationTagBuilder</c> sizes the
         /// hairline once, in canvas units, and the billboard about Y keeps it vertical for free.
+        ///
+        /// <para><b>Unused, and it does not work as written.</b> Nothing calls it. It is shaped for a 3D line —
+        /// a cylinder or a LineRenderer — whose length is its local Z: the leader every label actually ships
+        /// is a <see cref="Graphic"/>, a flat quad in the canvas's XY plane, so scaling Z does nothing to its
+        /// length and turning it to face the point lays it edge-on. This matters because a fanned-out card
+        /// layout — the treatment the inherited Milky Way markers used, each card set off to one side on a
+        /// long angled leader — is the natural next step for that map, and this is the method it would call.
+        /// Making it work means sizing the rect's height to the distance and rotating it about Z within the
+        /// canvas, not orienting a transform in the room.</para>
         /// </summary>
         public void PointLeaderAt(Vector3 worldPoint)
         {

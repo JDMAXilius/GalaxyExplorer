@@ -55,6 +55,34 @@ namespace CosmicSimulation.EditorTools
             "Assets/data/experiences",
         };
 
+        /// <summary>
+        /// How many map units one canvas millimetre of the card is worth.
+        ///
+        /// <b>This is the piece the first build of these tags did not have, and its absence is why every tag
+        /// came out too small to read.</b> The label prefab's root is scaled 0.001 because "one canvas unit is
+        /// one millimetre" — and that convention is true of UI the player reads at arm's length, which is the
+        /// UI it was written for. A destination tag is not that. It is a child of the map, in a frame where
+        /// the whole galaxy is 1.6 units across, so the GDD's 60 x 24 mm card is 3.75 per cent of the disc and
+        /// its 5 mm name subtends about a fifth of a degree at the 1.2 m the map floats at. That is three or
+        /// four pixels of cap height. Nothing shrank it: the fitted plates came out 62 to 92 mm and the
+        /// auto-size floors never fired. It was authored at that size.
+        ///
+        /// <b>The number.</b> Text in a headset wants roughly a degree of cap height to be comfortable, and a
+        /// degree at 1.2 m is about 21 mm — so the 5 mm name needs a little over four times. Four also keeps
+        /// the tier ladder below affordable: a card becomes 96 mm tall, the step 104 mm, and the four tiers
+        /// span 0.31 m against the 0.26 m the map carries today. For reference the two inherited markers the
+        /// player liked set their name with a 3D TMP at font size 0.85, an em of about 85 mm in this same
+        /// frame — seventeen times ours. They could afford that because there were two of them and each hung
+        /// off to one side on a long angled leader; twelve cards stacked straight up cannot. So this is a
+        /// compromise, and it is the one number to turn when the map is on screen.
+        ///
+        /// Applied to the tag's root transform, so the card's own layout stays in the millimetres GDD 8.4
+        /// specifies and every canvas-unit measurement in this file — plate width, leader length, collider box
+        /// — follows for free. The one thing that does not is <see cref="TierStepMetres"/>, which is in map
+        /// metres and therefore reads this directly.
+        /// </summary>
+        private const float CardScaleOnMap = 4f;
+
         /// <summary>Half the card's height, in canvas units (millimetres). The leader starts at its bottom edge.</summary>
         private const float PillHalfHeightMm = 12f;
 
@@ -248,9 +276,10 @@ namespace CosmicSimulation.EditorTools
             // l, b from the standard catalogues; all three are textbook figures.
             //   M51  l = 104.85, b = +68.56   -> foot ( 0.002, 0, 0.700), 0.32 m up
             //   M101 l = 102.04, b = +59.77   -> foot (-0.109, 0, 0.739), 0.41 m up
-            //   M33  l = 133.61, b = -31.33   -> foot (-0.164, 0, 1.026), 0.29 m down
-            // The first two feet land on the disc just inside its 0.8 m rim, so their leaders read as drop
-            // lines from a long way above it; M33's foot is beyond the rim, below the plane.
+            //   M33  l = 133.61, b = -31.33   -> foot ( 0.018, 0, 0.780), 0.10 m down
+            // All three feet land on the disc inside its 0.8 m rim, so the leaders read as drop lines to it.
+            // M33's range is the one the clamp in FromBearing bites on: taken at face value it put the foot at
+            // 1.04, a quarter of a metre off the edge of the galaxy, and the tag with it.
             new Bearing("whirlpool",  104.85f,  68.56f, 0.34f),
             new Bearing("pinwheel",   102.04f,  59.77f, 0.48f),
             new Bearing("triangulum", 133.61f, -31.33f, 0.55f),
@@ -334,7 +363,7 @@ namespace CosmicSimulation.EditorTools
                           $"{PoiPrefabPath} under '{TagRootName}'.\n" +
                           $"  built: {string.Join("\n         ", built)}\n" +
                           $"  no module asset: {(missing.Count == 0 ? "none" : string.Join(", ", missing))}\n" +
-                          $"  moved onto its own tier: {(raised.Count == 0 ? "none" : string.Join(", ", raised))}\n" +
+                          $"  moved onto another tier: {(raised.Count == 0 ? "none" : string.Join(", ", raised))}\n" +
                           $"  subtitle shrunk below {MinFontSizeMm} mm to fit: " +
                           $"{(Undersized.Count == 0 ? "none" : string.Join(", ", Undersized))}");
             }
@@ -374,6 +403,15 @@ namespace CosmicSimulation.EditorTools
         /// height goes into the lift, so the tag ends up with a long leader dropping to the disc rather than a
         /// short one dangling in empty space. A galaxy below the plane gets a negative lift, and the leader is
         /// drawn upward instead; <see cref="SetLeader"/> handles the sign.
+        ///
+        /// <para><b>The foot is kept on the disc.</b> Triangulum's range put its foot 1.04 out from the centre
+        /// of a disc whose rim is at 0.8, so its card hung 0.29 below the plane, well clear of the galaxy,
+        /// with a long leader running up to a point in empty space — the one tag on the map that was visibly
+        /// not attached to anything. Nothing is lost by pulling it in: the range along each bearing is
+        /// declared on <see cref="External"/> as pure layout, while the <i>direction</i> from the Sun is the
+        /// real one, and shortening the distance travelled along that direction keeps the direction exactly.
+        /// The height is then taken from the shortened distance so the latitude stays true as well. M51 and
+        /// M101 already land inside the rim and are not touched.</para>
         /// </summary>
         private static Placement FromBearing(Bearing bearing)
         {
@@ -389,10 +427,42 @@ namespace CosmicSimulation.EditorTools
             var b = bearing.Latitude * Mathf.Deg2Rad;
 
             var alongPlane = Mathf.Cos(l) * towardCentre + Mathf.Sin(l) * quarterTurn;
-            var foot = SunAnchor + alongPlane * (Mathf.Cos(b) * bearing.Range);
-            var height = Mathf.Sin(b) * bearing.Range;
+
+            var travelled = KeepFootOnDisc(alongPlane, Mathf.Cos(b) * bearing.Range);
+            var foot = SunAnchor + alongPlane * travelled;
+
+            // Tan rather than Sin(b) * Range, so that a clamped bearing keeps its latitude instead of its
+            // height. For an unclamped one the two are the same number: travelled is Cos(b) * Range.
+            var height = travelled * Mathf.Tan(b);
 
             return new Placement(bearing.Id, foot.x, 0f, foot.z, height);
+        }
+
+        /// <summary>
+        /// The furthest a foot may sit from the centre, in map metres. The disc's rim is at 0.8 — the radius
+        /// the nine hand-placed anchors reach — and this is a hair inside it, so a leader lands on the disc
+        /// rather than on the edge of it.
+        /// </summary>
+        private const float FootMaxRadiusMetres = 0.78f;
+
+        /// <summary>
+        /// How far along a bearing from the Sun a foot may travel before it leaves the disc.
+        ///
+        /// The ray is <c>SunAnchor + direction * d</c> with <c>direction</c> a unit vector in the plane, so
+        /// the exit is the positive root of <c>d^2 + 2(S.a)d + (|S|^2 - R^2) = 0</c>. The Sun sits well inside
+        /// the rim, so the discriminant is positive for every bearing and the guard below is belt and braces.
+        /// </summary>
+        private static float KeepFootOnDisc(Vector3 direction, float wanted)
+        {
+            var along = Vector3.Dot(SunAnchor, direction);
+            var discriminant = along * along - SunAnchor.sqrMagnitude
+                               + FootMaxRadiusMetres * FootMaxRadiusMetres;
+            if (discriminant <= 0f)
+            {
+                return wanted;
+            }
+
+            return Mathf.Min(wanted, -along + Mathf.Sqrt(discriminant));
         }
 
         /// <summary>
@@ -456,6 +526,11 @@ namespace CosmicSimulation.EditorTools
             // the prefab looks like in the editor and what is used if that data ever goes missing.
             t.localPosition = placement.Anchor + Vector3.up * placement.Lift;
             t.localRotation = Quaternion.identity;
+
+            // Multiplied off the prefab's own scale rather than written as a literal, so the millimetre
+            // convention stays owned by UiPrefabBuilder and this file only applies the map conversion.
+            t.localScale = labelPrefab.transform.localScale * CardScaleOnMap;
+            Mark(t);
 
             var button = instance.GetComponent<LabelButton>();
             if (button == null)
@@ -721,8 +796,8 @@ namespace CosmicSimulation.EditorTools
         }
 
         /// <summary>
-        /// Gives every card above the disc its own height, so that no two can ever draw on top of each other,
-        /// and rewrites each one's placement and leader to match.
+        /// Spreads the cards above the disc over a few heights, so that no two neighbours draw on top of each
+        /// other, and rewrites each one's placement and leader to match.
         ///
         /// <para><b>The first version of this tested whether two cards were close together on the disc, and it
         /// was the wrong test.</b> The cards billboard: they turn to face the player about world Y, so two of
@@ -731,17 +806,26 @@ namespace CosmicSimulation.EditorTools
         /// where they sit on the map. Six of the nine Milky Way tags started at exactly 0.12 m, which made
         /// every such overlap a total one. Testing planar distance found nothing and reported success.</para>
         ///
-        /// <para><b>So: one tier each, ordered by radius.</b> The outermost card sits lowest and each step
+        /// <para><b>So: heights assigned in order of radius.</b> The outermost card sits lowest and each step
         /// inwards is <see cref="TierStepMetres"/> higher, which is a card height plus a couple of millimetres
-        /// - the least that guarantees two cards cannot touch whatever angle they are seen from. Radius is the
-        /// ordering rather than the array's order because it means something: the leaders fan out from a low
-        /// outer rim to a high centre, inner cards clear the bright core and the arms the way the old
-        /// hand-typed 0.17 and 0.22 were trying to, and the arrangement is stable - adding a destination
-        /// slots it in by where it is rather than reshuffling everything.</para>
+        /// - the least that stops two cards touching whatever angle they are seen from. Radius is the ordering
+        /// rather than the array's order because it means something: the leaders fan out from a low outer rim
+        /// to a high centre, inner cards clear the bright core and the arms the way the old hand-typed 0.17
+        /// and 0.22 were trying to, and the arrangement is stable - adding a destination slots it in by where
+        /// it is rather than reshuffling everything.</para>
         ///
-        /// <para><b>What it costs</b> is height: eleven tiers is about 0.29 m of spread over a disc 1.6 m
-        /// across, so the innermost leader is long. That is the price of never having to explain to a player
-        /// why two labels are sitting on top of each other, and it is the cheaper of the two.</para>
+        /// <para><b>The ladder wraps, and that is the concession <see cref="CardScaleOnMap"/> forced.</b> One
+        /// tier per card costs a card height each, so eleven of them spanned 0.26 m while a card was 24 mm
+        /// tall. At the size the cards actually have to be to read, a card is 96 mm and eleven tiers would be
+        /// a 1.1 m tower over a disc 1.6 m across — which is a worse picture than the overlap it prevents. So
+        /// the tier index wraps at <see cref="TierCycle"/>: the spread stays at 0.31 m, and two cards share
+        /// a height only when they are four apart in the radius ordering, which puts most of the disc between
+        /// them. It is a smaller guarantee than "cannot ever touch" and it is deliberately smaller — twelve
+        /// legible cards on a map this size cannot all be non-overlapping from every angle, and the inherited
+        /// markers the player is asking for did not solve it by stacking either. They hung off to one side on
+        /// a long angled leader, which is the layout to move to if the wrap is not enough; see the note on
+        /// <c>LabelButton.PointLeaderAt</c>, which is written for that and does not currently work for a
+        /// Graphic leader.</para>
         ///
         /// <para>A card hung <i>below</i> the plane is left exactly as placed. There is one - Triangulum,
         /// which really is under the galactic plane - and being the only thing down there it has nothing to
@@ -764,11 +848,11 @@ namespace CosmicSimulation.EditorTools
             // square roots for nothing.
             above.Sort((a, b) => RadiusSquared(placements[b].Anchor).CompareTo(RadiusSquared(placements[a].Anchor)));
 
-            for (var tier = 0; tier < above.Count; tier++)
+            for (var order = 0; order < above.Count; order++)
             {
-                var index = above[tier];
+                var index = above[order];
                 var placement = placements[index];
-                var lift = BaseLiftMetres + tier * TierStepMetres;
+                var lift = BaseLiftMetres + (order % TierCycle) * TierStepMetres;
 
                 if (Mathf.Approximately(lift, placement.Lift))
                 {
@@ -799,11 +883,21 @@ namespace CosmicSimulation.EditorTools
         private const float BaseLiftMetres = 0.12f;
 
         /// <summary>
-        /// The gap between one tier and the next, in metres: a card height plus 2 mm. Below a card height two
-        /// cards can still catch each other's corners when they line up in the view; this is the least that
-        /// cannot.
+        /// The gap between one tier and the next, in map metres: a card height plus a 2 mm gap, converted
+        /// through <see cref="CardScaleOnMap"/>. Below a card height two cards can still catch each other's
+        /// corners when they line up in the view, so a card height is the least that works — and it has to be
+        /// the card's height <i>on the map</i>, which is why this reads the scale. Leaving it in raw canvas
+        /// millimetres would have stepped the ladder by a quarter of a card and put four cards back on top of
+        /// each other.
         /// </summary>
-        private const float TierStepMetres = (PillHeightMm + 2f) * 0.001f;
+        private const float TierStepMetres = (PillHeightMm + 2f) * CardScaleOnMap * 0.001f;
+
+        /// <summary>
+        /// How many heights the ladder uses before it starts again at the bottom. See the note on
+        /// <see cref="SpaceOut"/> for why it wraps at all; four keeps the spread at the 0.29 m the map already
+        /// carries while the cards are four times the size.
+        /// </summary>
+        private const int TierCycle = 4;
 
         /// <summary>How far an anchor is from the centre of the disc, squared. Height is not part of it.</summary>
         private static float RadiusSquared(Vector3 anchor)

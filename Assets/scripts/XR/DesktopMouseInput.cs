@@ -638,7 +638,18 @@ namespace GalaxyExplorer.XR
         /// </summary>
         private void ReconcileButtons(Mouse mouse)
         {
-            if (_pressed != null && !mouse.leftButton.isPressed)
+            // wasReleasedThisFrame is the whole guard, and leaving it out cost every world-space click in the
+            // app. On the frame a button comes up the Input System reports isPressed already false *and*
+            // wasReleasedThisFrame true; this method runs before HandleLeftButton, so an unguarded
+            // "!isPressed" matched every ordinary release, cleared _pressed and raised the up as a cancel.
+            // HandleLeftButton then found nothing to release and never raised OnPointerClicked - so a mouse
+            // click delivered a down and a cancel and nothing else, and every GEButton, every destination tag
+            // and every POI card went silently dead to the mouse. The case this exists for is a release we
+            // never saw at all, which is exactly the case where wasReleasedThisFrame is false.
+            var leftLost = !mouse.leftButton.isPressed && !mouse.leftButton.wasReleasedThisFrame;
+            var rightLost = !mouse.rightButton.isPressed && !mouse.rightButton.wasReleasedThisFrame;
+
+            if (_pressed != null && leftLost)
             {
                 var pressed = _pressed;
                 _pressed = null;
@@ -648,12 +659,12 @@ namespace GalaxyExplorer.XR
                 pressed.RaisePointerUp(_pointer, false);
             }
 
-            if (_orbiting && !mouse.leftButton.isPressed)
+            if (_orbiting && leftLost)
             {
                 _orbiting = false;
             }
 
-            if ((_panning || _spinning != null || _spinningHost != null) && !mouse.rightButton.isPressed)
+            if ((_panning || _spinning != null || _spinningHost != null) && rightLost)
             {
                 _panning = false;
                 _spinning = null;
