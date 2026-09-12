@@ -35,6 +35,7 @@ Shader "Asteroids/Ring"
 				float4 vertex : POSITION;
 				float2 uv : TEXCOORD0;
 				float3 normal : NORMAL0;
+				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
 			struct v2f
@@ -44,6 +45,7 @@ Shader "Asteroids/Ring"
 				float2 uv : TEXCOORD0;
 				float3 lightToCenter : TEXCOORD1;
 				float clipAmount: TEXCOORD2;
+				UNITY_VERTEX_OUTPUT_STEREO
 			};
 
 			sampler2D _MainTex;
@@ -56,11 +58,16 @@ Shader "Asteroids/Ring"
 
 			v2f vert(appdata v)
 			{
+				// The v2f declaration was moved above the first unity_ObjectToWorld read so
+				// UNITY_SETUP_INSTANCE_ID can run first: under stereo instancing that matrix is
+				// indexed by the eye id, so reading it before the setup gives the left eye's.
+				v2f o;
+				UNITY_SETUP_INSTANCE_ID(v);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 				float3 wPos = mul(unity_ObjectToWorld, v.vertex);
 				
 				float3 lightToCenter = normalize(wPos - (float3)_LightPosition);
 
-				v2f o;
 				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.uv = v.uv;
 				o.normal = mul((float3x3)unity_ObjectToWorld, v.normal);

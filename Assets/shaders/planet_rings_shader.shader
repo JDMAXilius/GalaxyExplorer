@@ -30,6 +30,7 @@ Shader "Planets/Rings"
 			{
 				float4 vertex : POSITION;
 				float2 uv : TEXCOORD0;
+				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
 			struct v2f
@@ -38,6 +39,7 @@ Shader "Planets/Rings"
 				float2 side : TEXCOORD1;
 				float  clipAmount : TEXCOORD2;
 				float4 vertex : SV_POSITION;
+				UNITY_VERTEX_OUTPUT_STEREO
 			};
 
 			sampler2D _MainTex;
@@ -50,6 +52,12 @@ Shader "Planets/Rings"
 			
 			v2f vert (appdata v)
 			{
+				// The v2f declaration was moved above the first unity_ObjectToWorld read so
+				// UNITY_SETUP_INSTANCE_ID can run first: under stereo instancing that matrix is
+				// indexed by the eye id, so reading it before the setup gives the left eye's.
+				v2f o;
+				UNITY_SETUP_INSTANCE_ID(v);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 				float scale = length(mul(unity_ObjectToWorld, float4(1, 0, 0, 0)));
 
 				float3 alignedVertex = mul((float3x3)unity_ObjectToWorld, v.vertex);
@@ -57,7 +65,6 @@ Shader "Planets/Rings"
 				float alongLight = dot(alignedVertex, _SunDirection);
 				float3 alongSides = alignedVertex - alongLight * _SunDirection;
 
-				v2f o;
 				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 				o.side = float2(length(alongSides), alongLight) / scale;

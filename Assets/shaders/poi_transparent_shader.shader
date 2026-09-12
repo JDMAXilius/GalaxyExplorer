@@ -40,6 +40,7 @@ Shader "POI_Transparent"
 				float4 vertex   : POSITION;
 				float4 color    : COLOR;
 				float2 texcoord : TEXCOORD0;
+				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
 			struct v2f
@@ -48,6 +49,7 @@ Shader "POI_Transparent"
 				fixed4 color : COLOR;
 				half2 texcoord  : TEXCOORD0;
 				float  clipAmount : TEXCOORD2;
+				UNITY_VERTEX_OUTPUT_STEREO
 			};
 
 			float _TransitionAlpha;
@@ -57,6 +59,8 @@ Shader "POI_Transparent"
 			v2f vert(appdata_t IN)
 			{
 				v2f OUT;
+				UNITY_SETUP_INSTANCE_ID(IN);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);
 				float3 wPos = mul(unity_ObjectToWorld, IN.vertex);
 				OUT.vertex = UnityObjectToClipPos(IN.vertex);
 				OUT.clipAmount = CalcVertClipAmount(wPos);

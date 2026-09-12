@@ -37,6 +37,7 @@ Shader "POI_Porthole"
 				float4 vertex   : POSITION;
 			    float2 texcoord : TEXCOORD0;
 			    float4 color : COLOR;
+			    UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
 			struct v2f
@@ -45,6 +46,7 @@ Shader "POI_Porthole"
 			    min16float2 uv  : TEXCOORD0;
 			    min16float4 color : COLOR;
 			    min16float  clipAmount : TEXCOORD2;
+			    UNITY_VERTEX_OUTPUT_STEREO
 			};
 
 			sampler2D _MainTex;
@@ -56,6 +58,8 @@ Shader "POI_Porthole"
 			v2f vert(appdata_t v)
 			{
 				v2f o;
+				UNITY_SETUP_INSTANCE_ID(v);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 				o.pos = UnityObjectToClipPos(v.vertex);
 
 				float3 localCamPos = mul(unity_WorldToObject, float4(_WorldSpaceCameraPos,1));

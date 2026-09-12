@@ -35,6 +35,7 @@ Shader "Custom/Sun_SolarFlare"
 				float2 uv : TEXCOORD0;
 				float3 normal : NORMAL0;
 				float4 color : COLOR;
+				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
 			struct v2f
@@ -45,6 +46,7 @@ Shader "Custom/Sun_SolarFlare"
 				float3 camToPixel : TEXCOORD2;
 				float3 normal : NORMAL0;
 				float4 color : COLOR0;
+				UNITY_VERTEX_OUTPUT_STEREO
 			};
 
 			float4 _Color;
@@ -56,6 +58,8 @@ Shader "Custom/Sun_SolarFlare"
 			v2f vert(appdata v)
 			{
 				v2f o;
+				UNITY_SETUP_INSTANCE_ID(v);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 				o.normal = normalize(mul((float3x3)unity_ObjectToWorld, v.normal));

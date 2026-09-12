@@ -33,6 +33,7 @@ Shader "Planets/HaloShader"
 
 				float3 normal : NORMAL0;
 				float4 tangent : TANGENT0;
+				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
 			struct v2f
@@ -43,6 +44,7 @@ Shader "Planets/HaloShader"
 				float3 normal : NORMAL0;
 				float3 tangent : TANGENT0;
 				float3 binormal : TANGENT1;
+				UNITY_VERTEX_OUTPUT_STEREO
 			};
 
 			sampler2D _MainTex;
@@ -56,6 +58,8 @@ Shader "Planets/HaloShader"
 			v2f vert (appdata v)
 			{
 				v2f o;
+				UNITY_SETUP_INSTANCE_ID(v);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 				float3 wPos = mul(unity_ObjectToWorld, v.vertex);

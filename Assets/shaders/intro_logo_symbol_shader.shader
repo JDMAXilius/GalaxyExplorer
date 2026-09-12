@@ -27,6 +27,7 @@ Shader "GE_symbol_Logo"
                 {
                     float4 vertex : POSITION;
                     float3 normal : NORMAL;
+                    UNITY_VERTEX_INPUT_INSTANCE_ID
                 };
 
                 struct v2f
@@ -34,6 +35,7 @@ Shader "GE_symbol_Logo"
                     float4 vertex : SV_POSITION;
                     float3 normal : NORMAL;
                     float3 pixelFromCamera : TEXCOORD0;
+                    UNITY_VERTEX_OUTPUT_STEREO
                 };
 
                 float _CubemapContribution;
@@ -44,6 +46,8 @@ Shader "GE_symbol_Logo"
                 v2f vert(appdata v)
                 {
                     v2f o;
+                    UNITY_SETUP_INSTANCE_ID(v);
+                    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
                     o.vertex = UnityObjectToClipPos(v.vertex);
                     o.normal = mul((float3x3)unity_ObjectToWorld, v.normal);
 

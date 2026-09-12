@@ -31,6 +31,7 @@ Shader "Sun/LensFlare"
 			{
 				float4 vertex : POSITION;
 				float2 uv : TEXCOORD0;
+				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
 			struct v2f
@@ -38,6 +39,7 @@ Shader "Sun/LensFlare"
 				float2 uv : TEXCOORD0;
 				float4 vertex : SV_POSITION;
 				float fade : TEXCOORD1;
+				UNITY_VERTEX_OUTPUT_STEREO
 			};
 
 			sampler2D _MainTex;
@@ -52,11 +54,16 @@ Shader "Sun/LensFlare"
 			
 			v2f vert (appdata v)
 			{
+				// The v2f declaration was moved to the top so the stereo setup can sit where it does in
+				// every other shader here: UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO needs the output declared,
+				// and the pair has to precede any eye-dependent matrix read.
+				v2f o;
+				UNITY_SETUP_INSTANCE_ID(v);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 				float2 fadeParams = _FadeParams.xy * _CurrentScale;
 
 				float fade = saturate((_DistFromCamera - fadeParams.x) / (fadeParams.y - fadeParams.x));
 
-				v2f o;
 				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 				o.fade = fade;

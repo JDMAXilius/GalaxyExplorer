@@ -21,7 +21,7 @@ This is the map of the codebase as it is **today** (end of the Quest 3 port, bra
 | UI | uGUI **2.6.0** (TextMesh Pro built in), Selawik SDF fonts | World-space canvases in XR; screen-space HUD on desktop |
 | XR management | XR Plug-in Management **4.7.0** | Loader per platform set by `Quest3ProjectSetup` |
 | Editor tooling | Unity AI Assistant **2.19.0-pre.2** (its MCP relay), Figma MCP, Higgsfield MCP | See §13 |
-| Stereo | Android: **Multiview (Single-Pass Instanced)**; Windows/Link: **Multi-pass** | All custom shaders carry stereo macros |
+| Stereo | As configured today: Android **Multi Pass**, Windows/Link **Single Pass Instanced** (§7.1) | Not all custom shaders carry the macros — 36 of 47 did not; see `docs/SHADER_STEREO_AUDIT.md` (CS-095) |
 | Android player | IL2CPP, ARM64, min API 32, target 34, Vulkan, ASTC, GameActivity, Landscape Left, 4× MSAA | Package id `com.jdmaxilius.cosmicsimulationxr` (renamed 11 Sep 2026; installs alongside the old Galaxy Explorer build) |
 | Platforms | `PlatformId.Quest3 = 5` when `XRSettings.isDeviceActive`, else `Desktop` | Detected at start; Quest3 uses VR scale factors + hand menu |
 
@@ -61,6 +61,8 @@ Assets/
   XR/Settings/             OpenXR package settings
   _sources/    [planned]   CREDITS.md for downloaded imagery
 docs/                      ROADMAP, GDD, TECHNICAL_OVERVIEW, copy/ [planned], ui/spec.md [planned]
+tools/mcp/                 Editor harness, outside Assets so Unity never compiles it and it needs no
+                           .meta: umcp.js, compile.ps1, smoke.cs, enter/leave_play_mode.cs (§12)
 Builds/Quest3/             GalaxyExplorer.apk (git-ignored)
 ```
 
@@ -225,7 +227,8 @@ arrangements, which the force solvers then follow.
 
 ### 7.1 Pipeline rules **[existing]**
 - BiRP, forward, Gamma. 4× MSAA. No post-processing stack.
-- **Every custom shader**: `UNITY_VERTEX_INPUT_INSTANCE_ID`, `UNITY_VERTEX_OUTPUT_STEREO`, `UNITY_SETUP_INSTANCE_ID`, `UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO`; `#pragma target 4.5` max; **no geometry shaders** (quads are expanded in the vertex stage with `SV_VertexID/6`, see `cginc/StarQuad.cginc`); no `only_renderers d3d11`; alpha output honest (passthrough composites on alpha).
+- **Stereo render mode, as actually configured** (`Assets/XR/Settings/OpenXR Package Settings.asset`): Android = **Multi Pass** (`m_renderMode: 1`), Standalone/Link = **Single Pass Instanced** (`m_renderMode: 0`). This is the opposite of what `CLAUDE.md` §Build says, and it is why a project-wide missing-stereo-macro bug survived unnoticed: on-device Quest builds give each eye its own draw, so only Link shows it. **Full audit of all 78 shaders, with what was fixed and what still needs a compiler: `docs/SHADER_STEREO_AUDIT.md` (CS-095, CS-096).** Verify the macro state of every shader before moving Android to Single Pass Instanced.
+- **Every custom shader**: `UNITY_VERTEX_INPUT_INSTANCE_ID`, `UNITY_VERTEX_OUTPUT_STEREO`, `UNITY_SETUP_INSTANCE_ID`, `UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO` (and `UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX` as the first line of `frag` **if the fragment stage reads anything eye-dependent** — a screen-space texture, `_WorldSpaceCameraPos`; `nebula_card_shader.shader` is the reference); `#pragma target 4.5` max; **no geometry shaders** (quads are expanded in the vertex stage with `SV_VertexID/6`, see `cginc/StarQuad.cginc`); no `only_renderers d3d11`; alpha output honest (passthrough composites on alpha).
 - Galaxy: `DrawStars` issues `CommandBuffer`s on the main camera (attach order clouds → negative → stars); on XR the down-scaled RT path is skipped and layers draw straight to the eye buffer.
 - Orbits: `OrbitalTrail` `CommandBuffer` at `AfterForwardAlpha`.
 - Black hole: `black_hole_gravitational_lensing_disc_optimized_shader` (ray-marched disc, alpha follows brightness) + glow card.
@@ -311,8 +314,14 @@ Design in the Figma file → `get_design_context` for specs → `download_assets
 
 ## 12. Testing and verification
 
-- **Harness:** `umcp.js` (stdio MCP client for the Unity relay) with `run <file.cs>` executing a `CommandScript : IRunCommand` in the editor; `compile.ps1` (refresh + wait + compiler errors from `Logs/Editor.log`); templates for play/stop/state, synthetic mouse/keyboard events (`InputSystem.QueueStateEvent(Mouse.current, new MouseState{…}.WithButton(...))`, `KeyboardState(Key.X)`), game-view screenshots (`ScreenCapture.CaptureScreenshot`), off-screen renders of prefabs (preview scene + camera → PNG). These live in the session scratchpad; recreate from `CLAUDE.md` if missing.
-- **Per-phase smoke (planned `smoke.cs`):** switch every module, open every panel, pull/scale/drop/restore every body and moon, open every tag, toggle passthrough, capture screenshots, assert console has no errors.
+- **Harness: `tools/mcp/`, checked in (CS-098).** It used to live in the session scratchpad and was rebuilt from scratch in at least three sessions before someone noticed. It sits outside `Assets/`, so Unity never compiles it, it needs no `.meta` files, and none of it ships in the APK. Read `tools/mcp/README.md` first.
+  - `umcp.js` — dependency-free Node stdio MCP client: `list`, `call <tool> <json>`, `run <file.cs>`. Spawns the relay itself, does the JSON-RPC `initialize` handshake, retries `Unity_RunCommand` through a domain reload ("Unity not detected"), and reads the argument name for the source out of the tool's own `inputSchema` rather than assuming it.
+  - `compile.ps1` — refresh, wait out the compile and domain reload, report `error CS####` lines written to `Logs/Editor.log` **since** the refresh. Refuses while play mode is running. Exit 0 clean / 1 errors / 2 timeout / 3 refused.
+  - `enter_play_mode.cs`, `leave_play_mode.cs` — named in full deliberately: the old scratchpad pair was `stop.cs` (left play) beside `exit.cs` (quit the editor). Nothing in `tools/mcp/` quits the editor, and nothing in it opens a scene.
+  - Still ad hoc per session: synthetic mouse/keyboard events (`InputSystem.QueueStateEvent(Mouse.current, new MouseState{…}.WithButton(...))`, `KeyboardState(Key.X)`) — snippets are in the README — and off-screen prefab renders (preview scene + camera → PNG).
+- **Per-phase smoke: `tools/mcp/smoke.cs`.** Walks every `ExperienceModule`: switches to it, checks `Current`, the `EnvironmentController` mode and the underlined dock tile, looks for a bound scene panel, pulls one body to the hand, moves it, `RestoreLayout()`s it and checks it came home, and captures a screenshot per module. Writes `Logs/smoke_report.txt` (verdict on line 2) and `Logs/smoke/NN_<module>.png`; neither is committed. Three shapes are forced by the runner and should not be undone: it will not enter play mode itself (that reloads the domain and unloads the assembly the command is running in), `Execute` returns immediately and the walk is driven from `EditorApplication.update` with progress in `SessionState` (every `run` compiles a fresh assembly, so run it again to poll), and it polls for `ExperienceDirector` and waits out `IntroRunning` rather than concluding — `core_systems_scene` arrives late and `Switch` is refused during the intro.
+  - **Verdicts are three-valued on purpose.** A module with neither a scene nor a content prefab being refused is a `PASS`, and so is a module with no authored copy showing no panel — both are `ExperienceDirector` working. Anything it cannot assert is a `SKIP` carrying the reason. The harness prints its own verdict because the relay answers NOT-OK on any warning at all.
+  - **Not yet covered:** it drives the director directly rather than poking the dock, so a dead `GEButton` or a mis-wired `XRPokeFilter` would go unnoticed; it pulls one body per module rather than every body; and it does not touch hand input, moons, tags, two-handed scaling or the passthrough toggle. Those are the remaining part of CS-033's line.
 - **Device checklist:** hands tracked, dock pokeable, pull/scale/drop, panels legible at 0.75 m, environment modes, ≥ 60 fps (OVR Metrics Tool), passthrough alpha artefacts none, audio spatialised.
 - **Regression:** desktop matrix (GDD §5.3) after every phase.
 
@@ -320,7 +329,7 @@ Design in the Figma file → `get_design_context` for specs → `download_assets
 
 ## 13. Tooling: MCP usage and gotchas
 
-**Unity relay** (`%USERPROFILE%\.unity\relay\relay_win.exe --mcp --project-path <repo>`): tools `Unity_RunCommand`, `Unity_GetConsoleLogs`, `Unity_Camera_Capture`, scene-view captures.
+**Unity relay** (`%USERPROFILE%\.unity\relay\relay_win.exe --mcp --project-path <repo>`): tools `Unity_RunCommand`, `Unity_GetConsoleLogs`, `Unity_Camera_Capture`, scene-view captures. Drive it with `tools/mcp/umcp.js` (§12) — `node tools/mcp/umcp.js list | call <tool> '<json>' | run <file.cs>`. One client at a time: the relay is a single shared connection and two clients deadlock, which is also why only one `unity-editor` agent may run at once.
 RunCommand template:
 ```csharp
 internal class CommandScript : IRunCommand
@@ -336,6 +345,8 @@ Rules learned the hard way:
 - In RunCommand code `Image` resolves to `Unity.AI.Image`; write `UnityEngine.UI.Image`.
 - Play mode writes runtime values into shared materials (`about_material`, `earth_clouds`, Jupiter clouds): revert before committing.
 - `Object.GetInstanceID()` is a compile error in 6000.6 (use `GetEntityId`/`GetHashCode`).
+- Write RunCommand scripts **fully qualified with no `using` directives** — the runner wraps the file in a preamble of its own, and a `using` block that lands after it will not compile. Everything in `tools/mcp/` is written that way; copy the style.
+- `EditorApplication.EnterPlaymode()` from a RunCommand reloads the domain and unloads the assembly the command is executing in. Queue it on `delayCall`, return immediately, and expect "Unity not detected" for the next few seconds (`tools/mcp/enter_play_mode.cs`).
 
 **Figma MCP:** `create_new_file`, `use_figma` (build frames), `get_design_context`/`get_metadata` (read specs), `download_assets` (export). **Higgsfield MCP:** `generate_image`, `remove_background`, `upscale_image`, `generate_audio`, `scene_builder_3d_*` (Blender). **Chrome MCP / WebFetch:** sourcing and licence checks.
 
@@ -367,7 +378,7 @@ Rules learned the hard way:
 
 **Models** `Assets/models/`: sun, mercury, venus, earth, mars, jupiter (+planet, +cloud), saturn, uranus (+planet), neptune, pluto (+LOD1 each); moon; io, europa, ganymede, callisto; mimas, enceladus, titan, iapetus; phobos, deimos; asteroid; sun flares ×3 (+combined); black-hole glow card; galaxy magic window; boundary star background; unit sphere.
 **Textures** `Assets/Textures/`: diffuse/specular + normal for every planet and the Moon; earth clouds normal/alpha, earth emissive; jupiter clouds; saturn rings; uranus rings; moon atlases (jupiter, saturn, mars); sun diffuse/alpha/flare/lens flare; black-hole accretion discs ×3 + glow card; crab, homunculus, pillars, ngc1501, trumpler (2D); galaxy bulb; star atlases; orbit alpha; UI icons `Assets/Textures/icons/` (reset, about, back, help, view, sound on/off, three-dots, start, control up/down); `moon_preview_icon`.
-**Shaders** `Assets/shaders/` (43) incl. `cginc/` (NearClip, StarQuad). **Materials** `Assets/materials/` per body + rings + galaxy + UI.
+**Shaders** `Assets/shaders/` (47, plus 31 vendored elsewhere under `Assets/`) incl. `cginc/` (NearClip, StarQuad); stereo-macro state of each: `docs/SHADER_STEREO_AUDIT.md`. **Materials** `Assets/materials/` per body + rings + galaxy + UI.
 **Audio** `Assets/audio/`: `vo_audio_clips/vo_destinations_audio_clips/` 22 (sun, planets, moon, crab, galactic center, homunculus, milky way, ngc1501, pillars, pluto, s2, s102, sagittarius a, solar system, trumpler); `vo_intro_audio_clips/` 16; `ambience_audio_clips/` 12; `ui_audio_clips/` 13, with `ui_transitions_audio_clips/` 11 nested inside it (not a sibling — verified 12 Sep 2026); `sfx_audio_clips/` 3; `music_audio_clips/` 3.
 **Prefabs** `Assets/prefabs/`: `solar_system_prefab`, `milky_way_prefab`, `galaxy_pois_prefab`, `poi_prefabs/poi_<body>_prefab` ×13 incl. s2/s102/sagittarius, `planet_info_card_prefab`, moon prefabs ×10, `planet_highlighter_prefab`, `tractor_beam_prefab`, `menu_managers`, hand menus, `xr/ge_xr_rig`, about slate, placement ring, onboarding manager.
 **Fonts** `Assets/Fonts/`: Selawik SDF ×5 weights, Segoe UI SDF ×6.

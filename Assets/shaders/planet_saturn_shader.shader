@@ -58,6 +58,7 @@ Shader "Planets/Saturn"
 					float4 vertex : POSITION;
 					float3 normal : NORMAL0;
 					float2 uv : TEXCOORD0;
+					UNITY_VERTEX_INPUT_INSTANCE_ID
 				};
 
 				struct v2f
@@ -72,6 +73,7 @@ Shader "Planets/Saturn"
 					float ringsInteresectionRadius : TEXCOORD5;
 					float3 ringsToIntersection : TEXCOORD6;
 					float ringsUv : TEXCOORD7;
+					UNITY_VERTEX_OUTPUT_STEREO
 				};
 
 				sampler2D _MainTex;
@@ -106,9 +108,14 @@ Shader "Planets/Saturn"
 
 				v2f vert(appdata v)
 				{
+					// The v2f declaration was moved above the first unity_ObjectToWorld read so
+					// UNITY_SETUP_INSTANCE_ID can run first: under stereo instancing that matrix is
+					// indexed by the eye id, so reading it before the setup gives the left eye's.
+					v2f o;
+					UNITY_SETUP_INSTANCE_ID(v);
+					UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 					float center = mul(unity_ObjectToWorld, float4(0, 0, 0, 1)).xyz;
 
-					v2f o;
 					float3 wPos = mul(unity_ObjectToWorld, v.vertex);
 					o.vertex = UnityObjectToClipPos(v.vertex);
 					o.uv = TRANSFORM_TEX(v.uv, _MainTex);
