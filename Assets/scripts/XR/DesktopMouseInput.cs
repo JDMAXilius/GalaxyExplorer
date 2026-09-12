@@ -494,6 +494,16 @@ namespace GalaxyExplorer.XR
                 return;
             }
 
+            // A destination overlay covers the map it was opened from, so it is the next thing in the way
+            // (GDD 4.3: "the overlay closes with Esc"). Above the panel sweep below, which would otherwise hide
+            // the destination's own panel and leave the nebula sitting there with nothing naming it.
+            var director = CosmicSimulation.ExperienceDirector.Instance;
+            if (director != null && director.HasOpenDestination)
+            {
+                director.ClearDestinations();
+                return;
+            }
+
             // A body's panel is not closable on its own - it is open exactly while its body is out of the
             // arrangement, so R is what shuts it. Hide() only reaches the panels that are driven by hand, which
             // is the destination and scene panels, and is a no-op on the rest.

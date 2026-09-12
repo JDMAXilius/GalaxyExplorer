@@ -15,8 +15,9 @@ namespace CosmicSimulation
     /// A dark pill with the name in it, a hairline leader running back to the point it belongs to, and three
     /// states — idle, hover (fifteen per cent larger and filled cyan, with the text going dark so it still
     /// reads), and selected (a cyan outline, kept while that destination is open). Pinch it, or click it on
-    /// desktop, and it raises <see cref="OnPicked"/>; the Milky Way scene wires that to
-    /// <see cref="ExperienceDirector.OpenDestination"/>.
+    /// desktop, and it raises <see cref="OnPicked"/>. A label deliberately knows nothing about what it opens:
+    /// <see cref="DestinationTags"/> subscribes to that event and decides whether the module is a scene to
+    /// switch to or an overlay to spawn.
     ///
     /// Hover and click arrive through <see cref="GEInputEvents.ExecuteHierarchy{T}"/> from a
     /// <see cref="GEInteractable"/> on the collider, the same path every other interactive object uses, so a
@@ -128,7 +129,13 @@ namespace CosmicSimulation
 
         public void SetDestination(ExperienceModule module) => destination = module;
 
-        /// <summary>Points the leader line at a world position and sizes it to reach.</summary>
+        /// <summary>
+        /// Points the leader line at a world position and sizes it to reach.
+        ///
+        /// For a label whose subject moves relative to it. The Milky Way tags do not use this: they hang a
+        /// fixed distance straight above a fixed point on the disc, so <c>DestinationTagBuilder</c> sizes the
+        /// hairline once, in canvas units, and the billboard about Y keeps it vertical for free.
+        /// </summary>
         public void PointLeaderAt(Vector3 worldPoint)
         {
             if (leader == null)

@@ -1,6 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicSimulation.EditorTools
@@ -614,10 +615,12 @@ namespace CosmicSimulation.EditorTools
         /// <summary>
         /// A fresh instance per call, so nothing can accumulate state between two builds in one editor session.
         /// </summary>
-        public static GalaxyProfile[] All() => new[]
+        public static GalaxyProfile[] All()
         {
-            AndromedaBuilder.Profile(),
-        };
+            var all = new List<GalaxyProfile> { AndromedaBuilder.Profile() };
+            all.AddRange(GalaxyLibrary.All());
+            return all.ToArray();
+        }
 
         /// <summary>The profile with this <see cref="GalaxyProfile.Id"/>, or null.</summary>
         public static GalaxyProfile Find(string id)

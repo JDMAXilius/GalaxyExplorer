@@ -80,6 +80,21 @@ namespace CosmicSimulation
         /// </summary>
         public static event Action<ExperienceModule> ExperienceChanged;
 
+        /// <summary>The destination showing over the current place, or <c>null</c> when none is.</summary>
+        public ExperienceModule OpenDestinationModule { get; private set; }
+
+        /// <summary>True while a destination overlay is up over the current place.</summary>
+        public bool HasOpenDestination => OpenDestinationModule != null;
+
+        /// <summary>
+        /// Raised when a destination opens over the current place, and with <c>null</c> when it closes.
+        ///
+        /// Separate from <see cref="ExperienceChanged"/> because a destination does not change the place: the
+        /// Milky Way map is still <see cref="Current"/> with a nebula floating in front of it. A tag that
+        /// watched the other event would light up when its nebula opened and then never learn it had closed.
+        /// </summary>
+        public static event Action<ExperienceModule> DestinationChanged;
+
         /// <summary>True while a switch is in flight; the dock ignores pokes during one.</summary>
         public bool IsSwitching => _switching != null;
 
@@ -886,6 +901,11 @@ namespace CosmicSimulation
                 _destinationPanel = SpawnPanel(destination, instance.transform, destination.Id + "_panel");
             }
 
+            // Announced after everything that could still have refused, and before the grow-in, so the tag is
+            // already outlined while the cloud is still swelling out of a point.
+            OpenDestinationModule = destination;
+            DestinationChanged?.Invoke(destination);
+
             StartCoroutine(GrowIn(instance.transform, growInSeconds));
             return instance;
         }
@@ -913,6 +933,15 @@ namespace CosmicSimulation
             if (Current != null && EnvironmentController.Instance != null)
             {
                 EnvironmentController.Instance.Set(Current.Environment);
+            }
+
+            // Guarded rather than raised blind: this is called on the way into every OpenDestination and at the
+            // head of every Switch, and a listener that was told "nothing is open" on each of those would spend
+            // most of its life reacting to a state it was already in.
+            if (OpenDestinationModule != null)
+            {
+                OpenDestinationModule = null;
+                DestinationChanged?.Invoke(null);
             }
         }
 

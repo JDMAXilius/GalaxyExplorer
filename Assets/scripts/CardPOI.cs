@@ -7,12 +7,22 @@ using UnityEngine;
 using GalaxyExplorer.XR;
 
 /// <summary>
-/// Its attached to the poi if the poi is supposed to launch a card when selected
+/// Its attached to the poi if the poi is supposed to launch a card when selected.
+///
+/// Retired as of CS-050: the Milky Way map's destinations are <c>CosmicSimulation.LabelButton</c> tags routed
+/// by <c>CosmicSimulation.DestinationTags</c>, and this marker switches itself off before it can draw or
+/// register anything. Kept, not deleted — see the note on <c>keepLegacyCards</c>.
 /// </summary>
 namespace GalaxyExplorer
 {
     public class CardPOI : PointOfInterest
     {
+        [SerializeField]
+        [Tooltip("Bring the original Galaxy Explorer POI card back, for diagnosis. Off — the shipping " +
+                 "setting — the marker switches itself off in Awake and the LabelButton tags are the only " +
+                 "way off the Milky Way map (CS-050).")]
+        private bool keepLegacyCards = false;
+
         [SerializeField]
         private POIContent CardObject = null;
 
@@ -28,6 +38,30 @@ namespace GalaxyExplorer
 
         private POIMaterialsFader poiFader = null;
 
+        /// <summary>
+        /// Turns the whole marker off before anything it owns can run.
+        ///
+        /// Switched off rather than removed from the prefabs, and rather than deleted outright, because
+        /// <c>poi_prefab</c> and its variant <c>poi_prefab_large</c> are still referenced from
+        /// <c>galaxy_pois_prefab</c>, from <c>galaxy_view_scene</c> (the <c>galactic_center</c> marker sits
+        /// loose in the scene, not in the POI prefab) and from <c>projector_poi_prototype</c>. Deleting either
+        /// would leave a dangling reference in a shipping scene, which is a worse outcome than dead code.
+        /// This is the retirement CS-087 gave the planet preview bar: it costs nothing at run time, and the
+        /// toggle above brings it back while diagnosing.
+        ///
+        /// In <c>Awake</c> rather than <c>Start</c> or <c>OnEnable</c> so that <c>PointOfInterest.Awake</c> —
+        /// which instantiates the indicator line's material — never runs either.
+        /// </summary>
+        protected override void Awake()
+        {
+            if (!keepLegacyCards)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
+            base.Awake();
+        }
 
         protected override void Start()
         {
