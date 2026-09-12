@@ -30,6 +30,9 @@ NASA does not endorse this app; NASA imagery is used only as imagery.
 | `Assets/Textures/icons/sprite_button_view.png` | Recenter icon | Drawn by us | Ours | 2026-09-11 | 256x256 |
 | `Assets/Textures/icons/sprite_button_sound_on.png` | Unmuted icon | Drawn by us | Ours | 2026-09-11 | 256x256 |
 | `Assets/Textures/icons/sprite_button_sound_off.png` | Muted icon | Drawn by us | Ours | 2026-09-11 | 256x256 |
+| `Assets/ui/figma/ui_rounded_r{8,16,32,48,64}.png` | Nine-slice rounded plates, 1/2/4/6/8 mm | Drawn by us in Figma `qWxL0ZGiyI7aRjnQAVISoI`, page **Export - Unity** | Ours | 2026-09-11 | White only, tinted at runtime; 8 px per mm |
+| `Assets/ui/figma/ui_tile_foot.png` | Dark foot under a dock tile name | Drawn by us in Figma, same page | Ours | 2026-09-11 | 32x208, transparent to 75% black |
+| `Assets/ui/figma/icon_{passthrough,recenter,help,mute,close,back}.png` | Dock and control icons | Drawn by us in Figma as SVG, same page | Ours | 2026-09-11 | 128x128 white line art; SVG sources in `Assets/_sources/figma_svg/` |
 
 ## Pending (ticket CS-005)
 

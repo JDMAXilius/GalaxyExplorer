@@ -35,7 +35,7 @@ Status values: `todo` · `doing` · `done` · `blocked-term` · `blocked-cc` · 
 *Fixed in passing:* `main_scene` and `core_systems_scene` were each listed twice in `EditorBuildSettings`; duplicates removed.
 *CS-007 done:* editor verification — six backup scenes import with fresh GUIDs (the owner's copy keeps its original), build list holds exactly the six shipping scenes with no duplicates and no backups, product name and both bundle ids applied. `.meta` files committed.
 *CS-004 done:* Figma file **Cosmic Simulation XR** — `https://www.figma.com/design/qWxL0ZGiyI7aRjnQAVISoI` — with pages *Design System* and *Front End - Screens*. It sits in the owner's drafts; move it into a team project when convenient.
-*Open question for the owner:* `companyName` in Player Settings is still "Microsoft Corporation". It sets the save-data path and the publisher shown by the store. Change it to your own name/handle when you decide what it should be.
+*Resolved 11 Sep 2026:* `companyName` was still "Microsoft Corporation"; set to **JDMAXilius** to match the bundle id. It sets the save-data path (`%USERPROFILE%\AppData\LocalLow\<company>\<product>`) and the publisher the store shows. `Quest3ProjectSetup` writes only the identifier, not the company, so this sticks across builds.
 
 ## Phase 0/1 note on the build (11 Sep 2026)
 
@@ -55,16 +55,23 @@ A Quest APK build stalls on a modal: **"Unsupported Input Handling on Android"**
 | CS-012 | TERM | Figma pop-ups + utility window | CS-010 | done |
 | CS-013 | TERM | Figma info panels (body / scene / moon) | CS-010 | done |
 | CS-014 | TERM | Figma labels (tag states, moon labels, leader line) | CS-010 | done |
-| CS-015 | TERM | Figma desktop HUD (dock mirror, controls overlay, About) | CS-010 | doing |
+| CS-015 | TERM | Figma desktop HUD (dock mirror, controls overlay, About) | CS-010 | done |
 | CS-016 | TERM | Figma hint cards (2) | CS-010 | done |
-| CS-017 | TERM | Export SVG/PNG @2× to `Assets/ui/figma/`, write `docs/ui/spec.md` | CS-011…016 | todo |
-| CS-018 | CC | Sprite import settings script (`Editor/UiSpriteImporter.cs`: UI sprite, no mips, 9-slice per spec) | CS-017 | todo |
+| CS-017 | TERM | Export SVG/PNG @2× to `Assets/ui/figma/`, write `docs/ui/spec.md` | CS-011…016 | done |
+| CS-018 | CC | Sprite import settings script (`Editor/UiSpriteImporter.cs`: UI sprite, no mips, 9-slice per spec) | CS-017 | done |
 
 **Phase 1 notes (11 Sep 2026).** The file has two pages, as the owner asked: *Design System* (read-me, colour, type, space and radius, surfaces) and *Front End - Screens* (A dock, B panels/tags/hints, C three in-headset shots, D desktop, E pop-ups and dock states).
 Two conventions the rest of the work depends on:
-- **Scale.** Virtual UI is specified in millimetres and drawn at **1 mm = 4 px**. A dock tile is 110 x 70 mm, drawn 440 x 280.
+- **Scale.** Virtual UI is specified in millimetres and drawn at **1 mm = 4 px**. A dock tile is 110 x 62 mm, drawn 440 x 248.
 - **Font.** Figma has neither Selawik nor Segoe UI, so the mockups use **Source Sans 3** as a metric stand-in. The app keeps its Selawik SDF assets; match the millimetre sizes, not the family.
-CS-015 remains open for the controls overlay and About panel; CS-011 states are drawn (idle, hover, pressed, active) but not yet Figma component variants.
+CS-011 states are drawn (idle, hover, pressed, active) but are not yet Figma component variants.
+*CS-015 done:* board **F - Desktop overlays** carries both panels the desktop needs — the controls overlay (mouse column and keyboard column, every line naming a thing the player does rather than a system) and About, with the Microsoft/MIT credit, the imagery credit and three buttons. Board **D - Desktop** holds the dock mirror.
+
+*CS-017 done:* a third page, **Export - Unity**, holds the atoms actually worth shipping, and they are in `Assets/ui/figma/` — five white nine-slice rounded rects (1, 2, 4, 6, 8 mm), the dock tile foot gradient, and six icons (passthrough, recenter, help, mute, close, back). Editable SVG sources in `Assets/_sources/figma_svg/`; measurements in `docs/ui/spec.md`.
+*Why so few files:* the whole UI is rounded rects plus text, so a plate, a tag pill and a pop-up are one white sprite at different tints and radii rather than one sprite each. The tile gradients on board A are placeholders — real tile art is rendered from the scenes (CS-031) — and the black halo is generated in code, so neither is exported. Twelve files, about 21 KB.
+*CS-018 done:* `Assets/scripts/Editor/UiSpriteImporter.cs`, an `AssetPostprocessor` over `Assets/ui/figma/`. Sprite, single, no mips, clamp, uncompressed, and a nine-slice border read from the file name (`ui_rounded_r<n>` → border n + 2, so the corner arc sits inside the border and is never stretched). Menu **Cosmic Simulation → Reimport UI Sprites** forces a pass. Verified on all twelve.
+*Convention worth keeping:* export atoms are drawn at **8 px per millimetre** (twice the board scale) and imported at **8000 pixels per unit**. A Unity unit is a metre, so a sprite pixel is exactly a millimetre and the numbers in `docs/ui/spec.md` can be used directly when laying out a panel.
+*Still to do before a store listing:* the About panel's "Source code" and "Privacy" links must point at our repo and our own privacy page.
 
 Sizes and colours: GDD §8. *Acceptance for CS-017:* every frame exported; spec maps frame → prefab with mm sizes.
 
