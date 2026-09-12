@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d653dec819cc37641a0a5388e9e0dff9, type: 3}
+  m_Name: jupiter
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.BodyInfo
+  Id: jupiter
+  DisplayName: Jupiter
+  Subtitle: THE LARGEST PLANET
+  Paragraph: A gas giant with more than twice the mass of every other planet combined. The Great Red Spot is a storm wider than Earth that has been turning for at least a century and a half. Ninety-five confirmed moons circle it, among them Europa, which hides an ocean under its ice.
+  Stats:
+  - Label: Diameter
+    Value: 139,820
+    Unit: km
+    Exponent: 0
+  - Label: Mass
+    Value: 1.90 x 10
+    Unit: kg
+    Exponent: 27
+  - Label: Orbital Period
+    Value: 11.86
+    Unit: years
+    Exponent: 0
+  - Label: Day Length
+    Value: 9.9
+    Unit: hours
+    Exponent: 0
+  Moons:
+  - {fileID: 11400000, guid: c25932ebf892e8a4884171f2ebc1a938, type: 2}
+  - {fileID: 11400000, guid: 7fcb318a0dd047248baf1d2cfbc7d538, type: 2}
+  - {fileID: 11400000, guid: a25861b75efd5ae4fbe86169b589b080, type: 2}
+  - {fileID: 11400000, guid: 586070c742e8b17469cc2ed526e4e62d, type: 2}
+  Orbits: {fileID: 0}
+  Narration: {fileID: 0}
+  Ambience: {fileID: 0}

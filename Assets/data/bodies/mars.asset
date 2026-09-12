@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d653dec819cc37641a0a5388e9e0dff9, type: 3}
+  m_Name: mars
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.BodyInfo
+  Id: mars
+  DisplayName: Mars
+  Subtitle: THE RED PLANET
+  Paragraph: Iron oxide in the dust gives Mars its colour. It holds Olympus Mons, the largest volcano in the solar system, and a canyon system as long as the United States is wide. Dry riverbeds and buried ice show that water once ran here.
+  Stats:
+  - Label: Diameter
+    Value: 6,792
+    Unit: km
+    Exponent: 0
+  - Label: Mass
+    Value: 6.42 x 10
+    Unit: kg
+    Exponent: 23
+  - Label: Orbital Period
+    Value: 687
+    Unit: days
+    Exponent: 0
+  - Label: Day Length
+    Value: 24.6
+    Unit: hours
+    Exponent: 0
+  Moons:
+  - {fileID: 11400000, guid: 2f4887037644c494bb593524c4da03ca, type: 2}
+  - {fileID: 11400000, guid: 8291c3b86deb6184ab2e079261f0879b, type: 2}
+  Orbits: {fileID: 0}
+  Narration: {fileID: 0}
+  Ambience: {fileID: 0}

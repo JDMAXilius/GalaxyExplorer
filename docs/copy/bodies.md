@@ -12,6 +12,7 @@ is a mantissa).
 
 ## sun
 **Title:** The Sun
+**Subtitle:** OUR STAR
 
 A middle-aged yellow dwarf star holding 99.8 per cent of the solar system's
 mass. In its core, hydrogen fuses into helium at fifteen million degrees. The
@@ -29,6 +30,7 @@ the distance to Earth.
 
 ## mercury
 **Title:** Mercury
+**Subtitle:** THE SMALLEST PLANET
 
 The smallest planet and the closest to the Sun, cratered like the Moon and
 holding almost no atmosphere to spread its heat. Sunlit ground reaches 430
@@ -46,6 +48,7 @@ longer than one of its years.
 
 ## venus
 **Title:** Venus
+**Subtitle:** EARTH'S SCORCHING TWIN
 
 Almost Earth's twin in size, wrapped in thick carbon dioxide clouds that trap
 heat so effectively the surface sits near 465 degrees Celsius, hotter than
@@ -63,6 +66,7 @@ day outlasts its year.
 
 ## earth
 **Title:** Earth
+**Subtitle:** OUR HOME PLANET
 
 The only world known to carry life. Liquid water covers about seventy-one per
 cent of the surface, the atmosphere holds the temperature steady, and a magnetic
@@ -80,6 +84,7 @@ its axis and keeps the seasons regular.
 
 ## mars
 **Title:** Mars
+**Subtitle:** THE RED PLANET
 
 Iron oxide in the dust gives Mars its colour. It holds Olympus Mons, the largest
 volcano in the solar system, and a canyon system as long as the United States is
@@ -96,6 +101,7 @@ wide. Dry riverbeds and buried ice show that water once ran here.
 
 ## jupiter
 **Title:** Jupiter
+**Subtitle:** THE LARGEST PLANET
 
 A gas giant with more than twice the mass of every other planet combined. The
 Great Red Spot is a storm wider than Earth that has been turning for at least a
@@ -113,6 +119,7 @@ which hides an ocean under its ice.
 
 ## saturn
 **Title:** Saturn
+**Subtitle:** THE RINGED PLANET
 
 The rings are billions of pieces of ice and rock, from dust grains to boulders,
 spread into a sheet only tens of metres thick. The planet itself is less dense
@@ -130,6 +137,7 @@ nitrogen sky.
 
 ## uranus
 **Title:** Uranus
+**Subtitle:** THE SIDEWAYS ICE GIANT
 
 Uranus rolls around the Sun on its side, tipped by about ninety-eight degrees,
 most likely knocked over long ago by a collision. Each pole spends roughly
@@ -147,6 +155,7 @@ absorbs red light and leaves it pale blue-green.
 
 ## neptune
 **Title:** Neptune
+**Subtitle:** THE WINDIEST PLANET
 
 The outermost planet was found in 1846 by arithmetic before anyone saw it:
 astronomers predicted its position from wobbles in the orbit of Uranus and
@@ -164,6 +173,7 @@ anywhere in the solar system.
 
 ## pluto
 **Title:** Pluto
+**Subtitle:** A DWARF PLANET
 
 Counted as the ninth planet from 1930 until 2006, Pluto is now the best known of
 the dwarf planets. New Horizons flew past in 2015 and found mountains of water

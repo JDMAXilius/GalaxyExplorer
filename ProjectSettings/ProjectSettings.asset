@@ -196,7 +196,6 @@ PlayerSettings:
   - {fileID: 100000, guid: f7f807a51f05f3c4cb0e1b0370d494bd, type: 3}
   - {fileID: 100000, guid: bc01bcba52268114783a69b93bce71b8, type: 3}
   - {fileID: 102900000, guid: d73ecf9fee4ffab47b24e988b2490fa4, type: 3}
-  - {fileID: -3264366914402467794, guid: 689d007cb7b4aa2488fd561d822509fb, type: 2}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   xboxOneDisableKinectGpuReservation: 0
@@ -868,10 +867,10 @@ PlayerSettings:
       PointOfService: False
       RecordedCallsFolder: False
       Contacts: False
+      Proximity: False
       InternetClient: False
       CodeGeneration: False
       BackgroundMediaPlayback: False
-      Proximity: False
     XboxOne:
       enus: true
   metroTargetDeviceFamilies:

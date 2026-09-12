@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d653dec819cc37641a0a5388e9e0dff9, type: 3}
+  m_Name: saturn
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.BodyInfo
+  Id: saturn
+  DisplayName: Saturn
+  Subtitle: THE RINGED PLANET
+  Paragraph: The rings are billions of pieces of ice and rock, from dust grains to boulders, spread into a sheet only tens of metres thick. The planet itself is less dense than water. Its moon Titan has rivers and lakes of liquid methane under a thick nitrogen sky.
+  Stats:
+  - Label: Diameter
+    Value: 116,460
+    Unit: km
+    Exponent: 0
+  - Label: Mass
+    Value: 5.68 x 10
+    Unit: kg
+    Exponent: 26
+  - Label: Orbital Period
+    Value: 29.4
+    Unit: years
+    Exponent: 0
+  - Label: Day Length
+    Value: 10.7
+    Unit: hours
+    Exponent: 0
+  Moons:
+  - {fileID: 11400000, guid: fa1fefb4dc115d84ab22530f163bba1d, type: 2}
+  - {fileID: 11400000, guid: 0db7be78c09d51042a76b579ff72cc06, type: 2}
+  - {fileID: 11400000, guid: 01ad8c16409f3864d808131ac40fc850, type: 2}
+  - {fileID: 11400000, guid: e9c6036d46f1f4e4ab9004872c24dfd9, type: 2}
+  Orbits: {fileID: 0}
+  Narration: {fileID: 0}
+  Ambience: {fileID: 0}

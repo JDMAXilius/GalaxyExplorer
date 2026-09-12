@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d653dec819cc37641a0a5388e9e0dff9, type: 3}
+  m_Name: neptune
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.BodyInfo
+  Id: neptune
+  DisplayName: Neptune
+  Subtitle: THE WINDIEST PLANET
+  Paragraph: 'The outermost planet was found in 1846 by arithmetic before anyone saw it: astronomers predicted its position from wobbles in the orbit of Uranus and pointed a telescope where the numbers said. Its winds are the fastest measured anywhere in the solar system.'
+  Stats:
+  - Label: Diameter
+    Value: 49,244
+    Unit: km
+    Exponent: 0
+  - Label: Mass
+    Value: 1.02 x 10
+    Unit: kg
+    Exponent: 26
+  - Label: Orbital Period
+    Value: 164.8
+    Unit: years
+    Exponent: 0
+  - Label: Day Length
+    Value: 16.1
+    Unit: hours
+    Exponent: 0
+  Moons: []
+  Orbits: {fileID: 0}
+  Narration: {fileID: 0}
+  Ambience: {fileID: 0}

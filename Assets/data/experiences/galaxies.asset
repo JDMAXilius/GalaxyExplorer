@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5c7f912d32d84348be50abf568bcb04, type: 3}
+  m_Name: galaxies
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.ExperienceModule
+  Id: galaxies
+  Kind: 0
+  DisplayName: Galaxies
+  SecondLine: 
+  DockThumbnail: {fileID: 0}
+  SceneName: 
+  ContentPrefab: {fileID: 0}
+  Environment: 1
+  Panel:
+    Title: Galaxies
+    Paragraphs:
+    - Every smudge of light here is a galaxy, and each one holds billions of stars. Hubble and Webb found thousands of them in patches of sky no wider than a grain of sand held at arm's length.
+    - Their light has been travelling for billions of years, so looking out into a field like this is also looking a long way back in time.
+    Instruction: Use the passthrough button to put them in your room or in the dark.
+  Layouts: []
+  Narration: {fileID: 0}
+  Ambience: {fileID: 0}
