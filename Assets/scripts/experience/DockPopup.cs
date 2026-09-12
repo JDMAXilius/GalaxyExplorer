@@ -125,6 +125,20 @@ namespace CosmicSimulation
             }
         }
 
+        /// <summary>
+        /// Puts an open pop-up back above its tile. The world dock's pop-up is a sibling of the dock, not a
+        /// child of it (see <c>ExperienceWiring</c>: a child would inherit the dock's tilt and its millimetre
+        /// canvas scale), so dragging the dock moves the tile and leaves the pop-up behind. Called by
+        /// <see cref="DockController"/> once the dock has been placed; a pop-up that is shut ignores it.
+        /// </summary>
+        public void Reposition()
+        {
+            if (IsOpen)
+            {
+                PlaceAbove(Owner);
+            }
+        }
+
         /// <summary>Marks which option is in use, for when a layout changes from somewhere else.</summary>
         public void SetChosen(LayoutPreset layout)
         {

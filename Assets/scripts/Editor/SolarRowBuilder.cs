@@ -599,8 +599,15 @@ namespace CosmicSimulation.EditorTools
         /// Names that are light rather than surface. A glow card is a screen-facing billboard several times the
         /// width of the planet behind it and the Sun's flares reach further still; counting either as geometry
         /// would put every body's diameter out by a factor and report overlaps that are not there.
+        ///
+        /// <para><c>"atmosphere"</c> is here for the same reason, and is what <see cref="FindRings"/>' comment
+        /// already asks for: <c>AtmosphereShellBuilder</c> puts an additive rim shell 2.5% outside a body, and
+        /// letting that set <c>visualSpan</c> would hand the ring-clearance solver a clearance driven by a
+        /// transparent glow rather than by solid geometry. No object in the project was named for it before
+        /// that builder existed, so adding the token changes no measurement taken so far.</para>
         /// </summary>
-        private static readonly string[] NotGeometry = { "glow", "flare", "halo", "afforda", "highlight", "trail" };
+        private static readonly string[] NotGeometry =
+            { "glow", "flare", "halo", "atmosphere", "afforda", "highlight", "trail" };
 
         private static bool IsGeometry(Transform t)
         {

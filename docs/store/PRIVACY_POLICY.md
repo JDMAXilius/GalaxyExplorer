@@ -107,15 +107,17 @@ static art assets bundled in the app.
 
 ## Vendored code with unused network capability
 
-The project inherits Microsoft's TouchScript package for legacy touchscreen
-support (`Assets/external/TouchScript`), which bundles a TUIO/OSC module
-(`OSCsharp.dll`, `TUIOsharp.dll`) that can open a network socket to receive
-input from external multitouch tables. A search of the project's scenes and
-prefabs found no component that uses it (`TuioInput` and similar are not
-referenced anywhere), so it takes no action and opens no port in this build.
-It is flagged in the store-readiness checklist as something to remove or
-justify before submission, since an automated store scan of the APK could
-flag the capability even though nothing in the app invokes it.
+**Resolved 12 Sep 2026: the module was removed, so there is nothing left to
+disclose here.** The project inherited Microsoft's TouchScript package for
+legacy touchscreen support (`Assets/external/TouchScript`), which bundled a
+TUIO/OSC module (`OSCsharp.dll`, `TUIOsharp.dll`) able to open a network socket
+to receive input from external multitouch tables. Nothing referenced it, but the
+two libraries were marked enabled for Android and were reachable from
+`TuioInput.cs`, which compiled into the app's own assembly - so the capability
+would have shipped in the APK even though no code path invoked it. The whole
+module (14 files: `TuioInput.cs`, its editor, the two DLLs and their folder
+metadata) was deleted. The app now bundles no library capable of opening a
+network socket.
 
 ## Age and audience
 

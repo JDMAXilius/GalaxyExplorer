@@ -26,17 +26,18 @@ there yet.
   action: publish the page, then put the URL in both the Meta Developer
   Dashboard and the About screen via CS-086).
 
-- **[TERM] CS-090 - Decide the fate of the vendored TouchScript TUIO/OSC
-  module.** `Assets/external/TouchScript/Modules/TUIO` (with `OSCsharp.dll`
-  and `TUIOsharp.dll`) can open a network socket to receive touch input from
-  external multitouch tables. Nothing in the project's scenes or prefabs
-  wires it in today (no `TuioInput` reference found), so it is inert, but an
-  automated scan of the built APK could flag the networking capability in a
-  way that does not match a privacy policy that says "no network calls." Ship
-  a decision either way: remove the module, or record in
-  `docs/decisions.md` why it stays. Flagged [TERM] because removing part of a
-  vendored package needs a compiled, verified pass in the editor before it is
-  trusted.
+- **[DONE 12 Sep 2026] CS-112 - the vendored TouchScript TUIO/OSC module is
+  gone.** (This item previously carried the wrong ticket number, CS-090.)
+  `Assets/external/TouchScript/Modules/TUIO` held `OSCsharp.dll` and
+  `TUIOsharp.dll`, which can open a network socket to receive touch input from
+  external multitouch tables. It was **not** merely inert: both DLLs were marked
+  `Android: enabled: 1`, and `TuioInput.cs` lived under `Assets/` and so
+  compiled into the app's own assembly and referenced them - meaning the
+  capability shipped in the APK even though nothing invoked it, which is exactly
+  what an automated store scan would flag against a policy saying "no network
+  calls." Verified a closed cluster (nothing inside or outside TouchScript
+  referenced the module, and TouchScript has no assembly definition), then
+  removed - 14 files. Compiles clean afterwards. See D-009.
 
 - **Fill in the real legal details.** `docs/store/PRIVACY_POLICY.md` and
   `docs/store/ABOUT_COPY.md` both have owner-only placeholders: company/

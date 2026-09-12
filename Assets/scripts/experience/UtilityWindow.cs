@@ -205,6 +205,7 @@ namespace CosmicSimulation
             }
 
             ExperienceDirector.ExperienceChanged += OnExperienceChanged;
+            DockController.Moved += OnDockMoved;
         }
 
         private void OnDestroy()
@@ -215,6 +216,19 @@ namespace CosmicSimulation
             }
 
             ExperienceDirector.ExperienceChanged -= OnExperienceChanged;
+            DockController.Moved -= OnDockMoved;
+        }
+
+        // The dock can be carried across the room by the bar under it (CS-108), and this window opened from the
+        // dock: GDD 8.2 puts it beside the dock, not beside where the dock used to be. Re-placed when the drag
+        // ends rather than followed every frame — see DockController.Moved for why mid-drag is the wrong pose
+        // to read.
+        private void OnDockMoved()
+        {
+            if (IsOpen)
+            {
+                Place();
+            }
         }
 
         // ---------- open and close

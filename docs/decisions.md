@@ -8,6 +8,27 @@ you change one, update the affected docs in the same commit.
 
 ## 2026-09-12 — Phase 7 (terminal session)
 
+### D-009 - Remove the vendored TouchScript TUIO/OSC module rather than justify it
+CS-112 offered a choice: remove the module or record why it stays. **Removed.**
+
+The deciding fact is one the privacy policy did not have. The policy said the module
+"takes no action and opens no port in this build", which is true of its behaviour, and
+concluded it was inert. But both libraries were marked `Android: enabled: 1` in their
+`.meta` plugin settings, and `TuioInput.cs` sat under `Assets/`, so it compiled into the
+app's own assembly and referenced them. The capability therefore **shipped in the APK**;
+only its invocation was absent. That is precisely the shape an automated store scan
+flags, and it sat against a policy whose first line promises no network connection.
+
+Nothing was lost. The module was a closed cluster: no script inside TouchScript outside
+the module referenced it, nothing in the project referenced `TuioInput`, TouchScript has
+no assembly definition tying the folder in, and the only "external" GUID reference was
+the folder's own `.meta`. 14 files removed; the project compiles clean.
+
+This does not pre-empt CS-100, which asks whether TouchScript should go entirely and
+Active Input Handling move to Input System only. It removes the one part of it with a
+capability we would have had to explain, and leaves the touchscreen support that CS-100
+is actually about.
+
 ### D-008 · The OpenXR render-mode reading was backwards; Android is Single Pass Instanced
 **Finding, not a choice — recorded as a decision because it reverses one already on
 record.** Android, the shipping Quest 3 build, runs **Single Pass Instanced**.

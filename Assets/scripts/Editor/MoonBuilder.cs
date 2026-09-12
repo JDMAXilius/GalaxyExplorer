@@ -833,8 +833,11 @@ namespace CosmicSimulation.EditorTools
         // inflates a rotated sphere's box by up to 40 per cent; and size by the widest geometry rather than the
         // one that reaches furthest, because a decorative mesh a centimetre across sitting far out in model
         // space would otherwise set the diameter.
+        // "atmosphere" is here so the two lists stay identical: AtmosphereShellBuilder names its rim shell
+        // <id>_atmosphere_shell, and no object in the project carried that word before it existed.
 
-        private static readonly string[] NotGeometry = { "glow", "flare", "halo", "afforda", "highlight", "trail" };
+        private static readonly string[] NotGeometry =
+            { "glow", "flare", "halo", "atmosphere", "afforda", "highlight", "trail" };
 
         /// <summary>
         /// Active all the way up to <paramref name="stopAt"/>, walked with <c>activeSelf</c> rather than asked

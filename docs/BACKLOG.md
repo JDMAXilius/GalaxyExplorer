@@ -352,7 +352,7 @@ Sizes and colours: GDD §8. *Acceptance for CS-017:* every frame exported; spec 
 | CS-088 | TERM | Prefab surgery: delete the planet bar from `menu_managers.prefab` (11 `UiWorldPreview` tiles, both `PlanetPreviewController`s, the row itself) and the dead `PlanetPreviewController` block in `ForceSolver.OnPointerDown` | CS-087 | todo |
 | CS-123 | TERM | 90 dangling prefab-instance overrides in `core_systems_scene` target fileIDs that no longer exist in `menu_managers.prefab` (47), `hand_menu_left_prefab` (21), `hand_menu_right_prefab` (21) and `ge_xr_rig.prefab` (1) — pre-existing, inert today because Unity drops an override whose target is gone, but they hide any override that *was* load-bearing and they will be churned by CS-088's and CS-111's surgery anyway | CS-088, CS-111 | todo |
 | CS-089 | TERM | Desktop controls overlay copy is out of date: it lists `Backspace` back and omits `P` and `F2`–`F8`; rewrite `desktop_help_panel` to GDD §5.3 | CS-087 | todo |
-| CS-039 | TERM | Wire the Earth atmosphere shell (1.025 sphere child + `SunLightReceiver`) onto the Earth prefab — nothing references `earth_atmosphere_material` yet — **and compile-check `planet_atmosphere_rim_shader.shader`, which CS-047 shipped without ever compiling it** | CS-047 | todo |
+| CS-039 | TERM | Wire the Earth atmosphere shell (1.025 sphere child + `SunLightReceiver`) onto the Earth prefab — nothing references `earth_atmosphere_material` yet — **and compile-check `planet_atmosphere_rim_shader.shader`, which CS-047 shipped without ever compiling it** | CS-047 | done (12 Sep terminal session; built, run and verified in the editor - the on-screen look still wants a headset) |
 | CS-034 | TERM | Quest Link check: dock poke, dim quad, halo, passthrough toggle | CS-032 | todo |
 | CS-090 | CC | Utility window: scale slider, mute, narration-only mute, text size, close (GDD §8.2, F-03 — no `utilityWindow`/`scaleSlider` exists anywhere) | CS-028, CS-030, CS-076 | done (unverified) |
 | CS-097 | CC | Dock height was a hard-coded 0.9 m; adapt it to `max(0.55 × head height, 0.7 m)` at Recenter (GDD §11) | CS-028 | done |
@@ -360,7 +360,7 @@ Sizes and colours: GDD §8. *Acceptance for CS-017:* every frame exported; spec 
 | CS-110 | CC | Fix six runtime defects an adversarial review found across the wave (input-module early return, editor-wiring guard, music crossfade cutting the louder source, dock recentring underground, a raycaster sweep touching a nonexistent prefab, one isolated compile risk) | CS-061, CS-073, CS-097, CS-062 | done |
 | CS-111 | TERM | The hand menu still offers the old Back button in the headset — the one piece of the drill-down-navigation retirement CS-087 deliberately left alone rather than strand a headset user without checking the dock is present first | CS-087, CS-088 | todo |
 | CS-119 | TERM | Make `tools/mcp/enter_play_mode.cs` actually take over the relay, or document that Play must be pressed by hand — a request returns "PLAY: requested" and reloads the domain, but the next command still reads `playing=False` and a `smoke.cs` run is refused with `UNEXPECTED_ERROR: User interactions are not supported for MCP tool calls` | CS-098 | todo |
-| CS-121 | CC | Dragging the dock (CS-108) abandons whatever opened from it — the utility window, a `DockPopup`, a hint card and `SwitchNotice` each place themselves once at open and never again, so carrying the dock leaves them floating, unattached and still interactive, at their old offset | CS-108, CS-090 | todo |
+| CS-121 | CC | Dragging the dock (CS-108) abandons whatever opened from it — the utility window, a `DockPopup`, a hint card and `SwitchNotice` each place themselves once at open and never again, so carrying the dock leaves them floating, unattached and still interactive, at their old offset | CS-108, CS-090 | done (unverified — [CC] track, compile-checked by reading; the drag that triggers it is hand-only, so the four surfaces still need a headset) |
 
 Design contract: GDD §3, §5, §8; architecture: Technical Overview §5.5–5.6, §7.2. *Acceptance:* per roadmap Phase 2 "done when".
 
@@ -449,6 +449,7 @@ One compile risk is isolated on purpose rather than fixed: `UiEventSystemInstall
 *Pre-existing bug found, not fixed (not our file):* `DockPopup.Close()` is wired straight to its close button's `OnClick`, and `GEButton.Click` starts its cool-down coroutine immediately after invoking listeners — on a GameObject the listener has just deactivated, which Unity logs as an error. `UtilityWindow` avoids it by deferring its own close by one frame; `DockPopup` still has it.
 
 *CS-121 (new, 12 Sep 2026, verifier pass) — a regression CS-108 made reachable, not a pre-existing bug.* `UtilityWindow.Place()` is called only at the two points the window opens, never from `Update`; `DockPopup.PlaceAbove()`, `HintCards.Park()` and `SwitchNotice`'s placement are the same shape — each reads `DockController.Instance.transform` once and never again. Concrete: open the utility window with `U`, then pinch the drag bar and carry the dock a metre left — the window stays behind, floating unattached and still interactive, about the same distance from where the dock used to be. GDD §8.2 says it belongs beside the dock. Before CS-108 the dock could not be moved by hand, so this was unreachable; it is new. **The trap for whoever takes the ticket:** `DockController`'s re-facing runs in `LateUpdate`, so during a drag the dock's rotation is a hand-rolled pose for any `Update` that reads it — calling `Place()` from `UtilityWindow.Update` would produce a window that rolls with the wrist while the dock itself stays level. Re-placing on drag *end*, not every frame, avoids it.
+*CS-121 done 12 Sep 2026 (unverified in the editor — [CC] track, compile-checked by reading only).* `DockController` now raises a static `Moved` event at the end of every route that puts the dock somewhere new — the drag-release frame in `LateUpdate` (after `FaceThePlayer`, so the pose read is the levelled one and not the wrist's, which is the trap above), `Recenter`, and `MoveTo` — and `UtilityWindow`, `HintCards` and `SwitchNotice` re-place from it, each only while it is actually on screen. The dock's own `DockPopup` is moved by `DockController` calling a new `DockPopup.Reposition()` rather than by the pop-up subscribing, because `DesktopDock` instantiates a second `DockPopup` whose placement is screen-space pixels (`DesktopDock.PlacePopupAbove`) and a world-space re-place would have thrown that one out of frame on every Recenter — that is the one new bug this fix could have introduced and did not. Recenter now drags these four along too, which the old one-shot placement did not. **Needs a headset:** open the utility window with `U`, carry the dock a metre left by the bar, and confirm the window arrives beside it upright rather than rolled; same for a layout pop-up, a replayed hint card and a switch notice. Desktop is parity-only — the world dock parks 0.72 m below a camera that never pitches, so the bar cannot be moused; the reachable desktop path is `R`/Recenter, and there `Place()` still uses its camera-relative branch, so nothing moves.
 
 ## Phase 3 — Solar system one-to-one
 
@@ -585,7 +586,7 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 | CS-073 | CC | `MusicController` crossfade by environment mode (3 existing tracks) | CS-023 | done |
 | CS-074 | TERM | Keep original intro (logo → Earth placement → galaxy); add two one-time hint cards after placement; land in Milky Way with dock shown | CS-016, CS-032 | todo |
 | CS-094 | CC | The hint cards have no runtime at all (`grep HintCard` returns nothing), so contract row F-32 cannot pass: build the card component, the first-run flag and the replay entry point CS-074 and the Help button call | CS-006, CS-062 | done |
-| CS-120 | CC | `HintCards`' manipulation watch cannot tell a body or overlay grab from dock furniture: pinching the drag bar now satisfies the `Grab` card without a planet ever being pulled, and releasing it clears `_held` and silently drops an in-progress `Resize` measurement on whatever else is held — scope the subscription to "the handler is part of the dock", not `ManipulationType` | CS-108, CS-094 | todo |
+| CS-120 | CC | `HintCards`' manipulation watch cannot tell a body or overlay grab from dock furniture: pinching the drag bar now satisfies the `Grab` card without a planet ever being pulled, and releasing it clears `_held` and silently drops an in-progress `Resize` measurement on whatever else is held — scope the subscription to "the handler is part of the dock", not `ManipulationType` | CS-108, CS-094 | done (unverified — [CC] track, compile-checked by reading; both faults are hand-only and need a headset to see) |
 | CS-075 | TERM | Branding: logo, app icon, splash (Figma vector; Higgsfield hero art optional) | CS-010 | todo |
 | CS-076 | CC | Narration-only mute and panel text-size setting | CS-027 | done (unverified) |
 | CS-077 | TERM | Source the two sounds nothing in the project owns (Sun touch rumble, seamless loop ~4 s; grow-in whoosh ~0.6 s; assign rumble on the Sun prefab, whoosh on `AudioId.GrowIn`) **and the ambience beds `AmbienceController` (CS-093) now plays but that do not exist yet** — Cosmic Web, Galaxies, Andromeda, Sagittarius A\*, and (open question against GDD §4.3's "Galaxy ambience") possibly the Milky Way map, so 4 or 5 beds; `Assets/audio/ambience_audio_clips/` holds only the 12 inherited body clips today | CS-070, CS-093 | todo |
@@ -622,6 +623,7 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 *What the terminal track owes, beyond compiling it.* (1) Run **Cosmic Simulation → Build Hint Cards** once — until it runs, `ShowIfFirstRun` logs an error and shows nothing. (2) **CS-074** calls `CosmicSimulation.HintCards.ShowIfFirstRun();` from the intro once the Earth pin is placed — `PlacementControl.OnContentPlaced` is the honest moment; the component is created by the call, so there is nothing to wire. (3) The Help buttons, one line each and **not done here** because both files are owned elsewhere: `DesktopDock.ToggleHelp` and `DockController.Start` (whose `helpButton` has no `OnClick` listener at all today — a separate gap) want `CosmicSimulation.HintCards.Replay();`. (4) A play-mode look at the card in both modes: legibility against a bright wall, whether the card's collider sits between the hand and the thing the card says to grab (it parks 28 cm below eye level to avoid it, and a poke that hits the card dismisses it rather than doing nothing), and the two-line wrap of the longer sentence at 200 mm.
 *Not done, on purpose.* The dock is not hidden while a card is up (GDD §8.1 asks for it) — that is `DockController.SetVisible` state the hint component should not be fighting over, and during onboarding the dock is not shown anyway. No VO, no sound: GDD §9 gives the cards neither.
 *Regression found 12 Sep 2026, verifier pass — CS-108 made this reachable, CS-094 itself has no bug.* `HintCards.WatchManipulation` subscribes to every `ManipulationHandler.OnManipulationStarted` in the scene with no way to tell a body or overlay grab from dock furniture. Before CS-108 the drag bar had no `ManipulationPointerRouter`, so its handler's `OnManipulationStarted` could never fire and the subscription was inert against it; now it fires. A player who pinches the drag bar while card 1 (`hint_grab`, `DismissOn: Grab`) is up satisfies it without ever pulling a planet, and `HintCards.OnManipulationEnded` ignores its source and unconditionally clears `_held`, so releasing the bar mid-`hint_scale` silently drops whatever resize was actually being measured. See **CS-120** above; full detail is in the CS-108 note's check (7) in Phase 5.
+*CS-120 done 12 Sep 2026 (unverified in the editor — [CC] track, compile-checked by reading only).* `HintCards` now has one discriminator, `IsDockFurniture(handler)`, which asks whether the handler's transform `IsChildOf(DockController.Instance.transform)`; `WatchManipulation` skips those when it binds and `OnManipulationStarted` re-checks, for a dock that came into existence after a card went up. Deliberately **not** a `ManipulationType` test: one-handed is unique to the drag bar today but it is also the enum's zero value, so any future handler left at the YAML default would silently stop answering the cards. `OnManipulationEnded` now clears `_held` only when the ending source is the object it recorded (`data.ManipulationSource == _held.gameObject`), so a release it cannot attribute leaves the measurement alone. The desktop half is untouched and unaffected — there a left click dismisses any card by design, and the wheel answering `Resize` regardless of what it is over is pre-existing, out of this ticket's scope, and filed nowhere. **Needs a headset:** with card 1 up, pinch the drag bar and confirm the card does *not* advance — it should stay up until a real pull or its own 6 s timeout (the seen flag is written at `Begin`, not by answering a card, so that part of the filing was loose); then with card 2 up, hold a nebula in one hand, pinch and release the bar with the other, and confirm the resize that follows still answers the card.
 
 ## Phase 7 — Device pass, performance, release
 
@@ -636,7 +638,7 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 | CS-095 | TERM | Compile and verify the 25 stereo-macro shader fixes per eye on the standalone Android build | — | doing (compile clean and render-mode settled 12 Sep terminal session; per-eye device check still open) |
 | CS-096 | CC/TERM | The 8 reachable shaders `docs/SHADER_STEREO_AUDIT.md` could not fix mechanically | CS-095 | done (unverified — repo half; per-eye device check open) |
 | CS-086 | TERM | About slate: delete 4 orphaned Microsoft-page `Hyperlink`s (`hl2_for_devs`, `galaxy_explorer`, `original_galaxy_explorer`, `microsoft_services_agreement`), re-point 2 (source code, privacy) — prefab surgery via `PrefabUtility.LoadPrefabContents`, not hand-edited YAML | CS-084 | todo |
-| CS-112 | TERM | Decide the fate of the vendored TouchScript TUIO/OSC module (`OSCsharp.dll`, `TUIOsharp.dll`) before submission — inert today (no `TuioInput` reference anywhere) but an automated APK scan could flag the network capability against a privacy policy that says "no network calls"; remove it or record why it stays in `docs/decisions.md` | CS-084 | todo |
+| CS-112 | TERM | Decide the fate of the vendored TouchScript TUIO/OSC module (`OSCsharp.dll`, `TUIOsharp.dll`) before submission — inert today (no `TuioInput` reference anywhere) but an automated APK scan could flag the network capability against a privacy policy that says "no network calls"; remove it or record why it stays in `docs/decisions.md` | CS-084 | done (12 Sep terminal session; module removed, compiles clean, D-009) |
 | CS-113 | CC | Own the version number in `Quest3ProjectSetup`, the same pattern D-001a already set for the bundle id — no version constant exists anywhere today, `PlayerSettings.bundleVersion` is whatever Unity's default is | CS-002 | done |
 | CS-114 | TERM | Show the version on the About slate — no text element for it exists; add one and drop a `LegalNoticeText` (notice `Version`) on it, which fills it from CS-113's constant; no further code needed | CS-113, CS-086 | todo |
 | CS-115 | TERM | Verify the exported `AndroidManifest.xml` requests only what `docs/store/PRIVACY_POLICY.md` describes and nothing unexpected (e.g. `RECORD_AUDIO`, `INTERNET`) arrived transitively from a package | CS-084, CS-081 | todo |
@@ -878,3 +880,101 @@ the device pass (27, 28) — not skipped by choice, but blocked by the play-mode
 gap above (CS-119). Step 3 (confirm exactly one live `EventSystem` after boot) also did
 not run, for the same reason. Nothing in this session put a headset on, ran an APK, or
 watched anything move on screen.
+
+
+---
+
+## Session note (12 Sep 2026, terminal session - second half)
+
+Everything below was checked against the live editor or the actual files, not inferred.
+
+**CS-112 done - and it was not inert after all.** The reason it had to be removed rather than
+justified: both `OSCsharp.dll` and `TUIOsharp.dll` were marked `Android: enabled: 1` in their
+`.meta` plugin settings, and `TuioInput.cs` lived under `Assets/`, so it compiled into the app's
+own assembly and referenced them. The network capability therefore **shipped in the APK**; only its
+invocation was missing. `docs/store/PRIVACY_POLICY.md` had called it inert, which was true of its
+behaviour and misleading about what was in the build. Verified a closed cluster first (nothing in or
+out of TouchScript referenced the module, no `.asmdef`, the only external GUID hit was the folder's
+own `.meta`), then removed 14 files. Compiles clean. Policy, readiness checklist and D-009 updated;
+the checklist had also filed this under the wrong ticket number (CS-090), now corrected.
+
+**CS-039 - the shader half is closed.** `planet_atmosphere_rim_shader.shader` was the one CS-047
+shipped without ever compiling. It compiles: `ShaderUtil.ShaderHasError` false, zero messages, one
+pass, renderQueue 3000, shader name `CosmicSimulation/PlanetAtmosphereRim`.
+`earth_atmosphere_material.mat` exists and points at it, and is referenced by nothing - which is the
+wiring half. The design question is settled: the shell belongs on
+`Assets/prefabs/poi_prefabs/poi_earth_prefab.prefab`, because `SolarRowBuilder` instantiates
+`poi_<id>_prefab` from that folder (`SolarRowBuilder.cs:252`, `:276`) and `solar_system_prefab.prefab`
+references it too, so the source prefab reaches both the orbit model and the solar row and survives a
+**Build Solar Row Content** re-run. Wiring it into a generated prefab would be wiped by the next rebuild.
+
+**CS-045 confirmed.** `Assets/prefabs/solar_system_prefab.prefab`'s root carries `GEInteractable` = 0,
+`ManipulationHandler` = 0, `ScaleLimits` = 0. The orbit model genuinely cannot be grabbed today.
+
+**CS-088 confirmed.** `Assets/prefabs/menu_managers.prefab` still holds 11 `UiWorldPreview` components
+and 2 `PlanetPreviewController` components.
+
+**CS-111 confirmed, but the ticket points at the wrong file, and this will cost someone an hour.**
+The Back button is `hand_back_button` and it lives in **`Assets/prefabs/hand_menu_offset.prefab`**. It
+is **not** in `hand_menu_left_prefab.prefab` or `hand_menu_right_prefab.prefab`, which contain no
+back-named object at all - so an operator who reads "the hand menu still offers the old Back button"
+will look in the two hand-menu prefabs, find nothing, and mark the ticket stale. It is not stale.
+Two siblings of the same retired drill-down navigation sit in `menu_managers.prefab`:
+`ggv_back_button` and `desktop_back_button` - the same file CS-088 operates on, so the two tickets
+should be done in one pass. And it is not just a GameObject: `HandMenu.cs:12` `_backButton`,
+`HandMenu.UpdateButtonsActive(resetIsActive, backIsActive)` (:88-94),
+`HandMenuManager.SetMenuAvailability` (:29-35) and `GlobalMenuManager.cs:136` passing
+`BackButtonNeedsShowing` all still carry it, so retiring the button means editing that call chain.
+
+**CS-119 - three ways into play mode, all refused.** Recorded so nobody repeats them:
+(1) `EditorApplication.isPlaying = true` (`tools/mcp/enter_play_mode.cs`) returns "PLAY: requested",
+the domain reloads, and the next command reports `playing=False`.
+(2) `ExecuteMenuItem("Edit/Play")` fails with "there is no menu named 'Edit/Play'" on 6000.6.
+(3) `EditorApplication.delayCall += () => EditorApplication.EnterPlaymode()` succeeds as a command
+and still leaves `playing=False`.
+Running `smoke.cs` in that state is refused with `UNEXPECTED_ERROR: User interactions are not
+supported for MCP tool calls`, while a trivial command in the same state succeeds - so it is the
+play-mode transition, not `smoke.cs`. Note Unity came up **already playing** when the project was
+first opened, so the editor holds play mode fine; it is entering it from a relay command that does
+not take. Until CS-119 is solved, a human presses Play and only then is `smoke.cs` polled.
+
+**CS-039 done, 12 Sep 2026.** Both halves. The shader CS-047 shipped without ever compiling does
+compile (`ShaderUtil.ShaderHasError` false, 0 messages). The wiring is a new reproducible builder,
+`Assets/scripts/Editor/AtmosphereShellBuilder.cs` (**Cosmic Simulation > Build Atmosphere Shells**),
+which edits `poi_earth_prefab` through `LoadPrefabContents` - the right home, because `SolarRowBuilder`
+instantiates `poi_<id>_prefab` and `solar_system_prefab` references it, so one edit reaches both the
+orbit model and the Solar Row and survives a rebuild.
+
+Verified from the builder's own report, second run (so idempotency is proven, `earth updated` not
+`created`): ratio 1.0250, concentric to 0.000000, parent `.../earth_tilt/axis_rotator`, layer 0,
+shell carries **0 colliders and 0 interactables** while the sphere keeps its 1 and 1, and the rim
+clears `earth_clouds_mesh` by 0.0003 prefab units (about 1.1 mm at a 15 cm body). Propagated into
+`solar_system_planets_content_prefab` by re-running Build Solar Row Content then Build Moons; 9
+MoonOrbit components and 9 moon panels survived.
+
+*Two things worth carrying forward.* **The `sharedMaterial` leak was real, not theoretical.**
+`SunLightReceiver.LateUpdate` wrote `_SunDirection` straight onto the shared material every frame; in
+the orbit model a `Fader` happens to instance the material first, but `SolarRowBuilder.Strip` destroys
+every `Fader` and keeps `SunLightReceiver`, so in Solar Row the write landed on the `.mat` on disk. Now
+routed through a `MaterialPropertyBlock` behind an **opt-in** `UsePropertyBlock` flag, default false, so
+all 94 receivers already authored into prefabs and scenes behave identically - verified: 40 x `false` in
+the generated prefab, and in `poi_earth_prefab` 5 x `false` plus the 1 x `true` on the shell. Flipping
+the default for every receiver is a real behaviour change and wants its own ticket.
+
+*And a false alarm worth recording so nobody repeats it.* The builder first reported `SHELL IS BURIED`
+against `earth_glow_mesh` at 0.0410 (1.118x the sphere), which looked like the 1.025 rim being hidden.
+It is not: `earth_glow_mesh` carries `FaceCamera`, so **0.0410 is a billboard card's half-width, not a
+shell radius** - comparing the two is a category error, and `SolarRowBuilder.NotGeometry`'s own comment
+already says a glow card is "a screen-facing billboard several times the width of the planet behind
+it". It could not occlude anyway: `halo_shader` is `Blend SrcAlpha One` with `ZWrite Off` at queue 2070
+and the rim is the same blend at 3000, so two additive layers that write no depth commute. The
+diagnostic now tests surfaces only and reports light cards as information. Note also that
+`earth_glow_material.mat` still serialises `_SRCBLEND`/`_DSTBLEND`/`_ZWRITE` properties orphaned from a
+previous shader - `halo_shader` declares none of them, so **reading blend state off that .mat tells you
+the opposite of the truth.**
+
+*Cost, for whoever adds the second recipe:* the shell reuses the body's own sphere mesh, so each one is
+6,468 verts / 12,288 tris and one draw call. At ten bodies that is ~123k triangles. Technical Overview
+7.4 sets no triangle ceiling - it budgets <= 150 draw calls - so draw calls and fill are the numbers to
+argue from, and the shells should share one low-poly sphere rather than ten full-density duplicates,
+since the rim is a per-pixel Fresnel gradient and only its silhouette shows tessellation.

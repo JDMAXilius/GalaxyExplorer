@@ -72,6 +72,15 @@ Runner limits, every one of which has already cost this project a session:
 - It answers **NOT-OK whenever anything at all was logged as a warning**, even when the command did
   exactly what it was asked. Read the text, not the status. `smoke.cs` prints its own verdict for
   this reason.
+
+  Two warning sources fire on nearly every command in this project, so nearly every command comes
+  back NOT-OK: the two vendored TouchScript `WindowsTouch.dll.meta` files carry `PluginImporter`
+  `serializedVersion: 1` against Unity 6's minimum of 2, and TMP logs `CanvasRenderer` chatter
+  whenever a UI prefab or scene is touched. Neither means anything. The `PluginImporter` warning's
+  own advice ("open and re-save the file to upgrade") does **not** work - `SaveAndReimport()` leaves
+  the version at 1 - and bumping the number by hand is unsafe, because version 2 implies fields a
+  version 1 body does not have. Both are on `smoke.cs`'s benign list; if you write your own script,
+  filter them or you will read every success as a failure.
 - `Image` resolves to `Unity.AI.Image`. Write `UnityEngine.UI.Image`.
 - `Object.GetInstanceID()` does not compile in 6000.6 — use `GetEntityId()` or `GetHashCode()`.
 - **Never** call `EditorSceneManager.OpenScene` when a scene may be dirty. The save prompt is modal

@@ -86,6 +86,15 @@ internal static class CosmicSmoke
         "CanvasRenderer",                            // TMP's material/canvas chatter
         "TextMesh Pro",
         "Assembly-CSharp-Editor",
+
+        // The two vendored TouchScript WindowsTouch plugins carry PluginImporter serializedVersion 1,
+        // below Unity 6's minimum of 2, and the warning fires on almost every asset refresh - which is
+        // the main reason a successful relay command comes back NOT-OK. The warning's own advice
+        // ("open and re-save the file to upgrade") does not work: PluginImporter.SaveAndReimport()
+        // re-imports and leaves serializedVersion at 1. Editing the number by hand is not safe, since
+        // version 2 implies fields a version 1 body does not have. So it is noise we live with until
+        // TouchScript itself goes (CS-100), and it is listed here rather than left to fail every run.
+        "PluginImporter object at version",
     };
 
     // ---------------------------------------------------------------- state (this assembly only)

@@ -221,9 +221,21 @@ namespace CosmicSimulation
         private void OnDestroy()
         {
             UnwatchManipulation();
+            DockController.Moved -= OnDockMoved;
+
             if (Instance == this)
             {
                 Instance = null;
+            }
+        }
+
+        // A replayed card parks above the dock (see Park), and the dock can now be carried away from under it
+        // by the bar beneath it (CS-108, CS-121). Only while a card is up; Park re-runs at every ShowCurrent.
+        private void OnDockMoved()
+        {
+            if (_phase != Phase.Idle)
+            {
+                Park();
             }
         }
 
@@ -456,7 +468,7 @@ namespace CosmicSimulation
             foreach (var handler in FindObjectsByType<ManipulationHandler>(
                          FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
-                if (handler == null)
+                if (handler == null || IsDockFurniture(handler))
                 {
                     continue;
                 }
@@ -483,9 +495,35 @@ namespace CosmicSimulation
             _watched.Clear();
         }
 
+        /// <summary>
+        /// Whether a handler belongs to the dock rather than to something in the sky. The cards teach grabbing
+        /// and resizing the *content*, so dock furniture must not answer them (CS-120): since the drag bar got
+        /// its pointer router, a pinch on the bar satisfied "pull a planet toward you" without a planet.
+        ///
+        /// The test is the hierarchy and not <c>ManipulationType</c>. One-handed happens to be unique to the
+        /// bar today, but it is also the enum's zero value, so any future handler left at the YAML default
+        /// would read as dock furniture and stop answering the cards for no visible reason.
+        /// </summary>
+        private static bool IsDockFurniture(ManipulationHandler handler)
+        {
+            var dock = DockController.Instance;
+            return handler != null && dock != null && handler.transform.IsChildOf(dock.transform);
+        }
+
         private void OnManipulationStarted(ManipulationEventData data)
         {
             if (_phase == Phase.Idle || _cards == null || _index >= _cards.Length)
+            {
+                return;
+            }
+
+            // Checked again here, not only where the listeners are bound: a dock that came into existence after
+            // the card went up was not there to be excluded by the subscription.
+            var handler = data != null && data.ManipulationSource != null
+                ? data.ManipulationSource.GetComponent<ManipulationHandler>()
+                : null;
+
+            if (handler == null || IsDockFurniture(handler))
             {
                 return;
             }
@@ -497,18 +535,30 @@ namespace CosmicSimulation
                 return;
             }
 
-            if (card.DismissOn != HintAction.Resize || data == null || data.ManipulationSource == null)
+            if (card.DismissOn != HintAction.Resize)
             {
                 return;
             }
 
-            _held = data.ManipulationSource.GetComponent<ManipulationHandler>();
+            _held = handler;
             _heldFor = 0f;
             _heldStartSize = -1f;
         }
 
-        private void OnManipulationEnded(ManipulationEventData _)
+        // Only the release of the thing we are actually measuring counts. This used to clear unconditionally,
+        // so with a nebula held in one hand and the resize card up, a pinch and release on the dock's drag bar
+        // with the other hand threw away the measurement mid-gesture (CS-120). A release we cannot attribute is
+        // left alone for the same reason: the card times out on its own, and a dropped measurement is worse
+        // than a stale one.
+        private void OnManipulationEnded(ManipulationEventData data)
         {
+            // The source is the handler's own GameObject (ManipulationHandler.OnPointerUp), so comparing
+            // objects is exactly "the handler this recorded" with no second GetComponent to disagree with.
+            if (_held == null || data == null || data.ManipulationSource != _held.gameObject)
+            {
+                return;
+            }
+
             _held = null;
             _heldStartSize = -1f;
         }
@@ -774,6 +824,11 @@ namespace CosmicSimulation
             }
 
             _built = true;
+
+            // Subscribed with the rest of the one-time setup, where SwitchNotice also keeps its subscription:
+            // nothing needs this hook until a card exists to be re-parked, and every route to a card comes
+            // through here first.
+            DockController.Moved += OnDockMoved;
 
             // Read here rather than in Awake: GalaxyExplorerManager decides the platform in its own Awake, and
             // until it has, PlatformId is HoloLensGen1 rather than anything true. Nothing asks for a hint before

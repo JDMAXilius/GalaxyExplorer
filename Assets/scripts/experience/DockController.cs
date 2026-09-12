@@ -276,6 +276,35 @@ namespace CosmicSimulation
 
         // ---------- placement
 
+        /// <summary>
+        /// Raised once the dock has finished being put somewhere new: the end of a hand drag, a recentre, or
+        /// <see cref="MoveTo"/>. Surfaces that open from the dock and park themselves beside it — the utility
+        /// window (GDD 8.2), a hint card, the switch notice — re-place from this rather than polling, so that
+        /// carrying the dock across the room does not leave them behind (CS-121).
+        ///
+        /// Deliberately the *end* of a drag and not every frame of one. <see cref="FaceThePlayer"/> re-imposes
+        /// the dock's own upright tilt from LateUpdate, so for the duration of a grab the rotation anything
+        /// reads in Update is the hand's roll rather than the dock's pose; a surface that followed that would
+        /// roll with the wrist while the dock stayed level. Nothing has to track the dock mid-drag — the GDD
+        /// asks only that these surfaces end up beside it.
+        /// </summary>
+        public static event System.Action Moved;
+
+        // The end of every route that puts the dock somewhere new.
+        private void Placed()
+        {
+            // The dock's own pop-up is moved from here rather than by DockPopup subscribing to the event: the
+            // desktop mirror instantiates a second DockPopup whose placement is screen-space and measured in
+            // pixels (DesktopDock.PlacePopupAbove), and a world-space re-place would throw that one out of
+            // frame the moment somebody pressed Recenter.
+            if (popup != null && popup.IsOpen)
+            {
+                popup.Reposition();
+            }
+
+            Moved?.Invoke();
+        }
+
         /// <summary>Puts the dock back in front of the player.</summary>
         public void Recenter()
         {
@@ -321,6 +350,8 @@ namespace CosmicSimulation
             var origin = new Vector3(head.position.x, head.position.y - eyeHeight, head.position.z);
             transform.position = origin + forward * distanceMetres + Vector3.up * _heightMetres;
             transform.rotation = Quaternion.LookRotation(forward, Vector3.up) * Quaternion.Euler(-tiltDegrees, 0f, 0f);
+
+            Placed();
         }
 
         // The eye height and the floor have to come out of the same measurement, or they contradict each other.
@@ -385,6 +416,7 @@ namespace CosmicSimulation
         {
             transform.position = worldPosition;
             FaceThePlayer();
+            Placed();
         }
 
         private void FaceThePlayer()
@@ -499,6 +531,13 @@ namespace CosmicSimulation
             if (dragging || _dragging)
             {
                 FaceThePlayer();
+            }
+
+            // After that FaceThePlayer, not before it: everything listening reads the dock's pose, and on the
+            // release frame the levelled pose is only true once the line above has written it.
+            if (!dragging && _dragging)
+            {
+                Placed();
             }
 
             _dragging = dragging;

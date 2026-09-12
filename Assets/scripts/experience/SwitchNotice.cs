@@ -220,6 +220,17 @@ namespace CosmicSimulation
             }
 
             ExperienceDirector.ExperienceChanged -= OnExperienceChanged;
+            DockController.Moved -= OnDockMoved;
+        }
+
+        // The notice parks above the dock, and the dock can now be carried away from under it (CS-108, CS-121).
+        // Only while something is being said: a notice that has faded out is re-parked by the next Show anyway.
+        private void OnDockMoved()
+        {
+            if (_showing)
+            {
+                Park();
+            }
         }
 
         private void Update()
@@ -332,6 +343,7 @@ namespace CosmicSimulation
             _desktop = GalaxyExplorerManager.IsDesktop;
 
             ExperienceDirector.ExperienceChanged += OnExperienceChanged;
+            DockController.Moved += OnDockMoved;
 
             var font = BorrowFont();
 
