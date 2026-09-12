@@ -149,7 +149,15 @@ namespace CosmicSimulation.EditorTools
             // be overwritten on the next frame and the grab would feel broken.
             manipulationSo.FindProperty("twoHandedManipulationType").enumValueIndex =
                 (int)ManipulationHandler.TwoHandedManipulation.MoveScale;
+            // Grabbed directly rather than pulled by a ForceSolver, so nothing else plays the grab and release
+            // sounds for it (CS-106: until the router below existed, nothing grabbed it by hand at all).
+            manipulationSo.FindProperty("playGrabSounds").boolValue = true;
             manipulationSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // Without this the handler above is unreachable: hand and ray selects are routed to
+            // IGEPointerHandler, which ManipulationHandler deliberately does not implement, and there is no
+            // ForceSolver here to forward them (CS-106).
+            root.AddComponent<ManipulationPointerRouter>();
 
             var limitsSo = new SerializedObject(root.AddComponent<ScaleLimits>());
             limitsSo.FindProperty("kind").enumValueIndex = (int)ScaleLimits.Kind.Nebula; // 30 cm to 2 m

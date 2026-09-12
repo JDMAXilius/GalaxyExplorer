@@ -854,6 +854,11 @@ namespace CosmicSimulation.EditorTools
             SetBool(manipulationSo, "playGrabSounds", true);
             manipulationSo.ApplyModifiedPropertiesWithoutUndo();
 
+            // Without this the handler above is unreachable: hand and ray selects are routed to
+            // IGEPointerHandler, which ManipulationHandler deliberately does not implement, and there is no
+            // ForceSolver here to forward them (CS-106).
+            root.AddComponent<ManipulationPointerRouter>();
+
             var limits = root.AddComponent<ScaleLimits>(); // requires the handler above, so it is added after
             var limitsSo = new SerializedObject(limits);
             // None of Body (5 cm - 3 m), Model (40 cm - 4 m) or Nebula (30 cm - 2 m) is GDD 4.4's 0.5-3 m, and
