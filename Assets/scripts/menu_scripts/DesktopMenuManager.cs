@@ -59,10 +59,14 @@ public class DesktopMenuManager : MonoBehaviour
     private float _buttonSpacing = 40f;
 
     private bool _openedOnce;
+    private bool _rootOpenedForHelp;
 
     public bool IsVisible { get; private set; } = false;
 
-    public bool IsHelpVisible => _helpPanel != null && _helpPanel.activeSelf;
+    // activeInHierarchy, not activeSelf: the overlay sits under the same root as the button row, and that root
+    // is switched off whenever the legacy menu is "unavailable". An overlay under a switched-off root is not
+    // visible, and Esc must not spend itself closing something nobody can see.
+    public bool IsHelpVisible => _helpPanel != null && _helpPanel.activeInHierarchy;
 
     public static bool IsMuted
     {
@@ -119,9 +123,16 @@ public class DesktopMenuManager : MonoBehaviour
 
     private void UpdateButtonsActive(bool resetIsActive, bool backIsActive)
     {
-        // Reset only applies in the solar system; Back only when there is a previous view.
+        // Reset only applies in the solar system.
         _resetButton.SetActive(resetIsActive);
-        _backButton.SetActive(backIsActive);
+
+        // Back is never offered, whatever backIsActive says. Drill-down navigation is retired (roadmap 4.3):
+        // TransitionManager's zoom and LoadPrevScene survive as an internal transition helper, but the player
+        // moves between places through the dock, and a Back button next to it would go somewhere the dock has
+        // no idea about. The parameter stays because GlobalMenuManager computes it for the other platforms'
+        // menus, which are retired on their own schedule.
+        _backButton.SetActive(false);
+
         LayoutButtons();
     }
 
@@ -156,9 +167,35 @@ public class DesktopMenuManager : MonoBehaviour
 
     public void SetHelpVisible(bool visible)
     {
-        if (_helpPanel != null)
+        if (_helpPanel == null)
         {
-            _helpPanel.SetActive(visible && IsVisible);
+            return;
+        }
+
+        // The overlay used to be gated on this menu being "available", a flag only the legacy ViewLoader intro
+        // flow ever raises. Since the dock took over navigation that flow may never run, which left H, F1 and
+        // the dock's own Help button pressing a panel that could not appear. The overlay therefore switches its
+        // own root back on for as long as it is up, and switches it off again after - so the retired button row
+        // is not dragged on screen with it.
+        if (visible && _menuParent != null && !_menuParent.activeSelf)
+        {
+            _menuParent.SetActive(true);
+            _rootOpenedForHelp = true;
+            if (_buttonParent != null)
+            {
+                _buttonParent.SetActive(false);
+            }
+        }
+
+        _helpPanel.SetActive(visible);
+
+        if (!visible && _rootOpenedForHelp)
+        {
+            _rootOpenedForHelp = false;
+            if (_menuParent != null && !IsVisible)
+            {
+                _menuParent.SetActive(false);
+            }
         }
     }
 

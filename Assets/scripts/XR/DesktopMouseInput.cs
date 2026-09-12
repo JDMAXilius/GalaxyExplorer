@@ -12,15 +12,24 @@ namespace GalaxyExplorer.XR
     /// - Hover: markers and planets highlight and play their focus sound.
     /// - Left click: open cards, change views, press buttons; a planet is pulled in front of the camera.
     /// - Left drag on a pulled planet: move it. Right drag on it: spin it. Wheel over it: scale it.
-    /// - Left drag on empty space: orbit the view. Right drag: pan. Wheel: zoom. Home: reset the view.
-    /// - Backspace: back. R: reset planets. Esc: close the open card or the controls overlay.
-    /// - 1-9, 0: pull the Sun through Pluto (again to send it back). M: the Moon.
-    /// - Tab: open or close the menu. H or F1: controls overlay.
+    /// - Right drag on two-handed content (a nebula, the Cosmic Web): turn it. Wheel over it: scale it, inside
+    ///   its own <c>ScaleLimits</c>. This is the desktop half of the GDD's two-hand rotate and scale.
+    /// - Left drag on empty space: orbit the view. Right drag: pan. Wheel: zoom.
+    /// - R: restore the arrangement. Home: recenter. P: passthrough preview. Esc: close a panel or the overlay.
+    /// - 1-9, 0: pull the Sun through Pluto (again to send that one back). M: the Moon.
+    /// - Tab: show or hide the dock. H or F1: controls overlay. F2-F8: switch experience.
+    ///
+    /// The key map is GDD 5.3 and is meant to be read against it row by row. There is deliberately no Backspace:
+    /// drill-down navigation is retired (roadmap 4.3), <c>TransitionManager</c>'s Back survives only as an
+    /// internal transition helper, and everything the player navigates with now goes through the dock.
     /// </summary>
     public class DesktopMouseInput : MonoBehaviour
     {
         private const float RaycastDistance = 100f;
         private const float DragThresholdPixels = 4f;
+
+        // Seconds between attempts to find a menu that is not there yet, or at all.
+        private const float MenuLookupSeconds = 0.5f;
 
         [SerializeField] private float orbitDegreesPerScreen = 200f;
         [SerializeField] private float panMetersPerScreen = 1.5f;
@@ -31,11 +40,20 @@ namespace GalaxyExplorer.XR
         [SerializeField] private float minPlanetScale = 0.1f;
         [SerializeField] private float maxPlanetScale = 3f;
 
-        // Planet-bar slots: 1-9 and 0 are the Sun through Pluto, M is the Moon.
+        // 1-9 and 0 are the Sun through Pluto, M is the Moon (GDD 5.3).
         private static readonly Key[] BodyKeys =
         {
             Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5,
             Key.Digit6, Key.Digit7, Key.Digit8, Key.Digit9, Key.Digit0, Key.M,
+        };
+
+        // The same eleven bodies as BodyKeys, index for index - a key's position in one array is its body in the
+        // other. These are BodyInfo.Id / LayoutRig.Body.Id keys; the legacy preview bar knew them as slot
+        // numbers instead, which is why the index is what the two tables share.
+        private static readonly string[] BodyIds =
+        {
+            "sun", "mercury", "venus", "earth", "mars",
+            "jupiter", "saturn", "uranus", "neptune", "pluto", "moon",
         };
 
         // The seven dock tiles, in the order they appear on the dock.
@@ -46,13 +64,14 @@ namespace GalaxyExplorer.XR
 
         private Camera _camera;
         private Transform _grabPoint;
-        private GlobalMenuManager _menu;
         private DesktopMenuManager _desktopMenu;
+        private float _menuLookupCooldown;
         private GEPointer _pointer;
 
         private GEInteractable _hovered;
         private GEInteractable _pressed;
         private ForceSolver _spinning;
+        private Transform _spinningHost;
         private float _grabDistance;
         private Vector2 _leftPressPosition, _rightPressPosition;
         private bool _orbiting, _panning;
@@ -210,7 +229,11 @@ namespace GalaxyExplorer.XR
                 // Spin a planet that has been pulled out; right-dragging anything else pans the view.
                 var solver = target != null ? target.GetComponentInParent<ForceSolver>() : null;
                 _spinning = solver != null && solver.ForceState != ForceSolver.State.Root ? solver : null;
-                _panning = _spinning == null && !IsOverUI();
+
+                // Content the hands turn with two hands rather than by pulling it out — a nebula overlay, the
+                // Cosmic Web — has no ForceSolver, so without this it would have no desktop rotation at all.
+                _spinningHost = _spinning == null ? ManipulatedHost(target) : null;
+                _panning = _spinning == null && _spinningHost == null && !IsOverUI();
             }
 
             if (button.isPressed)
@@ -219,6 +242,10 @@ namespace GalaxyExplorer.XR
                 if (_spinning != null)
                 {
                     Spin(_spinning.transform, delta);
+                }
+                else if (_spinningHost != null)
+                {
+                    Spin(_spinningHost, delta);
                 }
                 else if (_panning)
                 {
@@ -229,6 +256,7 @@ namespace GalaxyExplorer.XR
             if (button.wasReleasedThisFrame)
             {
                 _spinning = null;
+                _spinningHost = null;
                 _panning = false;
             }
         }
@@ -251,54 +279,60 @@ namespace GalaxyExplorer.XR
                 var scale = solver.transform.localScale.x * Mathf.Pow(planetScalePerNotch, notches);
                 solver.transform.localScale = Vector3.one * Mathf.Clamp(scale, minPlanetScale * pulledScale, maxPlanetScale * pulledScale);
             }
+            else if (solver == null && ManipulatedHandler(target) is ManipulationHandler handler)
+            {
+                // The two-handed equivalent. The limits are the object's own (ScaleLimits), not the planet
+                // ones above, so a nebula and the Cosmic Web stop where the GDD says they stop.
+                var host = handler.HostTransform;
+                host.localScale = handler.ClampScale(host.localScale * Mathf.Pow(planetScalePerNotch, notches));
+            }
             else
             {
                 Zoom(notches);
             }
         }
 
+        /// <summary>The <see cref="ManipulationHandler"/> above an interactable that is not pulled by a force solver.</summary>
+        private static ManipulationHandler ManipulatedHandler(GEInteractable target)
+        {
+            if (target == null || target.GetComponentInParent<ForceSolver>() != null)
+            {
+                return null;
+            }
+
+            var handler = target.GetComponentInParent<ManipulationHandler>();
+            return handler != null && handler.isActiveAndEnabled ? handler : null;
+        }
+
+        /// <summary>The transform such a handler would move, or null.</summary>
+        private static Transform ManipulatedHost(GEInteractable target)
+        {
+            var handler = ManipulatedHandler(target);
+            return handler != null ? handler.HostTransform : null;
+        }
+
         private void HandleKeyboard()
         {
             var keyboard = Keyboard.current;
-            var manager = GalaxyExplorerManager.Instance;
-            if (keyboard == null || manager == null)
+            if (keyboard == null)
             {
                 return;
             }
 
-            if (_menu == null)
-            {
-                _menu = FindAnyObjectByType<GlobalMenuManager>();
-                _desktopMenu = FindAnyObjectByType<DesktopMenuManager>();
-            }
+            FindDesktopMenu();
 
-            var menu = _menu;
-            var menuAvailable = menu != null && menu.MenuIsAvailable;
-            if (keyboard.backspaceKey.wasPressedThisFrame && menuAvailable && menu.BackButtonNeedsShowing)
-            {
-                menu.OnBackButtonPressed();
-            }
+            // GDD 5.3, in the order that table lists it. Nothing here asks GlobalMenuManager whether it is
+            // "available": that flag is raised by the legacy ViewLoader intro flow, and a key map that only
+            // works once a retired flow has finished is a key map that does not work.
 
-            if (keyboard.rKey.wasPressedThisFrame && menuAvailable && menu.ResetButtonNeedsShowing)
+            if (keyboard.rKey.wasPressedThisFrame && InputEnabled)
             {
-                menu.OnResetButtonPressed();
-            }
-
-            if (keyboard.escapeKey.wasPressedThisFrame)
-            {
-                if (_desktopMenu != null && _desktopMenu.IsHelpVisible)
-                {
-                    _desktopMenu.SetHelpVisible(false);
-                }
-                else if (manager.CardPoiManager != null)
-                {
-                    manager.CardPoiManager.CloseAnyOpenCard();
-                }
+                RestoreLayout();
             }
 
             if (keyboard.homeKey.wasPressedThisFrame)
             {
-                ResetView();
+                Recenter();
             }
 
             // P previews on the desktop what the passthrough button does in the headset: there is no room to
@@ -306,6 +340,26 @@ namespace GalaxyExplorer.XR
             if (keyboard.pKey.wasPressedThisFrame)
             {
                 CosmicSimulation.EnvironmentController.Instance?.TogglePassthrough();
+            }
+
+            // Tab belongs to the dock, and DesktopDock reads it for itself. Only when there is no dock does Tab
+            // fall back to folding the legacy button row away, so the two can never fight over one key.
+            if (keyboard.tabKey.wasPressedThisFrame && CosmicSimulation.DesktopDock.Instance == null &&
+                _desktopMenu != null)
+            {
+                _desktopMenu.OnToggleDesktopButtonVisibility();
+            }
+
+            // The controls overlay still lives on the legacy desktop HUD; DesktopMenuManager reopens its own
+            // root for it, so this no longer depends on the rest of that HUD being on screen.
+            if ((keyboard.hKey.wasPressedThisFrame || keyboard.f1Key.wasPressedThisFrame) && _desktopMenu != null)
+            {
+                _desktopMenu.OnHelpButtonPressed();
+            }
+
+            if (keyboard.escapeKey.wasPressedThisFrame)
+            {
+                CloseTopmost();
             }
 
             // F2 to F8 jump straight to an experience, in dock order.
@@ -317,28 +371,121 @@ namespace GalaxyExplorer.XR
                 }
             }
 
-            if (_desktopMenu != null && _desktopMenu.IsVisible)
-            {
-                if (keyboard.tabKey.wasPressedThisFrame)
-                {
-                    _desktopMenu.OnToggleDesktopButtonVisibility();
-                }
-
-                if (keyboard.hKey.wasPressedThisFrame || keyboard.f1Key.wasPressedThisFrame)
-                {
-                    _desktopMenu.OnHelpButtonPressed();
-                }
-            }
-
-            if (menuAvailable && InputEnabled)
+            if (InputEnabled)
             {
                 for (var slot = 0; slot < BodyKeys.Length; slot++)
                 {
                     if (keyboard[BodyKeys[slot]].wasPressedThisFrame)
                     {
-                        ToggleBody(slot, menu);
+                        ToggleBody(slot);
                     }
                 }
+            }
+        }
+
+        // The legacy HUD lives in a scene that is loaded and unloaded under us, so a reference taken once goes
+        // stale - but a FindAnyObjectByType every frame for something that may simply not be in the scene is a
+        // cost paid forever. Look again a couple of times a second while it is missing.
+        private void FindDesktopMenu()
+        {
+            if (_desktopMenu != null)
+            {
+                return;
+            }
+
+            _menuLookupCooldown -= Time.unscaledDeltaTime;
+            if (_menuLookupCooldown > 0f)
+            {
+                return;
+            }
+
+            _menuLookupCooldown = MenuLookupSeconds;
+            _desktopMenu = FindAnyObjectByType<DesktopMenuManager>();
+        }
+
+        /// <summary>
+        /// R, and the dock's Restore. GDD 5.2: the current experience's objects go back to their arrangement,
+        /// and nothing else moves.
+        /// </summary>
+        private static void RestoreLayout()
+        {
+            // A rig knows the arrangement, animates the anchors, and walks anything the player pulled out home
+            // over the same duration, so ask it rather than snapping bodies to their roots behind its back.
+            var rigs = FindObjectsByType<CosmicSimulation.LayoutRig>(FindObjectsSortMode.None);
+            if (rigs.Length > 0)
+            {
+                foreach (var rig in rigs)
+                {
+                    rig.Restore();
+                }
+
+                return;
+            }
+
+            // Experiences built before CS-060 have no rig. Restoring each body through its own placement solver
+            // keeps the 0.8 s ease the GDD asks for; a body without one has nowhere to animate from and snaps.
+            foreach (var solver in FindObjectsByType<ForceSolver>(FindObjectsSortMode.None))
+            {
+                RestoreBody(solver);
+            }
+        }
+
+        /// <summary>Home. Both halves of the word: the dock re-parks, and the desktop camera goes back.</summary>
+        private void Recenter()
+        {
+            // Through the dock when there is one, so Home and the dock's own Recenter button cannot drift apart.
+            var dock = CosmicSimulation.DesktopDock.Instance;
+            if (dock != null)
+            {
+                dock.Recenter();
+                return;
+            }
+
+            CosmicSimulation.DockController.Instance?.Recenter();
+            ResetView();
+        }
+
+        /// <summary>
+        /// Esc: close the one thing that is in the way. The controls overlay covers the view, so it goes first
+        /// and alone; otherwise anything that opened over the experience closes together.
+        /// </summary>
+        private void CloseTopmost()
+        {
+            if (_desktopMenu != null && _desktopMenu.IsHelpVisible)
+            {
+                _desktopMenu.SetHelpVisible(false);
+                return;
+            }
+
+            var closed = false;
+            foreach (var popup in FindObjectsByType<CosmicSimulation.DockPopup>(FindObjectsSortMode.None))
+            {
+                if (popup.IsOpen)
+                {
+                    popup.Close();
+                    closed = true;
+                }
+            }
+
+            if (closed)
+            {
+                return;
+            }
+
+            // A body's panel is not closable on its own - it is open exactly while its body is out of the
+            // arrangement, so R is what shuts it. Hide() only reaches the panels that are driven by hand, which
+            // is the destination and scene panels, and is a no-op on the rest.
+            foreach (var panel in FindObjectsByType<CosmicSimulation.InfoPanel>(FindObjectsSortMode.None))
+            {
+                panel.Hide();
+            }
+
+            // SwitchNotice dismisses itself on Escape, in its own Update. Deliberately not repeated here.
+
+            var manager = GalaxyExplorerManager.Instance;
+            if (manager != null && manager.CardPoiManager != null)
+            {
+                manager.CardPoiManager.CloseAnyOpenCard();
             }
         }
 
@@ -367,27 +514,69 @@ namespace GalaxyExplorer.XR
             }
         }
 
-        // Pulls the Sun, a planet or the Moon (by its planet-bar slot) out in front of the camera, or sends it back
-        // if it is already out.
-        private static void ToggleBody(int slot, GlobalMenuManager menu)
+        // Pulls one body out in front of the camera, or sends that one back. Three ways to find it, newest
+        // first: the arrangement's rig, the moon orbits, and finally the legacy preview-bar slots, which are
+        // all that the pre-CS-060 view scenes have.
+        private static void ToggleBody(int slot)
         {
+            var id = BodyIds[slot];
+
+            foreach (var rig in FindObjectsByType<CosmicSimulation.LayoutRig>(FindObjectsSortMode.None))
+            {
+                var body = rig.Find(id);
+                if (body != null && body.Force != null)
+                {
+                    ToggleBody(body.Force);
+                    return;
+                }
+            }
+
+            // A moon is not part of an arrangement: it rides its orbit and only exists once its planet is out,
+            // so before that there is nothing for M to pull and the key correctly does nothing.
+            foreach (var orbit in FindObjectsByType<CosmicSimulation.MoonOrbit>(FindObjectsSortMode.None))
+            {
+                if (orbit.Info != null && orbit.Info.Id == id && orbit.Solver != null)
+                {
+                    ToggleBody(orbit.Solver);
+                    return;
+                }
+            }
+
             foreach (var target in FindObjectsByType<UiPreviewTarget>(FindObjectsSortMode.None))
             {
-                if (target.slotId != slot || target.forceSolver == null)
+                if (target.slotId == slot && target.forceSolver != null)
                 {
-                    continue;
+                    ToggleBody(target.forceSolver);
+                    return;
                 }
+            }
+        }
 
-                if (target.forceSolver.ForceState == ForceSolver.State.Root)
-                {
-                    target.forceSolver.OnPointerDown();
-                }
-                else if (menu.ResetButtonNeedsShowing)
-                {
-                    menu.OnResetButtonPressed();
-                }
+        private static void ToggleBody(ForceSolver solver)
+        {
+            if (solver.ForceState == ForceSolver.State.Root)
+            {
+                solver.OnPointerDown();
                 return;
             }
+
+            // Only this one goes back. The old path here pressed the menu's Reset, which sent *every* planet
+            // home - the opposite of GDD 5.2, where many objects are out at once and nothing the player did
+            // not ask about moves.
+            RestoreBody(solver);
+        }
+
+        private static void RestoreBody(ForceSolver solver)
+        {
+            var placement = solver.GetComponent<CosmicSimulation.FreePlacementSolver>();
+            if (placement != null && placement.isActiveAndEnabled)
+            {
+                placement.RestoreLayout();
+                return;
+            }
+
+            solver.ResetToRoot();
+            solver.EnableForce = true;
         }
 
         private void CancelInteraction()
