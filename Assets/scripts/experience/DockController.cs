@@ -275,6 +275,12 @@ namespace CosmicSimulation
         /// <summary>Puts the dock back in front of the player.</summary>
         public void Recenter()
         {
+            // Before the camera guard, deliberately. Recenter means "put things back where they belong", and
+            // the content with no ForceSolver and no LayoutRig — the nebula overlays, the Cosmic Web, Andromeda
+            // — has no other route home in the headset (CS-107). A missing camera stops the dock re-parking; it
+            // must not also strand a galaxy the player pushed across the room.
+            FreePlacementAnchor.RestoreAll();
+
             if (_camera == null)
             {
                 _camera = Camera.main;
