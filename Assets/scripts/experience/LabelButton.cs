@@ -4,6 +4,7 @@ using GalaxyExplorer.XR;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 
 namespace CosmicSimulation
 {
@@ -30,7 +31,7 @@ namespace CosmicSimulation
 
         [SerializeField]
         [Tooltip("The pill behind the text. Left empty for a plain label with no plate.")]
-        private Renderer pill;
+        private Graphic pill;
 
         [SerializeField]
         [Tooltip("The name. Its colour flips to dark on hover so it reads against the cyan fill.")]
@@ -38,7 +39,7 @@ namespace CosmicSimulation
 
         [SerializeField]
         [Tooltip("Hairline running back to the point this names. Optional.")]
-        private Renderer leader;
+        private Graphic leader;
 
         [SerializeField]
         [Tooltip("Scaled on hover. Defaults to this transform.")]
@@ -61,7 +62,7 @@ namespace CosmicSimulation
         private Color _idleText = Color.white;
         private Color _hoverText = new Color(0.055f, 0.078f, 0.094f);
 
-        private MaterialPropertyBlock _block;
+        private bool _ready;
         private Transform _grow;
         private Vector3 _baseScale;
         private float _hover;      // 0 idle, 1 hovered
@@ -82,21 +83,19 @@ namespace CosmicSimulation
         // whether Awake has run yet, so every entry point goes through this rather than trusting it has.
         private void EnsureInit()
         {
-            if (_block != null)
+            if (_ready)
             {
                 return;
             }
 
+            _ready = true;
             _grow = growTarget != null ? growTarget : transform;
             _baseScale = _grow.localScale;
-            _block = new MaterialPropertyBlock();
 
             if (pill != null)
             {
                 // Read the authored colour so a designer can retint a label without touching this script.
-                _idleFill = pill.sharedMaterial != null && pill.sharedMaterial.HasProperty("_Color")
-                    ? pill.sharedMaterial.color
-                    : _idleFill;
+                _idleFill = pill.color;
             }
 
             if (label != null)
@@ -171,11 +170,9 @@ namespace CosmicSimulation
 
             if (pill != null)
             {
-                // A property block rather than a material instance: there is one of these per destination and
-                // several on screen at once, and instancing a material per label costs a draw call each.
-                pill.GetPropertyBlock(_block);
-                _block.SetColor("_Color", Color.Lerp(_idleFill, _accent, _hover));
-                pill.SetPropertyBlock(_block);
+                // Graphic.color rather than a material instance: the canvas batches these, so a label costs
+                // nothing extra to tint, and several tags are on screen at once.
+                pill.color = Color.Lerp(_idleFill, _accent, _hover);
             }
 
             if (label != null)
@@ -186,11 +183,9 @@ namespace CosmicSimulation
 
             if (leader != null && leader.enabled)
             {
-                leader.GetPropertyBlock(_block);
-                _block.SetColor("_Color", IsSelected || _hover > 0.5f
+                leader.color = IsSelected || _hover > 0.5f
                     ? _accent
-                    : new Color(_accent.r, _accent.g, _accent.b, 0.35f)); // line/hairline
-                leader.SetPropertyBlock(_block);
+                    : new Color(_accent.r, _accent.g, _accent.b, 0.35f); // line/hairline
             }
 
             if (selectedOutline != null)

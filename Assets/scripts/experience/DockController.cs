@@ -45,8 +45,9 @@ namespace CosmicSimulation
         private float tiltDegrees = 25f;
 
         [SerializeField]
-        [Tooltip("Metres between tile centres. Tiles are 110 mm wide with a 4 mm gap.")]
-        private float tilePitchMetres = 0.114f;
+        [Tooltip("Distance between tile centres in the tile row's own local units. Tiles are 110 mm wide " +
+                 "with a 4 mm gap, so 0.114 on a metre-scaled dock and 114 on a millimetre-scaled canvas.")]
+        private float tilePitch = 114f;
 
         [Header("Show and hide")]
         [SerializeField]
@@ -161,10 +162,10 @@ namespace CosmicSimulation
             }
 
             // Centre the row on the plate so it stays symmetrical whatever the module count is.
-            var span = (count - 1) * tilePitchMetres;
+            var span = (count - 1) * tilePitch;
             for (var i = 0; i < _tiles.Count; i++)
             {
-                _tiles[i].transform.localPosition = new Vector3(i * tilePitchMetres - span * 0.5f, 0f, 0f);
+                _tiles[i].transform.localPosition = new Vector3(i * tilePitch - span * 0.5f, 0f, 0f);
             }
 
             MarkActive(ExperienceDirector.Instance.Current);

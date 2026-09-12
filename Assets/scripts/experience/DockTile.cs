@@ -21,9 +21,16 @@ namespace CosmicSimulation
     [DisallowMultipleComponent]
     public class DockTile : MonoBehaviour, IGEFocusHandler
     {
-        private const float HoverLiftMetres = 0.006f;
-        private const float PressDepthMetres = 0.004f;
         private const float MoveSeconds = 0.09f;
+
+        [SerializeField]
+        [Tooltip("How far a hover lifts the tile toward the player, in the tile's own local units. " +
+                 "The GDD asks for 6 mm, so 0.006 on a metre-scaled dock and 6 on a millimetre-scaled canvas.")]
+        private float hoverLift = 0.006f;
+
+        [SerializeField]
+        [Tooltip("How far a poke pushes the tile in, same units as the lift. The GDD asks for 4 mm.")]
+        private float pressDepth = 0.004f;
 
         [SerializeField] private Image thumbnail;
         [SerializeField] private TMP_Text nameLabel;
@@ -137,7 +144,7 @@ namespace CosmicSimulation
             _press = Mathf.MoveTowards(_press, 0f, step);
 
             // The dock plate faces the player, so "toward the player" is the tile's own -Z.
-            var z = -_lift * HoverLiftMetres + _press * PressDepthMetres;
+            var z = -_lift * hoverLift + _press * pressDepth;
             _move.localPosition = _restLocalPosition + new Vector3(0f, 0f, z);
         }
     }
