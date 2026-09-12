@@ -98,6 +98,7 @@ Builds/Quest3/             GalaxyExplorer.apk (git-ignored)
 - `GEButton` + `GEPressVisual` + `XRPokeFilter`: pokeable/clickable buttons with `OnClick` UnityEvents (hand menu, intro confirm, desktop HUD via mouse).
 - `ManipulationHandler`: one/two-hand move/rotate/scale on a `hostTransform`; `OnManipulationStarted/Ended`; used by `ForceSolver` in the Manipulation state. `PostManipulationResetter` optionally animates rotation/scale/position back after release.
 - `Solver` / `SolverHandler`: goal-pose smoothing framework (MRTK port); `SolverHandler.TransformTarget` is what a solver follows.
+- `experience/UiEventSystemInstaller` (static, `[RuntimeInitializeOnLoadMethod(AfterSceneLoad)]` + `SceneManager.sceneLoaded`): guarantees one live `EventSystem` with one `BaseInputModule` (`InputSystemUIInputModule`), because the only authored one — on `main_camera_prefab`, arriving late with `core_systems_scene` — carries no module and every screen-space button was therefore dead. It prefers the app's own `EventSystem`/module over anything it had to create, adds a `GraphicRaycaster` to a screen-space canvas that lacks one, and exposes `IsPointerOverScreenSpaceUi(...)`. **That test is not `EventSystem.IsPointerOverGameObject()`**: every world-space UI prefab carries a `GraphicRaycaster` too, and the blanket version would make the desktop mouse stand down over a destination tag or an info panel and kill the `GEPointer` path. This layer is the only EventSystem user in the project; hand ray, poke and mouse all reach content through `GEInteractable` and physics.
 
 ### 5.3 Force-pull state machine **[existing]** — `solver_scripts/ForceSolver.cs`
 States: `Root` (parked at `RootTransform`), `Dwell` (far ray hovering; tractor beam fills over `AttractionDwellDuration` = 2 s), `Attraction` (flying to the hand, or to 1 m in front of the camera on desktop/mouse), `Free` (arrived; floating), `Manipulation` (grabbed; `ManipulationHandler` enabled).
@@ -246,10 +247,10 @@ arrangements, which the force solvers then follow.
 
 ## 8. UI technology
 
-- World-space uGUI canvases at **0.7 mm per unit** (panels) and **1 mm per unit** (dock); `Canvas.worldCamera` = main camera; `XRUIInputModule` for poke/ray on uGUI; `GEButton`/`XRPokeFilter` for non-uGUI 3D buttons (hand menu style).
+- World-space uGUI canvases at **0.7 mm per unit** (panels) and **1 mm per unit** (dock); `Canvas.worldCamera` = main camera; `GEButton`/`XRPokeFilter` for non-uGUI 3D buttons (hand menu style). World-space UI is hit with **physics through `GEPointer`**, not by the EventSystem — the `GraphicRaycaster` those prefabs carry is inert as far as gameplay goes (see §5.2, `UiEventSystemInstaller`).
 - TMP: Selawik SDF family (`Assets/Fonts`), `TextMeshPro/Distance Field` and `…Overlay`; superscripts via `<sup>` rich text; outline via material preset `Selawik Outline` (to add).
 - Figma → Unity: export SVG/PNG @2× into `Assets/ui/figma/`; sprites imported as UI sprites, 9-sliced where flagged in `docs/ui/spec.md`; sizes in the spec are mm, converted by the canvas scale.
-- Desktop HUD: `menu_managers.prefab` screen-space canvas (800×600 reference, scale with screen).
+- Desktop HUD: `menu_managers.prefab` screen-space canvas (800×600 reference, scale with screen) and `desktop_dock_prefab`. Both are clicked through the EventSystem, which is why `UiEventSystemInstaller` exists; both already carry a `GraphicRaycaster`.
 
 ---
 

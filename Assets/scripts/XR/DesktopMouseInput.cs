@@ -1,7 +1,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 namespace GalaxyExplorer.XR
@@ -113,8 +112,11 @@ namespace GalaxyExplorer.XR
 
             UpdateGrabPoint(ray);
 
-            // The desktop menu is uGUI: leave the mouse to it when the cursor is over it.
-            var overUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+            // The desktop menu and the desktop dock are uGUI: leave the mouse to them when the cursor is over
+            // one. Deliberately a screen-space-only test - the world-space UI prefabs carry GraphicRaycasters
+            // too, and standing down over a destination tag or an info panel would kill the very hover and
+            // click this method exists to deliver.
+            var overUI = CosmicSimulation.UiEventSystemInstaller.IsPointerOverScreenSpaceUi(screenPosition);
             var hit = !overUI && Physics.Raycast(ray, out var hitInfo, RaycastDistance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide)
                 ? hitInfo
                 : (RaycastHit?)null;
@@ -404,7 +406,7 @@ namespace GalaxyExplorer.XR
 
         private static bool IsOverUI()
         {
-            return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+            return CosmicSimulation.UiEventSystemInstaller.IsPointerOverScreenSpaceUi();
         }
 
         // View controls move the same content transforms TouchScript's camera controller uses on touchscreens.

@@ -4,9 +4,7 @@ using GalaxyExplorer;
 using GalaxyExplorer.XR;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 namespace CosmicSimulation
@@ -109,7 +107,7 @@ namespace CosmicSimulation
                 return;
             }
 
-            EnsureEventSystem();
+            UiEventSystemInstaller.Ensure();
             Build();
             WireControls();
 
@@ -208,33 +206,6 @@ namespace CosmicSimulation
             if (helpButton != null)
             {
                 helpButton.onClick.AddListener(ToggleHelp);
-            }
-        }
-
-        /// <summary>
-        /// A screen-space canvas is clicked through the EventSystem, and nothing in this project has needed
-        /// that until now: every other pointer goes through <see cref="GEPointer"/> and a physics raycast, so
-        /// the one EventSystem in the app (on <c>main_camera_prefab</c>) carries no input module at all.
-        /// Without a module every button here is dead, which is a worse failure than an extra component.
-        /// </summary>
-        private static void EnsureEventSystem()
-        {
-            var system = EventSystem.current;
-            if (system == null)
-            {
-                system = FindAnyObjectByType<EventSystem>();
-            }
-
-            if (system == null)
-            {
-                system = new GameObject("event_system", typeof(EventSystem)).GetComponent<EventSystem>();
-            }
-
-            // Added this way the module assigns itself the package's default UI actions, so point and click
-            // work without an actions asset of ours to keep in sync.
-            if (system.GetComponent<BaseInputModule>() == null)
-            {
-                system.gameObject.AddComponent<InputSystemUIInputModule>();
             }
         }
 

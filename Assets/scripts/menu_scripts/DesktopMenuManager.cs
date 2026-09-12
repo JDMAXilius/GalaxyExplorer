@@ -76,6 +76,11 @@ public class DesktopMenuManager : MonoBehaviour
 
     private void Start()
     {
+        // These buttons are uGUI, and until CS-061 the app had an EventSystem with no input module on it, so
+        // every one of them was dead. The installer is idempotent and is also hooked to scene loads; this call
+        // is here because a menu that cannot be pressed is indistinguishable from a menu that is not there.
+        CosmicSimulation.UiEventSystemInstaller.Ensure();
+
         SetMenuAvailability(false, false, false);
 
         _backButton.SetActive(false);

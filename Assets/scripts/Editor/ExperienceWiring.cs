@@ -35,6 +35,25 @@ namespace CosmicSimulation.EditorTools
             ("galaxies",             null,                          EnvironmentMode.FullBlack),
         };
 
+        // Room state -> music bed (GDD 9 asks for one track per environment mode). There are four states and three
+        // tracks, so BlackHalo and FullBlack share the galaxy bed: they are the two that put the player in deep
+        // space, and a nebula opened inside the Milky Way map should not change the music under the map.
+        // **This mapping is a choice, not spec — it wants owner sign-off.**
+        private static readonly (EnvironmentMode mode, string clip)[] MusicTracks =
+        {
+            (EnvironmentMode.Passthrough, "Assets/audio/music_audio_clips/background_music_audio_clip.wav"),
+            (EnvironmentMode.Dimmed,      "Assets/audio/music_audio_clips/bgm_system_audio_clip.wav"),
+            (EnvironmentMode.BlackHalo,   "Assets/audio/music_audio_clips/bgm_galaxy_audio_clip.wav"),
+            (EnvironmentMode.FullBlack,   "Assets/audio/music_audio_clips/bgm_galaxy_audio_clip.wav"),
+        };
+
+        // What the one legacy bed played at before its mixer group attenuated it. A proper loudness pass
+        // (GDD 9: -16 LUFS) is a listening job, not a code one.
+        private const float MusicVolume = 0.35f;
+
+        // The five legacy beds live under this one object in the boot scene.
+        private const string LegacyMusicRoot = "MusicAudioSources";
+
         // The order the tiles appear on the dock, left to right (GDD 8.1).
         private static readonly string[] DockOrder =
         {
@@ -194,12 +213,96 @@ namespace CosmicSimulation.EditorTools
                 desktopDock = instance.GetComponent<DesktopDock>();
             }
 
+            // Music sits beside the EnvironmentController because the beds are per room state (GDD 9), not per
+            // experience, and the room state is what that component owns.
+            var music = root.GetComponent<MusicController>() ?? root.AddComponent<MusicController>();
+            var musicWired = WireMusic(music);
+
+            if (musicWired)
+            {
+                RetireLegacyMusic(scene);
+            }
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
 
             Debug.Log($"ExperienceWiring: systems installed in {scene.name} " +
                       $"({ordered.Length} tiles, {destinations.Length} destinations, " +
-                      $"dock={(dock != null ? "yes" : "MISSING")}, desktop={(desktopDock != null ? "yes" : "MISSING")}).");
+                      $"dock={(dock != null ? "yes" : "MISSING")}, desktop={(desktopDock != null ? "yes" : "MISSING")}, " +
+                      $"music={(musicWired ? "yes" : "MISSING")}).");
+        }
+
+        /// <summary>
+        /// Fills an empty track list with the three beds the project has. Hand-authored entries win: this only
+        /// writes when the list is empty, so re-running the menu item never undoes a mix decision.
+        /// </summary>
+        private static bool WireMusic(MusicController music)
+        {
+            var so = new SerializedObject(music);
+            var list = so.FindProperty("tracks");
+
+            if (list.arraySize > 0)
+            {
+                return true;
+            }
+
+            var assigned = 0;
+            list.arraySize = MusicTracks.Length;
+            for (var i = 0; i < MusicTracks.Length; i++)
+            {
+                var element = list.GetArrayElementAtIndex(i);
+                var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(MusicTracks[i].clip);
+
+                element.FindPropertyRelative("Mode").enumValueIndex = (int)MusicTracks[i].mode;
+                element.FindPropertyRelative("Clip").objectReferenceValue = clip;
+                element.FindPropertyRelative("Volume").floatValue = MusicVolume;
+
+                if (clip != null)
+                {
+                    assigned++;
+                }
+                else
+                {
+                    Debug.LogWarning($"ExperienceWiring: no music clip at '{MusicTracks[i].clip}'.");
+                }
+            }
+
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return assigned > 0;
+        }
+
+        /// <summary>
+        /// Switches off the five inherited music sources. They all play the *same* clip through five mixer groups
+        /// that the legacy per-view snapshots faded between; left on awake they would sit underneath every
+        /// crossfade, at a level no longer controlled by anything we call. Deactivated rather than deleted, so the
+        /// snapshot rig is still there to read.
+        /// </summary>
+        private static void RetireLegacyMusic(Scene scene)
+        {
+            var legacy = FindInScene(scene, LegacyMusicRoot);
+            if (legacy == null || !legacy.gameObject.activeSelf)
+            {
+                return;
+            }
+
+            legacy.gameObject.SetActive(false);
+            Debug.Log($"ExperienceWiring: '{LegacyMusicRoot}' switched off; MusicController now owns the bed.");
+        }
+
+        private static Transform FindInScene(Scene scene, string name)
+        {
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                foreach (var candidate in root.GetComponentsInChildren<Transform>(true))
+                {
+                    if (candidate.name == name)
+                    {
+                        return candidate;
+                    }
+                }
+            }
+
+            return null;
         }
 
         private static System.Collections.Generic.Dictionary<string, ExperienceModule> LoadModules()
