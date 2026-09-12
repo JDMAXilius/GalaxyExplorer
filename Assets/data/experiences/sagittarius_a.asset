@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.ExperienceModule
   Id: sagittarius_a
   Kind: 0
-  DisplayName: Galactic Center - Sagittarius A*
-  SecondLine: 
+  DisplayName: Galactic Center
+  SecondLine: SAGITTARIUS A*
   DockThumbnail: {fileID: 21300000, guid: e7ccc3a9344870b468a384694ae33c18, type: 3}
   SceneName: galactic_center_view_scene
   ContentPrefab: {fileID: 0}

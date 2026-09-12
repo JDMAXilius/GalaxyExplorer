@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: cosmic_web
   Kind: 0
   DisplayName: Cosmic Web
-  SecondLine: 
+  SecondLine: THE LARGEST SCALE
   DockThumbnail: {fileID: 21300000, guid: 51c8bdff72306cd4c87a564096db6e9e, type: 3}
   SceneName: 
   ContentPrefab: {fileID: 5631708746659995817, guid: 4828fe3719cae354f9c510ce9aaa0069, type: 3}

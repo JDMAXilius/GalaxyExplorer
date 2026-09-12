@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: solar_system
   Kind: 0
   DisplayName: Solar System
-  SecondLine: 
+  SecondLine: THE ORBITS
   DockThumbnail: {fileID: 21300000, guid: 216753d352011214da38c11eaac98262, type: 3}
   SceneName: solar_system_view_scene
   ContentPrefab: {fileID: 0}

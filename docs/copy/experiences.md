@@ -1,5 +1,7 @@
 # Experience panels
 
+*Each experience carries a **Dock** name and a **Second line** as well as its panel **Title**. They exist because a dock tile is 110 mm wide and a panel title is not: "Galactic Center - Sagittarius A*" is thirty-two characters and used to overrun the tile beside it. The Title is what the panel says; the Dock name is what fits.*
+
 Seven scene panels. Each has a title, two paragraphs, and one instruction line
 shown in the secondary colour. ASCII only.
 
@@ -7,6 +9,8 @@ shown in the secondary colour. ASCII only.
 
 ## cosmic_web
 **Title:** Cosmic Web
+**Dock:** Cosmic Web
+**Second line:** THE LARGEST SCALE
 
 The universe at its largest scale is not spread evenly. Matter gathers along
 filaments that run for hundreds of millions of light-years, meeting at dense
@@ -21,6 +25,8 @@ map it by the galaxies strung along it, the way dew picks out a spider's web.
 
 ## galaxies
 **Title:** Galaxies
+**Dock:** Galaxies
+**Second line:** A SKY FULL OF THEM
 
 Every smudge of light here is a galaxy, and each one holds billions of stars.
 Hubble and Webb found thousands of them in patches of sky no wider than a grain
@@ -35,6 +41,8 @@ field like this is also looking a long way back in time.
 
 ## milky_way
 **Title:** Milky Way
+**Dock:** Milky Way
+**Second line:** OUR GALAXY
 
 Our galaxy is a barred spiral roughly 100,000 light-years across, holding a few
 hundred billion stars. The Sun sits in a minor arm about 26,000 light-years out
@@ -49,6 +57,8 @@ was here, dinosaurs were new.
 
 ## andromeda
 **Title:** Andromeda (M31)
+**Dock:** Andromeda
+**Second line:** M31
 
 The nearest large galaxy to our own is a spiral of about a trillion stars, 2.5
 million light-years away. On a dark night it can be seen without a telescope,
@@ -63,6 +73,8 @@ a half billion years the two galaxies will merge.
 
 ## solar_system
 **Title:** Solar System
+**Dock:** Solar System
+**Second line:** THE ORBITS
 
 Eight planets, several dwarf planets, and countless moons, asteroids and comets
 orbit one ordinary star. The Sun holds 99.8 per cent of all the mass; everything
@@ -77,6 +89,8 @@ invisible specks and Neptune would sit far outside your room.
 
 ## solar_system_planets
 **Title:** Solar System Planets
+**Dock:** The Planets
+**Second line:** SIDE BY SIDE
 
 Every world of the solar system, lined up within reach. In this view they share
 a size so you can compare their surfaces.
@@ -90,6 +104,8 @@ is a beach ball, and Earth sits in your palm.
 
 ## sagittarius_a
 **Title:** Galactic Center - Sagittarius A*
+**Dock:** Galactic Center
+**Second line:** SAGITTARIUS A*
 
 At the centre of the Milky Way is a black hole of about 4.3 million solar
 masses, 26,000 light-years from Earth. Its event horizon measures roughly 25

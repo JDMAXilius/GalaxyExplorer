@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: galaxies
   Kind: 0
   DisplayName: Galaxies
-  SecondLine: 
+  SecondLine: A SKY FULL OF THEM
   DockThumbnail: {fileID: 21300000, guid: e8d7a7e78565bc048accbd8a0441db54, type: 3}
   SceneName: 
   ContentPrefab: {fileID: 8287450577160339421, guid: 27d63533755dac34e8dc2dcd1ff3fd15, type: 3}
@@ -23,9 +23,9 @@ MonoBehaviour:
   Panel:
     Title: Galaxies
     Paragraphs:
-    - Every point of light around you is a galaxy, and every one of them holds somewhere between a hundred million and a trillion stars. They are not stars - they are the places stars live.
-    - 'These shapes are real. They are cut from two long-exposure photographs: Hubble''s Ultra Deep Field and Webb''s view of the SMACS 0723 cluster, both of which stared at a patch of apparently empty sky and found it crowded. The faintest of them are among the most distant things ever recorded, and their light has been travelling for most of the age of the universe.'
-    Instruction: Grab with two hands to turn the field or change its size.
+    - Every smudge of light here is a galaxy, and each one holds billions of stars. Hubble and Webb found thousands of them in patches of sky no wider than a grain of sand held at arm's length.
+    - Their light has been travelling for billions of years, so looking out into a field like this is also looking a long way back in time.
+    Instruction: Use the passthrough button to put them in your room or in the dark.
   Layouts: []
   Narration: {fileID: 8300000, guid: e07c3338431c4e14f9dd0a3dcb737c9a, type: 3}
   Ambience: {fileID: 0}

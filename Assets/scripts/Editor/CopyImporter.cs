@@ -320,10 +320,12 @@ namespace CosmicSimulation.EditorTools
                     Paragraphs = Paragraphs(lines),
                     Instruction = Field(lines, "Instruction") ?? string.Empty,
                 };
-                if (string.IsNullOrEmpty(module.DisplayName))
-                {
-                    module.DisplayName = module.Panel.Title;
-                }
+                // A dock tile is 110 mm wide and a panel title is not built to that. Falling back to the
+                // panel title is what put "Galactic Center - Sagittarius A*" on a tile and overran the one
+                // beside it, so the copy deck now carries a short Dock name and a Second line per
+                // experience, and the fallback is only for an entry that has not been given one yet.
+                module.DisplayName = Field(lines, "Dock") ?? module.Panel.Title;
+                module.SecondLine = Field(lines, "Second line") ?? string.Empty;
 
                 EditorUtility.SetDirty(module);
                 ids.Add(id);

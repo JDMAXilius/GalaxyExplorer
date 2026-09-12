@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.ExperienceModule
   Id: andromeda
   Kind: 0
-  DisplayName: Andromeda (M31)
-  SecondLine: 
+  DisplayName: Andromeda
+  SecondLine: M31
   DockThumbnail: {fileID: 21300000, guid: 50fc52dfd109e5c48a445d12cfc4cb7b, type: 3}
   SceneName: 
   ContentPrefab: {fileID: 5370908575843888580, guid: 3c5149773c11d1544a7995f4eee6a927, type: 3}
