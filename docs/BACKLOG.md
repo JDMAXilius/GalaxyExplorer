@@ -72,8 +72,8 @@ Sizes and colours: GDD §8. *Acceptance for CS-017:* every frame exported; spec 
 
 | ID | Track | Title | Depends | Status |
 |---|---|---|---|---|
-| CS-020 | CC | `ExperienceModule`, `BodyInfo`, `LayoutPreset` ScriptableObjects (`Assets/scripts/experience/`) | — | todo |
-| CS-021 | CC | `CopyImporter` editor menu: `docs/copy/*.md` → SO assets | CS-006, CS-020 | todo |
+| CS-020 | CC | `ExperienceModule`, `BodyInfo`, `LayoutPreset` ScriptableObjects (`Assets/scripts/experience/`) | — | done |
+| CS-021 | CC | `CopyImporter` editor menu: `docs/copy/*.md` → SO assets | CS-006, CS-020 | done |
 | CS-022 | CC | `ExperienceDirector` (switch over `ViewLoader`, events, restore-on-switch) | CS-020 | todo |
 | CS-023 | CC | `EnvironmentController` + dim quad shader/material + halo gradient generator | — | todo |
 | CS-024 | CC | `FreePlacementSolver` (no snap-back, `RestoreLayout`, bounds auto-restore) | CS-020 | todo |
@@ -89,6 +89,11 @@ Sizes and colours: GDD §8. *Acceptance for CS-017:* every frame exported; spec 
 | CS-034 | TERM | Quest Link check: dock poke, dim quad, halo, passthrough toggle | CS-032 | todo |
 
 Design contract: GDD §3, §5, §8; architecture: Technical Overview §5.5–5.6, §7.2. *Acceptance:* per roadmap Phase 2 "done when".
+
+**Phase 2 notes (11 Sep 2026).**
+*CS-020 done:* `Assets/scripts/experience/` — `ExperienceModule` (dock tile or destination: scene or content prefab, environment mode, panel copy, layouts, audio), `BodyInfo` (body or moon: title, subtitle, paragraph, `Stat[]`, moons, the planet a moon orbits; `Stat.ToRichText()` renders the superscript), `LayoutPreset` (named arrangement + `Find(bodyId)`). Namespace `CosmicSimulation`.
+*CS-021 done:* `Assets/scripts/Editor/CopyImporter.cs`, menu **Cosmic Simulation → Import Copy**, parses `docs/copy/*.md` into `Assets/data/{bodies,moons,experiences,destinations,layouts}`. Idempotent: assets are updated in place so references survive. Verified run: 10 bodies, 11 moons attached to Earth/Jupiter/Saturn/Mars, 7 experiences, 7 destinations, none incomplete.
+*Gotcha worth keeping:* inside `AssetDatabase.StartAssetEditing()` the database is not refreshed, so `IsValidFolder` reports a folder you just made as missing and `CreateFolder` silently creates `data 1`, `data 2`, … beside it. Create folders through `Directory.CreateDirectory` + one `Refresh` instead.
 
 ## Phase 3 — Solar system one-to-one
 
