@@ -16,6 +16,161 @@ Status values: `todo` · `doing` · `done` · `blocked-term` · `blocked-cc` · 
 
 ---
 
+## Session note (12 Sep 2026, reconciliation pass)
+
+This was a cloud session with no Unity editor and no MCP relay open. Its job was the
+backlog itself, not new code: read all eighteen commits of the 12 Sep parallel wave,
+reconcile the ticket ids they claimed against the rows this file actually has, add rows
+for work that landed with none, correct two records that were marked `done` without
+their artefact, and build the terminal queue below. Like every [CC] ticket it is
+reconciling, nothing here was checked against a compiler — reading only. Nothing under
+`Assets/` or `tools/` was touched by this pass.
+
+## Ticket id map — parallel wave reconciliation (12 Sep 2026)
+
+Several agents worked the 12 Sep wave in parallel. Each claimed the next free ticket id
+as it saw the file, and the file changed under them, so a commit message and the row its
+work actually lives under now do not always agree. **This file's row numbers are
+authoritative — nothing below is a renumbering.** Use this table to go from a commit
+message to the row that carries the note.
+
+| Commit says | Actual row in this file | What it is |
+|---|---|---|
+| CS-087 (`3a99b96`) | **CS-092** | Scene panel spawn/dispose on every switch |
+| CS-091 (`3a99b96`) | **CS-093** | `AmbienceController` — plays `module.Ambience` on switch |
+| CS-088 (`93f13db`) | **CS-094** | Hint card runtime (`HintCards`/`HintCardSet`) |
+| CS-089 (`e19c925`) | **CS-109** (new row, this pass) | `MoonBuilder.cs` + two `MoonOrbit.cs` fixes — CS-089 was already the desktop-help-overlay-copy ticket by the time this commit landed |
+| CS-095 (`ecb8a40`, the Sun half) | folded into **CS-046**'s note | `_TouchBrightness` on `sun_shader` — CS-095 is the shader-stereo verification ticket that `be819ae` opened under the same number |
+| CS-097 (`ecb8a40`, the dock half) | **CS-097** (new row, this pass) | Dock height at Recenter — no collision, the commit had it right, the row just did not exist yet |
+| CS-099 (`93f13db`, the Help half) | **CS-099** (new row, this pass) | Wiring the dock's Help button — no collision, same situation as CS-097 |
+| CS-098, CS-102, CS-106 | **CS-098, CS-102, CS-106** | No collision on any of these three; cited correctly and already had rows |
+| CS-086, CS-087, CS-088, CS-090, CS-091 (`docs/store/STORE_READINESS_CHECKLIST.md`) | **CS-086, CS-113, CS-114, CS-112, CS-115** | The store-readiness draft suggested its own numbers before this file had rows for them, and said so in its own header ("none of them exist there yet"). See Phase 7 |
+
+A scratchpad draft written mid-session (`id_reconciliation.md`) proposed a different
+renumbering — CS-091/092/093 swapped the other way, and CS-104/CS-105 for the prefab
+surgery and copy-rewrite tickets. **That draft is stale.** The wave itself resolved the
+CS-087/CS-092/CS-093 collision by writing the desktop-key-map note under CS-087 and the
+prefab-surgery and copy tickets under CS-088/CS-089 as this file already had them, before
+that draft could be applied. Trust this table and the rows below it, not that file.
+
+---
+
+## [TERM] priority queue — what the terminal track owes, in order (12 Sep 2026)
+
+Nothing written in the 12 Sep wave has been through a compiler, and none of it has run.
+Work this list top to bottom; later groups assume the ones above left the project in a
+state that actually builds. Ticket ids are given so a screen or a log line can be traced
+back to its note without re-reading eighteen commits.
+
+**0. Compile — before anything else.**
+1. Refresh and read `Logs/Editor.log` for `error CS####` lines (`tools/mcp/compile.ps1`,
+   CS-098).
+2. **The single highest-risk item in the whole wave — check this first.**
+   `Assets/scripts/experience/UiEventSystemInstaller.cs`, method `EnsureDefaultActions`,
+   calls `module.actionsAsset` and `module.AssignDefaultActions()` on an
+   `InputSystemUIInputModule` (CS-061). Both calls are a guess about this Input System
+   package version that nothing in this session could check. If either member does not
+   exist here, **the project does not compile**, and every screen-space button — desktop
+   dock, desktop menu, hint cards, the load-failure notice — stays exactly as dead as it
+   was before CS-061. The fix if it fails is isolated on purpose (`7e1a358`): delete the
+   `EnsureDefaultActions` method and its one call site; the module still installs, just
+   without assigned actions until something else supplies them.
+3. Once it compiles clean: confirm exactly one live `EventSystem` with exactly one
+   enabled `InputSystemUIInputModule` after boot, and that the app's own `XRUIInputModule`
+   on the camera prefab ends up disabled, not destroyed and not left running alongside
+   it (CS-061; `7e1a358` fixed an early-return bug that meant this scan never actually
+   ran before).
+
+**1. Menu items to run, in this order — solar row before moons, and the pointer-router
+builders before anything asks a nebula, the cosmic web or Andromeda to be grabbed.**
+4. **Cosmic Simulation → Build Nebula Prefabs** — a *re-run*, not a first run. Stale
+   since CS-106 added the grab forwarder and turned `playGrabSounds` on.
+5. **Cosmic Simulation → Build Cosmic Web Content** — first run; `cosmic_web_content_prefab`
+   has never been generated (CS-065, CS-106).
+6. **Cosmic Simulation → Build Andromeda Content** — first run; `andromeda_content_prefab`
+   has never been generated (CS-102, CS-106).
+7. **MoonBuilder post-pass** (CS-109) — run only after `solar_system_planets_content_prefab`
+   exists (it does, CS-041) and only once the project compiles. It must run *after*
+   `SolarRowBuilder` and must not edit it. The likeliest failure, per its own commit: a
+   prefab instance nested inside `PrefabUtility.LoadPrefabContents` mode, which is
+   documented but used nowhere else in this repo; it is null-checked, so the failure mode
+   is moons with no panels, not a crash.
+8. **Cosmic Simulation → Build Hint Cards** (CS-094) — until this runs,
+   `HintCards.ShowIfFirstRun()` logs an error and shows nothing.
+9. **Cosmic Simulation → Wire Scene Panel** (CS-092) — points `ExperienceDirector` at
+   `info_panel_prefab`; unwired, every experience has no panel and only a
+   once-per-session console warning says why.
+10. **Cosmic Simulation → Install Runtime Systems** — re-run. Now also installs
+    `MusicController` with its three clips and switches off `core_systems_scene`'s five
+    legacy `MusicAudioSources` (CS-073), and wires `desktop_dock_prefab` (see the
+    12 Sep stop-point note). Confirm the legacy sources are actually inactive rather than
+    merely muted by a snapshot.
+
+**2. Play-mode checks.**
+11. Switch every module **from the dock**, not just through `ExperienceDirector`
+    directly — `tools/mcp/smoke.cs` (CS-098) drives the director directly and would not
+    catch a dead `GEButton` or a mis-wired poke filter.
+12. Confirm a scene panel appears for all seven experiences, including the start module
+    reached through `Adopt` (the Milky Way, which never goes through `Switch`) — CS-092.
+13. Confirm ambience starts and stops with each switch and that Mute silences it —
+    CS-093. The levels (0.35, no duck under narration) are guesses and want a listen.
+14. Confirm the music crossfade: Milky Way to Sagittarius A* is a clean 2 s fade;
+    toggling passthrough twice quickly does not restart it; and check the `7e1a358` fix —
+    the crossfade used to assume the outgoing source was always the quieter one, which
+    broke the moment a scene missing from Build Settings took the room through three
+    states in one frame.
+15. Confirm dock height at Recenter, seated and standing: `max(0.55 x head, 0.7 m)`
+    (CS-097). Also confirm the `7e1a358` fix for recentring before the headset has
+    produced a pose — it used to plant the dock underground.
+16. Hint cards (CS-094): legibility and wrap at 200 mm; card 2 dismisses on a two-hand
+    scale **and** on the desktop mouse wheel, since no app-wide two-hand signal exists so
+    it watches the held object's size instead. Confirm Help, world dock and desktop,
+    replays them (CS-099) — the world dock's Help button had no listener on it at all
+    before this.
+17. Hand-grab all seven nebula overlays, the cosmic web and Andromeda (CS-106) — none of
+    these worked by hand before this wave despite carrying `ManipulationHandler`. Check:
+    two hands on one overlay scale rather than fight; a fingertip poke actually registers
+    `IsNear` at these collider radii; grabbing mid grow-in does not fight
+    `ExperienceDirector.GrowIn`'s own per-frame scale write; a desktop left-drag now moves
+    a nebula or Andromeda without fighting the orbit gesture.
+18. Confirm `R` / the dock's Restore still cannot bring back a moved nebula, Cosmic Web
+    or Andromeda (CS-107 — a known, accepted gap, not a regression to chase), and that the
+    dock's own drag bar has not quietly started dragging the dock off itself (CS-108,
+    filed, not fixed).
+19. Desktop key map end to end against GDD §5.3: `R`, `Home`, `Esc`, `1`-`9`/`0`/`M`,
+    `Tab`, `P`, `F2`-`F8`, `H`/`F1` (CS-087). `M` should genuinely find nothing until the
+    Moon's planet is pulled out — expected, not a bug.
+20. Sun (folded into CS-046's note): brighten and rumble together while a hand is inside
+    it; confirm the untouched Sun is unchanged (both gains enter the shading as exactly 1
+    at rest).
+
+**3. Shaders and Link.**
+21. Compile the 25 stereo-macro edits (CS-095) — zero errors, zero *new* warnings.
+22. Confirm the OpenXR render-mode reading against the package source itself (Android
+    Multi Pass, Standalone Single Pass Instanced — already recorded in
+    `docs/TECHNICAL_OVERVIEW.md` §7.1, but not yet confirmed against the enum).
+23. Close-one-eye check on Link across CS-095's object list: solar system view, galaxy
+    view, galactic centre, POI cards and marker pins in all three views, the boundary
+    star dome, the intro placement scene, the hand menu cards, the About slate.
+24. Confirm nothing regressed on Android (multi-pass, where a missing macro is
+    invisible rather than broken).
+25. Answer the `#pragma multi_compile_instancing` question for the five affected files
+    (CS-095 acceptance item 5) and apply one answer to all five.
+26. Work CS-096's eight held-back shaders in the order the audit gives: the black hole's
+    lensing disc first (it reads camera position per pixel, so a wrong eye index there
+    gives a plausible but wrong image — the galactic centre's centrepiece); then the four
+    procedural-draw shaders, matched to `cosmic_web_points_shader`'s pattern; then decide
+    whether the screen-compose pair is genuinely dead on XR before touching it; then the
+    `occluder_shader` semantic fix. Delete the three dead shaders and stop referencing the
+    two XRI sample shaders while there.
+
+**4. Device pass.**
+27. Quest Link full-flow session (CS-080): dock reach, panel sizes, everything above that
+    only shows on-device.
+28. Standalone APK, OVR Metrics >= 60 fps @ 72 Hz (CS-081).
+
+---
+
 ## Phase 0 — Foundation and rebrand
 
 | ID | Track | Title | Depends | Status |
@@ -108,8 +263,13 @@ Sizes and colours: GDD §8. *Acceptance for CS-017:* every frame exported; spec 
 | CS-087 | CC | Desktop key map still points at the retired drill-down navigation (`Backspace` → Back) and at the legacy menu; make GDD §5.3 true and retire the live-camera planet bar | CS-029, CS-061 | done |
 | CS-088 | TERM | Prefab surgery: delete the planet bar from `menu_managers.prefab` (11 `UiWorldPreview` tiles, both `PlanetPreviewController`s, the row itself) and the dead `PlanetPreviewController` block in `ForceSolver.OnPointerDown` | CS-087 | todo |
 | CS-089 | TERM | Desktop controls overlay copy is out of date: it lists `Backspace` back and omits `P` and `F2`–`F8`; rewrite `desktop_help_panel` to GDD §5.3 | CS-087 | todo |
-| CS-039 | TERM | Wire the Earth atmosphere shell (1.025 sphere child + `SunLightReceiver`) onto the Earth prefab — nothing references `earth_atmosphere_material` yet | CS-047 | todo |
+| CS-039 | TERM | Wire the Earth atmosphere shell (1.025 sphere child + `SunLightReceiver`) onto the Earth prefab — nothing references `earth_atmosphere_material` yet — **and compile-check `planet_atmosphere_rim_shader.shader`, which CS-047 shipped without ever compiling it** | CS-047 | todo |
 | CS-034 | TERM | Quest Link check: dock poke, dim quad, halo, passthrough toggle | CS-032 | todo |
+| CS-090 | CC | Utility window: scale slider, mute, narration-only mute, text size, close (GDD §8.2, F-03 — no `utilityWindow`/`scaleSlider` exists anywhere) | CS-028, CS-030, CS-076 | todo |
+| CS-097 | CC | Dock height was a hard-coded 0.9 m; adapt it to `max(0.55 × head height, 0.7 m)` at Recenter (GDD §11) | CS-028 | done |
+| CS-099 | CC | Wire the dock's Help button (world + desktop) — `helpButton` has no `OnClick` listener at all — to replay the hint cards | CS-094, CS-028 | done |
+| CS-110 | CC | Fix six runtime defects an adversarial review found across the wave (input-module early return, editor-wiring guard, music crossfade cutting the louder source, dock recentring underground, a raycaster sweep touching a nonexistent prefab, one isolated compile risk) | CS-061, CS-073, CS-097, CS-062 | done |
+| CS-111 | TERM | The hand menu still offers the old Back button in the headset — the one piece of the drill-down-navigation retirement CS-087 deliberately left alone rather than strand a headset user without checking the dock is present first | CS-087, CS-088 | todo |
 
 Design contract: GDD §3, §5, §8; architecture: Technical Overview §5.5–5.6, §7.2. *Acceptance:* per roadmap Phase 2 "done when".
 
@@ -130,6 +290,7 @@ Design contract: GDD §3, §5, §8; architecture: Technical Overview §5.5–5.6
 *CS-028 done:* `DockController`, `DockTile`, `DockPopup`. The dock builds itself from `ExperienceDirector.Modules`, so adding an experience is a data change, and it **parks** rather than following the head — a dock that chases you cannot be looked away from. Tile states are movement, not tint (hover lifts 6 mm, poke pushes 4 mm, open keeps a cyan underline), because a tile is mostly photograph. Only modules with more than one layout open a pop-up. Show/hide is palm-up on the left hand, latched so a held palm toggles once. Height is derived from the player at each recentre — `max(0.55 x eye height, 0.7 m)` (GDD 11) — and sampled there rather than per frame, because re-deriving it every frame is the head-following the parking rule exists to avoid; desktop and a headset that has not produced a pose yet use a nominal 1.6 m eye height, which lands on the 0.88 m the dock used to be hard-coded to.
 *CS-029 partly done, reopened 11 Sep 2026 — do not trust the earlier "done".* The `DesktopMouseInput` half is finished and verified: `P` toggles the room preview and `F2`–`F8` jump to the seven tiles in order, counting tiles only so a destination never takes a function key; label clicks and free placement already work through the existing pointer path plus CS-024. **`DesktopDock` was never built.** A live smoke run showed why it matters: the world-space dock parks 0.7 m below eye level, which is right in a headset where you glance down, but on a monitor the camera looks level and the dock is simply outside the frustum — unreachable. GDD 8.5 calls for a bottom-right HUD mirror on desktop, and that is the remaining work.
 *Gotcha worth keeping:* a component added with `AddComponent` and used in the same frame has not necessarily had `Awake` run, and a label or body is often bound the frame it is spawned. `LabelButton` and `FreePlacementSolver` both threw on that; both now lazily initialise from every entry point rather than trusting `Awake`.
+*CS-032 corrected 12 Sep 2026: the acceptance line's "hide old Back/zoom UI" half was never implemented by this ticket, only claimed.* No code hid anything when this was marked `done`. The switching half is real and stands; the hiding half landed later, under other numbers: the desktop key map and the in-code retirement of the planet bar are CS-087, the prefab surgery to actually delete the bar is CS-088 (still `todo`), and the one piece nobody has touched yet — the old Back button the hand menu still offers in the headset — is CS-111 (new, `todo`). Read this row as "switching: done; hiding: done in code, not yet in the prefab, and not yet in the hand menu."
 *CS-032 verified live 11 Sep 2026, and CS-035 raised from it.* A play-mode run confirmed the wiring works end to end: the dock built its seven tiles from module data, switching to `milky_way` set the room to Dimmed, loaded the scene, marked the active tile and completed. **But the same run exposed a duplicate-scene bug** (now CS-035): the app's own boot flow had already loaded `galaxy_view_scene` while `Director.Current` was still null, so the switch loaded a *second* copy — visible in a screenshot as every destination label drawn twice, slightly offset. The director only unloads the scene of the module it thinks was previous and knows nothing about scenes the original Galaxy Explorer flow loaded itself. It must adopt an already-loaded target scene and unload stray view scenes.
 *Worth knowing when probing:* `core_systems_scene` is loaded well into the boot flow, not at start. An early probe finds no `ExperienceDirector` and looks like a wiring failure when nothing is wrong — poll for it rather than concluding.
 *CS-037 done:* a failed scene load can no longer wedge the dock. The `finally` alone would not have fixed it, which is the find worth keeping: `ViewLoader.LoadViewAsyncInternal` throws **before its first yield**, and `StartCoroutine` runs a coroutine to its first yield inline — so the throw lands during `SwitchRoutine`'s own first `MoveNext`, before `_switching = StartCoroutine(...)` has assigned anything, and the assignment then puts a dead handle back and wedges it regardless. `Switch` now uses a `_switchFinished` flag to decide whether to store the handle at all. The wait is bounded (20 s) and the throw is caught. On failure the room comes back as passthrough — the previous place is already unloaded so it is not on offer, and the module's own environment would leave the player in an empty black void, whereas passthrough is at least their real room.
@@ -168,6 +329,21 @@ Design contract: GDD §3, §5, §8; architecture: Technical Overview §5.5–5.6
 *Three shapes in `smoke.cs` that look odd and must not be tidied away:* it will not enter play mode itself (`EnterPlaymode` reloads the domain and unloads the assembly the command is running in); `Execute` returns immediately and the walk is driven from `EditorApplication.update`, with progress in `SessionState` and a report file, because every `run` compiles a fresh assembly with fresh statics — run it again to poll; and every file in `tools/mcp/` is written **fully qualified with no `using` directives**, because the runner wraps the file in a preamble of its own.
 *CS-087, the planet bar (roadmap §4.3, Technical Overview §15).* `UiWorldPreview` built a `Camera` **and** a 256x256 `RenderTexture` per tile and moved each body onto a private `PreviewLayer` so its camera could see it alone — eleven of each, drawn every frame, for a widget nothing routes through since `DesktopDock` landed. Each tile now switches itself off in `OnEnable` before any of that, and `PlanetPreviewController` switches the whole `planet_previews` row off in `Awake`, which retires **both** copies of that component (one is legacy with 20 slots) without destroying either. Both keep a `keepLegacyBar` inspector toggle so CS-088 can check the surgery against the old behaviour. Two knock-on effects, both deliberate and both written up rather than patched here: `ForceSolver.OnPointerDown` still looks the controller up on every pull and now always fails (that file is not this ticket's; delete the block with CS-088), and the bar's habit of swinging `LightSourcePosition` when a planet was pulled is gone — that object exists only in the legacy `solar_system_view_scene`, so if a pulled planet looks unlit there, this is why.
 
+*CS-097 done (unverified — [CC] track, compile-checked by reading only; commit `ecb8a40`, titled "CS-097, CS-095" — the row for the dock half is this one, see the ticket id map).* The dock height was a hard 0.9 m, wrong for a seated player and wrong for a tall standing one. `DockController.Recenter` now computes `max(0.55 x head height, 0.7 m)` per GDD §11, working the eye height out once and using it for both the floor estimate and the height so the two cannot disagree; the 1.6 m nominal figure that used to be a buried literal is now a serialized field. Sampled at Recenter, never per frame — deliberately, because CS-028 already established that the dock parks rather than chases. Desktop has no real head height (the camera is a free-orbit preview), so it uses the nominal figure and lands within 2 cm of the old constant. **A second, worse bug was found and fixed in the same area by `7e1a358`, not by this commit:** `Recenter` used to run the frame the boot scene lands, before the headset has produced a pose but after it reports itself active, so the head read as zero and the floor came out at minus the trusted fallback eye height — the dock spawned underground. It now waits for a real pose, bounded, and believes a low reading once one has arrived. Dock reach wants a seated and standing check on device — [TERM].
+
+*CS-099 done (unverified — [CC] track, compile-checked by reading only; commit `93f13db`, same commit as CS-094).* The world dock's `helpButton` was built, shown and hidden with the rest of the controls, and nothing was ever subscribed to its `OnClick` — it had always been decorative. Both the world dock and `DesktopDock.ToggleHelp` now call `CosmicSimulation.HintCards.Replay()`; on the desktop dock the call goes in before the branch that hands off to the legacy overlay, since that path returns early and the hints are owed either way. Satisfies GDD F-05 and F-32's "replay from Help."
+
+*CS-110 done (unverified — [CC] track, compile-checked by reading only; commit `7e1a358`, "Fix six runtime defects an adversarial review found in the pushed wave" — no ticket number in the title, this row exists so the fix has one).* A `verifier`-style pass over the whole 12 Sep wave found six runtime bugs, all in code this same wave had just written, none of them compile errors:
+1. `UiEventSystemInstaller.Ensure()`'s early-return guard checked whether the *current* `EventSystem` was the one it made, which is only ever true a frame after boot — so the installer always made its own first and returned before the scan that finds the real one ever ran. CS-061's whole stated invariant had never executed once.
+2. Fixing (1) alone would have been worse: the boot scene authors an enabled `XRUIInputModule` with every action reference empty, so the moment the scan ran, its adoption logic would have destroyed the working module and handed pointer handling to an inert one — the exact dead-button bug CS-061 exists to fix, recreated by fixing (1). Resolved by disabling the foreign module rather than adopting it.
+3. `MusicController`'s editor wiring guard meant "the track list has entries," not "the list has a clip." A run with one broken clip path left four empty entries, which still passed the guard on the next run, switched off the legacy music, and left the app silent with no log line. The guard and the switch-off are now both gated on a clip actually resolving.
+4. The music crossfade assumed the outgoing source is always the quieter one, true only past the halfway point of a fade; a scene missing from Build Settings can take the room through three `EnvironmentMode`s in one frame, and the fade would then cut a bed at full volume. It now picks the genuinely quieter source.
+5. The dock-underground bug under CS-097 above.
+6. The load-failure notice's own raycaster sweep was adding a `GraphicRaycaster` to its own canvas and logging advice to fix a prefab that does not exist; it now skips canvases with nothing clickable under them.
+One compile risk is isolated on purpose rather than fixed: `UiEventSystemInstaller.EnsureDefaultActions` (the hedge described at the top of the `[TERM]` queue above) still calls two members this session could not verify against the installed package version. See queue item 2 before anything else.
+
+*CS-111 (new, 12 Sep 2026, todo).* `f0dc395`'s own note names this the one thing it deliberately left alone: the hand menu still offers the old Back button in the headset. Hiding it is one line, but the dock's presence in every headset scene was unverified in that session, and stranding a headset user with no way back is worse than a stale button. Needs an editor pass to confirm the dock actually reaches every headset scene before the button comes out.
+
 ## Phase 3 — Solar system one-to-one
 
 | ID | Track | Title | Depends | Status |
@@ -176,8 +352,9 @@ Design contract: GDD §3, §5, §8; architecture: Technical Overview §5.5–5.6
 | CS-041 | TERM | Create `solar_row_scene` from `solar_system_view_scene`; wire presets and pop-up | CS-040, CS-032 | done |
 | CS-042 | CC | `BodyInfo` assets for 10 bodies (from copy deck) | CS-021 | done |
 | CS-043 | TERM | Add moons via the `MoonForceSolver` pattern: Ganymede, Callisto, Titan, Mimas, Iapetus (+ optional 5) | CS-032 | doing |
+| CS-109 | CC | `Editor/MoonBuilder.cs` (the post-pass CS-043 was waiting on) + two `MoonOrbit.cs` bug fixes found in review | CS-043, CS-041 | done |
 | CS-044 | CC | `MoonLabel` (small/large) | — | done |
-| CS-045 | TERM | Schematic/Realistic wiring on the orbit model; name labels; Asteroid Belt label | CS-032 | todo |
+| CS-045 | TERM | Schematic/Realistic wiring on the orbit model; name labels; Asteroid Belt label — **and give `solar_system_prefab`'s root a `GEInteractable` + `ManipulationHandler(MoveRotateScale)` + `ScaleLimits(Model, 0.4-4 m)`, which it has zero of today** | CS-032 | todo |
 | CS-046 | CC | `SunTouchResponse` (brightness pulse + rumble while a hand is inside) | — | done |
 | CS-047 | CC | Earth atmosphere rim material (reuse `halo_shader`) | — | done |
 | CS-048 | TERM | Two-hand room-scale tuning (Saturn rings around the user) on Link | CS-025, CS-041 | todo |
@@ -192,7 +369,7 @@ Design contract: GDD §3, §5, §8; architecture: Technical Overview §5.5–5.6
 *CS-044 done:* `MoonLabel` — 5 mm under an orbiting moon, 18 mm bold once it is held, cross-faded. Placement is deliberately copied from `InfoPanel` (world-space follow, camera facing, constant physical size) rather than reinvented.
 *CS-047 done as a shader and a material, but nothing renders it yet — see CS-039. Not the way the ticket said, either.* `halo_shader` cannot serve a Fresnel atmosphere rim and no material variant of it can: it has **no view-dependent term at all**. Its glow is a tangent-space normal map (`glow_normal_alpha_texture`) painted onto a purpose-built `*_glow_mesh` submesh inside each planet's original FBX and lit by `_SunDirection` — on the plain 1 m sphere our body prefabs are normalised to it lights a ball, not a limb. It also predates the Quest port: no stereo macros and no `#pragma target`, so under Android multiview it would draw one eye's view into both. So: a new ~40-line shader `Assets/shaders/planet_atmosphere_rim_shader.shader` (`CosmicSimulation/PlanetAtmosphereRim`), per-pixel Fresnel, `Blend SrcAlpha One`, `ZWrite Off`, `Cull Back`, all four stereo macros, `#pragma target 4.5`, no geometry shader, `NearClip.cginc` like its siblings. The rim is per-pixel because a Fresnel term interpolated across a sphere's triangles bands worst exactly at the silhouette.
 *Recipe, not a hand-edited `.mat`:* `Assets/scripts/Editor/AtmosphereMaterialBuilder.cs`, menu **Cosmic Simulation → Build Atmosphere Materials**, writes `Assets/materials/earth_atmosphere_material.mat` and resets it to the recipe on every run. Earth's blue is the one `earth_glow_material` already used, so this is not a second blue. **For whoever wires the prefab:** it goes on a sphere child scaled ~1.025 of the body — the rim lives in that gap, and below ~1.01 it vanishes into the surface — with a `SunLightReceiver` on the same child pointing at the Sun. Without a receiver the rim lights evenly all round instead of disappearing, which is the deliberate fallback for the desktop preview and for a body held on its own. `SunLightReceiver` writes to `sharedMaterial`, so re-run the menu item before committing if a play session has left a direction in the asset. Not verified in the editor — no compile, no render.
-*CS-046 done:* `SunTouchResponse` — the Sun brightens and a rumble swells while a hand is inside it. Also answers to controllers, since a Quest user holding controllers has no palm joint, and to the mouse on desktop through the existing focus routing rather than a second raycast loop. It must sit on the same GameObject as the Sun's `ForceSolver`, because that is where `ExecuteHierarchy` stops. Its `brightnessProperty` defaults to `_TouchBrightness`, which `sun_shader` now exposes (default 0, gains `_TouchBodyGain` 0.7 and `_TouchRimGain` 1.5), so both halves of F-16 are live; the untouched Sun is unchanged because 0 enters the shading as a gain of exactly 1. Needs a [TERM] look on device to tune the gains.
+*CS-046 done, corrected 12 Sep 2026:* `SunTouchResponse` — the Sun brightens and a rumble swells while a hand is inside it. Also answers to controllers, since a Quest user holding controllers has no palm joint, and to the mouse on desktop through the existing focus routing rather than a second raycast loop. It must sit on the same GameObject as the Sun's `ForceSolver`, because that is where `ExecuteHierarchy` stops. **This was rumble-only from 11 Sep until 12 Sep:** its `brightnessProperty` defaulted to `_TouchBrightness`, a shader property that did not exist, so touching the Sun only ever rumbled. `sun_shader` now exposes it (default 0, gains `_TouchBodyGain` 0.7 and `_TouchRimGain` 1.5, arriving per-renderer through a property block so only the touched instance of the four sharing this material brightens), so both halves of F-16 are live in the code — but this half has never been compiled, never rendered, and the two gain values are a guess. The commit that added it (`ecb8a40`) called it CS-095; that id belongs to the shader-stereo verification ticket opened the same day, so the work is recorded here instead — see the ticket id map above. Needs a [TERM] look on device to tune the gains, and a compile pass before either is trusted.
 *CS-041 done, and deliberately not the way the ticket said.* It asked for a `solar_row_scene`; with CS-036 in place the experience is a **content prefab** instead, which honours the standing rule against adding scenes. `Assets/scripts/Editor/SolarRowBuilder.cs` lifts the `*_tilt` subtree out of each existing `poi_<id>_prefab` — real meshes and materials, no new geometry — normalises each to a 1 m diameter, and hangs the grabbable pattern off one root per body. `LayoutRig` animates the **home anchors** rather than the bodies, so the force solver stays the single authority on where a body belongs.
 *Three departures from the old prefab pattern, each a bug if copied literally:* `ManipulationHandler` and `ScaleLimits` must be on the **same** object, because the handler finds its constraint with `GetComponent` and the constraint measures its own transform — split, every clamp is computed against the wrong scale. `ForceSolver`, not `PlanetForceSolver`, because the subclass forces `GoalScale = Vector3.one` every frame in Root and would flatten both arrangements. And the 6 cm grab minimum is the body's own collider widened, not a second shape, so a body never carries two overlapping interactables.
 *The measurement bug this shook out, worth keeping:* the builder first sized each body by the mesh that **reached furthest** from the root. Jupiter's cloud prefab carries decorative surface meshes (`inner_spot`, `double_stream_01`) barely a centimetre across but sitting 33 cm out in model space, so Jupiter measured 67 cm instead of 10 cm and its visible sphere would have been normalised to about a sixth of every other body. Size by the **widest** geometry, not the furthest.
@@ -214,15 +391,17 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 **Also uncommitted-but-done:** `ExperienceWiring.InstallSystems` now works on the boot scene where it already sits instead of re-opening it, which is what let it run at all after a play session leaves `main_scene` dirty; and it installs `desktop_dock_prefab`.
 
 *Nothing in this session was pushed without being compiled except `MoonOrbit.cs`, which is called out above.*
+
+**Update, 12 Sep 2026, later the same day — this stop-point note is now history, not the current state.** The wave resumed after this pause. CS-065 was written (see its Phase 5 note; still `doing`, still not compiled). CS-061 and CS-062 were both written and are recorded under Phase 2 as `done (unverified — compile-checked by reading)`, the project's standing way of saying "written, not run." `MoonBuilder.cs` was written this same day and is now CS-109, `done` in the same unverified sense: two real bugs in `MoonOrbit.cs` were found and fixed in review (a fader resolved only in `Awake`, so an early getter lied about a moon's own solver — the same lazy-init trap this project has already hit twice; and `Grow` fighting `FreePlacementSolver`'s restore lerp when a planet went home with its moon still out, both writing the same scale every frame). Six moons ship active (Ganymede, Callisto, Titan, Mimas, Iapetus, and the Moon), three more are built but switched off pending a design call, and Phobos/Deimos were deliberately not built — copy exists for them but GDD §6 does not list them, and the contract wins. Sizes are derived from each moon's own planet, never tabulated, and phases are spread across the full family including the off ones so enabling one never lands it on another. Still nothing has been compiled or run; see the `[TERM]` queue above, step 7, for the one documented risk (a prefab instance nested inside `PrefabUtility.LoadPrefabContents`, used nowhere else in this repo).
 ## Phase 4 — Milky Way destinations, nebulae, black hole
 
 | ID | Track | Title | Depends | Status |
 |---|---|---|---|---|
-| CS-050 | TERM | Replace galaxy POI cards with `LabelButton` tags (6 + 3 extras on) | CS-026, CS-032 | todo |
+| CS-050 | TERM | Replace galaxy POI cards with `LabelButton` tags (6 + 3 extras on) — **and remove the legacy `CardPOI` / `poi_text_card_*` path once tags replace it**, per roadmap §4.3 and Technical Overview §15, both of which already call it retired | CS-026, CS-032 | todo |
 | CS-051 | CC | Nebula overlay renderer: layered-card prefab script + soft-depth-fade shader | — | done |
 | CS-052 | TERM | Nebula layer assets ×4 (project textures + Hubble; Higgsfield depth layers) | CS-005 | todo |
 | CS-053 | TERM | Sagittarius A\* module: full black + stars, hand-ray, panel, grow-in | CS-032 | todo |
-| CS-054 | TERM | Milky Way panel + grow-in; verify all six tags open | CS-050, CS-052 | todo |
+| CS-054 | TERM | Milky Way panel + grow-in; verify all six tags open — **and take a frame-time reading with a nebula overlay open** (the `NEBULA_SOFT_DEPTH` prepass cost CS-051's note asks for; fallback is `requestCameraDepth = false` on the prefabs) | CS-050, CS-052 | todo |
 | CS-055 | CC | Desktop tag hover/click | CS-026 | todo |
 
 **Phase 4 notes (11 Sep 2026).**
@@ -238,9 +417,9 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 | ID | Track | Title | Depends | Status |
 |---|---|---|---|---|
 | CS-063 | TERM | Galaxy sprite atlas (deep-field cutouts + Higgsfield fill) | CS-005 | todo |
-| CS-064 | TERM | `galaxies_scene`; passthrough allowed; verify | CS-062, CS-063 | todo |
+| CS-064 | TERM | Galaxies content prefab (no scene — see the drop note under Roadmap §4.4 below; roadmap still names `galaxies_scene`); passthrough allowed; **pinching a sprite gently pushes it, no grab, per GDD §4.6/F-25**; verify | CS-062, CS-063 | todo |
 | CS-065 | CC | Cosmic Web generator (Voronoi filaments → point buffer) + violet ramp for star shader | — | doing |
-| CS-066 | TERM | `cosmic_web_scene` from `galactic_center_view_scene`; verify; frame time | CS-065 | todo |
+| CS-066 | TERM | Verify `cosmic_web_content_prefab` (built as a content prefab, not the `cosmic_web_scene` the roadmap still names — see the drop note under Roadmap §4.4 below); frame time | CS-065 | todo |
 | CS-067 | TERM | Thumbnails for the three new scenes | CS-061, CS-064, CS-066 | todo |
 | CS-102 | CC | Andromeda content builder: `StarsData` variant, content prefab, wire the module | CS-036 | done |
 | CS-103 | TERM | Run the Andromeda builder, tune the look, verify the tile opens and is grabbable | CS-102 | todo |
@@ -281,7 +460,7 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 | CS-094 | CC | The hint cards have no runtime at all (`grep HintCard` returns nothing), so contract row F-32 cannot pass: build the card component, the first-run flag and the replay entry point CS-074 and the Help button call | CS-006, CS-062 | done |
 | CS-075 | TERM | Branding: logo, app icon, splash (Figma vector; Higgsfield hero art optional) | CS-010 | todo |
 | CS-076 | CC | Narration-only mute and panel text-size setting | CS-027 | todo |
-| CS-077 | TERM | Source the two sounds nothing in the project owns: Sun touch rumble (seamless loop, ~4 s) and grow-in whoosh (~0.6 s); assign rumble on the Sun prefab, whoosh on `AudioId.GrowIn` | CS-070 | todo |
+| CS-077 | TERM | Source the two sounds nothing in the project owns (Sun touch rumble, seamless loop ~4 s; grow-in whoosh ~0.6 s; assign rumble on the Sun prefab, whoosh on `AudioId.GrowIn`) **and the ambience beds `AmbienceController` (CS-093) now plays but that do not exist yet** — Cosmic Web, Galaxies, Andromeda, Sagittarius A\*, and (open question against GDD §4.3's "Galaxy ambience") possibly the Milky Way map, so 4 or 5 beds; `Assets/audio/ambience_audio_clips/` holds only the 12 inherited body clips today | CS-070, CS-093 | todo |
 | CS-093 | CC | `ExperienceModule.Ambience` is declared and read by nothing: play the open experience's bed, stop it on the way out | CS-020, CS-073 | done |
 
 **Phase 6 notes (12 Sep 2026).**
@@ -298,6 +477,7 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 *Call sites:* `GEButton` now falls back to `AudioId.Select` when its prefab assigned no `clickSound`, so every button in the app clicks rather than the handful that got a clip, and sounds `PokeRelease` when a fingertip lifts off (rays have no such moment). `DockTile` sounds its own hover and select — desktop reaches `Choose()` straight from a uGUI `Button`, bypassing the `GEButton`, and in headset mode both fire in the same frame and `AudioService`'s 50 ms same-clip cool-down collapses them. `LabelButton` sounds its own, being a pointer handler rather than a `GEButton`. `DockPopup` sounds open/close, close only when it was actually open and with no target, because the pooled source would otherwise be parented to the object it is deactivating.
 *`ManipulationHandler` gained one opt-in field, `playGrabSounds`, default off,* so nothing changes for existing prefabs. `ForceSolver` already plays grab and release as it enters and leaves its Manipulation state, and `GEInputEvents.ExecuteHierarchy` delivers to **every** enabled handler on the first matching GameObject — both components sit on the same object on a body, so an unguarded emitter here would double them. Turn it on for the things grabbed with no solver: the nebula overlays, the cosmic web, the dock drag bar.
 *Three one-line calls belong in files this ticket could not touch* — see the report/commit body: `DockController.SetVisible` (`DockShow`/`DockHide`), `ExperienceDirector.GrowIn` (`GrowIn`), `InfoPanel.Show`/`Hide` (`CardSelect`/`CardDeselect`). Until they land, the dock and panel open silently and the four appended ids have three callers, not six.
+*Closed 12 Sep 2026 (`f9f2fa1`), same ticket, later commit — the paragraph above is now history, not the current state.* All three calls landed once the ids they needed were committed. The dock show/hide sound sits under the existing equality check, so a held palm re-asserting the same state stays silent. The grow-in whoosh plays with no target transform, deliberately — it belongs to the arrival, not the object, and a second switch can destroy the object mid-grow while the sound should not be cut off with it; its id still has no clip, so the call ships ahead of the sound and goes live the day the file lands. The panel open/close sound is edge-triggered rather than hooked to `Show`/`Hide` directly, because those are idempotent setters a caller can drive every frame while visibility is a predicate recomputed in the frame loop — hooking the setters would have sounded on every spawn and stayed silent on the one open that actually matters. Not compiled, not heard.
 *Pre-existing bug found, not fixed (out of scope):* `GEButton.Click()` plays an authored `clickSound` parented to the button, so a pop-up option button whose own click closes the pop-up cuts its sound off at `SetActive(false)`. No prefab assigns a `clickSound` today, so nothing hits it yet.
 
 *What the terminal track must do and verify (new [TERM] work):* run **Cosmic Simulation → Install Runtime Systems**, which now adds `MusicController` to `cosmic_systems`, fills its three clips, **and switches off the `MusicAudioSources` object in `core_systems_scene`** — five inherited beds all playing the *same* clip through five snapshot-driven mixer groups, which would otherwise sit underneath every crossfade. Then a play-mode listen: switch Milky Way → Sagittarius A* (Dimmed → FullBlack) and hear a clean 2 s crossfade; poke the passthrough toggle twice quickly and hear no restart; check `MusicController.Instance.CurrentTrack` follows the mode; confirm the levels against −16 LUFS (0.35 on all three tracks is a guess). Clip import settings were read but not exercised: all three are 118 s stereo 48 kHz (three arrangements of one piece, which is why a crossfade between them sits well), `background_music` streams on every platform and the other two stream on Android through a platform override, so no two beds ever share a stream — the only mode pair that maps to the *same* clip (BlackHalo/FullBlack) is short-circuited as a no-op and never plays it twice at once. All three have `preloadAudioData` on and `loadInBackground` off, so the first `Play()` may hitch; that is an import-settings call for the asset track, not this ticket.
@@ -320,10 +500,21 @@ Work was halted mid-wave at the owner's request and everything outstanding is a 
 | CS-081 | TERM | Standalone APK; on-device run; OVR Metrics ≥ 60 fps @ 72 Hz | CS-080 | todo |
 | CS-082 | TERM | Performance pass (budgets: Technical Overview §7.4); profile Galaxies and Cosmic Web first | CS-081 | todo |
 | CS-083 | TERM | Passthrough alpha audit of new shaders; dim quad ordering | CS-081 | todo |
-| CS-084 | CC | Store readiness: privacy policy page, About links, description draft | — | todo |
+| CS-084 | CC | Store readiness: privacy policy page, About links, description draft | — | doing |
 | CS-085 | TERM | Regression: desktop + Quest matrices (GDD §5.3, Technical Overview §12) | CS-082 | todo |
 | CS-095 | TERM | Compile and verify the 25 stereo-macro shader fixes on Link, both eyes | — | todo |
 | CS-096 | CC/TERM | The 8 reachable shaders `docs/SHADER_STEREO_AUDIT.md` could not fix mechanically | CS-095 | todo |
+| CS-086 | TERM | About slate: delete 4 orphaned Microsoft-page `Hyperlink`s (`hl2_for_devs`, `galaxy_explorer`, `original_galaxy_explorer`, `microsoft_services_agreement`), re-point 2 (source code, privacy) — prefab surgery via `PrefabUtility.LoadPrefabContents`, not hand-edited YAML | CS-084 | todo |
+| CS-112 | TERM | Decide the fate of the vendored TouchScript TUIO/OSC module (`OSCsharp.dll`, `TUIOsharp.dll`) before submission — inert today (no `TuioInput` reference anywhere) but an automated APK scan could flag the network capability against a privacy policy that says "no network calls"; remove it or record why it stays in `docs/decisions.md` | CS-084 | todo |
+| CS-113 | CC | Own the version number in `Quest3ProjectSetup`, the same pattern D-001a already set for the bundle id — no version constant exists anywhere today, `PlayerSettings.bundleVersion` is whatever Unity's default is | CS-002 | todo |
+| CS-114 | TERM | Show the version on the About slate — no text element for it exists; bind a new one to CS-113's value | CS-113, CS-086 | todo |
+| CS-115 | TERM | Verify the exported `AndroidManifest.xml` requests only what `docs/store/PRIVACY_POLICY.md` describes and nothing unexpected (e.g. `RECORD_AUDIO`, `INTERNET`) arrived transitively from a package | CS-084, CS-081 | todo |
+| CS-116 | CC | Bundle `License.txt` (the MIT notice) into the build — not confirmed to ship in the APK or be reachable from the About screen today, which is thinner than the licence requires | CS-002 | todo |
+| CS-100 | CC | *(optional, Phase 7)* Remove TouchScript and switch Active Input Handling to Input System only, once nothing depends on it | CS-061, CS-112 | todo |
+| CS-101 | TERM | *(optional, Phase 3)* Re-UV or re-project the Moon and Earth maps so the USGS / Blue Marble upgrades can drop in, or close `dropped` with the reason recorded | CS-005, CS-047 | todo |
+
+**Phase 7 notes (12 Sep 2026).**
+*CS-084 moved `todo` → `doing`; it had shipped a real draft while still marked untouched.* `docs/store/ABOUT_COPY.md`, `docs/store/PRIVACY_POLICY.md`, `docs/store/STORE_LISTING.md` and `docs/store/STORE_READINESS_CHECKLIST.md` are all on disk (commit `6e4a6fd`). The privacy policy is built from what the repo actually does, not a template: hand tracking and the passthrough camera are the only sensing features, no app code reads a camera frame, room placement persists only on the dead HoloLens path, three local non-identifying `PlayerPrefs` keys exist, and every Unity cloud service is off in project settings. What could not be established from the repo — where the policy will be hosted, the legal entity's name, whether the TouchScript TUIO module should be removed — is listed as an open question for the owner rather than asserted. The checklist itself proposed ticket ids before this file had rows for them (its own header says so); CS-086, CS-112, CS-113, CS-114 and CS-115 above are those items given the ids they actually landed under here, per the ticket id map. Not done: none of it has been read by anyone but the agent that wrote it, and every placeholder ({SOURCE_URL}, {PRIVACY_URL}, company name) is still a placeholder.
 
 **CS-095 — Compile and verify the 25 stereo-macro shader fixes on Link, both eyes.**
 Context: `docs/SHADER_STEREO_AUDIT.md`. 36 of the 47 project shaders carried **no** stereo macros at all; 25 reachable ones were fixed in the [CC] track on 12 Sep 2026 **without a compiler**. Nothing below has been compiled.

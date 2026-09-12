@@ -170,7 +170,7 @@ LayoutPreset : ScriptableObject
 | `galactic_center_view_scene` | galactic center content | `poi_sagittarius_a_prefab`, `poi_s2_prefab`, `poi_s102_prefab` | Sagittarius A\* |
 | *(no scene)* | `solar_system_planets_content_prefab` — `LayoutRig`, 10 `body_<id>` roots, home anchors, panels | Planets |
 | *(no scene)* | `andromeda_content_prefab` — three `SpiralGalaxy` layers on one tilted node, baked `StarsData` each, one-and-two-hand move/rotate/scale, 0.6 m grab sphere | Andromeda |
-| `galaxies_scene` [planned] | `galaxy_field_prefab` (instanced billboards) | Galaxies |
+| *(no scene, planned)* | `galaxy_field_prefab` (instanced billboards) — content prefab once built, per the CS-036 route below, not a `galaxies_scene` | Galaxies |
 | *(no scene)* | `cosmic_web_content_prefab` — `CosmicWebRenderer` (procedural point cloud), two-hand rotate/scale, 0.9 m grab sphere | Cosmic Web |
 
 Four of the seven places have **no scene**: since CS-036 `ExperienceDirector` opens a module from its
@@ -372,9 +372,9 @@ Rules learned the hard way:
 - Galaxy POI cards (`CardPOI`, `poi_text_card_*` textures) are legacy; tags replace them (Phase 4).
 - `UiWorldPreview` planet bar is **retired in code** (CS-087): each tile switches itself off in `OnEnable` before it can build its camera, and `PlanetPreviewController` switches the whole `planet_previews` row off in `Awake`, so the bar costs no camera, no `RenderTexture` and no layer shuffle. Both keep a `keepLegacyBar` toggle for diagnosis. Removing the components and the row is prefab surgery — **CS-088**. Two consequences: `ForceSolver.OnPointerDown` still calls `FindObjectOfType<PlanetPreviewController>()` on every pull and now always fails (delete that block with CS-088), and the bar's side effect of swinging `LightSourcePosition` on a desktop pull is gone — that object exists only in the legacy `solar_system_view_scene`.
 - About links still point at Microsoft's privacy/terms pages: six `Hyperlink` instances (`Assets/scripts/Hyperlink.cs`) under `links_offset` in `Assets/prefabs/about_slate_prefabs/about_slate_prefab.prefab` (`hl2_for_devs`, `galaxy_explorer`, `github`, `original_galaxy_explorer`, `privacy`, `microsoft_services_agreement`), each a prefab-override on nested `link_prefab.prefab`. `docs/copy/ui.md`'s About section only calls for two (Source code, Privacy) plus Close, so this is prefab surgery — delete four, re-point two — not a text swap; `CopyImporter` does not touch this file, so hand-authoring in the prefab is the only path today. See `docs/store/STORE_READINESS_CHECKLIST.md` (CS-086).
-- Legacy TouchScript remains for touchscreens; mouse is handled by `DesktopMouseInput`.
+- Legacy TouchScript remains for touchscreens; mouse is handled by `DesktopMouseInput`. It bundles a TUIO/OSC module that can open a network socket, inert but flagged for a submission decision — CS-112. Removing it and moving Android off Active Input Handling "Both" is optional Phase 7 work — CS-100.
 - Two `PlanetPreviewController` components on `menu_managers/desktop_menu/canvas/planet_previews` (one legacy with 20 slots) — remove with the bar (CS-088). Retiring the row switches both off at once, which is why the row is switched off rather than a component destroyed.
-- `main_scene - Copy.unity` (user backup) sits in `Assets/scenes`; move to `_backup_original/` in Phase 0.
+- ~~`main_scene - Copy.unity` (user backup) sits in `Assets/scenes`; move to `_backup_original/` in Phase 0.~~ **Stale, struck 12 Sep 2026** — CS-001 already did this: the file is `Assets/scenes/_backup_original/main_scene_user_copy.unity` and nothing named `main_scene - Copy.unity` remains in `Assets/scenes`.
 
 ---
 
@@ -388,7 +388,7 @@ Rules learned the hard way:
 **Fonts** `Assets/Fonts/`: Selawik SDF ×5 weights, Segoe UI SDF ×6.
 **Animations** moon show/hide, planet highlight, poi card, onboarding sprites.
 
-Needed (new): nebula layer sets ×4, galaxy sprite atlas, halo gradient (procedural), dim quad material, dock/pop-up/panel/label/HUD/onboarding sprites (Figma), thumbnails ×7 (rendered), logo/app icon, 11 narration clips, 4 ambiences, 2 SFX (rumble, whoosh).
+Needed (new): nebula layer sets ×4, galaxy sprite atlas, halo gradient (procedural), dim quad material, dock/pop-up/panel/label/HUD/onboarding sprites (Figma), thumbnails ×7 (rendered), logo/app icon, 11 narration clips, 4 ambiences (Cosmic Web, Galaxies, Andromeda, Sagittarius A\* — a 5th, the Milky Way map, is an open question against GDD §4.3's "Galaxy ambience"; see CS-077), 2 SFX (rumble, whoosh; also CS-077).
 
 ---
 

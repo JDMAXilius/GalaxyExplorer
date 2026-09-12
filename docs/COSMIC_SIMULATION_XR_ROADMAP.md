@@ -145,7 +145,7 @@ Assets/scripts/desktop/
 ### 4.4 Scene strategy
 
 - `main_scene` + `core_systems_scene` stay the bootstrap.
-- Each dock entry maps to an additive scene: **existing** `galaxy_view_scene` (Milky Way), `solar_system_view_scene` (Solar System), `galactic_center_view_scene` (Sagittarius A\*); **new, duplicated from existing**: `solar_row_scene` (from solar_system_view_scene), `andromeda_scene` (from galaxy_view_scene), `galaxies_scene`, `cosmic_web_scene` (from galactic_center_view_scene as the "black" template).
+- Each dock entry maps to an additive scene: **existing** `galaxy_view_scene` (Milky Way), `solar_system_view_scene` (Solar System), `galactic_center_view_scene` (Sagittarius A\*); **new, duplicated from existing**: ~~`solar_row_scene` (from solar_system_view_scene), `andromeda_scene` (from galaxy_view_scene), `galaxies_scene`, `cosmic_web_scene` (from galactic_center_view_scene as the "black" template)~~ **dropped, 12 Sep 2026 — superseded by the content-prefab route CS-036 established.** `ExperienceDirector.Switch` opens a module from its `ContentPrefab` when it names no scene, so Planets (CS-041), Cosmic Web (CS-065/CS-106) and Andromeda (CS-102) shipped as `solar_system_planets_content_prefab`, `cosmic_web_content_prefab` and `andromeda_content_prefab` respectively — no new scene, no new entry in Build Settings, nothing for CS-001's backup rule to catch. Galaxies is the one place still outstanding and should follow the same pattern when it is built, not add `galaxies_scene`. See `docs/TECHNICAL_OVERVIEW.md` §6.
 - Backups: `Assets/scenes/_backup_original/` copies of `main_scene`, `core_systems_scene` and the three view scenes, made once in Phase 0 and never edited.
 
 ---
@@ -263,10 +263,10 @@ Effort sizes: **S** ≤ half a day, **M** 1–2 days, **L** 3–5 days of focuse
 
 | ID | Task | Atomic steps |
 |---|---|---|
-| P5-T1 | `andromeda_scene` | Duplicate galaxy scene; new `DrawStars` parameter set (white core, warm dust ring, flatter disk, tilt); grow-in; panel; grab/scale |
-| P5-T2 | `galaxies_scene` | Billboard scatter system (300–500 sprites, 20+ unique galaxy cutouts, random size/tint/rotation) in a 6 m radius; slow drift; panel; passthrough toggle allowed |
+| P5-T1 | Andromeda content (**not `andromeda_scene`** — see §4.4, dropped 12 Sep 2026) | New `DrawStars` parameter set (white core, warm dust ring, flatter disk, tilt); grow-in; panel; grab/scale — shipped as `andromeda_content_prefab`, CS-102 |
+| P5-T2 | Galaxies content (**not `galaxies_scene`** — see §4.4) | Billboard scatter system (300–500 sprites, 20+ unique galaxy cutouts, random size/tint/rotation) in a 6 m radius; slow drift; panel; passthrough toggle allowed |
 | P5-T3 | Galaxy sprites | Hubble deep-field cutouts (public domain) → alpha → atlas; fill gaps with Higgsfield |
-| P5-T4 | `cosmic_web_scene` | Procedural filament point cloud (editor script: 3D Voronoi edges + noise, ~200k points) rendered with the star point-sprite shader in purple palette; FullBlack; panel |
+| P5-T4 | Cosmic Web content (**not `cosmic_web_scene`** — see §4.4) | Procedural filament point cloud (editor script: 3D Voronoi edges + noise, ~200k points) rendered with the star point-sprite shader in purple palette; FullBlack; panel — shipped as `cosmic_web_content_prefab`, CS-065/CS-106 |
 | P5-T5 | Dock thumbnails | Render new scenes |
 | P5-T6 | Tests | Load each; performance sample on desktop (frame time), then Quest |
 
@@ -284,7 +284,7 @@ Effort sizes: **S** ≤ half a day, **M** 1–2 days, **L** 3–5 days of focuse
 | P6-T3 | Music | Keep the three existing tracks; loop per environment |
 | P6-T4 | Intro | Keep the original intro (logo → Earth placement → galaxy); add the two hint cards after placement, shown once (PlayerPrefs); land in the Milky Way with the dock visible |
 | P6-T5 | Branding | Logo (Figma vector, optional Higgsfield hero art), app icon, splash, About |
-| P6-T6 | Accessibility | Mute (done), narration toggle, subtitle option for panels |
+| P6-T6 | Accessibility | Mute (done), narration toggle, ~~subtitle option for panels~~ **dropped, 12 Sep 2026** — absent from `docs/GDD.md` §11 and §12, which the GDD's own preamble makes the contract: a behaviour not described there is not in scope. Recorded here rather than left as a silent gap. |
 
 ---
 
