@@ -71,18 +71,50 @@ namespace CosmicSimulation.EditorTools
             return AssetDatabase.LoadAssetAtPath<Sprite>(SpriteFolder + name + ".png");
         }
 
-        private static TMP_FontAsset Font()
+        /// <summary>The project's UI font. Shared with DesktopDockBuilder: this used to be duplicated
+        /// in both builders, which is how CS-122's wrong spelling survived in two places at once.</summary>
+        internal static TMP_FontAsset Font()
         {
-            // Whatever the project already uses for world-space text, so the prefabs match the existing look.
-            var guids = AssetDatabase.FindAssets("t:TMP_FontAsset selawik");
+            // Selawik, deliberately: it is the OFL-licensed, metric-compatible stand-in for Segoe UI,
+            // and Segoe UI is proprietary Microsoft and must not ship. The font files are named
+            // "selawk", not "selawik" (selawk, selawkb, selawkl, selawksb, selawksl), and the old
+            // spelling here matched nothing, fell through to the first TMP_FontAsset in the project
+            // and silently gave every UI prefab segoeui SDF. See CS-122.
+            var guids = AssetDatabase.FindAssets("t:TMP_FontAsset selawk");
             if (guids.Length == 0)
             {
-                guids = AssetDatabase.FindAssets("t:TMP_FontAsset");
+                Debug.LogError("UiPrefabBuilder: no Selawik TMP_FontAsset found in the project. " +
+                               "Expected Assets/Fonts/selawk SDF.asset. Refusing to fall back to " +
+                               "another family - that is how segoeui SDF got into every prefab (CS-122).");
+                return null;
             }
 
-            return guids.Length > 0
-                ? AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(AssetDatabase.GUIDToAssetPath(guids[0]))
-                : null;
+            // Regular, not whichever of the five faces the search happens to return first.
+            TMP_FontAsset fallback = null;
+            for (var i = 0; i < guids.Length; i++)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(path);
+                if (font == null)
+                {
+                    continue;
+                }
+
+                if (System.IO.Path.GetFileNameWithoutExtension(path) == "selawk SDF")
+                {
+                    return font;
+                }
+
+                fallback = fallback ?? font;
+            }
+
+            if (fallback != null)
+            {
+                Debug.LogWarning("UiPrefabBuilder: 'selawk SDF' (regular) not found; using " +
+                                 fallback.name + " instead.");
+            }
+
+            return fallback;
         }
 
         private static RectTransform Rect(string name, Transform parent, float w, float h)

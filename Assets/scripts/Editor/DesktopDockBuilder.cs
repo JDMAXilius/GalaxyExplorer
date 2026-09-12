@@ -91,19 +91,12 @@ namespace CosmicSimulation.EditorTools
             return sprite;
         }
 
-        // Whatever the project already uses, so the mirror matches the dock it mirrors. Same lookup as
-        // UiPrefabBuilder, which keeps its own copy private.
+        // One lookup, in UiPrefabBuilder. This was a second copy of it, and both copies asked for
+        // "selawik" when the assets are named "selawk", so the desktop mirror silently used Segoe UI
+        // too (CS-122). Delegating means the next change cannot fix one and miss the other.
         private static TMP_FontAsset Font()
         {
-            var guids = AssetDatabase.FindAssets("t:TMP_FontAsset selawik");
-            if (guids.Length == 0)
-            {
-                guids = AssetDatabase.FindAssets("t:TMP_FontAsset");
-            }
-
-            return guids.Length > 0
-                ? AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(AssetDatabase.GUIDToAssetPath(guids[0]))
-                : null;
+            return UiPrefabBuilder.Font();
         }
 
         /// <summary>A centre-anchored box. Anchors are set explicitly so pixel arithmetic on children adds up.</summary>

@@ -255,7 +255,7 @@ A Quest APK build stalls on a modal: **"Unsupported Input Handling on Android"**
 | CS-016 | TERM | Figma hint cards (2) | CS-010 | done |
 | CS-017 | TERM | Export SVG/PNG @2× to `Assets/ui/figma/`, write `docs/ui/spec.md` | CS-011…016 | done |
 | CS-018 | CC | Sprite import settings script (`Editor/UiSpriteImporter.cs`: UI sprite, no mips, 9-slice per spec) | CS-017 | done |
-| CS-122 | CC | **Every builder-written UI prefab is using Segoe UI, not Selawik.** `UiPrefabBuilder.Font()` searches `"t:TMP_FontAsset selawik"`, which matches nothing (the assets are named `selawk*`), then falls back to the first `TMP_FontAsset` in the project - `segoeui SDF` | CS-017 | todo |
+| CS-122 | CC | **Every builder-written UI prefab is using Segoe UI, not Selawik.** `UiPrefabBuilder.Font()` searches `"t:TMP_FontAsset selawik"`, which matches nothing (the assets are named `selawk*`), then falls back to the first `TMP_FontAsset` in the project - `segoeui SDF` | CS-017 | done (12 Sep terminal session; verified in every prefab and scene, per-eye/on-device look still open) |
 
 **Phase 1 notes (11 Sep 2026).** The file has two pages, as the owner asked: *Design System* (read-me, colour, type, space and radius, surfaces) and *Front End - Screens* (A dock, B panels/tags/hints, C three in-headset shots, D desktop, E pop-ups and dock states).
 Two conventions the rest of the work depends on:
@@ -285,6 +285,31 @@ means re-running Build UI Prefabs and then, because that renumbers objects insid
 Wire Scene Panel, Build Solar Row Content, Build Moons and Install Runtime Systems in that order. That
 is a visual-identity change plus a five-step rebuild cascade, so it is the owner's call, not a drive-by.
 Selawik is metric-compatible with Segoe UI, so layout should not shift.
+
+**CS-122 done, 12 Sep 2026, same session, on the owner's decision to apply it rather than defer.** The lookup
+now asks for `selawk`, returns the regular `selawk SDF` face deterministically instead of `guids[0]` of six
+variants, and **refuses to fall back to another family** — the silent fallback is what caused this, so it is now
+a `LogError` and a null return. `DesktopDockBuilder` had a second, identical copy of the same buggy lookup
+(its own comment noted the duplication); it now delegates to `UiPrefabBuilder.Font()`, so the two cannot
+diverge again.
+
+Applied through the full cascade, in this order, each step verified: Build UI Prefabs, Build Desktop Dock,
+Build UI Prefabs again, Build Solar Row Content, Build Moons, Wire Scene Panel, Install Runtime Systems.
+Result: all eight UI prefabs carry `selawk SDF` and zero Segoe references (`desktop_dock` and
+`desktop_dock_tile` needed the second builder), `solar_system_planets_content_prefab` has 237 Selawik
+references and none to Segoe, and a project-wide sweep of `Assets/prefabs`, `Assets/scenes` and `Assets/data`
+finds no reference to `segoeui SDF` at all. The moons survived the re-run intact (9 `MoonOrbit`, 9 panels,
+19 nested instances) and `scenePanelPrefab`, `MusicController`, the 23 `desktop_dock_prefab` references and
+`MusicAudioSources` being inactive all still hold.
+
+One thing needed a hand edit, and it is worth knowing why. `core_systems_scene` carried two `m_sharedMaterial`
+overrides on its `dock_popup_prefab` instance, both pinning the **Segoe** font material. One targeted an object
+the rebuild had removed, so it was dead residue; **the other targeted an object that still exists, so it was a
+live override that would have forced Segoe back onto that text and defeated the fix.** Neither could be reverted
+through `PrefabUtility`, and re-opening and re-saving the scene did not drop them, so the two four-line
+modification entries were removed from the YAML directly and Unity was then made to re-open the scene (12 roots,
+loaded and re-saved cleanly) to prove the edit was valid. A dangling-override sweep puts the scene at **90**
+such overrides, down from **91** before this session — the remainder are pre-existing and are now CS-123.
 CS-011 states are drawn (idle, hover, pressed, active) but are not yet Figma component variants.
 *CS-015 done:* board **F - Desktop overlays** carries both panels the desktop needs — the controls overlay (mouse column and keyboard column, every line naming a thing the player does rather than a system) and About, with the Microsoft/MIT credit, the imagery credit and three buttons. Board **D - Desktop** holds the dock mirror.
 
@@ -325,6 +350,7 @@ Sizes and colours: GDD §8. *Acceptance for CS-017:* every frame exported; spec 
 | CS-092 | CC | Nothing ever spawns an experience's own scene panel: `InfoPanel.Bind(ExperienceModule)` has no callers at all | CS-027, CS-036 | done |
 | CS-087 | CC | Desktop key map still points at the retired drill-down navigation (`Backspace` → Back) and at the legacy menu; make GDD §5.3 true and retire the live-camera planet bar | CS-029, CS-061 | done |
 | CS-088 | TERM | Prefab surgery: delete the planet bar from `menu_managers.prefab` (11 `UiWorldPreview` tiles, both `PlanetPreviewController`s, the row itself) and the dead `PlanetPreviewController` block in `ForceSolver.OnPointerDown` | CS-087 | todo |
+| CS-123 | TERM | 90 dangling prefab-instance overrides in `core_systems_scene` target fileIDs that no longer exist in `menu_managers.prefab` (47), `hand_menu_left_prefab` (21), `hand_menu_right_prefab` (21) and `ge_xr_rig.prefab` (1) — pre-existing, inert today because Unity drops an override whose target is gone, but they hide any override that *was* load-bearing and they will be churned by CS-088's and CS-111's surgery anyway | CS-088, CS-111 | todo |
 | CS-089 | TERM | Desktop controls overlay copy is out of date: it lists `Backspace` back and omits `P` and `F2`–`F8`; rewrite `desktop_help_panel` to GDD §5.3 | CS-087 | todo |
 | CS-039 | TERM | Wire the Earth atmosphere shell (1.025 sphere child + `SunLightReceiver`) onto the Earth prefab — nothing references `earth_atmosphere_material` yet — **and compile-check `planet_atmosphere_rim_shader.shader`, which CS-047 shipped without ever compiling it** | CS-047 | todo |
 | CS-034 | TERM | Quest Link check: dock poke, dim quad, halo, passthrough toggle | CS-032 | todo |
