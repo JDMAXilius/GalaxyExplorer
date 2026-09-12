@@ -30,5 +30,5 @@ MonoBehaviour:
   Layouts:
   - {fileID: 11400000, guid: 37ce05d2bf42f1040ac83df6a5a2d4a4, type: 2}
   - {fileID: 11400000, guid: 1e6679aca2722b34b81e105dc8ce0d2b, type: 2}
-  Narration: {fileID: 0}
+  Narration: {fileID: 8300000, guid: 2ed0a26513cf19047b345ddb0f834946, type: 3}
   Ambience: {fileID: 0}

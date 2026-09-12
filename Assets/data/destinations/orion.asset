@@ -27,5 +27,5 @@ MonoBehaviour:
     - A cluster of hot young stars lights the gas from inside, while hundreds of infant solar systems take shape in the shadows around them. This is roughly what our own system looked like four and a half billion years ago.
     Instruction: 
   Layouts: []
-  Narration: {fileID: 0}
+  Narration: {fileID: 8300000, guid: 330693851707b2748b5995f72e10d06b, type: 3}
   Ambience: {fileID: 0}

@@ -27,5 +27,5 @@ MonoBehaviour:
     - Its arms are flocculent - short, patchy fragments rather than long sweeping ones - and it has almost no central bulge. The version here is smoother and more organised than the real thing, which the generator cannot yet break up.
     Instruction: Grab it with two hands to turn it or change its size.
   Layouts: []
-  Narration: {fileID: 0}
+  Narration: {fileID: 8300000, guid: ba40bae2be3b7b54ca52c515a7141b4c, type: 3}
   Ambience: {fileID: 0}

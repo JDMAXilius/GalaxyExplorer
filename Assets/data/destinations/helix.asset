@@ -27,5 +27,5 @@ MonoBehaviour:
     - At 650 light-years it is one of the nearest planetary nebulae, and about two and a half light-years wide. Our own Sun will end much the same way.
     Instruction: 
   Layouts: []
-  Narration: {fileID: 0}
+  Narration: {fileID: 8300000, guid: 1e761f18249fe5347b8bea796b3db8c5, type: 3}
   Ambience: {fileID: 0}

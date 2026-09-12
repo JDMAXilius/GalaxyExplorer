@@ -27,5 +27,5 @@ MonoBehaviour:
     - 'These shapes are real. They are cut from two long-exposure photographs: Hubble''s Ultra Deep Field and Webb''s view of the SMACS 0723 cluster, both of which stared at a patch of apparently empty sky and found it crowded. The faintest of them are among the most distant things ever recorded, and their light has been travelling for most of the age of the universe.'
     Instruction: Grab with two hands to turn the field or change its size.
   Layouts: []
-  Narration: {fileID: 0}
+  Narration: {fileID: 8300000, guid: e07c3338431c4e14f9dd0a3dcb737c9a, type: 3}
   Ambience: {fileID: 0}

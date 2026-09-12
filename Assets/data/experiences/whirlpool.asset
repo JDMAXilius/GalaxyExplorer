@@ -27,5 +27,5 @@ MonoBehaviour:
     - It is about 23 million light years away, in Canes Venatici. A smaller galaxy, NGC 5195, is passing through its outskirts and pulling on the northern arm; that companion is not shown here yet.
     Instruction: Grab it with two hands to turn it or change its size.
   Layouts: []
-  Narration: {fileID: 0}
+  Narration: {fileID: 8300000, guid: c54f2b04b72daeb45a9f80db8e49a6d0, type: 3}
   Ambience: {fileID: 0}

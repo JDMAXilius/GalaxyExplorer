@@ -27,5 +27,5 @@ MonoBehaviour:
     - New stars are condensing inside the columns while the same radiation eats them away from outside. Hubble's photograph of them in 1995 became one of the most recognised images in astronomy.
     Instruction: 
   Layouts: []
-  Narration: {fileID: 0}
+  Narration: {fileID: 8300000, guid: bd177e6d210813a489a3d191d1aab5c6, type: 3}
   Ambience: {fileID: 0}

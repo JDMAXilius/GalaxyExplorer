@@ -65,3 +65,36 @@ from the MIT project, so nothing was downloaded for them:
 |---|---|---|---|
 | Planet map (optional upgrade) | Moon | USGS Astrogeology LROC | Deferred. `Assets/Textures/moon_diffuse_speculare_texture.tga` is 4096x2048 but is **not** an equirectangular map — it is an atlas laid out for the custom `moon_model` UVs, with specular in the alpha channel. A USGS LROC map is not a drop-in; swapping it needs a re-UV or a re-projection plus specular repacking, which belongs with the Phase 3 material work, not with sourcing. |
 | Planet map (optional upgrade) | Earth | NASA Blue Marble | Deferred for the same reason: `Assets/Textures/earth_diffude_specular_texture.tga` is a 4096x4096 atlas (not 2:1 equirect) with specular in alpha, and there are matching normal/cloud plates keyed to the same layout. |
+
+## Narration generated 12 September 2026
+
+The 22 original narration clips are the recorded performance inherited with Microsoft's Galaxy
+Explorer under its MIT licence, and are reused unchanged. The 19 clips below did not exist and were
+**synthesised**, not recorded.
+
+| | |
+|---|---|
+| Tool | Higgsfield, model `seed_audio` (Seed Audio 1.0, ByteDance) |
+| Voice | Preset "Holden" (`3c9d6053-6334-592c-8997-4e325286af3f`), male, middle-aged |
+| Format | 24 kHz mono WAV (the originals are 44.1 kHz - see the note below) |
+| Cost | about 16 credits |
+| Scripts | the project's own copy, from `docs/copy/moons.md`, `docs/copy/nebulae.md` and the module panels |
+
+**How the voice was chosen, and what it is not.** The original narrator's fundamental frequency was
+measured across four of the inherited clips - earth, galactic_center, milky_way and saturn - giving a
+median of about **112 Hz**, which is squarely male speech. Four male presets were then generated on the
+same test line and measured the same way: Holden 102.6 Hz, Emmett 121.8 Hz, Arthur 151.9 Hz, Reid
+175.2 Hz. Holden and Emmett were within 10 Hz either side and the owner chose Holden.
+
+This is a **near match in register, not a clone**. No model was trained on the original recordings and
+no attempt was made to reproduce the original performer's identity - that voice belongs to a person,
+and synthesising new lines in it for a commercial release is a different act from reusing the MIT
+clips. Anyone revisiting this should keep that distinction.
+
+Clips: ganymede, callisto, io, europa, titan, mimas, iapetus, enceladus, phobos, deimos, andromeda,
+cosmic_web, galaxies, helix, orion, whirlpool, pinwheel, triangulum, hd110067.
+
+*Known gap:* the generated clips are 24 kHz against the originals' 44.1 kHz. Unity resamples on import
+so they play correctly, but a careful listener on good headphones may hear the difference between an
+inherited clip and a generated one. Regenerating at a higher sample rate, if the model supports it, is
+the fix.

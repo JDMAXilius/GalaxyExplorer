@@ -27,5 +27,5 @@ MonoBehaviour:
     - Its thousands of stars are only a few hundred thousand years old, and the brightest of them are among the most luminous in the galaxy. They will burn out quickly and explode.
     Instruction: 
   Layouts: []
-  Narration: {fileID: 0}
+  Narration: {fileID: 8300000, guid: dc37ccfec6a787a46b53849d4993aec2, type: 3}
   Ambience: {fileID: 0}

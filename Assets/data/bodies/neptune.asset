@@ -35,5 +35,5 @@ MonoBehaviour:
     Exponent: 0
   Moons: []
   Orbits: {fileID: 0}
-  Narration: {fileID: 0}
+  Narration: {fileID: 8300000, guid: 2cc93884fafecbd49bf1332def5684ca, type: 3}
   Ambience: {fileID: 0}

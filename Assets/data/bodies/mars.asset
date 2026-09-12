@@ -37,5 +37,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2f4887037644c494bb593524c4da03ca, type: 2}
   - {fileID: 11400000, guid: 8291c3b86deb6184ab2e079261f0879b, type: 2}
   Orbits: {fileID: 0}
-  Narration: {fileID: 0}
+  Narration: {fileID: 8300000, guid: b716ef324b0efce489ae5b8e4b807eed, type: 3}
   Ambience: {fileID: 0}

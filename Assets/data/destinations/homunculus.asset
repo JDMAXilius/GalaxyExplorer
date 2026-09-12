@@ -27,5 +27,5 @@ MonoBehaviour:
     - The star survived what should have killed it. It remains one of the most massive and unstable stars known, and is expected to end as a supernova.
     Instruction: 
   Layouts: []
-  Narration: {fileID: 0}
+  Narration: {fileID: 8300000, guid: ff0b35519220bd245ae50d7789b9805f, type: 3}
   Ambience: {fileID: 0}

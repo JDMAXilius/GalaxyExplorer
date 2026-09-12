@@ -27,5 +27,5 @@ MonoBehaviour:
     - The exposed stellar core at its centre pulses in brightness every half hour, which makes it one of the more closely watched objects of its kind.
     Instruction: 
   Layouts: []
-  Narration: {fileID: 0}
+  Narration: {fileID: 8300000, guid: 6bf04bd6d7ecbad49b5418ac4aa12d78, type: 3}
   Ambience: {fileID: 0}

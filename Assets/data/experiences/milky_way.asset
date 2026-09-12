@@ -27,5 +27,5 @@ MonoBehaviour:
     - One lap of the galaxy takes the Sun around 230 million years. The last time it was here, dinosaurs were new.
     Instruction: Point at a label and pinch to open that destination.
   Layouts: []
-  Narration: {fileID: 0}
+  Narration: {fileID: 8300000, guid: 9f9229727bfc5814d954bbc2d626c1bb, type: 3}
   Ambience: {fileID: 0}
