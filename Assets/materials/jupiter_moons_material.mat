@@ -166,7 +166,7 @@ Material:
     - _NormalScale: {r: 1, g: 1, b: 1, a: 0}
     - _SpecParams: {r: 60, g: 0, b: 0, a: 0}
     - _SpecPower: {r: 60, g: 0, b: 1, a: 0}
-    - _SunDirection: {r: -0.798223, g: 0.02758325, b: -0.60173017, a: 0}
+    - _SunDirection: {r: 0, g: 0, b: 0, a: 0}
     - _TintColor: {r: 1, g: 1, b: 1, a: 1}
     - _UplightColor: {r: 0.3, g: 0.3, b: 0.3, a: 1}
   m_BuildTextureStacks: []
