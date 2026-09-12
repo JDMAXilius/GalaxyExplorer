@@ -14,24 +14,29 @@ namespace CosmicSimulation
     /// Guarantees one live <see cref="EventSystem"/> carrying one input module, so a screen-space canvas can
     /// actually be clicked.
     ///
-    /// The app shipped without one. <c>main_camera_prefab</c> carries an <see cref="EventSystem"/> with no
-    /// module at all, which is enough for uGUI to draw a button and never deliver a press — every button on
-    /// the desktop menu and the desktop dock was dead. Nothing noticed because every *other* pointer in this
-    /// project goes through <c>GEPointer</c> and a physics raycast, which does not involve the EventSystem.
+    /// The app shipped without a usable one. <c>main_camera_prefab</c> carries an <see cref="EventSystem"/>, and
+    /// <c>core_systems_scene</c> adds an <c>XRUIInputModule</c> to that instance with every action reference left
+    /// empty — enough for uGUI to draw a button and never deliver a press. Every button on the desktop menu and
+    /// the desktop dock was dead. Nothing noticed because every *other* pointer in this project goes through
+    /// <c>GEPointer</c> and a physics raycast, which does not involve the EventSystem.
     ///
-    /// Why it installs from a boot hook rather than from whoever needs it: the one EventSystem in the app
-    /// arrives with <c>core_systems_scene</c>, which is loaded well into the boot flow rather than at frame 0.
-    /// An installer that ran once at startup would find nothing, make its own, and then be sitting next to a
-    /// second EventSystem the moment the boot scene landed. So this runs at startup *and* on every scene load,
-    /// and it prefers the app's own EventSystem over the one it made: whichever shows up, the invariant holds.
+    /// Why it installs from a boot hook rather than from whoever needs it: the app's EventSystem arrives with
+    /// <c>core_systems_scene</c>, which is loaded well into the boot flow rather than at frame 0 (<c>main_scene</c>
+    /// is build index 0 and carries only a LayerCompositor, which loads the boot scene a frame later). An
+    /// installer that ran once at startup would find nothing, make its own, and then be sitting next to a second
+    /// EventSystem the moment the boot scene landed. So this runs at startup *and* on every scene load, and it
+    /// prefers the app's own EventSystem over the one it made: whichever shows up, the invariant holds.
     ///
     /// Module choice: <see cref="InputSystemUIInputModule"/>. Active Input Handling is "Both" (Android needs
     /// the legacy backend for TouchScript), so <c>StandaloneInputModule</c> would compile - but it reads
     /// <c>UnityEngine.Input</c>, while every pointer this project actually reads comes from the Input System
     /// (<c>Mouse.current</c> in <c>DesktopMouseInput</c>, XRI 3.6 throughout). Two backends reading the cursor
     /// is how you get a click that lands somewhere the hover was not. XRI's <c>XRUIInputModule</c> is the other
-    /// candidate and is deliberately not used: it would drive world-space uGUI from the hand ray, and in this
-    /// project world-space UI is hit with physics through <c>GEPointer</c>, not with graphic raycasts.
+    /// candidate and is deliberately not used: it drives world-space uGUI from the hand ray through a
+    /// <c>TrackedDeviceGraphicRaycaster</c>, and there is not one in this project — world-space UI here is hit
+    /// with physics through <c>GEPointer</c>, not with graphic raycasts. So ours is the module of record and any
+    /// other module on the keeper is switched off; see <see cref="Ensure"/> for why switching off is required
+    /// rather than merely adding ours.
     /// </summary>
     public static class UiEventSystemInstaller
     {
@@ -39,10 +44,15 @@ namespace CosmicSimulation
         private static EventSystem _system;
         private static BaseInputModule _module;
 
-        // The EventSystem and the module we created, if we had to. Kept so each can stand down when the app's
-        // own equivalent turns up later in the boot flow.
+        // The EventSystem we created, if we had to. Kept so it can stand down when the app's own turns up later
+        // in the boot flow.
         private static GameObject _created;
-        private static BaseInputModule _createdModule;
+
+        // Set whenever a scene load or unload could have brought an EventSystem or taken one away. Without it the
+        // cheap guard below is never false after the first call - our own EventSystem satisfies it - and the scan
+        // that retires the duplicate would never run again, which is exactly what happened: the app's second
+        // EventSystem arrives one frame after ours and was never noticed.
+        private static bool _scanPending = true;
 
         private static bool _hooked;
 
@@ -57,6 +67,10 @@ namespace CosmicSimulation
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Boot()
         {
+            // Explicit rather than relying on the field initialiser: with Enter Play Mode reload turned off the
+            // statics survive from the last session, and a stale "nothing has changed" would skip the first scan.
+            _scanPending = true;
+
             // The first scene is already loaded by now and will never raise sceneLoaded for us, so it is
             // handled here; everything after arrives through the hook.
             Ensure();
@@ -71,10 +85,14 @@ namespace CosmicSimulation
         {
             Hook();
 
-            if (_system != null && _module != null && EventSystem.current == _system)
+            // The scan is skipped only while nothing can have changed. Every scene load and unload clears that,
+            // because a scene is the only thing that brings an EventSystem with it.
+            if (!_scanPending && _system != null && _module != null && EventSystem.current == _system)
             {
                 return;
             }
+
+            _scanPending = false;
 
             EventSystem keeper = null;
             foreach (var candidate in Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None))
@@ -112,44 +130,76 @@ namespace CosmicSimulation
                 keeper = _created.AddComponent<EventSystem>();
             }
 
-            // Same rule as for the EventSystem itself: a module the app brought always beats the one we made.
-            // This is not hypothetical - XRI's ray interactors have UI interaction switched on in
-            // ge_xr_rig.prefab, and an interactor that finds no XRUIInputModule adds one to the EventSystem by
-            // itself. In a headset that one turns up first and we simply adopt it; if it ever turns up second,
-            // ours steps aside rather than sitting in front of it in the component order.
-            BaseInputModule adopted = null;
-            foreach (var candidate in keeper.GetComponents<BaseInputModule>())
+            // Unlike the EventSystem, the module is not up for adoption: ours is the one that runs, and a module
+            // the app brought stands down. The app's is an XRUIInputModule, authored onto the camera prefab
+            // instance in core_systems_scene with every action reference empty, and XRI's ray interactors add one
+            // themselves if they ever find none (UI interaction is on in ge_xr_rig.prefab). Adopting it is what
+            // left every screen-space button dead in the first place.
+            //
+            // Switching it off is required, not tidiness: an EventSystem runs the *first* module in component
+            // order that wants to activate, and the authored XRUIInputModule is earlier in that order than
+            // anything added at runtime, so simply adding ours next to it changes nothing.
+            //
+            // Nothing is lost by it. XRUIInputModule reaches world-space uGUI through TrackedDeviceGraphicRaycaster
+            // and this project has none - world-space UI is hit with physics through GEPointer - and its pointer
+            // path needs the action references the authored instance does not have. Disabled rather than
+            // destroyed, so XRI still finds it and does not go looking for somewhere to add another.
+            var module = keeper.GetComponent<InputSystemUIInputModule>();
+            if (module == null)
             {
-                if (candidate != null && candidate != _createdModule)
+                module = keeper.gameObject.AddComponent<InputSystemUIInputModule>();
+                EnsureDefaultActions(module);
+            }
+
+            if (!module.enabled)
+            {
+                module.enabled = true;
+            }
+
+            foreach (var other in keeper.GetComponents<BaseInputModule>())
+            {
+                if (other == null || other == module || !other.enabled)
                 {
-                    adopted = candidate;
-                    break;
-                }
-            }
-
-            if (adopted != null)
-            {
-                if (_createdModule != null)
-                {
-                    Object.Destroy(_createdModule);
-                    _createdModule = null;
+                    continue;
                 }
 
-                _module = adopted;
-            }
-            else if (_createdModule != null)
-            {
-                _module = _createdModule;
-            }
-            else
-            {
-                // Added this way the module assigns itself the Input System package's default UI actions, so
-                // point and click work without an actions asset of ours to keep in sync.
-                _createdModule = keeper.gameObject.AddComponent<InputSystemUIInputModule>();
-                _module = _createdModule;
+                other.enabled = false;
+                Debug.Log($"UiEventSystemInstaller: '{other.GetType().Name}' on '{keeper.name}' was switched off. " +
+                          "This app routes screen-space UI through InputSystemUIInputModule and world-space UI " +
+                          "through GEPointer, and an EventSystem runs whichever module comes first.");
             }
 
+            _module = module;
             _system = keeper;
+        }
+
+        /// <summary>
+        /// Gives a runtime-added module the package's default UI actions if it did not come up with any.
+        ///
+        /// <c>AddComponent</c> is not the editor's Add Component: the editor path runs <c>Reset</c>, which is
+        /// where the default actions are normally assigned, and <c>Reset</c> never runs at runtime. A module with
+        /// a null actions asset reads no pointer at all, which is the dead-button bug this class exists to fix,
+        /// wearing a different hat. Cheap to ask, so it is asked rather than assumed.
+        /// </summary>
+        private static void EnsureDefaultActions(InputSystemUIInputModule module)
+        {
+            if (module == null || module.actionsAsset != null)
+            {
+                return;
+            }
+
+            try
+            {
+                module.AssignDefaultActions();
+            }
+            catch (System.Exception e)
+            {
+                // Never worth taking the app down for: without actions the screen-space UI is dead, which is bad,
+                // but the headset does not use it at all.
+                Debug.LogWarning("UiEventSystemInstaller: the UI input module came up with no actions and the " +
+                                 "package defaults could not be assigned, so screen-space clicks will not be " +
+                                 "delivered. " + e.Message);
+            }
         }
 
         /// <summary>
@@ -241,13 +291,15 @@ namespace CosmicSimulation
 
         private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+            _scanPending = true;
             Ensure();
             SweepRaycasters();
         }
 
         private static void OnSceneUnloaded(Scene scene)
         {
-            // The keeper may have gone with the scene. Ensure() is a no-op if it did not.
+            // The keeper may have gone with the scene, and a scan is the only way to find out.
+            _scanPending = true;
             Ensure();
         }
 
@@ -264,8 +316,10 @@ namespace CosmicSimulation
 
             if (IsOurs(system))
             {
+                // Takes our module with it, which is why nothing else has to remember it.
                 Object.Destroy(system.gameObject);
                 _created = null;
+                _module = null;
                 return;
             }
 
@@ -289,6 +343,15 @@ namespace CosmicSimulation
                 }
 
                 if (canvas.GetComponent<GraphicRaycaster>() != null)
+                {
+                    continue;
+                }
+
+                // Only canvases that could take a press. A canvas of pure text wants no raycaster and gets none:
+                // SwitchNotice builds one deliberately without, so it can never stand between the player and the
+                // tile they are about to poke, and telling its author to "add it to the prefab" would be advice
+                // about an object with no prefab and a console line that is simply untrue.
+                if (canvas.GetComponentInChildren<IEventSystemHandler>(true) == null)
                 {
                     continue;
                 }

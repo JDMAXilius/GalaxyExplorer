@@ -200,18 +200,29 @@ namespace CosmicSimulation
                 return;
             }
 
-            // A genuinely new bed takes the quieter source: the one already on its way out. Its tail is cut, which
-            // is only audible if three different beds are asked for inside one crossfade — two sources cannot hold
-            // three, and an experience switch takes longer than a fade, while the toggle case never gets here.
-            Release(other);
-            var source = _sources[other];
+            // A genuinely new bed takes whichever source is quieter *right now*, which is not the same as the one
+            // on its way out: for the first half of a crossfade the bed being left is still the louder of the two.
+            //
+            // Three beds inside one fade is not hypothetical. A scene missing from Build Settings makes the
+            // director set the room and then hand it back in the same frame, so FullBlack, Dimmed and Passthrough
+            // can all be asked for before Update has moved a single level. The incoming bed is then at zero and
+            // has not been heard at all, so cutting it is silent; cutting the other one is a hard stop at full
+            // volume, followed by two seconds of nothing underneath the failure notice.
+            //
+            // Two sources still cannot hold three beds, so something is always cut. This picks the cut nobody
+            // hears when there is one, and the smaller of the two when there is not.
+            var quieter = _level[other] <= _level[_active] ? other : _active;
+            var louder = 1 - quieter;
+
+            Release(quieter);
+            var source = _sources[quieter];
             source.clip = track.Clip;
             source.volume = 0f;
             source.Play();
-            _level[other] = 0f;
-            _target[other] = track.Volume;
-            _target[_active] = 0f;
-            _active = other;
+            _level[quieter] = 0f;
+            _target[quieter] = track.Volume;
+            _target[louder] = 0f;
+            _active = quieter;
         }
 
         private void HandleModeChanged(EnvironmentMode mode) => SetMode(mode);

@@ -77,7 +77,10 @@ namespace CosmicSimulation.EditorTools
 
                 var so = new SerializedObject(module);
                 so.FindProperty("SceneName").stringValue = scene ?? string.Empty;
-                so.FindProperty("Environment").enumValueIndex = (int)mode;
+
+                // intValue, not enumValueIndex: the index is the position in the popup, which only happens to
+                // equal the value while EnvironmentMode is numbered contiguously from zero.
+                so.FindProperty("Environment").intValue = (int)mode;
                 so.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(module);
 
@@ -233,31 +236,35 @@ namespace CosmicSimulation.EditorTools
         }
 
         /// <summary>
-        /// Fills an empty track list with the three beds the project has. Hand-authored entries win: this only
-        /// writes when the list is empty, so re-running the menu item never undoes a mix decision.
+        /// Fills an empty track list with the three beds the project has, and reports whether the component can
+        /// actually make a sound — which is what the caller uses to decide whether the legacy music may be
+        /// switched off. Hand-authored entries win: this only writes when nothing is assigned yet, so re-running
+        /// the menu item never undoes a mix decision.
         /// </summary>
         private static bool WireMusic(MusicController music)
         {
             var so = new SerializedObject(music);
             var list = so.FindProperty("tracks");
 
-            if (list.arraySize > 0)
+            // "Already wired" has to mean "has a clip", not "has entries". A run where a clip path was broken
+            // used to leave four entries behind with nothing in them; the next run read that as success, retired
+            // the legacy music, and left the app permanently silent with nothing in the console to say why.
+            for (var i = 0; i < list.arraySize; i++)
             {
-                return true;
+                if (list.GetArrayElementAtIndex(i).FindPropertyRelative("Clip").objectReferenceValue != null)
+                {
+                    return true;
+                }
             }
 
+            // Every clip is resolved before a single entry is written, because a half-written list is worse than
+            // an empty one: the caller reads entries as permission to switch the inherited beds off.
+            var clips = new AudioClip[MusicTracks.Length];
             var assigned = 0;
-            list.arraySize = MusicTracks.Length;
             for (var i = 0; i < MusicTracks.Length; i++)
             {
-                var element = list.GetArrayElementAtIndex(i);
-                var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(MusicTracks[i].clip);
-
-                element.FindPropertyRelative("Mode").enumValueIndex = (int)MusicTracks[i].mode;
-                element.FindPropertyRelative("Clip").objectReferenceValue = clip;
-                element.FindPropertyRelative("Volume").floatValue = MusicVolume;
-
-                if (clip != null)
+                clips[i] = AssetDatabase.LoadAssetAtPath<AudioClip>(MusicTracks[i].clip);
+                if (clips[i] != null)
                 {
                     assigned++;
                 }
@@ -267,8 +274,26 @@ namespace CosmicSimulation.EditorTools
                 }
             }
 
+            if (assigned == 0)
+            {
+                Debug.LogError("ExperienceWiring: not one music clip loaded, so MusicController was left untouched " +
+                               "and the legacy music stays on. Fix the paths above and run this again.");
+                return false;
+            }
+
+            list.arraySize = MusicTracks.Length;
+            for (var i = 0; i < MusicTracks.Length; i++)
+            {
+                var element = list.GetArrayElementAtIndex(i);
+
+                // intValue, not enumValueIndex: see WireModules.
+                element.FindPropertyRelative("Mode").intValue = (int)MusicTracks[i].mode;
+                element.FindPropertyRelative("Clip").objectReferenceValue = clips[i];
+                element.FindPropertyRelative("Volume").floatValue = MusicVolume;
+            }
+
             so.ApplyModifiedPropertiesWithoutUndo();
-            return assigned > 0;
+            return true;
         }
 
         /// <summary>

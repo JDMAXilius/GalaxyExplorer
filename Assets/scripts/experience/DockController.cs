@@ -53,9 +53,18 @@ namespace CosmicSimulation
         private float minimumHeightMetres = 0.7f;
 
         [SerializeField]
-        [Tooltip("Eye height in metres assumed when there is no headset to measure — desktop, and the first " +
-                 "recentre before tracking has settled.")]
+        [Tooltip("Eye height in metres assumed when there is no headset to measure. Desktop only: in a headset " +
+                 "the head is measured, and a head that has not been measured yet is waited for.")]
         private float assumedEyeHeightMetres = 1.6f;
+
+        [SerializeField]
+        [Tooltip("Metres. A head reported below this in a headset has not been tracked yet — the dock waits for " +
+                 "a real pose rather than guessing where the floor is.")]
+        private float trackedHeadMinimumMetres = 0.5f;
+
+        [SerializeField]
+        [Tooltip("Seconds to wait for that first head pose before parking the dock relative to the head anyway.")]
+        private float poseWaitSeconds = 2f;
 
         [SerializeField]
         [Tooltip("Degrees tilted up toward the face.")]
@@ -97,6 +106,11 @@ namespace CosmicSimulation
         // Sampled at recentre only. See the class comment for why this is not recomputed per frame.
         private float _heightMetres;
         private bool _heightSampled;
+
+        // A recentre that arrived before the headset had a pose, waiting for one.
+        private bool _recenterPending;
+        private float _poseWaitedSeconds;
+        private bool _posedOnce;
 
         public static DockController Instance { get; private set; }
 
@@ -228,8 +242,15 @@ namespace CosmicSimulation
             forward.Normalize();
 
             // One eye height answers both questions, so the floor the dock measures up from and the height it
-            // measures cannot disagree with each other.
-            var eyeHeight = EyeHeight();
+            // measures cannot disagree with each other. When the eye height cannot be had from the same place as
+            // the head position, nothing is parked at all — see TryEyeHeight.
+            if (!TryEyeHeight(out var eyeHeight))
+            {
+                _recenterPending = true;
+                return;
+            }
+
+            _recenterPending = false;
             _heightMetres = Mathf.Max(eyeHeight * heightFractionOfHead, minimumHeightMetres);
             _heightSampled = true;
 
@@ -238,20 +259,57 @@ namespace CosmicSimulation
             transform.rotation = Quaternion.LookRotation(forward, Vector3.up) * Quaternion.Euler(-tiltDegrees, 0f, 0f);
         }
 
-        // In the headset the rig tracks floor-relative, so the camera's own height is the head height. On the
-        // desktop the camera is a free-flying preview that can be orbited anywhere, and its height says nothing
-        // about the person at the keyboard; a headset that has not produced a pose yet reads near zero for the
-        // same reason. Both fall back to a nominal standing eye height rather than parking the dock at the
-        // player's knees or over their head.
-        private float EyeHeight()
+        // The eye height and the floor have to come out of the same measurement, or they contradict each other.
+        //
+        // In the headset the rig tracks floor-relative, so the head's own y *is* the eye height and the floor is
+        // simply what it measures down to. Before the first pose the head reads about zero while the XR device
+        // already reports itself active, and answering that with a nominal 1.6 m — as this used to — mixes a
+        // trusted constant into an untrusted position: the floor comes out 1.6 m below a head that is standing on
+        // it, and the dock parks 0.72 m underground until somebody presses Recenter. Rather than guess, this
+        // reports failure and Recenter tries again next frame.
+        //
+        // Desktop is not that case wearing a different hat, it is its own case: there is no head there at all.
+        // The camera never moves — DesktopMouseInput pans, orbits and zooms the content pivot, not the camera —
+        // so measuring down from it with the nominal eye height is a constant, and it puts the dock the same
+        // 0.72 m below the eye line it sits at in a headset. That is deliberate: it is what keeps the world dock
+        // out of the desktop frustum, where DesktopDock's screen-space mirror is the dock the player uses. (It
+        // did previously sit at a fixed height above world zero instead, which is the same constant offset by
+        // wherever the scene happens to put the camera, and is not tied to what the player can see.)
+        private bool TryEyeHeight(out float eyeHeight)
         {
             if (!UnityEngine.XR.XRSettings.isDeviceActive)
             {
-                return assumedEyeHeightMetres;
+                eyeHeight = assumedEyeHeightMetres;
+                return true;
             }
 
-            var y = _camera != null ? _camera.transform.position.y : 0f;
-            return y > 0.5f ? y : assumedEyeHeightMetres;
+            eyeHeight = _camera != null ? _camera.transform.position.y : 0f;
+            if (eyeHeight > trackedHeadMinimumMetres)
+            {
+                _posedOnce = true;
+                return true;
+            }
+
+            // A head that has been seen once and now reads low is a player who is low — lying down, or a child —
+            // not a missing pose, and the floor still comes out of the same reading it does. Only the very first
+            // pose is worth waiting for; without this, pressing Recenter while lying down would do nothing for
+            // two seconds.
+            if (_posedOnce)
+            {
+                return true;
+            }
+
+            // Waiting has to end somewhere: an XR device that reports itself active while a pose never arrives
+            // would otherwise leave the dock wherever the prefab put it, forever. After a moment the desktop rule
+            // is used instead — below the head rather than above the floor, which is at least consistent with
+            // where the player is looking from, and one press of Recenter fixes it once a pose does exist.
+            if (_poseWaitedSeconds >= poseWaitSeconds)
+            {
+                eyeHeight = assumedEyeHeightMetres;
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>Moves the whole dock, for the drag bar underneath it.</summary>
@@ -327,6 +385,12 @@ namespace CosmicSimulation
 
         private void Update()
         {
+            if (_recenterPending)
+            {
+                _poseWaitedSeconds += Time.unscaledDeltaTime;
+                Recenter();
+            }
+
             WatchPalm();
         }
 

@@ -345,7 +345,9 @@ namespace CosmicSimulation
             _group.alpha = 0f;
 
             // No GraphicRaycaster and nothing interactable: a notice that could take a click would be a notice
-            // that could stand between the player and the tile they want to poke next.
+            // that could stand between the player and the tile they want to poke next. UiEventSystemInstaller
+            // sweeps screen-space canvases for a missing raycaster and leaves this one alone precisely because
+            // nothing under it handles an event - so keep it that way, or it will be handed one.
             _group.interactable = false;
             _group.blocksRaycasts = false;
 
