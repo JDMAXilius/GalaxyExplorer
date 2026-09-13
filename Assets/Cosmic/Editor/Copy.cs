@@ -77,6 +77,7 @@ namespace Cosmic.Editor
                 body.id = id;
                 body.title = Field(lines, "Title") ?? id;
                 body.subtitle = Field(lines, "Subtitle") ?? string.Empty;
+                body.kind = Enum.TryParse(Field(lines, "Kind") ?? "Planet", true, out BodyKind kind) ? kind : BodyKind.Planet;
                 var prose = Paragraphs(lines);
                 body.paragraph = prose.Length > 0 ? prose[0] : string.Empty;
                 body.stats = TableRows(lines)
@@ -118,6 +119,7 @@ namespace Cosmic.Editor
 
                 var moon = LoadOrCreate<Body>("bodies", id);
                 moon.id = id;
+                moon.kind = BodyKind.Moon;
                 moon.title = row[1];
                 moon.paragraph = sentences[id];
                 var parentName = row[2];

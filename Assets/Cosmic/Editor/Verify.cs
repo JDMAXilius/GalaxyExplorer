@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using ARCameraManager = UnityEngine.XR.ARFoundation.ARCameraManager;
+using CameraEvent = UnityEngine.Rendering.CameraEvent;
 using EventSystem = UnityEngine.EventSystems.EventSystem;
 using InputActionManager = UnityEngine.XR.Interaction.Toolkit.Inputs.InputActionManager;
 using InputSystem = UnityEngine.InputSystem.InputSystem;
@@ -55,6 +56,54 @@ namespace Cosmic.Editor
         const float DragPixels = 200f;
         const float RawWheelNotch = 120f;
         const float WheelScalePerNotch = 1.1f;
+        const string GalaxyFolder = Generated + "/galaxies";
+        const string CloudFolder = Generated + "/points";
+        const string LayoutFolder = Generated + "/layouts";
+        const string MaterialFolder = "Assets/Cosmic/Prefabs/materials";
+        const string PlacePrefabFolder = "Assets/Cosmic/Prefabs/places";
+        const string BodyPrefabFolder = "Assets/Cosmic/Prefabs/bodies";
+        const string PointShaderName = "Cosmic/Points";
+        const int PointStrideBytes = 40;
+        const int WebPoints = 40000;
+        const int NebulaPoints = 28000;
+        const int PointMaterials = 23;
+        const float NebulaRadiusMetres = 0.35f;
+        const float GalaxyAheadMetres = 1.5f;
+        const float SystemAheadMetres = 2.5f;
+        const float SunReachMetres = 1.2f;
+        const float SlotToleranceMetres = 0.005f;
+        const float LayoutMovedMetres = 0.1f;
+        const float OrbitMovedMetres = 0.02f;
+        const float SunScaleAtRealism = 0.0001f;
+        const float TouchHigh = 0.5f;
+        const float TouchLow = 0.1f;
+
+        // ellipses * starsPerEllipse * armCount, read off BakeGalaxies.SpiralLayers and its per-galaxy overrides.
+        static readonly (string id, int clouds, int dust, int stars)[] GalaxyCounts =
+        {
+            ("milky_way", 6400, 4000, 8320), ("andromeda", 5000, 3200, 9000), ("whirlpool", 5000, 3200, 9000),
+            ("pinwheel", 7500, 4800, 13500), ("triangulum", 7500, 4800, 13500),
+        };
+
+        static readonly string[] NebulaIds =
+            { "helix", "crab", "ngc1501", "homunculus", "orion", "pillars", "trumpler14" };
+
+        // Every generated place except hint_grab and hint_scale, which are Phase 6 cards and own no content prefab.
+        static readonly string[] PlaceIds =
+        {
+            "milky_way", "andromeda", "whirlpool", "pinwheel", "triangulum",
+            "helix", "crab", "ngc1501", "homunculus", "orion", "pillars", "trumpler14",
+            "cosmic_web", "galaxies", "sagittarius_a", "solar_system", "solar_system_planets", "hd110067",
+        };
+
+        static readonly string[] SolarIds =
+            { "sun", "mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto" };
+
+        static readonly (string id, LayoutKind kind)[] Arrangements =
+        {
+            ("relative_size", LayoutKind.Relative), ("solar_row", LayoutKind.Row),
+            ("solar_schematic", LayoutKind.Schematic), ("solar_realistic", LayoutKind.Realistic),
+        };
 
         class Step
         {
@@ -76,6 +125,14 @@ namespace Cosmic.Editor
         static Hotkeys keys;
         static VerifyProbe probe;
         static Vector3 home;
+        static Layout[] arrangementAssets;
+        static Points galaxyPoints;
+        static Grabbable galaxyGrab;
+        static Collider galaxyHull;
+        static Rig systemRig;
+        static Orbit systemOrbit;
+        static Sun star;
+        static Transform sunAnchor;
         static string tag = "[P2]";
         static double due;
         static float bedTime;
@@ -157,6 +214,7 @@ namespace Cosmic.Editor
         [MenuItem("Cosmic/Verify/P2 Setup")]
         public static void P2Setup()
         {
+            tag = "[P2]";
             Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), Generated));
             AssetDatabase.Refresh();
 
@@ -301,6 +359,7 @@ namespace Cosmic.Editor
         [MenuItem("Cosmic/Verify/P2 Teardown")]
         public static void P2Teardown()
         {
+            tag = "[P2]";
             var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
             if (string.IsNullOrEmpty(scene.path))
             {
@@ -578,7 +637,7 @@ namespace Cosmic.Editor
             var property = serialized.FindProperty(field);
             if (property == null)
             {
-                Debug.LogError($"[P2] FAIL {target.GetType().Name} has no serialized field '{field}'");
+                Debug.LogError($"{tag} FAIL {target.GetType().Name} has no serialized field '{field}'");
                 return;
             }
             property.objectReferenceValue = value;
@@ -1162,6 +1221,743 @@ namespace Cosmic.Editor
             var property = serialized.FindProperty(field);
             if (property == null) Debug.LogError($"{tag} FAIL {serialized.targetObject.GetType().Name} has no serialized field '{field}'");
             return property;
+        }
+
+        [MenuItem("Cosmic/Verify/P4 Bake")]
+        public static void P4Bake()
+        {
+            tag = "[P4]";
+            if (!Ready("Bake All")) return;
+            passes = total = 0;
+
+            if (!EditorApplication.ExecuteMenuItem("Cosmic/Build/Bake All"))
+            {
+                Debug.LogError(tag + " FAIL the menu item Cosmic/Build/Bake All does not exist; Cosmic.Editor did not compile");
+                return;
+            }
+
+            var before = Baked();
+            Check(Found("t:Galaxy", GalaxyFolder).Length == GalaxyCounts.Length,
+                  $"{GalaxyCounts.Length} Galaxy assets in {GalaxyFolder} ({Found("t:Galaxy", GalaxyFolder).Length})");
+
+            var strode = false;
+            foreach (var expected in GalaxyCounts)
+            {
+                var path = $"{GalaxyFolder}/{expected.id}.asset";
+                var galaxy = AssetDatabase.LoadAssetAtPath<Galaxy>(path);
+                Check(galaxy != null, path + " exists");
+                if (galaxy == null) continue;
+
+                var layers = galaxy.layers;
+                var count = layers == null ? 0 : layers.Length;
+                Check(count == 3, $"{expected.id} has three layers ({count})");
+                if (count != 3) continue;
+
+                var want = new[] { expected.clouds, expected.dust, expected.stars };
+                for (var i = 0; i < 3; i++)
+                {
+                    var cloud = layers[i].points;
+                    var name = string.IsNullOrEmpty(layers[i].id) ? "layer " + i : layers[i].id;
+                    Check(cloud != null && cloud.Count == want[i],
+                          $"{expected.id}/{name} is a baked cloud of {want[i]} points " +
+                          $"({(cloud == null ? "layers[" + i + "].points is null" : cloud.Count.ToString())})");
+                    if (cloud == null || strode) continue;
+                    strode = true;
+                    Check(cloud.Stride == PointStrideBytes,
+                          $"PointCloud.Stride is {PointStrideBytes} bytes, the ten floats of StarVert ({cloud.Stride})");
+                }
+            }
+
+            var web = AssetDatabase.LoadAssetAtPath<PointCloud>($"{CloudFolder}/cosmic_web.asset");
+            Check(web != null && web.Count == WebPoints,
+                  $"cosmic_web.asset holds {WebPoints} points ({(web == null ? "missing" : web.Count.ToString())})");
+            if (web != null)
+                Debug.Log($"{tag} cosmic_web radius is {web.radiusMetres} m - that is PointSources.WebSettings.Default.radiusMetres, " +
+                          "not the 0.35 m of a nebula, and the place prefab's own grab sphere is a separate number.");
+
+            foreach (var id in NebulaIds)
+            {
+                var cloud = AssetDatabase.LoadAssetAtPath<PointCloud>($"{CloudFolder}/nebula_{id}.asset");
+                Check(cloud != null && cloud.Count == NebulaPoints && Mathf.Abs(cloud.radiusMetres - NebulaRadiusMetres) <= 0.001f,
+                      $"nebula_{id}.asset is {NebulaPoints} points at {NebulaRadiusMetres} m " +
+                      $"({(cloud == null ? "missing" : cloud.Count + " points at " + cloud.radiusMetres + " m")})");
+            }
+
+            int mats = 0, instanced = 0, offShader = 0;
+            var faults = string.Empty;
+            foreach (var guid in Found("t:Material", MaterialFolder))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (!Path.GetFileNameWithoutExtension(path).StartsWith("points_")) continue;
+                var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+                if (material == null) continue;
+                mats++;
+                if (material.enableInstancing) { instanced++; faults += " " + material.name + "(instanced)"; }
+                if (material.shader == null || material.shader.name != PointShaderName)
+                {
+                    offShader++;
+                    faults += " " + material.name + "(" + (material.shader == null ? "no shader" : material.shader.name) + ")";
+                }
+            }
+
+            Check(mats == PointMaterials, $"{PointMaterials} points_*.mat in {MaterialFolder} - 15 galaxy layers, the web and seven nebulae ({mats})");
+            Check(mats > 0 && instanced == 0, $"every points_*.mat has instancing off ({instanced} on)");
+            Check(mats > 0 && offShader == 0, $"every points_*.mat is on {PointShaderName} ({offShader} are not)");
+            if (faults.Length > 0) Debug.Log(tag + " point material faults:" + faults);
+
+            // Everything above reads the first bake; the second one is the idempotency gate and nothing may be read across it but paths and GUIDs.
+            EditorApplication.ExecuteMenuItem("Cosmic/Build/Bake All");
+            var after = Baked();
+            int churned = 0, added = 0;
+            foreach (var pair in before)
+                if (!after.TryGetValue(pair.Key, out var guid) || guid != pair.Value) churned++;
+            foreach (var pair in after)
+                if (!before.ContainsKey(pair.Key)) added++;
+            Check(before.Count > 0 && churned == 0, $"a second Bake All left all {before.Count} baked GUIDs unchanged ({churned} churned)");
+            Check(added == 0, $"a second Bake All wrote no new asset under {GalaxyFolder} or {CloudFolder} ({added} new)");
+            Debug.Log($"{tag} DONE {passes}/{total}");
+        }
+
+        [MenuItem("Cosmic/Verify/P4 Build")]
+        public static void P4Build()
+        {
+            tag = "[P4]";
+            if (!Ready("the Phase 4 builders")) return;
+            passes = total = 0;
+
+            foreach (var item in new[] { "Cosmic/Build/Layouts", "Cosmic/Build/Bodies", "Cosmic/Build/Places" })
+            {
+                if (EditorApplication.ExecuteMenuItem(item)) continue;
+                Debug.LogError($"{tag} FAIL the menu item {item} does not exist; Cosmic.Editor did not compile, or that " +
+                               "builder has not landed yet. Nothing below it would mean anything, so this stops here.");
+                return;
+            }
+
+            var before = Built();
+            foreach (var wanted in Arrangements)
+            {
+                var layout = AssetDatabase.LoadAssetAtPath<Layout>($"{LayoutFolder}/{wanted.id}.asset");
+                var slots = layout == null || layout.slots == null ? 0 : layout.slots.Length;
+                Check(layout != null && layout.kind == wanted.kind && slots == SolarIds.Length,
+                      $"{wanted.id}.asset is a {wanted.kind} layout over all {SolarIds.Length} solar bodies " +
+                      $"({(layout == null ? "missing" : layout.kind + ", " + slots + " slots")})");
+            }
+
+            var missing = string.Empty;
+            foreach (var id in PlaceIds)
+                if (AssetDatabase.LoadAssetAtPath<GameObject>($"{PlacePrefabFolder}/{id}.prefab") == null) missing += " " + id;
+            Check(missing.Length == 0,
+                  $"a prefab in {PlacePrefabFolder} for each of the {PlaceIds.Length} places that have content " +
+                  (missing.Length == 0 ? "(all present)" : "(missing:" + missing + ")"));
+
+            var milky = AssetDatabase.LoadAssetAtPath<GameObject>($"{PlacePrefabFolder}/milky_way.prefab");
+            var disc = milky != null ? Descendant(milky.transform, "galaxy") : null;
+            var points = disc != null ? disc.GetComponent<Points>() : null;
+            var layers = points == null || points.layers == null ? 0 : points.layers.Length;
+            Check(points != null && layers == 3,
+                  $"milky_way.prefab has a `galaxy` child carrying Points with three layers " +
+                  $"({(milky == null ? "no prefab" : disc == null ? "no `galaxy` child" : points == null ? "no Points" : layers + " layers")})");
+            if (points != null)
+            {
+                var unwired = 0;
+                for (var i = 0; i < layers; i++)
+                    if (points.layers[i].cloud == null || points.layers[i].material == null) unwired++;
+                Check(layers > 0 && unwired == 0, $"every milky_way Points layer carries a cloud and a material ({unwired} do not)");
+            }
+
+            var helix = AssetDatabase.LoadAssetAtPath<GameObject>($"{PlacePrefabFolder}/helix.prefab");
+            var volume = helix != null ? Descendant(helix.transform, "volume") : null;
+            var nebula = volume != null ? volume.GetComponent<Points>() : null;
+            var nebulaLayers = nebula == null || nebula.layers == null ? 0 : nebula.layers.Length;
+            Check(nebula != null && nebulaLayers == 1,
+                  $"helix.prefab has a `volume` child carrying Points with one layer " +
+                  $"({(helix == null ? "no prefab" : volume == null ? "no `volume` child" : nebula == null ? "no Points" : nebulaLayers + " layers")})");
+
+            var system = SystemPrefab(out var systemId);
+            var rig = system != null ? system.GetComponent<Rig>() : null;
+            Check(rig != null, $"{systemId}.prefab carries Rig on its root ({(system == null ? "no prefab" : rig == null ? "no Rig" : "present")})");
+            Check(system != null && system.GetComponent<Orbit>() != null, $"{systemId}.prefab carries Orbit on its root");
+            if (systemId != "solar_system_planets")
+                Debug.Log($"{tag} the rig was found on {systemId}.prefab, not solar_system_planets.prefab. The generated data " +
+                          "splits the system in two: solar_system.asset holds the ten bodies and solar_system_planets.asset holds " +
+                          "the four layouts. Whichever place the builder chose, P4 Setup and P4 Run follow it.");
+
+            var frame = rig != null ? rig.transform : system != null ? system.transform : null;
+            var anchorFaults = string.Empty;
+            Transform saturn = null, sunBody = null;
+            foreach (var id in SolarIds)
+            {
+                var anchor = frame != null ? frame.Find("home_" + id) : null;
+                if (anchor == null) { anchorFaults += " " + id + "(no anchor)"; continue; }
+                var nested = anchor.Find("body_" + id);
+                if (nested == null) { anchorFaults += " " + id + "(no body_" + id + ")"; continue; }
+                if (id == "saturn") saturn = nested;
+                if (id == "sun") sunBody = nested;
+                var lacks = string.Empty;
+                if (nested.GetComponent<Grabbable>() == null) lacks += "Grabbable ";
+                if (nested.GetComponent<Pull>() == null) lacks += "Pull ";
+                if (nested.GetComponent<SphereCollider>() == null) lacks += "SphereCollider ";
+                if (lacks.Length > 0) anchorFaults += " " + id + "(no " + lacks.TrimEnd() + ")";
+            }
+
+            Check(anchorFaults.Length == 0,
+                  $"all {SolarIds.Length} home_<id> anchors nest a body_<id> with Grabbable, Pull and a SphereCollider " +
+                  (anchorFaults.Length == 0 ? "(all ten)" : "(faults:" + anchorFaults + ")"));
+            Check(saturn != null && saturn.Find("rings") != null, "body_saturn has a `rings` child");
+            Check(sunBody != null && sunBody.GetComponent<Sun>() != null, "body_sun carries Sun");
+
+            var sunPrefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{BodyPrefabFolder}/sun.prefab");
+            Check(sunPrefab != null && sunPrefab.GetComponent<Sun>() != null, $"{BodyPrefabFolder}/sun.prefab carries Sun");
+            var sunAsset = AssetDatabase.LoadAssetAtPath<Body>($"{Generated}/bodies/sun.asset");
+            Check(sunAsset != null && sunAsset.kind == BodyKind.Star,
+                  $"the sun Body is BodyKind.Star ({(sunAsset == null ? "missing" : sunAsset.kind.ToString())}) - Rig.BindOrbit binds the " +
+                  "first Star anchor as Orbit's centre, and with the sun typed Planet it is handed to Orbit.Bind instead, " +
+                  "which has no elements for it and leaves it wherever the last row layout put it");
+
+            // Everything above reads the first build; a rebuild re-imports the prefabs and invalidates every reference held here.
+            foreach (var item in new[] { "Cosmic/Build/Layouts", "Cosmic/Build/Bodies", "Cosmic/Build/Places" })
+                EditorApplication.ExecuteMenuItem(item);
+            var after = Built();
+            int churned = 0, added = 0;
+            foreach (var pair in before)
+                if (!after.TryGetValue(pair.Key, out var guid) || guid != pair.Value) churned++;
+            foreach (var pair in after)
+                if (!before.ContainsKey(pair.Key)) added++;
+            Check(before.Count > 0 && churned == 0, $"a second build left all {before.Count} prefab and layout GUIDs unchanged ({churned} churned)");
+            Check(added == 0, $"a second build wrote no new prefab or layout ({added} new)");
+            Debug.Log($"{tag} DONE {passes}/{total}");
+        }
+
+        [MenuItem("Cosmic/Verify/P4 Setup")]
+        public static void P4Setup()
+        {
+            tag = "[P4]";
+            if (EditorApplication.isPlaying)
+            {
+                Debug.LogError(tag + " FAIL the editor is in play mode, so anything written now is thrown away when play stops");
+                return;
+            }
+
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (string.IsNullOrEmpty(scene.path))
+            {
+                Debug.LogError(tag + " FAIL the active scene has never been saved, and SaveScene would raise a modal dialog " +
+                               "that blocks the relay. Open a saved scene in the editor by hand and run this again.");
+                return;
+            }
+
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(RigPath);
+            if (asset == null)
+            {
+                Debug.LogError(tag + " FAIL " + RigPath + " does not exist; run Cosmic/Verify/P3 Build Rig first");
+                return;
+            }
+
+            GameObject rig = null, host = null;
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                if (rig == null && root.GetComponentInChildren<Cosmic.Mouse>(true) != null) rig = root;
+                if (root.name == HostName) host = root;
+            }
+
+            var madeRig = rig == null;
+            if (madeRig)
+            {
+                rig = (GameObject)PrefabUtility.InstantiatePrefab(asset, scene);
+                rig.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            }
+
+            Camera eye = null;
+            foreach (var camera in rig.GetComponentsInChildren<Camera>(true))
+                if (camera.CompareTag("MainCamera")) eye = camera;
+            if (eye == null)
+            {
+                Debug.LogError(tag + " FAIL the rig in the scene has no camera tagged MainCamera; re-run Cosmic/Verify/P3 Build Rig");
+                return;
+            }
+
+            var strays = string.Empty;
+            foreach (var camera in UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+                if (camera != eye && camera.CompareTag("MainCamera")) strays += " " + camera.name;
+            if (strays.Length > 0)
+                Debug.LogError(tag + " FAIL more than one active MainCamera is loaded:" + strays + ". Camera.main is then whichever Unity " +
+                               "hands back first, and Mouse, Points and Sun would all aim through the wrong one. Deactivate the host scene's " +
+                               "camera, or open a saved scene that has none, and run this again.");
+
+            var madeHost = host == null;
+            if (madeHost) host = new GameObject(HostName);
+            if (host.GetComponent<Room>() != null || host.GetComponent<Cosmic.Audio>() != null)
+            {
+                Debug.LogError(tag + " FAIL " + HostName + " in this scene is the Phase 2 host: it carries Room and Audio, and a second " +
+                               "Room next to the rig's is a coin toss over which one is the singleton. Run Cosmic/Verify/P2 Teardown " +
+                               "first, then run this again.");
+                return;
+            }
+
+            host.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            var view = eye.transform;
+            var galaxy = Spawn(host.transform, "milky_way");
+            var system = SystemPrefab(out var systemId);
+            var placed = system != null ? Spawn(host.transform, systemId) : null;
+            if (galaxy == null || placed == null)
+            {
+                Debug.LogError($"{tag} FAIL no prefab at {PlacePrefabFolder}/milky_way.prefab or {PlacePrefabFolder}/{systemId}.prefab; " +
+                               "run Cosmic/Verify/P4 Build first");
+                return;
+            }
+
+            var ahead = view.position + view.forward * GalaxyAheadMetres;
+            galaxy.transform.SetPositionAndRotation(new Vector3(ahead.x, view.position.y, ahead.z), Quaternion.identity);
+            // Floor frame, not eye height: the row and relative layouts carry an absolute 1.2 m slot height of their own.
+            var floorAhead = view.position + view.forward * SystemAheadMetres;
+            placed.transform.SetPositionAndRotation(new Vector3(floorAhead.x, 0f, floorAhead.z), Quaternion.identity);
+
+            var sun = placed.GetComponentInChildren<Sun>(true);
+            var mouse = rig.GetComponentInChildren<Cosmic.Mouse>(true);
+            if (sun != null && mouse != null) Bind(sun, "mouse", mouse);
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log($"{tag} setup: rig {(madeRig ? "instantiated from " + RigPath : "found in the scene")}, {HostName} " +
+                      $"{(madeHost ? "created" : "reused")} with milky_way at {galaxy.transform.position} ({GalaxyAheadMetres} m ahead at eye " +
+                      $"height) and {systemId} at {placed.transform.position} ({SystemAheadMetres} m ahead on the floor), saved into {scene.path}. " +
+                      $"Sun.mouse = {(sun == null ? "no Sun in the place" : mouse == null ? "no Mouse in the rig" : mouse.name)}: the harness wires " +
+                      "it here because Phase 6 is what wires it for real, and without it Sun.Hovering can never return true and the desktop " +
+                      "touch test could only ever be skipped. Sun.leftHand and Sun.rightHand stay null on purpose - Sun.Touching only falls " +
+                      "through to the mouse while neither hand has moved, and a null hand never moves.");
+        }
+
+        [MenuItem("Cosmic/Verify/P4 Enter Play")]
+        public static void P4EnterPlay()
+        {
+            if (EditorApplication.isPlaying) { Debug.Log("[P4] already in play mode"); return; }
+            EditorApplication.isPlaying = true;
+            Debug.Log("[P4] play requested; poll isPlaying, it reads false on this frame");
+        }
+
+        [MenuItem("Cosmic/Verify/P4 Leave Play")]
+        public static void P4LeavePlay()
+        {
+            EditorApplication.isPaused = false;
+            EditorApplication.isPlaying = false;
+            Debug.Log("[P4] leaving play mode; the editor stays open");
+        }
+
+        [MenuItem("Cosmic/Verify/P4 Run")]
+        public static void P4Run()
+        {
+            if (!EditorApplication.isPlaying)
+            {
+                Debug.LogError("[P4] FAIL not in play mode; run Cosmic/Verify/P4 Enter Play, poll isPlaying, then run this");
+                return;
+            }
+            if (steps.Count > 0) { Debug.Log($"{tag} already running, step {cursor}/{steps.Count}"); return; }
+
+            tag = "[P4]";
+            galaxyPoints = null;
+            galaxyGrab = null;
+            galaxyHull = null;
+            systemRig = null;
+            systemOrbit = null;
+            star = null;
+            sunAnchor = null;
+
+            var host = GameObject.Find(HostName);
+            if (host == null)
+            {
+                Debug.LogError($"[P4] FAIL no active {HostName} in the loaded scenes; run Cosmic/Verify/P4 Setup, then re-enter play mode");
+                return;
+            }
+
+            var disc = host.transform.Find("milky_way");
+            galaxyGrab = disc != null ? disc.GetComponent<Grabbable>() : null;
+            galaxyHull = disc != null ? disc.GetComponent<Collider>() : null;
+            galaxyPoints = disc != null ? disc.GetComponentInChildren<Points>(true) : null;
+            systemRig = host.GetComponentInChildren<Rig>(true);
+            systemOrbit = systemRig != null ? systemRig.GetComponent<Orbit>() : null;
+            star = host.GetComponentInChildren<Sun>(true);
+            pointer = UnityEngine.Object.FindAnyObjectByType<Cosmic.Mouse>();
+            keys = UnityEngine.Object.FindAnyObjectByType<Hotkeys>();
+
+            if (galaxyPoints == null)
+            {
+                Debug.LogError($"[P4] FAIL no Points under {HostName}/milky_way; the place prefab was not built or not instantiated");
+                return;
+            }
+            if (systemRig == null)
+            {
+                Debug.LogError($"[P4] FAIL no Rig under {HostName}; the system place prefab was not built or not instantiated");
+                return;
+            }
+            if (Camera.main == null)
+            {
+                Debug.LogError("[P4] FAIL there is no Camera.main; every command buffer, screen point and Sun hover is measured from it");
+                return;
+            }
+            if (pointer == null)
+            {
+                Debug.LogError("[P4] FAIL no Cosmic.Mouse in the loaded scenes; the rig instance is missing, so there is no desktop pointer");
+                return;
+            }
+            if (MouseDevice.current == null || KeyboardDevice.current == null)
+            {
+                Debug.LogError("[P4] FAIL the input system reports no mouse or no keyboard device, so no synthetic input can be sent");
+                return;
+            }
+
+            arrangementAssets = new Layout[Arrangements.Length];
+            var absent = string.Empty;
+            for (var i = 0; i < Arrangements.Length; i++)
+            {
+                arrangementAssets[i] = AssetDatabase.LoadAssetAtPath<Layout>($"{LayoutFolder}/{Arrangements[i].id}.asset");
+                if (arrangementAssets[i] == null) absent += " " + Arrangements[i].id;
+            }
+            if (absent.Length > 0)
+            {
+                Debug.LogError($"[P4] FAIL these layout assets are missing:{absent}. Run Cosmic/Verify/P4 Build first.");
+                return;
+            }
+
+            if (keys == null)
+                Debug.LogError("[P4] FAIL no Hotkeys in the loaded scenes, so the R key does nothing and the Restore check will fail");
+            Grabbable.Bus = UnityEngine.Object.FindAnyObjectByType<Cosmic.Audio>();
+            cursor = passes = total = 0;
+            roomFires = 0;
+            holding = null;
+            BuildP4();
+            due = EditorApplication.timeSinceStartup + steps[0].waitSeconds;
+            EditorApplication.update += Tick;
+            Debug.Log($"[P4] start: {steps.Count} steps, about 16 s, driven by layout applies and synthetic mouse and keyboard events. " +
+                      $"Grabbable.Bus = {(Grabbable.Bus != null ? Grabbable.Bus.name : "null - no Audio in the scene, so grab and pull are silent")}. " +
+                      "Switch Error Pause off first, keep the Game view visible, and keep the real mouse off it until it prints DONE.");
+        }
+
+        [MenuItem("Cosmic/Verify/P4 Teardown")]
+        public static void P4Teardown()
+        {
+            tag = "[P4]";
+            if (EditorApplication.isPlaying)
+            {
+                Debug.LogError(tag + " FAIL the editor is in play mode, so the save would be thrown away; leave play mode first");
+                return;
+            }
+
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (string.IsNullOrEmpty(scene.path))
+            {
+                Debug.LogError(tag + " FAIL the active scene has never been saved; SaveScene would block the relay on a modal dialog");
+                return;
+            }
+
+            var removed = 0;
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                if (root.name != HostName) continue;
+                removed++;
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log($"{tag} teardown: removed {removed} {HostName} root(s) from {scene.path}. The place and body prefabs, the baked " +
+                      $"clouds and {RigPath} are all kept - none of them is a fixture.");
+        }
+
+        static void BuildP4()
+        {
+            steps.Clear();
+            var view = Camera.main.transform;
+            var frame = systemRig.transform;
+            var anchors = new Transform[SolarIds.Length];
+            var starts = new Vector3[SolarIds.Length];
+            var point = Vector2.zero;
+            var mark = Vector3.zero;
+            var mercury = Vector3.zero;
+            var restored = false;
+            var hovering = false;
+
+            Add(0f, () =>
+            {
+                roomListener = _ => roomFires++;
+                Room.Changed += roomListener;
+                if (keys != null)
+                {
+                    restoreListener = () => { restored = true; if (galaxyGrab != null) galaxyGrab.Restore(); };
+                    keys.Restore += restoreListener;
+                }
+                // Clears whatever the real keyboard holds, exactly as P3 does before its first synthetic event.
+                Tap(Key.R, false);
+                var absent = string.Empty;
+                for (var i = 0; i < SolarIds.Length; i++)
+                {
+                    anchors[i] = frame.Find("home_" + SolarIds[i]);
+                    if (anchors[i] == null) absent += " " + SolarIds[i];
+                    if (SolarIds[i] == "sun") sunAnchor = anchors[i];
+                }
+                Check(absent.Length == 0, $"the rig holds all {SolarIds.Length} home_<id> anchors" + (absent.Length == 0 ? string.Empty : ", missing:" + absent));
+                // Counted by id, not by length: the builder also hands the rig a moon anchor per moon, which belongs there.
+                var listed = 0;
+                if (systemRig.Bodies != null)
+                    foreach (var listedBody in systemRig.Bodies)
+                        for (var i = 0; listedBody != null && i < SolarIds.Length; i++)
+                            if (listedBody.id == SolarIds[i]) listed++;
+                Check(listed == SolarIds.Length,
+                      $"Rig.bodies lists all {SolarIds.Length} solar bodies ({listed} of " +
+                      $"{(systemRig.Bodies == null ? 0 : systemRig.Bodies.Count)} entries)");
+                // Primes the anchors onto the row arc so the two asserted applies below both start from a known radius;
+                // the authored anchor positions in the prefab are the builder's business and could be anywhere.
+                systemRig.Apply(arrangementAssets[1], 0f);
+            });
+            Add(0.6f, () =>
+            {
+                var cam = Camera.main;
+                var opaque = cam != null ? cam.GetCommandBuffers(CameraEvent.BeforeForwardOpaque).Length : 0;
+                Check(opaque > 0, $"the galaxy Points recorded a command buffer at BeforeForwardOpaque on Camera.main ({opaque})");
+                Check(galaxyPoints.LocalCamDir.sqrMagnitude > 0.0001f,
+                      $"Points pushes a per-frame _LocalCamDir ({galaxyPoints.LocalCamDir})");
+                Skip("the _Age advance: Points keeps its per-layer Material instances private, so there is no way to read _Age " +
+                     "from outside. A `public Material Instance(int layer)` on Points would turn this into an assertion; until " +
+                     "then the spin is a thing to look at, not to measure.");
+                Skip("the Alpha 0 draw: the command buffer still records the same DrawProcedural at any alpha - only the shader " +
+                     "discards - so nothing observable from script distinguishes alpha 0 from alpha 1. It is a capture, not a check.");
+                for (var i = 0; i < anchors.Length; i++) starts[i] = anchors[i] != null ? anchors[i].localPosition : Vector3.zero;
+                systemRig.Apply(arrangementAssets[0]);
+            });
+            Add(1.5f, () => Settled(Arrangements[0].id, arrangementAssets[0], anchors, starts));
+            Add(0f, () =>
+            {
+                for (var i = 0; i < anchors.Length; i++) starts[i] = anchors[i] != null ? anchors[i].localPosition : Vector3.zero;
+                systemRig.Apply(arrangementAssets[1]);
+            });
+            Add(1.5f, () => Settled(Arrangements[1].id, arrangementAssets[1], anchors, starts));
+            Add(0f, () => systemRig.Apply(arrangementAssets[2]));
+            Add(0.3f, () =>
+            {
+                Check(systemOrbit != null && systemOrbit.Running, "a Schematic layout sets Orbit.Running");
+                Check(systemOrbit != null && systemOrbit.Count == SolarIds.Length - 1,
+                      $"Orbit drives the nine bodies that are not the centre ({(systemOrbit == null ? 0 : systemOrbit.Count)})");
+                Check(systemOrbit != null && systemOrbit.Realism <= 0.001f,
+                      $"a Schematic layout holds Orbit.Realism at 0 ({(systemOrbit == null ? -1f : systemOrbit.Realism):0.000})");
+                mercury = anchors[1] != null ? anchors[1].localPosition : Vector3.zero;
+            });
+            Add(2.5f, () =>
+            {
+                var moved = anchors[1] != null ? Vector3.Distance(mercury, anchors[1].localPosition) : 0f;
+                Check(moved > OrbitMovedMetres, $"mercury's anchor travels its orbit while Running ({moved:0.000} m in 2.5 s)");
+                var cam = Camera.main;
+                var alpha = cam != null ? cam.GetCommandBuffers(CameraEvent.AfterForwardAlpha).Length : 0;
+                Check(alpha > 0, $"the orbit rings recorded a command buffer at AfterForwardAlpha ({alpha}) - zero means Orbit.ringMaterial is unwired");
+                systemRig.Apply(arrangementAssets[3]);
+            });
+            Add(2f, () =>
+            {
+                Check(systemOrbit != null && systemOrbit.Realism >= 0.999f,
+                      $"a Realistic layout tweens Orbit.Realism to 1 ({(systemOrbit == null ? -1f : systemOrbit.Realism):0.000})");
+                var scale = sunAnchor != null ? sunAnchor.localScale.x : -1f;
+                Check(scale > 0f && Mathf.Abs(scale - SunScaleAtRealism) <= SunScaleAtRealism * 5f,
+                      $"the sun anchor shrinks to Orbit.TargetRealismPlanetScale ({SunScaleAtRealism}) at full realism ({scale:0.00000})");
+                systemRig.Apply(arrangementAssets[1], 0f);
+            });
+            Add(0.2f, () =>
+            {
+                hovering = star != null && sunAnchor != null && Assigned(star, "mouse");
+                if (star == null) { Skip("the Sun touch: no Sun component under the host, so the sun body was never built"); return; }
+                if (!hovering)
+                {
+                    Skip("the Sun touch: Sun.mouse is null, which is Phase 6 wiring. Cosmic/Verify/P4 Setup sets it through " +
+                         "SerializedObject; re-run setup before entering play mode and this becomes an assertion.");
+                    return;
+                }
+                // The milky_way grab sphere is 0.84 m across the line of sight at 1.5 m, so it would swallow the ray before the sun.
+                if (galaxyHull != null) galaxyHull.enabled = false;
+                sunAnchor.position = view.position + view.forward * SunReachMetres;
+                point = At(sunAnchor.position);
+                holding = () => Move(point);
+            });
+            Add(1f, () =>
+            {
+                if (!hovering) return;
+                Check(star.Touch > TouchHigh, $"the cursor on the sun raises Sun.Touch past {TouchHigh} within 1 s ({star.Touch:0.00})");
+                point = Idle();
+                holding = () => Move(point);
+            });
+            Add(1.5f, () =>
+            {
+                if (hovering) Check(star.Touch < TouchLow, $"Sun.Touch falls back under {TouchLow} within 1.5 s of the cursor leaving ({star.Touch:0.00})");
+                if (galaxyHull != null) galaxyHull.enabled = true;
+                holding = null;
+            });
+            Add(0f, () =>
+            {
+                if (galaxyGrab == null) { Skip("the galaxy grab: no Grabbable on the milky_way place root"); return; }
+                galaxyGrab.CaptureHome();
+                home = galaxyGrab.transform.localPosition;
+                point = At(galaxyGrab.transform.position);
+                holding = () => Move(point);
+            });
+            Add(0.35f, () =>
+            {
+                if (galaxyGrab == null) return;
+                Check(galaxyGrab.isHovered, "the cursor on the milky_way makes its Grabbable hovered");
+                Press(point, true, false, Vector2.zero);
+                holding = () => Press(point, true, false, Vector2.zero);
+            });
+            Add(0.25f, () =>
+            {
+                if (galaxyGrab == null) return;
+                Check(galaxyGrab.isSelected, "LMB over the milky_way selects it");
+                mark = galaxyGrab.transform.position;
+                point += new Vector2(DragPixels, 0f);
+                Press(point, true, false, new Vector2(DragPixels, 0f));
+                holding = () => Press(point, true, false, Vector2.zero);
+            });
+            Add(0.3f, () =>
+            {
+                if (galaxyGrab == null) return;
+                var moved = Vector3.Distance(mark, galaxyGrab.transform.position);
+                Check(moved > 0.05f, $"dragging the cursor {DragPixels} px right carries the galaxy with it ({moved:0.000} m)");
+                holding = null;
+                Press(point, false, false, Vector2.zero);
+            });
+            Add(0.3f, () =>
+            {
+                if (galaxyGrab == null) return;
+                Check(!galaxyGrab.isSelected, "releasing LMB deselects the galaxy");
+                Check(galaxyGrab.Placed, "a release away from home marks the galaxy Placed");
+                point = Idle();
+                holding = () => Move(point);
+                restored = false;
+                Tap(Key.R, true);
+            });
+            Add(0.1f, () => Tap(Key.R, false));
+            Add(1.2f, () =>
+            {
+                if (galaxyGrab == null) return;
+                Check(restored, "the R key raises Hotkeys.Restore");
+                var off = Vector3.Distance(galaxyGrab.transform.localPosition, home);
+                Check(off <= 0.01f, $"Restore tweens the galaxy home ({off:0.000} m off)");
+                Check(!galaxyGrab.Placed, "Restore clears Placed");
+            });
+            Add(0.2f, () => Check(roomFires == 0, $"Room.Changed never fired: Phase 4 does not touch the room ({roomFires})"));
+
+            cleanup = () =>
+            {
+                holding = null;
+                if (roomListener != null) { Room.Changed -= roomListener; roomListener = null; }
+                if (keys != null && restoreListener != null) keys.Restore -= restoreListener;
+                restoreListener = null;
+                if (galaxyHull != null) galaxyHull.enabled = true;
+                Tap(Key.R, false);
+                var device = MouseDevice.current;
+                if (device != null) Move(device.position.ReadValue());
+            };
+        }
+
+        static void Settled(string id, Layout layout, Transform[] anchors, Vector3[] starts)
+        {
+            float nearest = float.MaxValue, worst = 0f;
+            var faults = string.Empty;
+            for (var i = 0; i < anchors.Length; i++)
+            {
+                if (anchors[i] == null) continue;
+                nearest = Mathf.Min(nearest, Vector3.Distance(starts[i], anchors[i].localPosition));
+                if (!SlotAt(layout, SolarIds[i], out var want)) { faults += " " + SolarIds[i] + "(no slot)"; continue; }
+                var off = Vector3.Distance(want, anchors[i].localPosition);
+                if (off > worst) worst = off;
+                if (off > SlotToleranceMetres) faults += $" {SolarIds[i]}({off * 1000f:F1} mm)";
+            }
+
+            Check(nearest < float.MaxValue && nearest > LayoutMovedMetres,
+                  $"{id} moved every anchor by more than {LayoutMovedMetres} m (the least of them moved {nearest:0.000} m)");
+            Check(faults.Length == 0,
+                  $"{id} lands every anchor within {SlotToleranceMetres * 1000f:F0} mm of its slot (worst {worst * 1000f:F1} mm)" +
+                  (faults.Length == 0 ? string.Empty : ", over:" + faults));
+        }
+
+        static bool SlotAt(Layout layout, string id, out Vector3 local)
+        {
+            local = Vector3.zero;
+            if (layout == null || layout.slots == null) return false;
+            for (var i = 0; i < layout.slots.Length; i++)
+            {
+                var slotBody = layout.slots[i].body;
+                if (slotBody == null || slotBody.id != id) continue;
+                local = layout.slots[i].localPosition;
+                return true;
+            }
+
+            return false;
+        }
+
+        static GameObject Spawn(Transform host, string id)
+        {
+            var existing = host.Find(id);
+            if (existing != null) return existing.gameObject;
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>($"{PlacePrefabFolder}/{id}.prefab");
+            if (asset == null) return null;
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(asset, host.gameObject.scene);
+            instance.name = id;
+            instance.transform.SetParent(host, false);
+            return instance;
+        }
+
+        // The generated data splits the system: solar_system.asset owns the bodies, solar_system_planets.asset owns the layouts.
+        static GameObject SystemPrefab(out string id)
+        {
+            id = "solar_system_planets";
+            var preferred = AssetDatabase.LoadAssetAtPath<GameObject>($"{PlacePrefabFolder}/{id}.prefab");
+            if (preferred != null && preferred.GetComponent<Rig>() != null) return preferred;
+            var fallback = AssetDatabase.LoadAssetAtPath<GameObject>($"{PlacePrefabFolder}/solar_system.prefab");
+            if (fallback == null || fallback.GetComponent<Rig>() == null) return preferred;
+            id = "solar_system";
+            return fallback;
+        }
+
+        static bool Ready(string what)
+        {
+            if (EditorApplication.isPlaying)
+            {
+                Debug.LogError($"{tag} FAIL the editor is in play mode; {what} refuses to write and nothing below it would mean anything");
+                return false;
+            }
+
+            if (steps.Count > 0)
+            {
+                Debug.LogError(tag + " FAIL a verify sequence is live; leave play mode and try again");
+                return false;
+            }
+
+            return true;
+        }
+
+        static bool Assigned(UnityEngine.Object owner, string field)
+        {
+            if (owner == null) return false;
+            var property = new SerializedObject(owner).FindProperty(field);
+            return property != null && property.objectReferenceValue != null;
+        }
+
+        static string[] Found(string filter, string folder) =>
+            AssetDatabase.IsValidFolder(folder) ? AssetDatabase.FindAssets(filter, new[] { folder }) : new string[0];
+
+        static Dictionary<string, string> Baked()
+        {
+            var map = new Dictionary<string, string>();
+            foreach (var folder in new[] { GalaxyFolder, CloudFolder })
+                foreach (var guid in Found("t:ScriptableObject", folder))
+                    map[AssetDatabase.GUIDToAssetPath(guid)] = guid;
+            return map;
+        }
+
+        static Dictionary<string, string> Built()
+        {
+            var map = new Dictionary<string, string>();
+            foreach (var folder in new[] { PlacePrefabFolder, BodyPrefabFolder })
+                foreach (var guid in Found("t:Prefab", folder))
+                    map[AssetDatabase.GUIDToAssetPath(guid)] = guid;
+            foreach (var guid in Found("t:ScriptableObject", LayoutFolder))
+                map[AssetDatabase.GUIDToAssetPath(guid)] = guid;
+            return map;
         }
     }
 

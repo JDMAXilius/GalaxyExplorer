@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Cosmic
 {
-    public enum BodyKind { Star, Planet, Dwarf }
+    public enum BodyKind { Star, Planet, Dwarf, Moon }
 
     public enum BodyClass { Unknown = 0, Rocky, IceGiant, GasGiant }
 

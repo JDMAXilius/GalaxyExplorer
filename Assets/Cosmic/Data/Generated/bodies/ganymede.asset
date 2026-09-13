@@ -29,7 +29,7 @@ MonoBehaviour:
     value: 7.2
     unit: days
     exponent: 0
-  kind: 1
+  kind: 3
   moons: []
   orbits: {fileID: 11400000, guid: 1f10adebc00b1bd4f9d6c4217b055541, type: 2}
   diameterKm: 5268

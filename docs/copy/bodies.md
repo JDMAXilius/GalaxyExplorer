@@ -23,6 +23,7 @@ is a mantissa).
 ## sun
 **Title:** The Sun
 **Subtitle:** OUR STAR
+**Kind:** Star
 
 A middle-aged yellow dwarf star holding 99.8 per cent of the solar system's
 mass. In its core, hydrogen fuses into helium at fifteen million degrees. The
@@ -184,6 +185,7 @@ anywhere in the solar system.
 ## pluto
 **Title:** Pluto
 **Subtitle:** A DWARF PLANET
+**Kind:** Dwarf
 
 Counted as the ninth planet from 1930 until 2006, Pluto is now the best known of
 the dwarf planets. New Horizons flew past in 2015 and found mountains of water
@@ -202,6 +204,7 @@ resurfaced today.
 ## hd110067_star
 **Title:** HD 110067
 **Subtitle:** THE HOST STAR
+**Kind:** Star
 
 A K-type dwarf a little cooler and smaller than the Sun, in Coma Berenices,
 about 105 light years away. It is bright enough to keep studying, and old -

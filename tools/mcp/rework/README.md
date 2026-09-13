@@ -1,4 +1,4 @@
-# `tools/mcp/rework/` — verifying the rework's Phases 0–3 from a terminal
+# `tools/mcp/rework/` — verifying the rework's Phases 0–4 from a terminal
 
 Phases 0–2 of the Cosmic rework are committed but have **never been through a compiler and never run**.
 They also have no scene presence: no `AudioLibrary` asset, no dim material, no host GameObject. So there
@@ -29,6 +29,13 @@ still applies here.
 | `p3_run.cs` | `Cosmic/Verify/P3 Run` | CS-140 |
 | `p3_leave_play.cs` | `Cosmic/Verify/P3 Leave Play` | CS-140 |
 | `p3_teardown.cs` | `Cosmic/Verify/P3 Teardown` | CS-140 |
+| `p4_bake.cs` | `Cosmic/Verify/P4 Bake` | Phase 4 |
+| `p4_build.cs` | `Cosmic/Verify/P4 Build` | Phase 4 |
+| `p4_setup.cs` | `Cosmic/Verify/P4 Setup` | Phase 4 |
+| `p4_enter_play.cs` | `Cosmic/Verify/P4 Enter Play` | Phase 4 |
+| `p4_run.cs` | `Cosmic/Verify/P4 Run` | Phase 4 |
+| `p4_leave_play.cs` | `Cosmic/Verify/P4 Leave Play` | Phase 4 |
+| `p4_teardown.cs` | `Cosmic/Verify/P4 Teardown` | Phase 4 |
 
 ---
 
@@ -338,3 +345,183 @@ run says the state machine is correct; it says nothing about how any of it feels
 `Cosmic/Verify/P3 Teardown` removes `cosmic_verify_body` and the rig instance from the scene and saves. It
 **keeps** `Assets/Cosmic/Prefabs/rig.prefab`: that is not a fixture, it is the rig Phase 6 builds the one
 shipping scene around. Commit it.
+
+---
+
+## Phase 4 — the content: points, layouts, orbits and the sun
+
+Phase 4 is `Content/Points.cs`, `PointSources.cs`, `Rig.cs`, `Orbit.cs`, `OrbitRings.cs`, `Sun.cs` and
+the builders behind them — `Editor/Bake*.cs`, `Editor/Layouts.cs` and `Editor/Content.cs`. None of it has
+run. It splits into three gates: **P4 Bake** makes the point clouds and checks their arithmetic, **P4
+Build** assembles the prefabs and checks their shape, and **P4 Setup → Run → Teardown** puts two of those
+prefabs in front of the camera and drives them in play mode.
+
+### Extra preconditions, on top of Phase 3's
+
+7. **Run the Phase 3 gates first, or at least `Cosmic/Build/Rig`.** `p4_setup.cs` instantiates
+   `Assets/Cosmic/Prefabs/rig.prefab` and refuses without it. The same "no second `MainCamera`" rule
+   applies, for the same reason, and P4 adds two more things that aim through `Camera.main`: `Points`
+   attaches its command buffers to it, and `Sun` measures its glow distance from it.
+8. **Run `p4_bake.cs` before `p4_build.cs`.** `Cosmic/Build/Places` nests the baked clouds and materials
+   into the place prefabs. Built against an empty `Data/Generated/points`, every `Points` layer comes out
+   null and the prefabs have to be rebuilt anyway.
+9. **The Phase 2 host has to be gone.** It is also called `cosmic_verify`, and Phase 4 reuses that name
+   for the root it parents the two places under. `Cosmic/Verify/P4 Setup` refuses outright when the object
+   it finds carries `Room` or `Audio`, because a second `Room` next to the rig's is a coin toss over which
+   one is the singleton. `Cosmic/Verify/P2 Teardown` removes it.
+
+### The sequence
+
+```bash
+# compile, then bake the clouds and check them, twice
+pwsh tools/mcp/compile.ps1
+node tools/mcp/umcp.js run tools/mcp/rework/p4_bake.cs
+#   slow: two bakes of ~250 000 points each, plus seven nebula plates read back through a blit
+node tools/mcp/umcp.js call Unity_GetConsoleLogs '{}'
+
+# build the layouts, bodies and places and check them, twice
+node tools/mcp/umcp.js run tools/mcp/rework/p4_build.cs
+node tools/mcp/umcp.js call Unity_GetConsoleLogs '{}'
+
+# put the rig, the milky way and the solar system in the open scene and save
+node tools/mcp/umcp.js run tools/mcp/rework/p4_setup.cs
+node tools/mcp/umcp.js call Unity_GetConsoleLogs '{}'
+
+# play mode
+node tools/mcp/umcp.js run tools/mcp/rework/p4_enter_play.cs
+#   wait ~5 s for the domain reload
+node tools/mcp/umcp.js run tools/mcp/rework/p4_run.cs
+#   wait ~20 s
+node tools/mcp/umcp.js call Unity_GetConsoleLogs '{}'
+
+# stop and clean up
+node tools/mcp/umcp.js run tools/mcp/rework/p4_leave_play.cs
+node tools/mcp/umcp.js run tools/mcp/rework/p4_teardown.cs
+```
+
+### What PASS looks like
+
+`p4_bake.cs` — forty assertions and:
+
+```
+Cosmic galaxies: 5 galaxies, 15 point clouds, 179100 points, 15 materials, 5 places wired -> ...
+[P4] PASS milky_way/clouds is a baked cloud of 6400 points
+...
+[P4] PASS a second Bake All wrote no new asset under .../galaxies or .../points
+[P4] DONE 40/40
+```
+
+`p4_build.cs` — seventeen assertions and `[P4] DONE 17/17`.
+
+`p4_run.cs`, about sixteen seconds later — twenty-six `[P4] PASS` lines, two `[P4] SKIP`, and:
+
+```
+[P4] DONE 26/26
+```
+
+### The numbers the bake is checked against
+
+Every galaxy layer is `ellipses × starsPerEllipse × armCount`, read off `BakeGalaxies.SpiralLayers` and
+its per-galaxy overrides. They are asserted as constants, so a change to a spec has to be a deliberate
+change here too:
+
+| Galaxy | arms | clouds | dust | stars |
+|---|---|---|---|---|
+| `milky_way` | 2 | 6400 | 4000 | 8320 |
+| `andromeda` | 2 | 5000 | 3200 | 9000 |
+| `whirlpool` | 2 | 5000 | 3200 | 9000 |
+| `pinwheel` | 3 | 7500 | 4800 | 13500 |
+| `triangulum` | 3 | 7500 | 4800 | 13500 |
+
+Plus: `PointCloud.Stride` is 40 bytes (the ten floats of `StarVert`, and the old eleven-float baked assets
+are therefore not reinterpretable), `cosmic_web` is 40 000 points, each of the seven nebulae is 28 000
+points at 0.35 m, and all 23 `points_*.mat` are on `Cosmic/Points` with `enableInstancing` off — `Points`
+draws from a `StructuredBuffer` with `DrawProcedural`, so there is nothing to instance and an instanced
+variant only costs a shader permutation on device.
+
+### What the run asserts, and how tight
+
+| Check | Tolerance |
+|---|---|
+| the galaxy records a command buffer at `BeforeForwardOpaque` on `Camera.main` | more than zero |
+| `Points` pushes a per-frame `_LocalCamDir` | non-zero |
+| `relative_size` then `solar_row` move every anchor | more than 0.1 m each, measured on the least-moved one |
+| each lands on its slot | 5 mm, 1.5 s after an 0.8 s tween |
+| `solar_schematic` sets `Orbit.Running`, binds nine orbiters, holds `Realism` at 0 | exact |
+| mercury travels its orbit | more than 2 cm in 2.5 s |
+| the orbit rings record a command buffer at `AfterForwardAlpha` | more than zero |
+| `solar_realistic` tweens `Realism` to 1 | within 2 s of a 1 s tween |
+| the sun anchor collapses to `Orbit.TargetRealismPlanetScale` | 0.0001 ± 0.0005 |
+| the cursor on the sun raises `Sun.Touch` | past 0.5 within 1 s (`riseSeconds` is 0.6) |
+| the cursor leaving drops it | under 0.1 within 1.5 s (`fallSeconds` is 0.9) |
+| the milky_way hovers, selects, drags and deselects | more than 0.05 m on a 200 px drag |
+| `R` restores it home and clears `Placed` | 0.01 m within 1.3 s |
+| `Room.Changed` never fires | exact |
+
+### The two skips, and what would turn them into assertions
+
+- **`_Age` advancing.** `Points` builds one `Material` instance per layer and keeps the array private,
+  so `_Age` cannot be read from outside. A `public Material Instance(int layer)` on `Points` would make
+  this an assertion. Until then the spin is a thing to look at, not to measure.
+- **Alpha 0 drawing nothing.** The command buffer records the same `DrawProcedural` at any alpha — only
+  the shader discards — so nothing observable from script tells alpha 0 from alpha 1. It is a capture.
+
+### Two things the harness does that the app will not
+
+- **It assigns `Sun.mouse`.** That is Phase 6 wiring and the builder leaves it null. `Sun.Touching` only
+  reaches the desktop path through `Sun.Hovering`, which returns false with a null mouse, so without this
+  the touch test could only ever be skipped. `Cosmic/Verify/P4 Setup` sets it through `SerializedObject`
+  on the scene instance and says so in its log line. `leftHand` and `rightHand` stay null on purpose:
+  `Touching` only falls through to the mouse while neither hand has moved, and a null hand never moves.
+- **It disables the milky_way's grab sphere for the two sun steps.** That sphere is 1.68 m across at
+  1.5 m out, so it swallows the ray long before the sun does. The run re-enables it immediately
+  afterwards and again in its cleanup, so a run that dies mid-sequence still leaves the galaxy grabbable.
+
+### On FAIL
+
+Grep the console for `[P4] FAIL`. The lines are ordered, so the last PASS before the first FAIL says
+where the run got to. These are the ones whose failure usually means something other than what they say:
+
+- **Every point count is out by the same factor** — an `armCount` changed in `BakeGalaxies.Shape`. The
+  count is `ellipses × starsPerEllipse × armCount` and the table above assumes 2 arms for the first three
+  galaxies and 3 for the last two.
+- **`23 points_*.mat` fails with a smaller number** — `Assets/Cosmic/Shaders/Points.shader` did not
+  import, so `Bake.Mat` logged `no point shader at ...` and wrote no material at all. That error is well
+  above the assertion in the console.
+- **`the sun Body is BodyKind.Star` fails** — `sun.asset` is typed `Planet`, which is a `Copy.cs` fault.
+  It matters because `Rig.BindOrbit` binds the *first `Star`* anchor as `Orbit`'s centre; with no star it
+  hands the sun to `Orbit.Bind` instead, which has no elements for it, logs a warning, and leaves the sun
+  wherever the last row layout put it. Every other Phase 4 assertion still passes, so this one is the
+  only thing that catches it.
+- **`the orbit rings recorded a command buffer` fails with zero** — `Orbit.ringMaterial` came through
+  unwired from the builder. `OrbitRings` returns before touching a camera when its material is null, so
+  there is no other symptom.
+- **`Rig.bodies lists all 10 solar bodies` fails with 0** — the builder put the `Rig` on a place whose
+  `bodies` array is empty. The generated data splits the system: `solar_system.asset` holds the ten
+  bodies, `solar_system_planets.asset` holds the four layouts. `p4_build.cs` prints which place it found
+  the `Rig` on, and `p4_setup.cs` instantiates the same one.
+- **Everything from the sun hover onward fails** — no synthetic input is reaching the game. Same causes
+  as Phase 3: Game view not visible, real mouse on it, or *Lock Input to Game View* off in the Input
+  Debugger. `[P4] PASS the cursor on the sun raises Sun.Touch` is the canary for the second half.
+- **The sequence stops partway with no DONE line** — Error Pause is on, or a step threw. A thrown step
+  logs `[P4] FAIL step N threw:` and the sequence carries on, so a silent stop is the pause.
+
+### NOT-OK, and reading past it
+
+Phase 4 adds one more warning to the two that already fire on nearly every command: `Orbit` logs
+*"Orbit has no elements for sun"* once per bind while `sun.asset` is typed `Planet`. Like the others it
+is logged, not thrown, and it lands in the console rather than in a command's result. **Read the `[P4]`
+lines, never the OK/NOT-OK status.**
+
+### What Phase 4 cannot be asserted on
+
+Judged, not asserted, and the owner has to do them — on the Quest for the last three:
+
+- Whether the galaxy *reads* as a galaxy: arm pitch, dust lane, the core's brightness against the rim.
+- Whether the transition between the four solar layouts is legible, or whether nine planets moving at
+  once is just motion.
+- Whether the orbit rings are visible without being a cage, and whether the realism tween's collapse of
+  the sun to a tenth of a millimetre is a reveal or a disappearance.
+- Whether the sun's touch brightness is felt through a hand rather than seen after the fact.
+- Stereo. Every Phase 4 shader is new, Android ships Single Pass Instanced, and a missing stereo macro
+  breaks one eye **and is invisible on Link**. Nothing in this folder can see it; only a device build can.

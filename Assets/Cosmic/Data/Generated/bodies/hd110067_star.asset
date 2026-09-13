@@ -29,7 +29,7 @@ MonoBehaviour:
     value: Not yet measured
     unit: 
     exponent: 0
-  kind: 1
+  kind: 0
   moons: []
   orbits: {fileID: 0}
   diameterKm: 1097448
