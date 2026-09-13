@@ -50,3 +50,5 @@ The count is a budget, not a quota. A file that would take the runtime past 29 h
 ## Fixed facts the rebuild depends on
 - `StarVert` is 10 floats, 40 bytes, sequential: yOffset, curveOffset, ellipseDistance, ellipseOffset, color(3), uv(2), size. Every point shader declares exactly this. Old baked `StarsData`/`NebulaVolumeData` are 11 floats and must be re-baked, never reinterpreted.
 - Data enum is `RoomMode` and the panel copy struct is `PanelCopy`, so the `Room` and `Panel` components keep the short names.
+- Content is reused byte for byte: meshes, textures, audio, fonts, sprites, copy. Only code, prefab assembly, shaders and scenes are rebuilt.
+- No prefab or scene is hand-edited, ever. Every value lives in code or a data asset, every prefab is written by a builder, and the editor is driven only through the MCP relay. A rebuilt prefab is therefore faithful by construction; there is no capture step.
