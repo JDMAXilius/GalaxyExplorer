@@ -246,15 +246,15 @@ into the one scene, built here because Phase 2 is the first thing that needs the
 | CS-128 | TERM | Phase 2 setup — audio library, dim material, host object | CS-126 | todo |
 | CS-129 | TERM | Phase 2 play-mode verification | CS-128 | todo |
 | CS-130 | TERM | Teardown and commit the generated assets | CS-129 | todo |
-| CS-131 | TERM | Wiring step: the 52 asset references the copy deck cannot own — 34 `Narration`, 11 `ContentPrefab`, 7 `DockThumbnail` | CS-127 | todo |
-| CS-132 | CC | Extend `docs/copy/` with the four places and seven bodies it never got: `hd110067`, `pinwheel`, `triangulum`, `whirlpool`, `hd110067_star` and `hd110067_b`–`g` | CS-127 | done (unrun) |
-| CS-133 | CC | Port the layout builder — `solar_row`, `relative_size`, `hd110067_row`, `hd110067_relative`, and the `Layouts` reference on `solar_system_planets` | CS-127 | done (unrun) |
+| CS-131 | TERM | Wiring step: the 60 asset references the copy deck cannot own — 38 `Narration`, 15 `ContentPrefab`, 7 `DockThumbnail`. **The only class of loss left in the gate** | CS-127 | todo |
+| CS-132 | CC | Extend `docs/copy/` with the four places and seven bodies it never got: `hd110067`, `pinwheel`, `triangulum`, `whirlpool`, `hd110067_star` and `hd110067_b`–`g` | CS-127 | done |
+| CS-133 | CC | Port the layout builder — `solar_row`, `relative_size`, `hd110067_row`, `hd110067_relative`, and the `Layouts` reference on `solar_system_planets` | CS-127 | done |
 | CS-134 | TERM | P1's gate passes: `check_data.py` exits 0 | CS-131, CS-132, CS-133 | todo |
 | CS-135 | CC | Split the one-shot pool out of `Audio.cs` — P2's declared debt (278 lines against ~250) | — | done |
 | CS-136 | CC | Rework P3 and beyond — broken out below into CS-137 onward as each phase starts; this row is the index | — | superseded |
 | CS-137 | CC | Rework P3a: `Interaction/Grabbable.cs` (native XRI grab interactable: home pose, restore, placed, auto-return, metre scale limits, upright transformer, Spin/ScaleBy) and `Interaction/Pull.cs` (force-pull as three states, dwell as a hover timer) | CS-126 | done (unrun) |
 | CS-138 | CC | Rework P3b: `Interaction/Mouse.cs` (the desktop pointer as an XRI ray interactor), `Interaction/Hotkeys.cs` (the Desktop action map), `Editor/Scene.cs` menu **Cosmic → Build → Rig** (the XR rig prefab assembled by script from the vendored XRI and hands samples) | CS-137 | done (unrun) |
-| CS-139 | TERM | Rework P3 compile and rig build: compile, run **Cosmic → Build → Rig**, confirm `Assets/Cosmic/Prefabs/rig.prefab` exists with both hands, the mouse interactor, one interaction manager, one event system on the XR UI input module | CS-138 | todo |
+| CS-139 | TERM | Rework P3 compile and rig build: compile, run **Cosmic → Build → Rig**, confirm `Assets/Cosmic/Prefabs/rig.prefab` exists with both hands, the mouse interactor, one interaction manager, one event system on the XR UI input module | CS-138 | done |
 | CS-140 | TERM | Rework P3 feel test on one planet, desktop and Link: near pinch, far pinch, 2 s dwell pull with beam, two-hand scale and rotate within limits, release stays, restore tween, mouse LMB/drag/wheel/RMB parity, auto-return after 5 s out of reach; owner signs off on feel before P6 | CS-139 | todo |
 
 *CS-132 done, unrun (13 Sep 2026).* Deck only; no importer change was needed. Seven body blocks and four place blocks ported verbatim from the old assets, plus the wiring fields the importer always read and the deck never carried: `**Bodies:**` on `solar_system` and `hd110067`, `**Destinations:**` on `milky_way` (nine, per GDD 4.3). All four new places are Dimmed, read from the old assets, so no `**Room:**` line. A Python re-implementation of the parser resolves 10/10, 7/7 and 9/9 ids. **Two things ported faithfully rather than fixed, for the owner:** the HD 110067 prose exceeds the deck's word caps (recorded as an exception in the README), and its four measured masses lack the `x 10` mantissa suffix the other bodies carry, so they will render as a bare mantissa with a superscript until the value text is changed — changing it would also change what the parity gate compares against. Terminal: **Cosmic → Import Copy**, then `check_data.py` should drop from 11 missing assets to 0 and `Wire()` should report references wired; then re-run **Cosmic → Build → Layouts** so the two HD 110067 layouts fill their slots.
@@ -264,6 +264,69 @@ into the one scene, built here because Phase 2 is the first thing that needs the
 *CS-138 done, unrun (13 Sep 2026, commits `e213111` and the review fix after it).* The desktop pointer is an `XRRayInteractor` that is also its own `IXRInputButtonReader`: the first cut queued a manual button state every frame, which XRI only applies on the frame *after* it was queued, so a component that re-queues every frame at execution order -31000 never clicks anything. The rig builder wires select, UI press, activate, manipulation and both poke poses from the actions asset, and gives the mouse a `Content` pivot under the rig root so orbit, pan and zoom have something to move; Phase 6's anchor takes that object over. The Desktop map lost `Orbit`, `Pan` and `Zoom`: the mouse reads its own device and nothing read them, so they were unrebindable decoration. The review of the whole phase against the toolkit source found eight runtime defects and no compile errors, all fixed in the same push: registering the upright transformer had silently suppressed XRI's default one (nothing followed the hand and the clamp was a no-op), `MinMetres` gated on the max field, `Restore` fought a live selection, `Placed` compared parent-local units to metres, dwell re-armed on a loose object (a placed planet flew back unasked), a pinch still held at arrival was not handed the object back (it is now re-selected through the manager), a pull started at zero scale could never arrive (a three-second flight cap), and Shift+wheel over a hovered body did nothing. Recorded for the owner: `autoReturn` is the one exception to "nothing snaps back" (RULES.md) and is off by default until CS-140 signs it off; Whirlpool's old disc tilt degenerates to 90 degrees and Phase 4 will not copy it blind.
 
 *CS-133 done, unrun (13 Sep 2026, commit `183f66f`).* `Assets/Cosmic/Editor/Content.cs`, menu **Cosmic → Build → Layouts** — the first part of the plan's single data-driven content builder. Every position, rotation and scale of all four layouts matches the old assets to seven decimal places, checked by reimplementing the arithmetic in Python; slots hold a `Body` object reference rather than a string id. Two derivations are typed on purpose and the file says so: Relative Size uses the GDD's own diameter table (scaling from `diameterKm` puts Mars and Jupiter outside parity tolerance and loses Pluto's deliberate 5 mm), and the two ring spans, because the generated bodies carry no ring figure yet. **Expected on the first run, not a regression:** the two HD 110067 layouts build with zero slots and log one `no body asset` error per body until CS-132's bodies are imported; re-run after CS-132 and they fill with no code change. Terminal: compile, run twice (second run logs `updated`, no GUID churn), then `python3 tools/parity/check_data.py --kinds layouts --skip 'hd110067.*'` should report zero losses for `solar_row` and `relative_size`, and `solar_system_planets.asset` should hold both in that order. Saturn's rings 2.5 mm from Jupiter, by hand, as the original builder recorded.
+
+*CS-132 and CS-133 — run in the editor, both pass (13 Sep 2026, terminal session).* Order matters
+and is the whole trick: **import first, then build layouts.** Both notes above predict the two HD
+110067 layouts building with zero slots and one `no body asset` error per body on a first run; that
+is only true if Layouts runs before Import Copy. Run the other way round there is no error at all
+and both fill immediately.
+
+- **Cosmic → Import Copy** — `Generated` goes **37 → 48 assets**, exactly the +11 the deck gained.
+  All 15 previously-missing assets now exist.
+- **`Copy.Wire()` finally wires.** It reported **0 references** every run before this, because it
+  reads `Bodies:` and `Destinations:` fields the deck had never carried. `solar_system` now holds
+  **10** body references and `milky_way` **9** destinations, per GDD 4.3.
+- **Cosmic → Build → Layouts**, run twice — all four layouts build and **every GUID is unchanged**
+  across the two runs, so the builder is idempotent as RULES.md requires. `hd110067_row` and
+  `hd110067_relative` carry **7 slots each**, not 0. `solar_system_planets` holds `solar_row` then
+  `relative_size`, in that order.
+- **`check_data.py --kinds layouts`: 152 values, 0 losses.** CS-133's gate passes outright.
+- **The whole gate: 68 → 60 losses, and values checked 573 → 951.** Every remaining loss is a single
+  class — 38 `Narration`, 15 `ContentPrefab`, 7 `DockThumbnail`. The counts rose from 34/11 because
+  the four new places brought their own references. Nothing else is lost: no missing asset, no room
+  mode, no layout, no value mismatch.
+
+**So CS-134 is now blocked on CS-131 alone.** The wiring step is the last thing between the data
+layer and a passing gate.
+
+*CS-137 — compiles clean (13 Sep 2026, terminal session).* Not its gate, which is CS-139 and CS-140,
+but worth recording because its own note flags **fifteen toolkit members that could not be verified
+against package source**, XRI not being vendored here. All fifteen resolve: `Grabbable.cs`,
+`Pull.cs` and `Content.cs` compile with no errors against the packages actually installed. The
+two-line-fix contingency the note describes is not needed.
+
+**Still open from CS-132's own note, for the owner rather than the terminal:** the HD 110067 prose
+exceeds the deck's word caps (recorded as an exception in `docs/copy/README.md`), and its four
+measured masses lack the `x 10` mantissa suffix the other bodies carry, so they render as a bare
+mantissa with a superscript. Changing the value text also changes what the parity gate compares
+against, so it is a deliberate decision, not a cleanup.
+
+*CS-139 — done (13 Sep 2026, terminal session).* Compiles clean, and every assertion in the
+acceptance line passes against the prefab read back off disk rather than the build's own report.
+
+- `Assets/Cosmic/Prefabs/rig.prefab` exists, and **Cosmic → Build → Rig** run twice leaves the same
+  GUID, so the builder is idempotent as RULES.md requires.
+- Exactly **one** `XRInteractionManager`, **one** `EventSystem`, **one** `XRUIInputModule` on it,
+  **one** `Mouse`, **one** `Hotkeys`. The "one of each" part of the line is the whole point of it —
+  a second event system is the failure this ticket exists to catch, and there is not one.
+- Both hands are complete: `NearFarInteractor` with its curve visual, a poke interactor on its own
+  pose, `XRHandTrackingEvents` / `XRHandSkeletonDriver` / `XRHandMeshController`, and the full
+  26-joint skeleton under each wrist.
+- `Main Camera` carries `Camera`, `AudioListener`, `TrackedPoseDriver` and `ARCameraManager`;
+  `AR Session` is present and **disabled**, which is correct for the desktop mode.
+- `XROrigin` is written through `SerializedObject` deliberately (`Scene.cs:83`) because the setters
+  move the offset and poke the XR subsystem.
+
+One thing worth knowing for anyone reading a hierarchy dump of this prefab: the mouse node prints as
+`Mouse [Transform Mouse]` with no interactor component beside it, which looks like a missing
+interactor and is not. `Mouse` **is** the interactor — `Mouse : XRRayInteractor` (`Mouse.cs:11`) —
+so the derived name is all that shows.
+
+**CS-140 is the owner's, not the terminal's.** It is a feel test — pinch, dwell, two-hand scale,
+restore tween, mouse parity — and its acceptance line ends "owner signs off on feel". It needs a
+headset or a Link session and a human judgement that nothing here can stand in for. Note also that a
+default Link session cannot verify stereo work at all (Android ships Single Pass Instanced, Windows
+multi-pass), so anything that looks right on Link still owes a device run.
 
 *CS-126 — compile the Cosmic assemblies.* `pwsh tools/mcp/compile.ps1`, then
 `node tools/mcp/umcp.js run tools/mcp/rework/p0_compile.cs`, then

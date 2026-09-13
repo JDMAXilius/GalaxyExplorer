@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bee74d550fbf4196bd0a25678707d8b4, type: 3}
+  m_Name: hd110067_relative
+  m_EditorClassIdentifier: Cosmic.Runtime::Cosmic.Layout
+  id: hd110067_relative
+  title: Relative Size
+  subtitle: True sizes next to each other
+  transitionSeconds: 0.8
+  slots:
+  - body: {fileID: 11400000, guid: b946defc5d04122479d64a9aa99fb5d5, type: 2}
+    localPosition: {x: -1.2981586, y: 1.55, z: 1.5214415}
+    localEuler: {x: 0, y: 139.52777, z: 0}
+    scale: 3
+  - body: {fileID: 11400000, guid: cc7879e40434cbd4fb481b62e07add8a, type: 2}
+    localPosition: {x: 0.44184852, y: 1.2, z: 1.9505819}
+    localEuler: {x: 0, y: 192.76332, z: 0}
+    scale: 0.07662869
+  - body: {fileID: 11400000, guid: 8a4f620ffc061d04c965335f5fd43939, type: 2}
+    localPosition: {x: 0.6229476, y: 1.2, z: 1.9005095}
+    localEuler: {x: 0, y: 198.14807, z: 0}
+    scale: 0.08317843
+  - body: {fileID: 11400000, guid: 00bb213ab69161e45a85446cf10d7952, type: 2}
+    localPosition: {x: 0.8099985, y: 1.2, z: 1.828634}
+    localEuler: {x: 0, y: 203.89108, z: 0}
+    scale: 0.09933956
+  - body: {fileID: 11400000, guid: d748bf4630904624f9947a609abf1d2f, type: 2}
+    localPosition: {x: 0.9814394, y: 1.2, z: 1.742635}
+    localEuler: {x: 0, y: 209.3879, z: 0}
+    scale: 0.06757222
+  - body: {fileID: 11400000, guid: fc8b6544f06dfdf47a8ad0467486f84f, type: 2}
+    localPosition: {x: 1.1399021, y: 1.2, z: 1.6433573}
+    localEuler: {x: 0, y: 214.74681, z: 0}
+    scale: 0.09059746
+  - body: {fileID: 11400000, guid: e723b304656c2b343a85fc16f4f06da9, type: 2}
+    localPosition: {x: 1.2981588, y: 1.2, z: 1.5214413}
+    localEuler: {x: 0, y: 220.47223, z: 0}
+    scale: 0.09080522

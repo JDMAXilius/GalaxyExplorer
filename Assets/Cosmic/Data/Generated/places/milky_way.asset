@@ -29,7 +29,16 @@ MonoBehaviour:
   narration: {fileID: 0}
   ambience: {fileID: 0}
   bodies: []
-  destinations: []
+  destinations:
+  - {fileID: 11400000, guid: 27b2f13c1c8518c44ba89511ac008515, type: 2}
+  - {fileID: 11400000, guid: bcfa1cf096db2c24cbf7e33622548795, type: 2}
+  - {fileID: 11400000, guid: 92ba2bffed5956049bbe94b6bc2ed94e, type: 2}
+  - {fileID: 11400000, guid: c53bbc4d08f9f084f929357e4d6a52a2, type: 2}
+  - {fileID: 11400000, guid: 15fbefc2ca2a4a54ca3b3a9f383b03e2, type: 2}
+  - {fileID: 11400000, guid: 80b4f962233cc264a9faa31707598c5d, type: 2}
+  - {fileID: 11400000, guid: 7d5b6a190bef27a4288d77f5599be197, type: 2}
+  - {fileID: 11400000, guid: 337140ddeee19c240887735f71a134b3, type: 2}
+  - {fileID: 11400000, guid: c477bb76be848b043b8510d1ed441fb8, type: 2}
   galaxy: {fileID: 0}
   volume:
     points: {fileID: 0}

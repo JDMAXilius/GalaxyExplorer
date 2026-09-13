@@ -28,7 +28,17 @@ MonoBehaviour:
   layouts: []
   narration: {fileID: 0}
   ambience: {fileID: 0}
-  bodies: []
+  bodies:
+  - {fileID: 11400000, guid: ac997cd2758536f4b82d26fc368d028d, type: 2}
+  - {fileID: 11400000, guid: d6f966baf6ca045498bbfdb76db15dd6, type: 2}
+  - {fileID: 11400000, guid: 783920636aa85924e8c2f0d33c7eb738, type: 2}
+  - {fileID: 11400000, guid: dafc51cc0bcb515479378ac2aba1a4a1, type: 2}
+  - {fileID: 11400000, guid: 37a168f648fc1714c92c09653c0f8878, type: 2}
+  - {fileID: 11400000, guid: 1f10adebc00b1bd4f9d6c4217b055541, type: 2}
+  - {fileID: 11400000, guid: f3198134b5fd8894286dab59c1d3f0ef, type: 2}
+  - {fileID: 11400000, guid: 3f81572e749677842bdd73ad87069fbb, type: 2}
+  - {fileID: 11400000, guid: 10d00af91267a9947b8201b3ad55ddde, type: 2}
+  - {fileID: 11400000, guid: ee9cfc49c8466fc478e2a8020ed99212, type: 2}
   destinations: []
   galaxy: {fileID: 0}
   volume:

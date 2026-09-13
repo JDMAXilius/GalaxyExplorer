@@ -10,24 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 51e790f7b7cd42c0908778fa98a326ea, type: 3}
-  m_Name: solar_system_planets
+  m_Name: triangulum
   m_EditorClassIdentifier: Cosmic.Runtime::Cosmic.Place
-  id: solar_system_planets
-  title: The Planets
-  subtitle: SIDE BY SIDE
+  id: triangulum
+  title: Triangulum Galaxy (M33)
+  subtitle: M33
   thumbnail: {fileID: 0}
   room: 1
   panel:
-    title: Solar System Planets
+    title: Triangulum Galaxy (M33)
     paragraphs:
-    - Every world of the solar system, lined up within reach. In this view they share a size so you can compare their surfaces.
-    - 'Switch to relative size to see the truth of it: the Sun fills the room, Jupiter is a beach ball, and Earth sits in your palm.'
+    - Our third neighbour. After the Milky Way and Andromeda, this is the largest galaxy in the Local Group, and at about 2.7 million light years it is close enough that individual clouds of glowing gas can be picked out inside it.
+    - Its arms are flocculent - short, patchy fragments rather than long sweeping ones - and it has almost no central bulge. The version here is smoother and more organised than the real thing, which the generator cannot yet break up.
     stats: []
-    instruction: Pinch a planet to lift it out, two hands to grow it, let go to leave it.
+    instruction: Grab it with two hands to turn it or change its size.
   content: {fileID: 0}
-  layouts:
-  - {fileID: 11400000, guid: 982ebc0f45308a5449b1c6f9f0f5a1a9, type: 2}
-  - {fileID: 11400000, guid: b5dac9d9597270a44891584556b7b21c, type: 2}
+  layouts: []
   narration: {fileID: 0}
   ambience: {fileID: 0}
   bodies: []

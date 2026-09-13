@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51e790f7b7cd42c0908778fa98a326ea, type: 3}
+  m_Name: hd110067
+  m_EditorClassIdentifier: Cosmic.Runtime::Cosmic.Place
+  id: hd110067
+  title: HD 110067
+  subtitle: SIX WORLDS IN STEP
+  thumbnail: {fileID: 0}
+  room: 1
+  panel:
+    title: HD 110067
+    paragraphs:
+    - Six worlds around a star slightly cooler than the Sun, 105 light years away, moving in a rhythm that has held for billions of years. Each planet's year is a simple fraction of its neighbour's - three orbits to two, over and over, then four to three for the outer pair. Systems are born like this and almost always lose it; this one never did.
+    - All six are larger than Earth and far lighter than their size suggests, which means deep hydrogen atmospheres rather than ground. Nobody has photographed them and nobody has seen their surfaces, because they may not have any. What you are looking at is built from measured sizes and orbits - the appearance is our best reading of the physics, not a picture.
+    - The whole system would fit comfortably inside the orbit of Mercury.
+    stats: []
+    instruction: Pinch a world to lift it out, two hands to grow it, let go to leave it.
+  content: {fileID: 0}
+  layouts:
+  - {fileID: 11400000, guid: e42d0986eb2b5dd429ebec36f5d07879, type: 2}
+  - {fileID: 11400000, guid: abcc6218da2cece49bd0263384c843ef, type: 2}
+  narration: {fileID: 0}
+  ambience: {fileID: 0}
+  bodies:
+  - {fileID: 11400000, guid: b946defc5d04122479d64a9aa99fb5d5, type: 2}
+  - {fileID: 11400000, guid: cc7879e40434cbd4fb481b62e07add8a, type: 2}
+  - {fileID: 11400000, guid: 8a4f620ffc061d04c965335f5fd43939, type: 2}
+  - {fileID: 11400000, guid: 00bb213ab69161e45a85446cf10d7952, type: 2}
+  - {fileID: 11400000, guid: d748bf4630904624f9947a609abf1d2f, type: 2}
+  - {fileID: 11400000, guid: fc8b6544f06dfdf47a8ad0467486f84f, type: 2}
+  - {fileID: 11400000, guid: e723b304656c2b343a85fc16f4f06da9, type: 2}
+  destinations: []
+  galaxy: {fileID: 0}
+  volume:
+    points: {fileID: 0}
+    radiusMetres: 0
+    plateAssetPath: 
+    provenance: 
