@@ -1,9 +1,19 @@
 # Bodies
 
-The Sun, the eight planets and Pluto. Each has one paragraph (55 words maximum)
-and four stats. Values are NASA planetary fact sheet figures; diameters are
-equatorial. ASCII only — the importer renders the mass exponent as a superscript
-from the `exponent` column.
+The Sun, the eight planets and Pluto, plus the HD 110067 system's star and six
+planets. Each has one paragraph (55 words maximum) and four or five stats.
+Solar system values are NASA planetary fact sheet figures; HD 110067 values are
+NASA Exoplanet Archive figures; diameters are equatorial. Where a mass or day
+length has no measurement yet, the value column says so instead of a number.
+ASCII only - the importer renders the mass exponent as a superscript from the
+`exponent` column, by appending it straight after `value`, which is why every
+Sun-to-Pluto mass value ends in "x 10": without it the superscript lands with
+no "times ten" before it. **The four HD 110067 masses that have a measured value (star, b, d, f;
+CS-132) do not have that suffix** - the pre-existing asset they were ported
+from never had it either - so today they render as a bare mantissa with a
+superscript stuck on, not scientific notation. Ported verbatim rather than
+silently fixed; add " x 10" to those four values if the on-screen result
+needs to match the rest.
 
 Stat columns: `label | value | unit | exponent` (exponent blank unless the value
 is a mantissa).
@@ -186,3 +196,130 @@ resurfaced today.
 | Mass | 1.31 x 10 | kg | 22 |
 | Orbital Period | 248 | years | |
 | Day Length | 6.4 | days | |
+
+---
+
+## hd110067_star
+**Title:** HD 110067
+**Subtitle:** THE HOST STAR
+
+A K-type dwarf a little cooler and smaller than the Sun, in Coma Berenices,
+about 105 light years away. It is bright enough to keep studying, and old -
+somewhere around seven to eight billion years. From any of its six planets it
+would look like a warm white disc several times wider than the Sun looks from
+Earth.
+
+| label | value | unit | exponent |
+|---|---|---|---|
+| Diameter | 1,097,448 | km | |
+| Mass | 1.59 | kg | 30 |
+| Day Length | Not yet measured | | |
+
+---
+
+## hd110067_b
+**Title:** HD 110067 b
+**Subtitle:** FIRST IN THE CHAIN
+
+The innermost of six worlds locked into a rhythm: for every two orbits this
+planet makes, the next one out makes three, and that pattern continues all the
+way to the sixth. Its measured density is far too low for rock, so it almost
+certainly carries a deep hydrogen atmosphere with no surface to stand on.
+
+| label | value | unit | exponent |
+|---|---|---|---|
+| Diameter | 28,032 | km | |
+| Mass | 3.40 | kg | 25 |
+| Orbital Period | 9.11 | days | |
+| Orbital Distance | 0.0793 | AU | |
+| Day Length | Not yet measured | | |
+
+---
+
+## hd110067_c
+**Title:** HD 110067 c
+**Subtitle:** SECOND IN THE CHAIN
+
+Its size is measured, because it passes in front of its star and blocks a
+little light. Its mass is not - only an upper limit is known, so how heavy it
+is remains genuinely open.
+
+| label | value | unit | exponent |
+|---|---|---|---|
+| Diameter | 30,428 | km | |
+| Mass | Not yet measured | | |
+| Orbital Period | 13.67 | days | |
+| Orbital Distance | 0.1039 | AU | |
+| Day Length | Not yet measured | | |
+
+---
+
+## hd110067_d
+**Title:** HD 110067 d
+**Subtitle:** THIRD IN THE CHAIN
+
+The largest of the six. Its density works out at about a third of Earth's,
+which is the signature of a small rocky core wrapped in an enormous envelope of
+hydrogen and helium.
+
+| label | value | unit | exponent |
+|---|---|---|---|
+| Diameter | 36,340 | km | |
+| Mass | 5.09 | kg | 25 |
+| Orbital Period | 20.52 | days | |
+| Orbital Distance | 0.1362 | AU | |
+| Day Length | Not yet measured | | |
+
+---
+
+## hd110067_e
+**Title:** HD 110067 e
+**Subtitle:** FOURTH IN THE CHAIN
+
+The smallest of the six, and the one the discovery team singled out as possibly
+different - it may be the only member of the family without a huge hydrogen
+envelope. Its mass has not been measured, so that remains a maybe.
+
+| label | value | unit | exponent |
+|---|---|---|---|
+| Diameter | 24,719 | km | |
+| Mass | Not yet measured | | |
+| Orbital Period | 30.79 | days | |
+| Orbital Distance | 0.1785 | AU | |
+| Day Length | Not yet measured | | |
+
+---
+
+## hd110067_f
+**Title:** HD 110067 f
+**Subtitle:** FIFTH IN THE CHAIN
+
+Less dense than Neptune. Whatever this world is made of, most of its volume is
+atmosphere, and the solid part of it must be small.
+
+| label | value | unit | exponent |
+|---|---|---|---|
+| Diameter | 33,142 | km | |
+| Mass | 3.01 | kg | 25 |
+| Orbital Period | 41.06 | days | |
+| Orbital Distance | 0.2163 | AU | |
+| Day Length | Not yet measured | | |
+
+---
+
+## hd110067_g
+**Title:** HD 110067 g
+**Subtitle:** SIXTH IN THE CHAIN
+
+The outermost known planet, taking about 55 days to go round. Even out here it
+receives six times the sunlight Earth does - this system is packed far tighter
+than ours, and none of it is in the zone where liquid water could sit on a
+surface.
+
+| label | value | unit | exponent |
+|---|---|---|---|
+| Diameter | 33,218 | km | |
+| Mass | Not yet measured | | |
+| Orbital Period | 54.77 | days | |
+| Orbital Distance | 0.2621 | AU | |
+| Day Length | Not yet measured | | |

@@ -12,10 +12,18 @@ is edited here and never typed into Unity.
    The one exception is the mass stat, where the importer builds the superscript
    from the `exponent` column using rich text.
 2. **Our own words.** Nothing is transcribed from the reference app. Facts come
-   from NASA planetary fact sheets and mission pages.
+   from NASA planetary fact sheets and mission pages; the D-010 expansion
+   (other galaxies, other planetary systems) draws on the NASA Exoplanet
+   Archive, ESA/Hubble, ESA/Webb and NED instead, and says so in the copy
+   wherever an appearance is modelled rather than measured.
 3. **Lengths.** Body paragraph: 55 words maximum. Scene paragraph: 45 words
    maximum, two of them, plus an instruction line of 20 words maximum. Moon
-   sentence: 25 words maximum.
+   sentence: 25 words maximum. **Exception:** the HD 110067, Pinwheel,
+   Triangulum and Whirlpool blocks were ported verbatim from the pre-existing
+   `Assets/data` assets (CS-132) rather than rewritten to these limits; HD
+   110067's star and `b` paragraphs and all three of its scene paragraphs run
+   over, and it keeps three scene paragraphs instead of two. Trim in a
+   follow-up if the panel overflows in the headset; nobody has checked yet.
 4. **Tone.** Plain and concrete, one striking fact per object. No exclamation
    marks, no second-person hype, no "amazing".
 5. **Numbers.** Thousands separated with commas. Units spelled in the value
@@ -27,8 +35,8 @@ is edited here and never typed into Unity.
 
 | File | Feeds |
 |---|---|
-| `experiences.md` | The seven scene panels (`ExperienceModule.panel`) |
-| `bodies.md` | The Sun, eight planets and Pluto (`BodyInfo`) |
+| `experiences.md` | The seven scene panels plus HD 110067 and the three extra galaxies (`ExperienceModule.panel`) |
+| `bodies.md` | The Sun, eight planets, Pluto, and the HD 110067 star and six planets (`BodyInfo`) |
 | `moons.md` | Moons (`BodyInfo`, moon variant panel) |
 | `nebulae.md` | Milky Way destination overlays |
 | `hints.md` | The two first-run hint cards |
