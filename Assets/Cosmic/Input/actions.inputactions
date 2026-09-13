@@ -52,6 +52,51 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "Left Aim Position",
+                    "type": "Value",
+                    "id": "57cd6aa6-fcc1-498b-8dc7-34f5f090b370",
+                    "expectedControlType": "Vector3",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Left Aim Rotation",
+                    "type": "Value",
+                    "id": "cf5244ef-5fe2-488d-a009-5547d7b4bfe0",
+                    "expectedControlType": "Quaternion",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Left Poke Position",
+                    "type": "Value",
+                    "id": "95241184-73fd-432d-aff5-287b9583e74b",
+                    "expectedControlType": "Vector3",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Left Poke Rotation",
+                    "type": "Value",
+                    "id": "ef3c8c26-c0e8-422c-81e8-393aa6400b03",
+                    "expectedControlType": "Quaternion",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Left Manipulation",
+                    "type": "Value",
+                    "id": "e16a8089-872d-4a66-9d3f-4106b0e36012",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
                     "name": "Right Position",
                     "type": "Value",
                     "id": "e1cc3dcb-1613-4b48-93c3-ce0e6b09e32c",
@@ -95,6 +140,51 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "Right Aim Position",
+                    "type": "Value",
+                    "id": "26ffc68a-37be-4fc0-8090-eb351f9c24e8",
+                    "expectedControlType": "Vector3",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Right Aim Rotation",
+                    "type": "Value",
+                    "id": "5291318b-0568-41bb-932b-0505ef6f2734",
+                    "expectedControlType": "Quaternion",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Right Poke Position",
+                    "type": "Value",
+                    "id": "becfe902-9d1b-4676-8f7a-cecbc6647a09",
+                    "expectedControlType": "Vector3",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Right Poke Rotation",
+                    "type": "Value",
+                    "id": "3c8ea94c-d59a-4bdf-a54d-980c60999bdc",
+                    "expectedControlType": "Quaternion",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Right Manipulation",
+                    "type": "Value",
+                    "id": "bce2ea41-e8d5-4865-aa7d-41de4506c034",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
                 }
             ],
             "bindings": [
@@ -298,6 +388,193 @@
                 },
                 {
                     "name": "Vector 3 Fallback",
+                    "id": "cf943cb3-46e0-4620-bca5-40b1cfe2c133",
+                    "path": "Vector3Fallback",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Aim Position",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "first",
+                    "id": "cb4108b6-f357-439c-8e47-20cabbdcaa3e",
+                    "path": "<MetaAimHand>{LeftHand}/devicePosition",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Aim Position",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "second",
+                    "id": "6038c584-c156-4261-9bdc-626edb4c1d82",
+                    "path": "<XRHandDevice>{LeftHand}/aimPosition",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Aim Position",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "third",
+                    "id": "50f45e7d-17f8-4dfe-b44f-d5d843c5c9fb",
+                    "path": "<XRController>{LeftHand}/pointerPosition",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Aim Position",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "Quaternion Fallback",
+                    "id": "572e84d3-e404-45e2-9978-814597341309",
+                    "path": "QuaternionFallback",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Aim Rotation",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "first",
+                    "id": "d40a9873-6774-4904-8f32-c8cc032b5cea",
+                    "path": "<MetaAimHand>{LeftHand}/deviceRotation",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Aim Rotation",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "second",
+                    "id": "2ca1f42b-60b4-49c1-b8f4-a88b94ebe7a4",
+                    "path": "<XRHandDevice>{LeftHand}/aimRotation",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Aim Rotation",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "third",
+                    "id": "49a072bd-4c54-4708-9a1e-b1088c76bb66",
+                    "path": "<XRController>{LeftHand}/pointerRotation",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Aim Rotation",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "Vector 3 Fallback",
+                    "id": "10716852-0a55-404c-935f-5f3d8010ac78",
+                    "path": "Vector3Fallback",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Poke Position",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "first",
+                    "id": "2648b5d8-461d-42a8-b084-4bcebbf8c706",
+                    "path": "<XRHandDevice>{LeftHand}/pokePosition",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Poke Position",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "second",
+                    "id": "c64a5f41-b894-4248-9667-c018d7d0b593",
+                    "path": "<HandInteraction>{LeftHand}/pokePose/position",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Poke Position",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "third",
+                    "id": "c20284d7-72bd-4673-9a23-dac66b6d494a",
+                    "path": "<HandInteractionPoses>{LeftHand}/pokePose/position",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Poke Position",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "Quaternion Fallback",
+                    "id": "55a1a03d-bfdb-49b7-ad86-aca87d59aa9a",
+                    "path": "QuaternionFallback",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Poke Rotation",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "first",
+                    "id": "d362a0b3-bca1-42c7-b709-c44424539a18",
+                    "path": "<XRHandDevice>{LeftHand}/pokeRotation",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Poke Rotation",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "second",
+                    "id": "af4fc6db-bc2d-4bfe-9087-f0c9109d28f7",
+                    "path": "<HandInteraction>{LeftHand}/pokePose/rotation",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Poke Rotation",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "third",
+                    "id": "537ba5fd-3412-41f1-aa3c-6e1e66b61ef9",
+                    "path": "<HandInteractionPoses>{LeftHand}/pokePose/rotation",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Poke Rotation",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "747085c2-333b-4f93-b96b-43e63654cd21",
+                    "path": "<XRController>{LeftHand}/{Primary2DAxis}",
+                    "interactions": "",
+                    "processors": "StickDeadzone",
+                    "groups": "",
+                    "action": "Left Manipulation",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "Vector 3 Fallback",
                     "id": "c981e0a1-c7ff-4eb0-9f34-611b90541204",
                     "path": "Vector3Fallback",
                     "interactions": "",
@@ -491,6 +768,193 @@
                     "processors": "",
                     "groups": "",
                     "action": "Right UI Press",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "Vector 3 Fallback",
+                    "id": "cd2fe7ee-583f-4575-9d90-84ff81a9347b",
+                    "path": "Vector3Fallback",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Aim Position",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "first",
+                    "id": "204265a5-ef2b-4795-91ca-63e1d08da57b",
+                    "path": "<MetaAimHand>{RightHand}/devicePosition",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Aim Position",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "second",
+                    "id": "48457052-475c-4e7b-8207-de6865df7faa",
+                    "path": "<XRHandDevice>{RightHand}/aimPosition",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Aim Position",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "third",
+                    "id": "b9658e9c-444d-4a91-af67-6d899bfe258c",
+                    "path": "<XRController>{RightHand}/pointerPosition",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Aim Position",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "Quaternion Fallback",
+                    "id": "53abfeec-d332-4db8-b050-cfe2177eef4b",
+                    "path": "QuaternionFallback",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Aim Rotation",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "first",
+                    "id": "8fa916d8-1b10-4011-abd9-a837b99c0170",
+                    "path": "<MetaAimHand>{RightHand}/deviceRotation",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Aim Rotation",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "second",
+                    "id": "ad9640bf-e117-4931-97bc-538c8d40b95c",
+                    "path": "<XRHandDevice>{RightHand}/aimRotation",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Aim Rotation",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "third",
+                    "id": "7279f64a-6d32-49be-83e5-6837015c38f9",
+                    "path": "<XRController>{RightHand}/pointerRotation",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Aim Rotation",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "Vector 3 Fallback",
+                    "id": "be0633bd-f50f-4d19-b3de-34afe1dee490",
+                    "path": "Vector3Fallback",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Poke Position",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "first",
+                    "id": "863435d3-113b-4172-b9c9-ac4a9452a42e",
+                    "path": "<XRHandDevice>{RightHand}/pokePosition",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Poke Position",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "second",
+                    "id": "6c511d89-2a63-40ae-80a2-8a3695938144",
+                    "path": "<HandInteraction>{RightHand}/pokePose/position",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Poke Position",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "third",
+                    "id": "b417b87d-3841-4174-aac4-3e5f7ea06ae0",
+                    "path": "<HandInteractionPoses>{RightHand}/pokePose/position",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Poke Position",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "Quaternion Fallback",
+                    "id": "556110b0-dcec-444e-b17b-cbacde2c6b27",
+                    "path": "QuaternionFallback",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Poke Rotation",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "first",
+                    "id": "bde70459-bbb3-4f4a-b458-7b83ec1e8810",
+                    "path": "<XRHandDevice>{RightHand}/pokeRotation",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Poke Rotation",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "second",
+                    "id": "d15f0245-52d3-450e-9cd0-9b7c03099626",
+                    "path": "<HandInteraction>{RightHand}/pokePose/rotation",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Poke Rotation",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "third",
+                    "id": "c2ad8043-b030-4441-a79a-ad255042c706",
+                    "path": "<HandInteractionPoses>{RightHand}/pokePose/rotation",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Poke Rotation",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "9540fe59-63b9-47d7-b2de-b2a9a07041eb",
+                    "path": "<XRController>{RightHand}/{Primary2DAxis}",
+                    "interactions": "",
+                    "processors": "StickDeadzone",
+                    "groups": "",
+                    "action": "Right Manipulation",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
@@ -757,6 +1221,24 @@
                     "type": "Value",
                     "id": "bfb55372-ff44-4afa-840d-89cf49f38239",
                     "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Mute",
+                    "type": "Button",
+                    "id": "88f27efc-33c2-4430-a501-8a16522de224",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "TextScale",
+                    "type": "Button",
+                    "id": "dee30a5e-050f-45ad-9fbe-ead105c8a958",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -1090,6 +1572,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "Zoom",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "67062f67-6eb2-4b04-9734-c36ef4beb27a",
+                    "path": "<Keyboard>/v",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Mute",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "133311b1-3a5a-4d2a-86cc-24a6bb200808",
+                    "path": "<Keyboard>/t",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TextScale",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

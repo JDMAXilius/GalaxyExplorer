@@ -3,7 +3,11 @@
     "rootNamespace": "Cosmic.Editor",
     "references": [
         "Cosmic.Runtime",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "Unity.XR.Interaction.Toolkit",
+        "Unity.InputSystem",
+        "Unity.XR.CoreUtils",
+        "Unity.XR.ARFoundation"
     ],
     "includePlatforms": [
         "Editor"
