@@ -46,3 +46,7 @@ The count is a budget, not a quota. A file that would take the runtime past 29 h
   pick up a change, so a builder that duplicates on the second run is a bug.
 - **Every exit gate is a play-mode or device observation**, not a compile. "It builds" closes nothing. The
   gate is a thing seen in Play mode in the editor or on the Quest, written down with what was seen.
+
+## Fixed facts the rebuild depends on
+- `StarVert` is 10 floats, 40 bytes, sequential: yOffset, curveOffset, ellipseDistance, ellipseOffset, color(3), uv(2), size. Every point shader declares exactly this. Old baked `StarsData`/`NebulaVolumeData` are 11 floats and must be re-baked, never reinterpreted.
+- Data enum is `RoomMode` and the panel copy struct is `PanelCopy`, so the `Room` and `Panel` components keep the short names.
