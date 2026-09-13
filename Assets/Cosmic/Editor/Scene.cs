@@ -206,6 +206,10 @@ namespace Cosmic.Editor
                 pin.transform.localScale = Vector3.one * 0.1f;
                 foreach (var grab in pin.GetComponentsInChildren<Grabbable>(true)) grab.enabled = false;
                 foreach (var pull in pin.GetComponentsInChildren<Pull>(true)) pull.enabled = false;
+                // The pin is a marker, and a marker must not be in front of the thing it marks: its body
+                // collider sits between the eye and the floor, so a ray looking for the floor hits the pin
+                // first, hovers nothing (its interactables are off) and the placement click never lands.
+                foreach (var collider in pin.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
             }
             Wire(anchor, "content", content);
             Wire(anchor, "logo", logo);

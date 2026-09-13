@@ -1415,19 +1415,27 @@ namespace Cosmic.Editor
             Add(0.05f, () => Tap(Key.Tab, false));
             Add(0.6f, () => { Check(group.alpha > 0.9f && dock.Visible, $"Tab shows it again ({group.alpha:0.00})"); picked = null; Tap(Key.F2, true); });
             Add(0.05f, () => Tap(Key.F2, false));
+            // The popup belongs to whichever place actually has more than one layout, which is
+            // solar_system_planets, not solar_system: clicking a tile with no layout choice is a test of
+            // nothing and used to read as a product failure.
+            var layoutTile = -1;
+            for (var i = 0; i < dock.Tiles.Count && layoutTile < 0; i++)
+                if (dock.Tiles[i].place != null && dock.Tiles[i].place.HasLayoutChoice) layoutTile = i;
+            if (layoutTile < 0) layoutTile = 4;
+            var layoutPlace = dock.Tiles[layoutTile].place;
             Add(0.2f, () =>
             {
                 Check(picked != null && picked.id == "cosmic_web", $"F2 relays the first tile's place through Dock.Picked ({(picked == null ? "nothing" : picked.id)})");
                 picked = null;
-                Move(At(dock.Tiles[4].transform.position));
+                Move(At(dock.Tiles[layoutTile].transform.position));
             });
-            Add(0.2f, () => Press(At(dock.Tiles[4].transform.position), true, false, Vector2.zero));
-            Add(0.1f, () => Press(At(dock.Tiles[4].transform.position), false, false, Vector2.zero));
+            Add(0.2f, () => Press(At(dock.Tiles[layoutTile].transform.position), true, false, Vector2.zero));
+            Add(0.1f, () => Press(At(dock.Tiles[layoutTile].transform.position), false, false, Vector2.zero));
             Add(0.4f, () =>
             {
-                Check(picked != null && picked.id == "solar_system", $"a click on the fifth tile raises Picked for solar_system ({(picked == null ? "nothing" : picked.id)})");
-                var lift = popup != null ? Vector3.Distance(popup.transform.position, dock.Tiles[4].transform.position) : -1f;
-                Check(popup != null && popup.Showing, "the Solar System tile opens the layout popup");
+                Check(picked != null && picked == layoutPlace, $"a click on the layout tile raises Picked for {layoutPlace.id} ({(picked == null ? "nothing" : picked.id)})");
+                var lift = popup != null ? Vector3.Distance(popup.transform.position, dock.Tiles[layoutTile].transform.position) : -1f;
+                Check(popup != null && popup.Showing, $"the {layoutPlace.id} tile opens the layout popup");
                 Check(lift > 0.06f && lift < 0.08f, $"the popup sits 40 mm above the tile ({lift * 1000f:0} mm from its centre)");
                 Move(Idle());
                 Tap(Key.U, true);
@@ -1603,14 +1611,9 @@ namespace Cosmic.Editor
 
             Add(0.5f, () => { Check(anchorObject != null && anchorObject.IntroRunning, "the intro is running at boot"); Tap(Key.Escape, true); });
             Add(0.05f, () => Tap(Key.Escape, false));
-            Add(0.6f, () =>
-            {
-                var floorPoint = cam.position + Anchor.FlatForward(cam) * 1.2f;
-                floorPoint.y = 0f;
-                Move(At(floorPoint));
-            });
-            Add(0.3f, () => Press(At(FloorAhead(cam)), true, false, Vector2.zero));
-            Add(0.1f, () => Press(At(FloorAhead(cam)), false, false, Vector2.zero));
+            Add(0.6f, () => Move(FloorScreen()));
+            Add(0.3f, () => Press(FloorScreen(), true, false, Vector2.zero));
+            Add(0.1f, () => Press(FloorScreen(), false, false, Vector2.zero));
             Add(2.5f, () =>
             {
                 Check(anchorObject != null && anchorObject.Placed && !anchorObject.IntroRunning, "a click on the floor places the content root and ends the intro");
@@ -1669,11 +1672,25 @@ namespace Cosmic.Editor
             Debug.Log($"[P6] start: {steps.Count} steps, about {2.5f + order.Count * 1.7f + 5f:0} s. This is the smoke run: boot, intro, every place, a destination, restore.");
         }
 
-        static Vector3 FloorAhead(Transform cam)
+        // The floor a player would click is not the point 1.2 m ahead of a level camera: at eye height that
+        // point is 55 degrees down, far below the bottom of the view, so its screen position is negative and
+        // the synthetic click lands nowhere. Walk down the middle of the view instead and take the first
+        // screen point whose ray actually meets y=0 in front of the player, which is what a head tilted at
+        // the floor would see. Returns the low centre of the view if nothing meets the plane.
+        static Vector2 FloorScreen()
         {
-            var point = cam.position + Anchor.FlatForward(cam) * 1.2f;
-            point.y = 0f;
-            return point;
+            var cam = Camera.main;
+            if (cam == null) return Vector2.zero;
+            var x = cam.pixelWidth * 0.5f;
+            for (var fraction = 0.45f; fraction >= 0.05f; fraction -= 0.02f)
+            {
+                var at = new Vector2(x, cam.pixelHeight * fraction);
+                var ray = cam.ScreenPointToRay(at);
+                if (ray.direction.y >= -0.01f) continue;
+                var distance = -ray.origin.y / ray.direction.y;
+                if (distance > 0.4f && distance < 8f) return at;
+            }
+            return new Vector2(x, cam.pixelHeight * 0.1f);
         }
 
         [MenuItem("Cosmic/Verify/P6 Teardown")]
@@ -1714,13 +1731,21 @@ namespace Cosmic.Editor
             if (device == null) return;
             var state = new MouseState { position = at, delta = delta, scroll = scroll };
             InputSystem.QueueStateEvent(device, state.WithButton(MouseButton.Left, left).WithButton(MouseButton.Right, right));
+            Flush();
         }
+
+        // A queued event only reaches the game when the input system flushes its queue, and with the Game view
+        // unfocused - which is every relay-driven run - it does not: the device keeps reading (0, 0) and every
+        // pointer assertion after the first fails for a reason that has nothing to do with the thing under test.
+        // Flushing here is what "Lock Input to Game View" does for a person sitting at the editor.
+        static void Flush() => InputSystem.Update();
 
         static void Tap(Key key, bool down)
         {
             var device = KeyboardDevice.current;
             if (device == null) return;
             InputSystem.QueueStateEvent(device, down ? new KeyboardState(key) : new KeyboardState());
+            Flush();
         }
 
         static Transform Descendant(Transform root, string name)

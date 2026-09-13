@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
+using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
 
 namespace Cosmic
 {
@@ -109,7 +110,7 @@ namespace Cosmic
             foreach (var interactor in floor.interactorsHovering)
             {
                 if (interactor is XRRayInteractor ray && ray.TryGetHitInfo(out var hit, out _, out _, out var valid) && valid) { pin.transform.position = hit; return; }
-                if (interactor is NearFarInteractor near && near.TryGetCurveEndPoint(out var end) != NearFarInteractor.EndPointType.None) { pin.transform.position = end; return; }
+                if (interactor is NearFarInteractor near && near.TryGetCurveEndPoint(out var end) != EndPointType.None) { pin.transform.position = end; return; }
             }
         }
 

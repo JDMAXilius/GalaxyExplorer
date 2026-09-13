@@ -243,9 +243,9 @@ into the one scene, built here because Phase 2 is the first thing that needs the
 |---|---|---|---|---|
 | CS-126 | TERM | Compile the Cosmic assemblies | — | done |
 | CS-127 | TERM | Import copy and run the parity gate | CS-126 | done |
-| CS-128 | TERM | Phase 2 setup — audio library, dim material, host object | CS-126 | todo |
-| CS-129 | TERM | Phase 2 play-mode verification | CS-128 | todo |
-| CS-130 | TERM | Teardown and commit the generated assets | CS-129 | todo |
+| CS-128 | TERM | Phase 2 setup — audio library, dim material, host object | CS-126 | done (13 Sep terminal run) |
+| CS-129 | TERM | Phase 2 play-mode verification | CS-128 | done (`[P2] DONE 30/30`, 13 Sep) |
+| CS-130 | TERM | Teardown and commit the generated assets | CS-129 | done (both assets committed 13 Sep) |
 | CS-131 | TERM | Wiring step: the 60 asset references the copy deck cannot own — 38 `Narration`, 15 `ContentPrefab`, 7 `DockThumbnail`. **The only class of loss left in the gate** | CS-127 | todo |
 | CS-132 | CC | Extend `docs/copy/` with the four places and seven bodies it never got: `hd110067`, `pinwheel`, `triangulum`, `whirlpool`, `hd110067_star` and `hd110067_b`–`g` | CS-127 | done |
 | CS-133 | CC | Port the layout builder — `solar_row`, `relative_size`, `hd110067_row`, `hd110067_relative`, and the `Layouts` reference on `solar_system_planets` | CS-127 | done |
@@ -271,17 +271,79 @@ into the one scene, built here because Phase 2 is the first thing that needs the
 | CS-153 | CC | Rework P5c: `Editor/Ui.cs` + `Cards.cs` menu **Cosmic → Build → UI**: `theme.asset` (Selawik) and nine prefabs under `Assets/Cosmic/Prefabs/ui/` (dock, three panels, three labels, toast, about) | CS-152 | done (unrun) |
 | CS-154 | CC | Rework P5 harness: `Cosmic/Verify/P5 Build · Setup · Enter Play · Run · Leave Play · Teardown` and `tools/mcp/rework/p5_*.cs` | CS-153 | done (unrun) |
 | CS-155 | TERM | Rework P5 compile and build: compile, **Cosmic → Verify → P5 Build** (nine prefabs, theme with Selawik, dock with seven tiles, popup, utility, one collider on the bar; second run keeps GUIDs) | CS-154 | done |
-| CS-156 | TERM | Rework P5 play: dock recentres in front of the eye and tilts 25 degrees, Tab and palm-up toggle it, a tile click raises Picked, the Solar System tile opens the popup 40 mm above it, the utility window changes text size, a body panel sits 30 mm off Earth on the view-centre side, a card label grows on hover; `[P5] DONE n/m` | CS-155 | blocked-term |
+| CS-156 | TERM | Rework P5 play: dock recentres in front of the eye and tilts 25 degrees, Tab and palm-up toggle it, a tile click raises Picked, the Solar System tile opens the popup 40 mm above it, the utility window changes text size, a body panel sits 30 mm off Earth on the view-centre side, a card label grows on hover; `[P5] DONE n/m` | CS-155 | done (`[P5] DONE 20/20`, 13 Sep, after the input flush and two real fixes) |
 | CS-157 | TERM | Rework P5 look: offscreen render of every UI prefab against the Figma frames; owner signs off the dock, panel and tag before P6 | CS-156 | todo |
 | CS-158 | CC | Rework P6a: `Core/App.cs` (boot, singleton, dock and hotkey routing), `Core/Director.cs` (open a place: unload, room, instantiate, grow-in, panels, narration, ambience; layouts, restore, scale, pull by key, destination overlays in Halo) | CS-152 | done (unrun) |
 | CS-159 | CC | Rework P6b: `Core/Anchor.cs` (the intro: our own logo text, floor placement by ray or mouse, the content root; Escape skips), `Core/Panels.cs` (scene, body and moon panels on grab or pull, name labels on the orbit model, destination tags on the Milky Way at the old placements), **Cosmic → Build → Main Scene** in `Editor/Scene.cs`, the P6 harness and `tools/mcp/smoke.cs` rewritten against it | CS-158 | done (unrun) |
-| CS-160 | TERM | Rework P6 compile and build: compile, **Cosmic → Verify → P6 Build** (main.unity with App, Director, Anchor, Panels wired, seven places, one camera, first in Build Settings) | CS-159, CS-155 | todo |
-| CS-161 | TERM | Rework P6 smoke: **P6 Setup → Enter Play → Run (smoke.cs) → Leave Play → Teardown**: boot, intro skipped and placed by mouse, Milky Way first, every dock place opens with its room mode, Helix overlay in Halo, Escape and R; console clean | CS-160 | todo |
+| CS-160 | TERM | Rework P6 compile and build: compile, **Cosmic → Verify → P6 Build** (main.unity with App, Director, Anchor, Panels wired, seven places, one camera, first in Build Settings) | CS-159, CS-155 | done (`[P6] DONE 26/26`, 13 Sep) |
+| CS-161 | TERM | Rework P6 smoke: **P6 Setup → Enter Play → Run (smoke.cs) → Leave Play → Teardown**: boot, intro skipped and placed by mouse, Milky Way first, every dock place opens with its room mode, Helix overlay in Halo, Escape and R; console clean | CS-160 | done (`[P6] DONE 27/27`, console clean, 13 Sep) |
 | CS-162 | TERM | Rework P6 walkthrough on Link and Quest: intro by hand (logo, pinch on the floor), hint cards, dock by palm-up, every place, a destination by tag, restore; owner signs off the app before the cutover | CS-161, CS-131 | todo |
 | CS-163 | CC | Rework P7a: the cutover inventory — `tools/cutover/inventory.py` writes `keep.txt` (everything under `Assets/Cosmic`, the samples, XR settings, fonts, TMP, Resources, build scripts, and every content folder whole: audio, Textures, models, ui, _sources) and `delete.txt` (the old tree: scripts, prefabs, scenes, materials, shaders, data, scriptable objects, animations, timelines, external, third_party, playables) | CS-159 | done |
 | CS-164 | TERM | Rework P7b: the cutover, only after CS-162 is signed off — delete every path in `tools/cutover/delete.txt` (with its `.meta`), remove the old scenes from Build Settings so `main.unity` is the only one, compile clean, **Cosmic → Build → Bake All / Layouts / Bodies / Places / UI / Main Scene** in that order, then the P6 smoke green again | CS-162, CS-163 | todo |
 | CS-165 | TERM | Rework P7c: the APK — **Cosmic Simulation → Quest 3 → Configure Project** (keeps `Assets/build_scripts` as the one build tool; bundle id `com.jdmaxilius.cosmicsimulationxr`), **Build APK**, install, and the device pass: intro by hand, every place, stereo on both eyes for Points, Orbit, Planet and Sun, OVR Metrics under budget | CS-164, CS-149 | todo |
 | CS-166 | CC | Rework P7d: docs cutover — `docs/TECHNICAL_OVERVIEW.md` rewritten for the Cosmic tree (38 runtime scripts, 11 builders, 17 shaders, one scene), `CLAUDE.md`'s key-code section repointed, `tools/mcp/smoke_legacy.cs` removed, `RULES.md`'s table settled at the landed counts | CS-164 | todo |
+| CS-167 | CC | Every moon registers one `SphereCollider` with two interactables — `body_moon`, `body_phobos`, `body_deimos`, `body_ganymede`, `body_callisto`, `body_io`, `body_europa`, `body_titan`, `body_mimas`, `body_iapetus`, `body_enceladus` each warn twice on load ("a collider used by an Interactable object is already registered"); XRI keeps the first association and drops the second, so one of the two components is inert on every moon | CS-144 | todo |
+
+**Terminal run, 13 Sep 2026 — CS-128, CS-129, CS-130, CS-156, CS-160 and CS-161 all pass, and four real
+defects had to be fixed to get there.** The editor was opened on this project for the first time in this
+session and refused to finish loading: it raised the *Enter Safe Mode?* dialog, because `Cosmic.Runtime`
+did not compile. **`EndPointType` is not nested in `NearFarInteractor`** — it is a top-level enum in
+`UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals`, so `Anchor.cs:112` was a compile error in the
+P6 code as committed. One `using` and one name fixed it; CS-158 and CS-159 had been written without a
+compiler, and this is the first thing a compiler said.
+
+**`rig.prefab` was built before the two assets it wires existed, and nothing noticed for four phases.**
+`Room.dimMaterial` and `Audio.library` both read `{fileID: 0}` in the committed rig, because CS-139 ran
+before CS-128 ever did. The main scene nests the rig, so `Room: dimMaterial is unassigned, so dimming and
+halos are off` fired on every play start and the dim and halo quads were never built — invisible to the
+P6 assertions, which read `Room.Effective`, a state, not a rendering. Running **Cosmic → Verify → P2
+Setup** (CS-128) made `audio_library.asset` and `room_dim.mat`, **Cosmic → Build → Rig** wired them
+(`[P3] DONE 22/22`, and its own `rig inputs:` line now names both), and the main scene had to be rebuilt
+after that to pick up the new rig. **Order matters and is not recorded anywhere else: P2 Setup, then Rig,
+then Main Scene.**
+
+**The intro could never be completed, by hand or by harness, and this was a product defect.** The Earth
+pin the intro parents to `app` kept its colliders. It sits between the eye and the floor, its `Grabbable`
+and `Pull` are deliberately disabled, and so the placement ray hit the pin, hovered nothing, and the
+floor was never selected — `Anchor.Preview` needs a hover the pin itself was preventing. `Editor/Scene.cs`
+now disables every collider under the pin, the way it already disabled the two interaction components.
+A probe run against the live editor is what found it: the ray was aimed correctly and the button was
+down, and the hit came back `pin`.
+
+**The harness's synthetic input never reached the game, which is the real story behind CS-156's
+flakiness.** `InputSystem.QueueStateEvent` only queues; with the Game view unfocused — which is every
+relay-driven run — nothing flushes the queue, and `Mouse.current.position` kept reading `(0, 0)` through
+a whole run. `Verify.Send` and `Verify.Tap` now call `InputSystem.Update()` after queueing, which is what
+*Lock Input to Game View* does for a person sitting at the editor (that setting cannot be reached from
+script: `InputEditorUserSettings` is `internal` in the input package). With the flush in, the two label
+assertions that passed in run 2 and failed in runs 3 and 4 of the 12 Sep session now pass every time.
+
+**Two more findings in the P5 run, one harness and one product.** The harness clicked `dock.Tiles[4]`,
+which is `solar_system` — a place with `layouts: []` — and then asserted that a layout popup opened;
+it now finds the first tile whose place has `HasLayoutChoice` (`solar_system_planets`) and says which
+one it used. And `Utility.OnTextSize` called `Prefs.NextTextScale()` and threw the answer away: that
+method only *reads* the next step, and the button has to write it, the way `Hotkeys` already did. The
+utility window's text-size button did nothing at all until this commit.
+
+**Scores.** `[P2] DONE 30/30`. `[P3] DONE 22/22` (rig rebuild). `[P5] DONE 20/20` — CS-156, previously
+`blocked-term`. `[P6] DONE 26/26` (build) and `[P6] DONE 27/27` (smoke), with the destination tags at 9
+and the room mode correct for all seven places. The P6 build check is 26 items, not the 23 the harness
+README predicts.
+
+**Console after the final smoke run: clean except one class of warning, now CS-167.** Eleven moons each
+warn twice that their `SphereCollider` is already registered with another interactable. It is content,
+not the app layer, and it did not affect any assertion.
+
+**Unity crashed after the last P5 teardown**, on OpenXR shutdown (`XR_SESSION_STATE_EXITING` is the last
+line in `Logs/Editor.log`); the run had already reported `20/20`. The harness fixtures it left in
+`Assets/scenes/development_scenes/solar_system_prefab_scene.unity` were reverted by hand rather than by
+`P5 Teardown`, which never got to run. Its untracked `solar_system_prefab_scene/` lighting folder is
+left on disk, uncommitted.
+
+**What is still owed on P6 and P7, and by whom.** CS-162 is the Link and Quest walkthrough and the
+owner's sign-off — it needs a headset and a person, and CS-131's wiring step (narration and ambience are
+null until then) sits in front of it. CS-164, the cutover, deletes 1097 paths and is explicitly gated on
+that sign-off; CS-165 needs CS-164 and a device; CS-166 follows CS-164. None of them were touched here.
 
 *CS-132 done, unrun (13 Sep 2026).* Deck only; no importer change was needed. Seven body blocks and four place blocks ported verbatim from the old assets, plus the wiring fields the importer always read and the deck never carried: `**Bodies:**` on `solar_system` and `hd110067`, `**Destinations:**` on `milky_way` (nine, per GDD 4.3). All four new places are Dimmed, read from the old assets, so no `**Room:**` line. A Python re-implementation of the parser resolves 10/10, 7/7 and 9/9 ids. **Two things ported faithfully rather than fixed, for the owner:** the HD 110067 prose exceeds the deck's word caps (recorded as an exception in the README), and its four measured masses lack the `x 10` mantissa suffix the other bodies carry, so they will render as a bare mantissa with a superscript until the value text is changed — changing it would also change what the parity gate compares against. Terminal: **Cosmic → Import Copy**, then `check_data.py` should drop from 11 missing assets to 0 and `Wire()` should report references wired; then re-run **Cosmic → Build → Layouts** so the two HD 110067 layouts fill their slots.
 

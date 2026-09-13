@@ -96,7 +96,9 @@ namespace Cosmic
 
         void OnTextSize()
         {
-            Prefs.NextTextScale();
+            // NextTextScale only reads the next step; the button has to write it, the way Hotkeys does.
+            Prefs.TextScale = Prefs.NextTextScale();
+            Sync();
             if (Grabbable.Bus != null) Grabbable.Bus.Play(Sfx.Select, transform);
         }
 
