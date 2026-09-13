@@ -45,10 +45,17 @@ namespace CosmicSimulation.EditorTools
                       "Face-on, no tilt, no additive curve - structure only, not the shipped look.");
         }
 
-        private static bool Render(GalaxyProfile profile)
+        /// <summary>The square edge of every image this produces, in pixels.</summary>
+        internal const int Edge = Size;
+
+        /// <summary>
+        /// The light this galaxy's baked stars put on a square, in float so overlapping stars add rather than
+        /// clip - the way an additive shader would. Null when the galaxy has nothing baked yet. Shared with
+        /// <c>GalaxyPortraitBuilder</c> so the portraits in the sky and the previews on disk are plots of the
+        /// same numbers by the same arithmetic; a second copy of the maths is exactly how the two would drift.
+        /// </summary>
+        internal static Vector3[] Accumulate(GalaxyProfile profile)
         {
-            // Accumulate in float so overlapping stars add rather than clip at each plot, the way an additive
-            // shader would. One tone-map at the end keeps a dense core from becoming a white disc.
             var acc = new Vector3[Size * Size];
             var any = false;
 
@@ -66,7 +73,13 @@ namespace CosmicSimulation.EditorTools
                 Plot(acc, data.stars, profile, layer);
             }
 
-            if (!any)
+            return any ? acc : null;
+        }
+
+        private static bool Render(GalaxyProfile profile)
+        {
+            var acc = Accumulate(profile);
+            if (acc == null)
             {
                 Debug.LogWarning($"GalaxyPreview: '{profile.Id}' has no baked star data; build it first.");
                 return false;
