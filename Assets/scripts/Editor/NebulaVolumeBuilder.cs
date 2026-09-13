@@ -76,7 +76,25 @@ namespace CosmicSimulation.EditorTools
         /// plate of the sky around any of these objects - which is exactly why the nebula's own plate could
         /// never be the dome. Credited in Assets/_sources/CREDITS.md.
         /// </summary>
-        private const string SkyPanoramaPath = "Assets/Textures/nebulae/domes/deep_sky_panorama.png";
+        private const string SkyFolder = "Assets/Textures/nebulae/domes";
+
+        /// <summary>
+        /// Which sky each object stands under. Four panoramas for seven nebulae, chosen by what the object
+        /// actually is rather than one per id: two planetary nebulae glow the same teal, a remnant and an
+        /// eruption sit in the same warm dust, and the two objects inside the Carina and Eagle star clouds
+        /// have a genuinely crowded sky behind them. A sky is the neighbourhood, not the object.
+        /// </summary>
+        private static readonly System.Collections.Generic.Dictionary<string, string> Skies =
+            new System.Collections.Generic.Dictionary<string, string>
+            {
+                { "helix", "sky_teal" },
+                { "ngc1501", "sky_teal" },
+                { "crab", "sky_crab" },
+                { "homunculus", "sky_amber" },
+                { "pillars", "sky_starfield" },
+                { "trumpler14", "sky_starfield" },
+                { "orion", "sky_violet" },
+            };
 
         /// <summary>Working resolution the plate is read at. 512 is ample: the cloud is sampled, not copied.</summary>
         private const int SampleSize = 512;
@@ -164,6 +182,9 @@ namespace CosmicSimulation.EditorTools
 
         /// <summary>The wider background a star is judged against.</summary>
         private const int BackgroundRadius = 20;
+
+        /// <summary>Stars scattered through the whole volume, on top of the ones the plate itself shows.</summary>
+        private const int FieldStars = 9000;
 
         /// <summary>Below this share of the plate's peak luminance a pixel is empty sky and seeds nothing.</summary>
         private const float LuminanceFloor = 0.10f;
@@ -450,9 +471,13 @@ namespace CosmicSimulation.EditorTools
                     return Color.Lerp(plate, Color.white, 0.45f);
 
                 case Role.Dust:
-                    // A little of the plate's own hue survives, so a lane in a red nebula is not a grey one.
-                    var tint = plate * 0.10f;
-                    return new Color(tint.r, tint.g, tint.b, 0.55f);
+                    // Dust is not black, it is the object's own colour with the light taken out of it. At 0.10
+                    // every lane in every nebula was the same soot; the Crab's filaments are rust and red and
+                    // have to read as rust and red even while they are darkening what is behind them. The
+                    // colour is premultiplied - the shader darkens with One OneMinusSrcAlpha - so the hue rides
+                    // in the colour and the bite rides in alpha.
+                    var tint = plate * 0.34f;
+                    return new Color(tint.r, tint.g, tint.b, 0.48f);
 
                 default:
                     // Held back, because this layer overlaps itself: twelve thousand additive sprites through
@@ -606,6 +631,34 @@ namespace CosmicSimulation.EditorTools
                 var colour = Paint(role, pixels[index]);
 
                 points.Add(Describe(local, colour, spec.RadiusMetres, random, role.SizeScale));
+            }
+
+            // Stars through the whole volume, not only where the plate put them. The plate's stars are the ones
+            // that happen to lie in front of or behind this nebula in one photograph; a player standing inside
+            // is in a place, and a place has stars in every direction. Without these the sky between the gas is
+            // empty and the nebula reads as an exhibit in a dark room rather than as somewhere in a galaxy.
+            if (role.Role == Role.Stars)
+            {
+                for (var i = 0; i < FieldStars; i++)
+                {
+                    var direction = UnityEngine.Random.onUnitSphere;
+                    if (direction.sqrMagnitude < 1e-6f) direction = Vector3.forward;
+
+                    // Cube-rooted so they are spread evenly through the volume rather than piled at the middle,
+                    // and reaching past the gas so there is depth beyond it.
+                    var t = (float)random.NextDouble();
+                    var distance = Mathf.Lerp(0.45f, 1.35f, Mathf.Pow(t, 1f / 3f));
+
+                    // A star field is not white: it is mostly cool, with a few warm ones.
+                    var warm = random.NextDouble() < 0.18;
+                    var shade = 0.65f + (float)random.NextDouble() * 0.35f;
+                    var colour = warm
+                        ? new Color(shade, shade * 0.82f, shade * 0.62f)
+                        : new Color(shade * 0.78f, shade * 0.86f, shade);
+
+                    points.Add(Describe(direction * (spec.RadiusMetres * distance), colour,
+                                        spec.RadiusMetres, random, role.SizeScale * 0.8f));
+                }
             }
 
             var asset = ScriptableObject.CreateInstance<NebulaVolumeData>();
@@ -775,8 +828,9 @@ namespace CosmicSimulation.EditorTools
             var shell = root.transform.Find("place_shell");
             if (shell == null) return "none";
 
-            var panorama = AssetDatabase.LoadAssetAtPath<Texture2D>(SkyPanoramaPath);
-            if (panorama == null) return "missing panorama";
+            var sky = Skies.TryGetValue(id, out var named) ? named : "deep_sky_panorama";
+            var panorama = AssetDatabase.LoadAssetAtPath<Texture2D>($"{SkyFolder}/{sky}.png");
+            if (panorama == null) return $"missing {sky}";
 
             shell.gameObject.SetActive(true);
             var touched = 0;
@@ -787,23 +841,38 @@ namespace CosmicSimulation.EditorTools
             {
                 var materialPath = $"Assets/materials/place_shells/place_shell_{id}_{suffix}.mat";
                 var material = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
+                if (material == null || !material.HasProperty("_SpreadU")) continue;
+
+                if (suffix == "gas")
                 {
-                    if (material == null || !material.HasProperty("_SpreadU")) continue;
-
-                    material.SetTexture("_MainTex", panorama);
-                    material.SetFloat("_SpreadU", 1f);
-                    material.SetFloat("_SpreadV", 1f);
-                    material.SetFloat("_PlateYaw", 0f);
-                    material.SetFloat("_PlatePitch", 0f);
-
-                    // A backdrop, not a light source: the gas in front has to stay the brightest thing.
-                    if (material.HasProperty("_PlateGain")) material.SetFloat("_PlateGain", 0.55f);
+                    // The gas layer goes dark, and this is the image that kept coming back. PlaceShell builds
+                    // both its layers at *run time*, so nothing in the prefab shows them and every check in the
+                    // editor said the cards were off and the nebula was clean - while in play a second copy of
+                    // the plate hung across the middle of the view. There is no job left for it: the gas is
+                    // 22,000 points standing around the player now, and a photograph of the same gas painted on
+                    // a dome in front of it is the flat thing this whole feature exists to replace.
+                    if (material.HasProperty("_PlateGain")) material.SetFloat("_PlateGain", 0f);
+                    var clear = material.HasProperty("_Color") ? material.GetColor("_Color") : Color.white;
+                    clear.a = 0f;
+                    if (material.HasProperty("_Color")) material.SetColor("_Color", clear);
                     EditorUtility.SetDirty(material);
                     touched++;
+                    continue;
                 }
+
+                material.SetTexture("_MainTex", panorama);
+                material.SetFloat("_SpreadU", 1f);
+                material.SetFloat("_SpreadV", 1f);
+                material.SetFloat("_PlateYaw", 0f);
+                material.SetFloat("_PlatePitch", 0f);
+
+                // A backdrop, not a light source: the gas in front has to stay the brightest thing.
+                if (material.HasProperty("_PlateGain")) material.SetFloat("_PlateGain", 0.55f);
+                EditorUtility.SetDirty(material);
+                touched++;
             }
 
-            return touched > 0 ? $"wrapped on {touched} material(s)" : "no shell material takes a panorama";
+            return touched > 0 ? $"{sky} on {touched} material(s)" : "no shell material takes a panorama";
         }
 
         private static bool Attach(ExperienceModule module, Spec spec,
@@ -840,6 +909,24 @@ namespace CosmicSimulation.EditorTools
                     if (!child.name.StartsWith("card_")) continue;
                     child.gameObject.SetActive(false);
                     darkened++;
+                }
+
+                // You cannot pick up the room you are standing in. The prefab root carries a grab sphere and a
+                // ManipulationHandler from when a nebula was an overlay you held at arm's length - GDD 4.3's
+                // "grabbable and scalable like a body". From inside, that collider is the whole view: every
+                // drag lands on it, so the pointer grabs the nebula and the camera never orbits, which is why
+                // looking around did nothing. Off, so a drag reaches the view instead.
+                var freed = 0;
+                foreach (var collider in root.GetComponents<Collider>())
+                {
+                    if (!collider.enabled) continue;
+                    collider.enabled = false;
+                    freed++;
+                }
+
+                foreach (var handler in root.GetComponents<GalaxyExplorer.XR.ManipulationHandler>())
+                {
+                    handler.enabled = false;
                 }
 
                 // One node per role, under a shared parent, so the three can be hidden or tuned separately and
@@ -879,7 +966,8 @@ namespace CosmicSimulation.EditorTools
                     $"  {spec.Id}: {total:N0} points ({tally}), sky {sky}, {spec.Model} model, radius " +
                     $"{spec.RadiusMetres:0.00} m, plate {Path.GetFileNameWithoutExtension(spec.PlatePath)}" +
                     (stripped > 0 ? $" (replaced {stripped} existing)" : string.Empty) +
-                    (darkened > 0 ? $", {darkened} flat layer(s) switched off" : string.Empty));
+                    (darkened > 0 ? $", {darkened} flat layer(s) switched off" : string.Empty) +
+                    (freed > 0 ? ", grab collider off so the view can orbit" : string.Empty));
 
                 return layers.Count > 0;
             }
