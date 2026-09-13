@@ -426,9 +426,18 @@ against its own sources, `Cosmic/Editor` for the editor assembly and everything 
 runtime one. The check itself is right and earned its keep the same session: it caught the `CS0102`
 as `COMPILE FAILED` where the old script would have said CLEAN.
 
-*CS-156 — does NOT pass; blocked on the environment, with one measured cause and one unresolved.*
-Best result **16/20**; across four runs the score was 13, 16, 14, 14 on unchanged code, so **the run
-is not reproducible on this machine** and no score from it should be recorded as a verdict.
+*CS-156 — does NOT pass; blocked, with one defect proved and the rest environmental.*
+Best result **16/20**; across **five** runs on unchanged code the score was 13, 16, 14, 14, 15, so
+**the run is not reproducible on this machine** and no score from it is a verdict. The fifth run was
+made after the owner confirmed they were at the machine, so the "keep the real mouse off the Game
+view" precondition was as good as it gets here.
+
+**Five runs separate the deterministic failure from the flaky ones, which is the useful result.**
+The four dock failures — the tile click, the popup that cannot open without it, the popup-position
+check that then measures 223 mm, and the text-size button inside the utility window — failed in
+**all five runs**. The two label assertions passed in run 2, failed in runs 3 and 4, and split in
+run 5 (hover failed, click passed). So the dock four are a real defect and the label two are noise
+until someone reproduces them on a machine that holds both preconditions.
 
 **What passes every time, and is worth banking:** Recenter parks the dock 0.75 m ahead and at
 `max(0.7, 0.55 x head)` = 0.748 m, the 25-degree tilt, the dock starting visible, Tab hiding and
@@ -456,6 +465,14 @@ every projected point. The README asks for a visible Game view *and* the real mo
 first was missing until this session opened one — that alone took the score from 13 to 16 — and the
 second cannot be guaranteed from here. **Do not treat the remaining label failures as defects without
 a run on a machine that can hold both preconditions.**
+
+**A second finding, from re-running P5 Build: two prefabs are not byte-stable.** `dock.prefab` and
+`panel_body.prefab` come back with every internal **fileID** renumbered — 2 979 lines inserted and
+2 979 deleted, and **zero** lines differing once long ids are normalised, so the content is
+identical and only the ids moved. CS-155's own assertion covers *asset GUIDs*, which are stable, and
+says nothing about fileIDs. The consequence is that every P5 Build produces a ~5 000-line diff for
+those two files with no change in them; the churn was discarded here rather than committed. The
+other seven prefabs are stable, so this is specific to the two most deeply nested ones.
 
 **One experiment recorded because it failed.** Widening the camera FOV to 110 degrees put all seven
 tiles on screen, but the run then scored 14/20 and broke the two label assertions that had just
