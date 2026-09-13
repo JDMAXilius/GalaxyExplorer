@@ -35,7 +35,7 @@ Everything under `Assets/Cosmic/` is the rework. The old tree stays bootable and
 | Kind | Target |
 |---|---|
 | Runtime scripts | 29 |
-| Editor scripts | 6 |
+| Editor scripts | 6 planned, 9 landed (Bake split three ways, Bodies beside Content; CS-150) |
 | Shaders | 16 |
 | Scenes | 1 |
 

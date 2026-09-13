@@ -5,12 +5,13 @@ using UnityEngine;
 
 namespace Cosmic.Editor
 {
-    public static class Content
+    public static class Layouts
     {
         const string Out = "Assets/Cosmic/Data/Generated";
         const string OldSystems = "Assets/data/systems";
 
         const float TransitionSeconds = 0.8f;
+        const float OrbitTransitionSeconds = 1f;
         const float RowDiameterMetres = 0.15f;
         const float RowPitchMetres = 0.25f;
         const float RowHeightMetres = 1.2f;
@@ -23,26 +24,28 @@ namespace Cosmic.Editor
         const float FloorClearanceMetres = 0.05f;
         const float TightClearanceMetres = 0.01f;
 
+        // ringSpans spaced the shipped arcs and stays so a rebuild moves nothing; spanRatio is the measured width the clamp reads.
         struct Spec
         {
             public string id;
-            public float diameterMetres, ringSpans;
+            public float diameterMetres, ringSpans, spanRatio;
         }
 
         struct Placement
         {
             public string id;
             public Vector3 position, euler;
-            public float diameterMetres, spanMetres;
+            public float diameterMetres, spanMetres, spanRatio;
         }
 
         // GDD 4.1 tabulates Relative Size rather than scaling it - Pluto is a deliberate 5 mm, not the 0.5 mm
         // its true ratio gives - so these diameters are typed and must not be re-derived from Body.diameterKm.
         static readonly Spec[] Solar =
         {
-            S("sun", 3f, 1f), S("mercury", 0.0105f, 1f), S("venus", 0.026f, 1f), S("earth", 0.0275f, 1f),
-            S("mars", 0.015f, 1f), S("jupiter", 0.3f, 1f), S("saturn", 0.25f, 2.3f), S("uranus", 0.11f, 2f),
-            S("neptune", 0.106f, 1f), S("pluto", 0.005f, 1f),
+            S("sun", 3f, 1f, 1f), S("mercury", 0.0105f, 1f, 1f), S("venus", 0.026f, 1f, 1.01f),
+            S("earth", 0.0275f, 1f, 1.01f), S("mars", 0.015f, 1f, 1.0000002f),
+            S("jupiter", 0.3f, 1f, 1.0072546f), S("saturn", 0.25f, 2.3f, 2.257225f),
+            S("uranus", 0.11f, 2f, 1.9908094f), S("neptune", 0.106f, 1f, 1f), S("pluto", 0.005f, 1f, 1f),
         };
 
         [MenuItem("Cosmic/Build/Layouts")]
@@ -61,16 +64,22 @@ namespace Cosmic.Editor
                 AssetDatabase.Refresh();
 
                 Attach("solar_system_planets",
-                       Write("solar_row", "Solar Row", "One line, all the same size", Row(Solar)),
-                       Write("relative_size", "Relative Size", "True sizes next to each other", Relative(Solar)));
+                       Write("solar_row", "Solar Row", "One line, all the same size", LayoutKind.Row, Row(Solar)),
+                       Write("relative_size", "Relative Size", "True sizes next to each other",
+                             LayoutKind.Relative, Relative(Solar)),
+                       Write("solar_schematic", "Schematic", "Even orbit spacing, planets enlarged",
+                             LayoutKind.Schematic, Orbits(Solar)),
+                       Write("solar_realistic", "Realistic", "True relative orbit radii",
+                             LayoutKind.Realistic, Orbits(Solar)));
 
                 var hd110067 = FromProfile("hd110067");
                 if (hd110067 != null)
                 {
                     Attach("hd110067",
-                           Write("hd110067_row", "Row", "One line, all the same size", Row(hd110067)),
+                           Write("hd110067_row", "Row", "One line, all the same size", LayoutKind.Row,
+                                 Row(hd110067)),
                            Write("hd110067_relative", "Relative Size", "True sizes next to each other",
-                                 Relative(hd110067)));
+                                 LayoutKind.Relative, Relative(hd110067)));
                 }
             }
             finally
@@ -81,8 +90,8 @@ namespace Cosmic.Editor
             }
         }
 
-        static Spec S(string id, float diameterMetres, float ringSpans) =>
-            new Spec { id = id, diameterMetres = diameterMetres, ringSpans = ringSpans };
+        static Spec S(string id, float diameterMetres, float ringSpans, float spanRatio) =>
+            new Spec { id = id, diameterMetres = diameterMetres, ringSpans = ringSpans, spanRatio = spanRatio };
 
         static Placement[] Row(Spec[] specs)
         {
@@ -92,6 +101,23 @@ namespace Cosmic.Editor
             {
                 var angle = (i - (specs.Length - 1) * 0.5f) * step;
                 placements[i] = At(specs[i], angle, ArcRadiusMetres, RowHeightMetres, RowDiameterMetres);
+            }
+
+            return placements;
+        }
+
+        static Placement[] Orbits(Spec[] specs)
+        {
+            var placements = new Placement[specs.Length];
+            for (var i = 0; i < specs.Length; i++)
+            {
+                placements[i] = new Placement
+                {
+                    id = specs[i].id,
+                    diameterMetres = RowDiameterMetres,
+                    spanMetres = RowDiameterMetres * specs[i].ringSpans,
+                    spanRatio = specs[i].spanRatio,
+                };
             }
 
             return placements;
@@ -142,9 +168,10 @@ namespace Cosmic.Editor
             euler = new Vector3(0f, angleRadians * Mathf.Rad2Deg + 180f, 0f),
             diameterMetres = diameterMetres,
             spanMetres = Mathf.Max(diameterMetres * spec.ringSpans, GrabSphereMetres),
+            spanRatio = spec.spanRatio,
         };
 
-        static Layout Write(string id, string title, string subtitle, Placement[] placements)
+        static Layout Write(string id, string title, string subtitle, LayoutKind kind, Placement[] placements)
         {
             var path = $"{Out}/layouts/{id}.asset";
             var layout = AssetDatabase.LoadAssetAtPath<Layout>(path);
@@ -173,6 +200,7 @@ namespace Cosmic.Editor
                     localPosition = placement.position,
                     localEuler = placement.euler,
                     scale = placement.diameterMetres,
+                    spanRatio = placement.spanRatio,
                 });
                 placed.Add(placement);
             }
@@ -180,11 +208,22 @@ namespace Cosmic.Editor
             layout.id = id;
             layout.title = title;
             layout.subtitle = subtitle;
-            layout.transitionSeconds = TransitionSeconds;
+            layout.kind = kind;
+            var orbiting = kind == LayoutKind.Schematic || kind == LayoutKind.Realistic;
+            layout.transitionSeconds = orbiting ? OrbitTransitionSeconds : TransitionSeconds;
             layout.slots = slots.ToArray();
             EditorUtility.SetDirty(layout);
 
-            Report(id, existed, placed);
+            if (orbiting)
+            {
+                Debug.Log($"Cosmic layouts: {(existed ? "updated" : "created")} {id} - {placed.Count} bodies " +
+                          $"at {RowDiameterMetres * 100f:F0} cm, spaced by the orbit model.");
+            }
+            else
+            {
+                Report(id, existed, placed);
+            }
+
             return layout;
         }
 
@@ -273,7 +312,7 @@ namespace Cosmic.Editor
                 // No measured radius means the grab sphere and nothing else: a diameter inferred from mass would
                 // read as a measurement in an arrangement that claims true proportions.
                 var metres = kilometres[i] > 0f ? kilometres[i] * metresPerKm : GrabSphereMetres;
-                specs[i] = S(ids[i], metres, 1f);
+                specs[i] = S(ids[i], metres, 1f, 1f);
             }
 
             return specs.Length >= 2 ? specs : null;

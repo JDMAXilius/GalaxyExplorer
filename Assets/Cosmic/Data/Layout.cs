@@ -3,6 +3,8 @@ using UnityEngine;
 
 namespace Cosmic
 {
+    public enum LayoutKind { Row, Relative, Schematic, Realistic }
+
     [Serializable]
     public struct Slot
     {
@@ -10,8 +12,10 @@ namespace Cosmic
         public Vector3 localPosition;
         public Vector3 localEuler;
 
-        // Body prefabs are normalised to a 1 m diameter, so this doubles as the body's diameter in metres.
         public float scale;
+
+        // Rings included, as a multiple of the diameter; zero reads as 1 because a struct field cannot carry an initialiser here.
+        public float spanRatio;
     }
 
     [CreateAssetMenu(menuName = "Cosmic/Layout", fileName = "layout")]
@@ -20,6 +24,7 @@ namespace Cosmic
         public string id;
         public string title;
         public string subtitle;
+        public LayoutKind kind = LayoutKind.Row;
         public float transitionSeconds = 0.8f;
         public Slot[] slots = Array.Empty<Slot>();
 
