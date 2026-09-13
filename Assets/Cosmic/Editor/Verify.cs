@@ -572,6 +572,49 @@ namespace Cosmic.Editor
             steps.Clear();
             cursor = 0;
             Debug.Log($"{tag} DONE {passes}/{total}");
+            Record($"DONE {passes}/{total}");
+        }
+
+        // The console is the verdict channel and it holds 200 entries: one component logging per frame - two
+        // audio listeners in a legacy scene loaded at runtime, say - pushes a whole run out of it before it
+        // can be read. Every verdict is therefore also appended to a file the terminal can read directly.
+        const string RecordPath = "Logs/cosmic_verify.log";
+
+        // A legacy scene loaded at runtime (core_systems_scene comes with the development host scene) brings
+        // its own MainCamera and AudioListener. The camera is the dangerous one: Camera.main answers with
+        // whichever enabled MainCamera it finds first, so every screen point the run computes can be measured
+        // through a camera the player is not looking through, and the whole run fails at its first click for
+        // a reason nothing reports. The listeners only log "There are 2 audio listeners in the scene" every
+        // frame - 200 console entries a second, which is the entire console. Both are silenced for the run.
+        // This has to happen in play mode: the strays do not exist in edit mode, so setup cannot park them.
+        static void Solo(Transform rig)
+        {
+            var cameras = 0;
+            foreach (var camera in UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            {
+                if (camera.transform.IsChildOf(rig) || !camera.enabled || !camera.CompareTag("MainCamera")) continue;
+                camera.enabled = false;
+                cameras++;
+            }
+            var listeners = 0;
+            foreach (var listener in UnityEngine.Object.FindObjectsByType<AudioListener>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            {
+                if (listener.transform.IsChildOf(rig) || !listener.enabled) continue;
+                listener.enabled = false;
+                listeners++;
+            }
+            if (cameras + listeners > 0)
+                Debug.Log($"{tag} claimed the rig's camera for the run: disabled {cameras} stray MainCamera(s) and {listeners} stray audio listener(s)");
+        }
+
+        static void Record(string line)
+        {
+            try
+            {
+                System.IO.Directory.CreateDirectory("Logs");
+                System.IO.File.AppendAllText(RecordPath, $"{System.DateTime.Now:HH:mm:ss} {tag} {line}" + System.Environment.NewLine);
+            }
+            catch (System.Exception e) { Debug.LogWarning($"{tag} could not write {RecordPath}: {e.Message}"); }
         }
 
         static void Add(float waitSeconds, System.Action run) => steps.Add(new Step { waitSeconds = waitSeconds, run = run });
@@ -581,6 +624,7 @@ namespace Cosmic.Editor
             total++;
             if (ok) { passes++; Debug.Log(tag + " PASS " + what); }
             else Debug.LogError(tag + " FAIL " + what);
+            Record((ok ? "PASS " : "FAIL ") + what);
         }
 
         // A skip is neither a pass nor a failure, so it stays out of the DONE n/m count and says why in words.
@@ -1578,9 +1622,13 @@ namespace Cosmic.Editor
             Camera eye = null;
             foreach (var root in scene.GetRootGameObjects()) foreach (var camera in root.GetComponentsInChildren<Camera>(true)) if (camera.CompareTag("MainCamera")) eye = camera;
             if (eye == null) { Debug.LogError(tag + " FAIL the main scene has no MainCamera; re-run Cosmic/Verify/P6 Build"); return; }
-            var strays = ParkStrayCameras(eye);
-            Debug.Log($"{tag} setup: {MainScenePath} is open additively" + (strays.Length > 0 ? "; parked the host scene's MainCamera(s):" + strays : string.Empty) +
-                      ". The host scene is not saved. Next: Cosmic/Verify/P6 Enter Play.");
+            // No camera parking here on purpose: parking edits the host scene, which makes it dirty, and a
+            // dirty scene is one this cannot close - which is the whole point of the step below. Strays that
+            // appear at runtime are handled by Solo() when the run starts.
+            var closed = CloseHostScenes(scene);
+            Debug.Log($"{tag} setup: {MainScenePath} is open additively" +
+                      (closed.Count > 0 ? $"; closed {string.Join(", ", closed)} so the legacy app cannot boot beside ours" : "; it is the only scene open") +
+                      ". Nothing was saved. Next: Cosmic/Verify/P6 Enter Play.");
         }
 
         [MenuItem("Cosmic/Verify/P6 Enter Play")]
@@ -1601,6 +1649,7 @@ namespace Cosmic.Editor
             keys = UnityEngine.Object.FindAnyObjectByType<Hotkeys>();
             pointer = UnityEngine.Object.FindAnyObjectByType<Cosmic.Mouse>();
             if (app == null || director == null || dock == null) { Debug.LogError("[P6] FAIL no App, Director or Dock in the loaded scenes; run Cosmic/Verify/P6 Setup, then enter play"); return; }
+            if (pointer != null) Solo(pointer.transform.root);
             if (Camera.main == null || pointer == null || keys == null || MouseDevice.current == null || KeyboardDevice.current == null) { Debug.LogError("[P6] FAIL no Camera.main, Cosmic.Mouse, Hotkeys, mouse or keyboard device"); return; }
             var cam = Camera.main.transform;
             var anchorObject = app.GetComponent<Anchor>();
@@ -1635,17 +1684,65 @@ namespace Cosmic.Editor
                 });
             }
             Add(0.2f, () => director.Open(order.Find(p => p.id == "milky_way")));
+            // The desktop click on a Milky Way tag, which is how a player on a PC reaches a destination:
+            // the tag is found in the open content, the mouse is put on it and held there while the ray
+            // settles, and the click has to open that tag's own place - not a stand-in opened in code.
+            // The desktop click on a Milky Way tag, which is how a player on a PC reaches a destination.
+            // The Label itself must not be held across the click: opening a destination rebuilds the tags,
+            // so the reference is destroyed and `== null` then reads true - the destination it named is what
+            // the assertion is about, so that is what is kept.
+            Label destinationTag = null;
+            Place tagPlace = null;
+            Vector3 tagPoint = Vector3.zero;
             Add(1.5f, () =>
             {
-                var helix = AssetDatabase.LoadAssetAtPath<Place>($"{Generated}/places/helix.asset");
-                var tags = director.Content != null ? director.Content.GetComponentsInChildren<Label>(true).Length : 0;
-                Check(tags >= 6, $"the Milky Way carries destination tags ({tags})");
-                if (helix != null) director.OpenDestinationPlace(helix, cam.position + cam.forward);
-                else Skip("the destination overlay: no helix.asset");
+                var tags = director.Content != null ? director.Content.GetComponentsInChildren<Label>(true) : new Label[0];
+                Check(tags.Length >= 6, $"the Milky Way carries destination tags ({tags.Length})");
+                foreach (var candidate in tags)
+                    if (candidate != null && candidate.Destination != null && OnScreen(candidate.transform.position)) { destinationTag = candidate; break; }
+                if (destinationTag == null) { Skip("the tag click: no destination tag is on screen"); return; }
+                tagPlace = destinationTag.Destination;
+                tagPoint = destinationTag.transform.position;
+                holding = () => Move(At(tagPoint));
+            });
+            Add(0.6f, () =>
+            {
+                if (tagPlace == null) return;
+                holding = () => Press(At(tagPoint), true, false, Vector2.zero);
+            });
+            Add(0.3f, () =>
+            {
+                if (tagPlace == null) return;
+                holding = null;
+                Press(At(tagPoint), false, false, Vector2.zero);
             });
             Add(1.2f, () =>
             {
-                Check(director.OpenDestination != null && director.OpenDestination.id == "helix", "the Helix overlay opens as a destination");
+                if (tagPlace == null)
+                {
+                    var helix = AssetDatabase.LoadAssetAtPath<Place>($"{Generated}/places/helix.asset");
+                    if (helix != null) director.OpenDestinationPlace(helix, cam.position + cam.forward);
+                    return;
+                }
+                var opened = director.OpenDestination == tagPlace;
+                Check(opened, $"a desktop click on the {tagPlace.id} tag opens it as a destination ({(director.OpenDestination == null ? "nothing" : director.OpenDestination.id)})");
+                // When it does not open, the question is always what the ray met first: a tag is a world-space
+                // UI element sitting inside content that has colliders of its own, and the nearest hit wins.
+                if (!opened && pointer != null)
+                {
+                    var blocker = pointer.TryGetCurrent3DRaycastHit(out var what) && what.collider != null
+                        ? $"{what.collider.gameObject.name} at {what.distance:0.00} m"
+                        : "nothing";
+                    var ui = pointer.TryGetCurrentUIRaycastResult(out var uiHit) && uiHit.gameObject != null
+                        ? uiHit.gameObject.name
+                        : "nothing";
+                    Debug.Log($"{tag} the tag click met: 3D={blocker}, UI={ui}. The tag was at {tagPoint:F2}, screen {At(tagPoint)}.");
+                    Record($"the tag click met: 3D={blocker}, UI={ui}");
+                }
+            });
+            Add(1.2f, () =>
+            {
+                Check(director.OpenDestination != null, $"the overlay is open as a destination ({(director.OpenDestination == null ? "nothing" : director.OpenDestination.id)})");
                 Check(Room.Effective == RoomMode.Halo, $"a destination puts the room in Halo ({Room.Effective})");
                 Tap(Key.Escape, true);
             });
@@ -1657,7 +1754,7 @@ namespace Cosmic.Editor
                 Tap(Key.R, true);
             });
             Add(0.05f, () => Tap(Key.R, false));
-            Add(0.5f, () => Check(director.Current != null && director.Current.id == "milky_way" && !director.Switching, "R restores without switching"));
+            Add(1.0f, () => Check(director.Current != null && director.Current.id == "milky_way" && !director.Switching, "R restores without switching"));
 
             cleanup = () =>
             {
@@ -1693,6 +1790,55 @@ namespace Cosmic.Editor
             return new Vector2(x, cam.pixelHeight * 0.1f);
         }
 
+        static readonly List<string> hostScenes = new List<string>();
+
+        // A development host scene is not inert: solar_system_prefab_scene boots the whole legacy app on
+        // play - main_scene, core_systems_scene and intro_earth_placement_scene all load beside ours, the
+        // legacy EventSystem becomes EventSystem.current, and the legacy intro puts its own placement
+        // colliders exactly where the rework's floor is. The run then fails at the first click and every
+        // assertion after it, with nothing in the console naming the cause. So the host is closed for the
+        // duration and reopened by P6 Teardown; a dirty scene is left alone, because closing one prompts.
+        static List<string> CloseHostScenes(UnityEngine.SceneManagement.Scene keep)
+        {
+            hostScenes.Clear();
+            var closed = new List<string>();
+            var others = new List<UnityEngine.SceneManagement.Scene>();
+            for (var i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++)
+            {
+                var other = UnityEngine.SceneManagement.SceneManager.GetSceneAt(i);
+                if (other == keep || !other.isLoaded) continue;
+                others.Add(other);
+            }
+            foreach (var other in others)
+            {
+                if (other.isDirty || string.IsNullOrEmpty(other.path))
+                {
+                    Debug.LogWarning($"{tag} left {other.name} open because it has unsaved changes. If it is a legacy scene it will " +
+                                     "boot the old app with LoadSceneMode.Single the moment play starts, which unloads main.unity and " +
+                                     "every assertion after the first will fail. Save or discard that scene and run setup again.");
+                    continue;
+                }
+                hostScenes.Add(other.path);
+                var name = other.name; // the struct is invalid once the scene is closed, so read it first
+                if (EditorSceneManager.CloseScene(other, true)) closed.Add(name);
+            }
+            return closed;
+        }
+
+        static int ReopenHostScenes()
+        {
+            var reopened = 0;
+            foreach (var path in hostScenes)
+            {
+                if (!System.IO.File.Exists(path)) continue;
+                if (UnityEngine.SceneManagement.SceneManager.GetSceneByPath(path).isLoaded) continue;
+                EditorSceneManager.OpenScene(path, OpenSceneMode.Additive);
+                reopened++;
+            }
+            hostScenes.Clear();
+            return reopened;
+        }
+
         [MenuItem("Cosmic/Verify/P6 Teardown")]
         public static void P6Teardown()
         {
@@ -1702,7 +1848,8 @@ namespace Cosmic.Editor
             var closed = scene.isLoaded && EditorSceneManager.CloseScene(scene, true);
             var woken = 0;
             for (var i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++) woken += WakeParkedCameras(UnityEngine.SceneManagement.SceneManager.GetSceneAt(i));
-            Debug.Log($"{tag} teardown: {(closed ? "closed" : "did not need to close")} {MainScenePath}, woke {woken} parked camera(s). Nothing was saved.");
+            var reopened = ReopenHostScenes();
+            Debug.Log($"{tag} teardown: {(closed ? "closed" : "did not need to close")} {MainScenePath}, woke {woken} parked camera(s), reopened {reopened} host scene(s). Nothing was saved.");
         }
 
         static Vector2 At(Vector3 world)
@@ -1711,6 +1858,16 @@ namespace Cosmic.Editor
             if (cam == null) return Vector2.zero;
             var screen = cam.WorldToScreenPoint(world);
             return new Vector2(screen.x, screen.y);
+        }
+
+        // A world point is clickable only if it projects in front of the camera and inside the view.
+        static bool OnScreen(Vector3 world)
+        {
+            var cam = Camera.main;
+            if (cam == null) return false;
+            var screen = cam.WorldToScreenPoint(world);
+            return screen.z > 0.1f && screen.x > 8f && screen.y > 8f
+                   && screen.x < cam.pixelWidth - 8f && screen.y < cam.pixelHeight - 8f;
         }
 
         static Vector2 Idle()

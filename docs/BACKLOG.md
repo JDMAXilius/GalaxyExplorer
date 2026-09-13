@@ -246,10 +246,10 @@ into the one scene, built here because Phase 2 is the first thing that needs the
 | CS-128 | TERM | Phase 2 setup — audio library, dim material, host object | CS-126 | done (13 Sep terminal run) |
 | CS-129 | TERM | Phase 2 play-mode verification | CS-128 | done (`[P2] DONE 30/30`, 13 Sep) |
 | CS-130 | TERM | Teardown and commit the generated assets | CS-129 | done (both assets committed 13 Sep) |
-| CS-131 | TERM | Wiring step: the 60 asset references the copy deck cannot own — 38 `Narration`, 15 `ContentPrefab`, 7 `DockThumbnail`. **The only class of loss left in the gate** | CS-127 | todo |
+| CS-131 | TERM | Wiring step: the 60 asset references the copy deck cannot own — 38 `Narration`, 15 `ContentPrefab`, 7 `DockThumbnail`. **The only class of loss left in the gate** | CS-127 | done (45 references wired, 13 Sep) |
 | CS-132 | CC | Extend `docs/copy/` with the four places and seven bodies it never got: `hd110067`, `pinwheel`, `triangulum`, `whirlpool`, `hd110067_star` and `hd110067_b`–`g` | CS-127 | done |
 | CS-133 | CC | Port the layout builder — `solar_row`, `relative_size`, `hd110067_row`, `hd110067_relative`, and the `Layouts` reference on `solar_system_planets` | CS-127 | done |
-| CS-134 | TERM | P1's gate passes: `check_data.py` exits 0 | CS-131, CS-132, CS-133 | todo |
+| CS-134 | TERM | P1's gate passes: `check_data.py` exits 0 | CS-131, CS-132, CS-133 | done (`check_data.py` exits 0: 1010 values, 0 losses) |
 | CS-135 | CC | Split the one-shot pool out of `Audio.cs` — P2's declared debt (278 lines against ~250) | — | done |
 | CS-136 | CC | Rework P3 and beyond — broken out below into CS-137 onward as each phase starts; this row is the index | — | superseded |
 | CS-137 | CC | Rework P3a: `Interaction/Grabbable.cs` (native XRI grab interactable: home pose, restore, placed, auto-return, metre scale limits, upright transformer, Spin/ScaleBy) and `Interaction/Pull.cs` (force-pull as three states, dwell as a hover timer) | CS-126 | done (unrun) |
@@ -349,6 +349,23 @@ left on disk, uncommitted.
 owner's sign-off — it needs a headset and a person, and CS-131's wiring step (narration and ambience are
 null until then) sits in front of it. CS-164, the cutover, deletes 1097 paths and is explicitly gated on
 that sign-off; CS-165 needs CS-164 and a device; CS-166 follows CS-164. None of them were touched here.
+
+**CS-131 and CS-134, 13 Sep 2026.** `Assets/Cosmic/Editor/Migrate.cs`, menu **Cosmic → Build → Wire Old
+References**, carries the references the copy deck cannot own from the old ScriptableObjects into the
+generated ones, matched by id: **45 wired** across 20 places and 28 bodies — the 38 `Narration` and 7
+`DockThumbnail` the gate named, and every old id had a generated asset to land on. `Cosmic/Import Copy`
+never clears a field it does not own, so a re-import keeps them. The file is transitional: it reads
+`Assets/data`, which the cutover deletes, so **CS-166 removes it** along with the rest.
+
+**The gate went 64 → 19 → 0, and the last 19 were not losses.** Every one was either `ContentPrefab`
+(18) or the `Layouts` count (1), and both are the rework doing what it set out to do: the new place
+prefab is named for the place id and replaces the legacy `*_content_prefab` / `nebula_*` the cutover
+deletes, and `solar_system_planets` gained `solar_schematic` and `solar_realistic` after the old pair.
+Wiring the old prefabs in would have pointed `Place.content` at the tree being deleted. So
+`check_data.py` now reports those two shapes as **notes** rather than losses, and only in that exact
+shape — a ContentPrefab whose new name is not the place id is still a loss, and a layout list that does
+not start with the old one is still a loss. **1010 values checked, 0 losses.** This is a judgement call
+about what the gate means, and it is recorded here rather than left in the diff.
 
 *CS-132 done, unrun (13 Sep 2026).* Deck only; no importer change was needed. Seven body blocks and four place blocks ported verbatim from the old assets, plus the wiring fields the importer always read and the deck never carried: `**Bodies:**` on `solar_system` and `hd110067`, `**Destinations:**` on `milky_way` (nine, per GDD 4.3). All four new places are Dimmed, read from the old assets, so no `**Room:**` line. A Python re-implementation of the parser resolves 10/10, 7/7 and 9/9 ids. **Two things ported faithfully rather than fixed, for the owner:** the HD 110067 prose exceeds the deck's word caps (recorded as an exception in the README), and its four measured masses lack the `x 10` mantissa suffix the other bodies carry, so they will render as a bare mantissa with a superscript until the value text is changed — changing it would also change what the parity gate compares against. Terminal: **Cosmic → Import Copy**, then `check_data.py` should drop from 11 missing assets to 0 and `Wire()` should report references wired; then re-run **Cosmic → Build → Layouts** so the two HD 110067 layouts fill their slots.
 

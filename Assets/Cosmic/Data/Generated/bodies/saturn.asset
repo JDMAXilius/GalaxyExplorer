@@ -53,5 +53,5 @@ MonoBehaviour:
     spin: 2
     rotationPeriodHours: 0
     ringOuterRadiusPlanetRadii: 0
-  narration: {fileID: 0}
+  narration: {fileID: 8300000, guid: 90f1d711622a22b469716c332a2b18a2, type: 3}
   ambience: {fileID: 0}

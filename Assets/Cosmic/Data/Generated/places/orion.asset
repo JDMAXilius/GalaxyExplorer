@@ -27,7 +27,7 @@ MonoBehaviour:
     instruction: 
   content: {fileID: 6318737070179139324, guid: b0eb0c903dfdf964d8d3120ee975ab4b, type: 3}
   layouts: []
-  narration: {fileID: 0}
+  narration: {fileID: 8300000, guid: 330693851707b2748b5995f72e10d06b, type: 3}
   ambience: {fileID: 0}
   bodies: []
   destinations: []

@@ -15,7 +15,7 @@ MonoBehaviour:
   id: sagittarius_a
   title: Galactic Center
   subtitle: SAGITTARIUS A*
-  thumbnail: {fileID: 0}
+  thumbnail: {fileID: 21300000, guid: e7ccc3a9344870b468a384694ae33c18, type: 3}
   room: 3
   panel:
     title: Galactic Center - Sagittarius A*
@@ -26,7 +26,7 @@ MonoBehaviour:
     instruction: Walk around it. Two hands change its size.
   content: {fileID: 7434897944724298706, guid: 14fe203b124df7140a404f1a7be73954, type: 3}
   layouts: []
-  narration: {fileID: 0}
+  narration: {fileID: 8300000, guid: 180cfd1d02617a64885859df635dc457, type: 3}
   ambience: {fileID: 0}
   bodies: []
   destinations: []

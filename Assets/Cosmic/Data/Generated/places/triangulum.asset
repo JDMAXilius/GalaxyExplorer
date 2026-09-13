@@ -26,7 +26,7 @@ MonoBehaviour:
     instruction: Grab it with two hands to turn it or change its size.
   content: {fileID: 1996486552423858607, guid: c3b9a514f02266745a3c260e23d7676b, type: 3}
   layouts: []
-  narration: {fileID: 0}
+  narration: {fileID: 8300000, guid: ba40bae2be3b7b54ca52c515a7141b4c, type: 3}
   ambience: {fileID: 0}
   bodies: []
   destinations: []

@@ -25,6 +25,15 @@ SOURCES = {
     "layouts": ["layouts"],
 }
 
+# Two differences the rework means: they are reported as notes, not losses, and only in the exact shape
+# described here - anything else about the same field is still a loss.
+REPLACED = {
+    "ContentPrefab": "the rework builds its own place prefab, named for the place id; the old "
+                     "*_content_prefab and nebula_* prefabs are the legacy tree the cutover deletes",
+    "Layouts": "CS-133 added solar_schematic and solar_realistic after the old pair, which is an "
+               "addition to the front-loaded list, not a replacement of it",
+}
+
 DROPPED = {
     "places": {
         "Kind": "a place is a place; the dock and the map hold their own object references",
@@ -234,6 +243,10 @@ class Report:
         if self.verbose:
             print("ok    %s: %s" % (subject, field))
 
+    def note(self, subject, message):
+        self.checked += 1
+        print("note  %s: %s" % (subject, message))
+
 
 def compare_scalar(report, subject, field, old, new, kind):
     if kind == "number":
@@ -296,10 +309,15 @@ def compare_place(report, subject, old, new, guids):
     for old_key, new_key, kind in [("Id", "id", "text"), ("DisplayName", "title", "text"),
                                    ("SecondLine", "subtitle", "text"), ("Environment", "room", "number")]:
         compare_scalar(report, subject, old_key, old.get(old_key, ""), new.get(new_key, ""), kind)
+    place_id = as_text(new.get("id", "")) or as_text(old.get("Id", ""))
     for old_key, new_key in [("DockThumbnail", "thumbnail"), ("ContentPrefab", "content"),
                              ("Narration", "narration"), ("Ambience", "ambience")]:
-        compare_scalar(report, subject, old_key,
-                       ref_name(old.get(old_key, ""), guids), ref_name(new.get(new_key, ""), guids), "text")
+        old_ref = ref_name(old.get(old_key, ""), guids)
+        new_ref = ref_name(new.get(new_key, ""), guids)
+        if old_key == "ContentPrefab" and place_id and new_ref == place_id and old_ref != new_ref:
+            report.note(subject, "ContentPrefab old=[%s] new=[%s]: %s" % (old_ref, new_ref, REPLACED["ContentPrefab"]))
+            continue
+        compare_scalar(report, subject, old_key, old_ref, new_ref, "text")
     old_panel = old.get("Panel", {}) if isinstance(old.get("Panel"), dict) else {}
     new_panel = new.get("panel", {}) if isinstance(new.get("panel"), dict) else {}
     compare_scalar(report, subject, "Panel.Title", old_panel.get("Title", ""), new_panel.get("title", ""), "text")
@@ -307,7 +325,14 @@ def compare_place(report, subject, old, new, guids):
                    old_panel.get("Instruction", ""), new_panel.get("instruction", ""), "text")
     compare_texts(report, subject, "Panel.Paragraphs", old_panel.get("Paragraphs", []),
                   new_panel.get("paragraphs", []))
-    compare_refs(report, subject, "Layouts", old.get("Layouts", []), new.get("layouts", []), guids)
+    old_layouts = [ref_name(v, guids) for v in listed(old.get("Layouts", []))]
+    new_layouts = [ref_name(v, guids) for v in listed(new.get("layouts", []))]
+    if len(new_layouts) > len(old_layouts) and new_layouts[:len(old_layouts)] == old_layouts:
+        report.note(subject, "Layouts old=%d (%s) new=%d (%s): %s"
+                    % (len(old_layouts), ",".join(old_layouts), len(new_layouts), ",".join(new_layouts),
+                       REPLACED["Layouts"]))
+    else:
+        compare_refs(report, subject, "Layouts", old.get("Layouts", []), new.get("layouts", []), guids)
 
 
 def compare_body(report, subject, old, new, guids):

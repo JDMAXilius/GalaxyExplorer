@@ -15,7 +15,7 @@ MonoBehaviour:
   id: solar_system
   title: Solar System
   subtitle: THE ORBITS
-  thumbnail: {fileID: 0}
+  thumbnail: {fileID: 21300000, guid: 216753d352011214da38c11eaac98262, type: 3}
   room: 1
   panel:
     title: Solar System
@@ -26,7 +26,7 @@ MonoBehaviour:
     instruction: One hand moves the model, two hands tilt or resize it.
   content: {fileID: 5476566143895782758, guid: d2a496f95bbdeaa4c8462c93d145d7da, type: 3}
   layouts: []
-  narration: {fileID: 0}
+  narration: {fileID: 8300000, guid: 124d08c41268a5d4e9d6c6c90f9480f0, type: 3}
   ambience: {fileID: 0}
   bodies:
   - {fileID: 11400000, guid: ac997cd2758536f4b82d26fc368d028d, type: 2}

@@ -15,7 +15,7 @@ MonoBehaviour:
   id: galaxies
   title: Galaxies
   subtitle: A SKY FULL OF THEM
-  thumbnail: {fileID: 0}
+  thumbnail: {fileID: 21300000, guid: e8d7a7e78565bc048accbd8a0441db54, type: 3}
   room: 3
   panel:
     title: Galaxies
@@ -26,7 +26,7 @@ MonoBehaviour:
     instruction: Use the passthrough button to put them in your room or in the dark.
   content: {fileID: 964365405489064641, guid: 9b9b807801ca7f0469ac5b584c6b4827, type: 3}
   layouts: []
-  narration: {fileID: 0}
+  narration: {fileID: 8300000, guid: e07c3338431c4e14f9dd0a3dcb737c9a, type: 3}
   ambience: {fileID: 0}
   bodies: []
   destinations: []

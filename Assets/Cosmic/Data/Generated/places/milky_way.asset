@@ -15,7 +15,7 @@ MonoBehaviour:
   id: milky_way
   title: Milky Way
   subtitle: OUR GALAXY
-  thumbnail: {fileID: 0}
+  thumbnail: {fileID: 21300000, guid: 07bed97deb206cf4290dbc415dc1c9ac, type: 3}
   room: 1
   panel:
     title: Milky Way
@@ -26,7 +26,7 @@ MonoBehaviour:
     instruction: Point at a label and pinch to open that destination.
   content: {fileID: 7769087991052026501, guid: c53685c660ac42e4b989763c8cefe5bf, type: 3}
   layouts: []
-  narration: {fileID: 0}
+  narration: {fileID: 8300000, guid: 9f9229727bfc5814d954bbc2d626c1bb, type: 3}
   ambience: {fileID: 0}
   bodies: []
   destinations:

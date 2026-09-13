@@ -29,7 +29,7 @@ MonoBehaviour:
   layouts:
   - {fileID: 11400000, guid: e42d0986eb2b5dd429ebec36f5d07879, type: 2}
   - {fileID: 11400000, guid: abcc6218da2cece49bd0263384c843ef, type: 2}
-  narration: {fileID: 0}
+  narration: {fileID: 8300000, guid: 2ed0a26513cf19047b345ddb0f834946, type: 3}
   ambience: {fileID: 0}
   bodies:
   - {fileID: 11400000, guid: b946defc5d04122479d64a9aa99fb5d5, type: 2}
