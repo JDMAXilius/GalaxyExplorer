@@ -248,10 +248,12 @@ into the one scene, built here because Phase 2 is the first thing that needs the
 | CS-130 | TERM | Teardown and commit the generated assets | CS-129 | todo |
 | CS-131 | TERM | Wiring step: the 52 asset references the copy deck cannot own — 34 `Narration`, 11 `ContentPrefab`, 7 `DockThumbnail` | CS-127 | todo |
 | CS-132 | CC | Extend `docs/copy/` with the four places and seven bodies it never got: `hd110067`, `pinwheel`, `triangulum`, `whirlpool`, `hd110067_star` and `hd110067_b`–`g` | CS-127 | todo |
-| CS-133 | CC | Port the layout builder — `solar_row`, `relative_size`, `hd110067_row`, `hd110067_relative`, and the `Layouts` reference on `solar_system_planets` | CS-127 | todo |
+| CS-133 | CC | Port the layout builder — `solar_row`, `relative_size`, `hd110067_row`, `hd110067_relative`, and the `Layouts` reference on `solar_system_planets` | CS-127 | done (unrun) |
 | CS-134 | TERM | P1's gate passes: `check_data.py` exits 0 | CS-131, CS-132, CS-133 | todo |
 | CS-135 | CC | Split the one-shot pool out of `Audio.cs` — P2's declared debt (278 lines against ~250) | — | done |
 | CS-136 | CC | Rework P3 and beyond: `App` and `Director`, then `Interaction/`, `UI/`, `Shaders/`, `Prefabs/`, `Content/` and the one scene. Break into tickets once P1 and P2 are closed | CS-134, CS-129 | todo |
+
+*CS-133 done, unrun (13 Sep 2026, commit `183f66f`).* `Assets/Cosmic/Editor/Content.cs`, menu **Cosmic → Build → Layouts** — the first part of the plan's single data-driven content builder. Every position, rotation and scale of all four layouts matches the old assets to seven decimal places, checked by reimplementing the arithmetic in Python; slots hold a `Body` object reference rather than a string id. Two derivations are typed on purpose and the file says so: Relative Size uses the GDD's own diameter table (scaling from `diameterKm` puts Mars and Jupiter outside parity tolerance and loses Pluto's deliberate 5 mm), and the two ring spans, because the generated bodies carry no ring figure yet. **Expected on the first run, not a regression:** the two HD 110067 layouts build with zero slots and log one `no body asset` error per body until CS-132's bodies are imported; re-run after CS-132 and they fill with no code change. Terminal: compile, run twice (second run logs `updated`, no GUID churn), then `python3 tools/parity/check_data.py --kinds layouts --skip 'hd110067.*'` should report zero losses for `solar_row` and `relative_size`, and `solar_system_planets.asset` should hold both in that order. Saturn's rings 2.5 mm from Jupiter, by hand, as the original builder recorded.
 
 *CS-126 — compile the Cosmic assemblies.* `pwsh tools/mcp/compile.ps1`, then
 `node tools/mcp/umcp.js run tools/mcp/rework/p0_compile.cs`, then
