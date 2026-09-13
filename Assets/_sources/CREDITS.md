@@ -66,6 +66,12 @@ from the MIT project, so nothing was downloaded for them:
 | Planet map (optional upgrade) | Moon | USGS Astrogeology LROC | Deferred. `Assets/Textures/moon_diffuse_speculare_texture.tga` is 4096x2048 but is **not** an equirectangular map — it is an atlas laid out for the custom `moon_model` UVs, with specular in the alpha channel. A USGS LROC map is not a drop-in; swapping it needs a re-UV or a re-projection plus specular repacking, which belongs with the Phase 3 material work, not with sourcing. |
 | Planet map (optional upgrade) | Earth | NASA Blue Marble | Deferred for the same reason: `Assets/Textures/earth_diffude_specular_texture.tga` is a 4096x4096 atlas (not 2:1 equirect) with specular in alpha, and there are matching normal/cloud plates keyed to the same layout. |
 
+## Sky panorama generated 13 September 2026
+
+| File | How it was made | Why it is not a photograph |
+|---|---|---|
+| `Assets/Textures/nebulae/domes/deep_sky_panorama.png` | Higgsfield, `gpt_image_2_5`, 1344 x 576, one prompt asking for at least 80 per cent empty black, sparse separated pinpoint stars and a single faint distant glow. Job `a29004e6-a293-41e7-9b23-268feb3ec587`. | **Generated, not observed, and it is the only part of a nebula place that is.** The gas, the dust, the stars in the volume and every colour in them come from the object's own telescope plate. No telescope has taken a full-sphere plate of the sky *around* any of these objects, so a real one cannot exist - which is exactly why the nebula's own square plate could never be the dome, and why it was being stretched across a patch of sky and washing the gas out. Shared by all seven nebulae: a starfield beyond the gas is not specific to which nebula you are standing in. |
+
 ## Narration generated 12 September 2026
 
 The 22 original narration clips are the recorded performance inherited with Microsoft's Galaxy

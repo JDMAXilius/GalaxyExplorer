@@ -70,6 +70,14 @@ namespace CosmicSimulation.EditorTools
         private const string AtlasPath = "Assets/Textures/stars_small_atlas.tga";
         private const string NodeName = "nebula_volume";
 
+        /// <summary>
+        /// The sky beyond the gas: a 360 panorama that is mostly empty black, with sparse separated stars and
+        /// one faint distant glow. Generated rather than photographed, because no telescope took a full-sphere
+        /// plate of the sky around any of these objects - which is exactly why the nebula's own plate could
+        /// never be the dome. Credited in Assets/_sources/CREDITS.md.
+        /// </summary>
+        private const string SkyPanoramaPath = "Assets/Textures/nebulae/domes/deep_sky_panorama.png";
+
         /// <summary>Working resolution the plate is read at. 512 is ample: the cloud is sampled, not copied.</summary>
         private const int SampleSize = 512;
 
@@ -129,7 +137,11 @@ namespace CosmicSimulation.EditorTools
             // a 5 m room reads as sparkle, every grain countable. At 0.075 the grains merge and keep merging:
             // additive light saturates, the Helix's blue and gold both go white, and the whole nebula is milk.
             // 0.03 is where the gas is continuous and still coloured.
-            new RoleSpec(Role.Clouds, 12000, 3.0f, false, 0.030f),
+            // Fewer, smaller and dimmer than a first instinct says. Twelve thousand sprites at 0.03 through a
+            // 5 m sphere is not gas, it is a wall: it closes over the sky in every direction and there is
+            // nothing to see past it - no black, no individual stars, no colour, because additive light with
+            // nothing between it saturates. Gas has to be something you see *through*.
+            new RoleSpec(Role.Clouds,  6000, 3.0f, false, 0.022f),
             new RoleSpec(Role.Dust,    8000, 2.4f, true,  0.028f),
             new RoleSpec(Role.Stars,  20000, 0.35f, false, 0.010f),
         };
@@ -446,7 +458,7 @@ namespace CosmicSimulation.EditorTools
                     // Held back, because this layer overlaps itself: twelve thousand additive sprites through
                     // one volume add up, and at full plate brightness the sum saturates and every colour in the
                     // nebula ends as white. The colour has to survive the stacking, not just the sample.
-                    return plate * 0.55f;
+                    return plate * 0.32f;
             }
         }
 
@@ -747,6 +759,53 @@ namespace CosmicSimulation.EditorTools
 
         // ---------- attaching
 
+        /// <summary>
+        /// Points the surrounding shell at the deep-sky panorama and wraps it right round.
+        ///
+        /// <para>The shell was already here and already wrong for this job in one specific way: it mapped the
+        /// nebula's own square plate onto a <i>patch</i> of the dome - 0.42 of the azimuth by 0.28 of the
+        /// elevation - which is what a photograph pinned to part of the sky looks like, and from inside it was
+        /// the whole view at full brightness, a lavender wash with the gas lost in it. A panorama is a
+        /// different kind of image: it is meant to wrap, so the spreads go to 1, and it is mostly black, so it
+        /// gives the volume what it never had - somewhere to end, individual stars beyond the gas, and dark to
+        /// read the colours against.</para>
+        /// </summary>
+        private static string Sky(GameObject root, string id)
+        {
+            var shell = root.transform.Find("place_shell");
+            if (shell == null) return "none";
+
+            var panorama = AssetDatabase.LoadAssetAtPath<Texture2D>(SkyPanoramaPath);
+            if (panorama == null) return "missing panorama";
+
+            shell.gameObject.SetActive(true);
+            var touched = 0;
+
+            // By path, not through the renderers: PlaceShell holds its two materials on the component and
+            // builds its dome at run time, so walking the prefab's renderers finds nothing to write to.
+            foreach (var suffix in new[] { "sky", "gas" })
+            {
+                var materialPath = $"Assets/materials/place_shells/place_shell_{id}_{suffix}.mat";
+                var material = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
+                {
+                    if (material == null || !material.HasProperty("_SpreadU")) continue;
+
+                    material.SetTexture("_MainTex", panorama);
+                    material.SetFloat("_SpreadU", 1f);
+                    material.SetFloat("_SpreadV", 1f);
+                    material.SetFloat("_PlateYaw", 0f);
+                    material.SetFloat("_PlatePitch", 0f);
+
+                    // A backdrop, not a light source: the gas in front has to stay the brightest thing.
+                    if (material.HasProperty("_PlateGain")) material.SetFloat("_PlateGain", 0.55f);
+                    EditorUtility.SetDirty(material);
+                    touched++;
+                }
+            }
+
+            return touched > 0 ? $"wrapped on {touched} material(s)" : "no shell material takes a panorama";
+        }
+
         private static bool Attach(ExperienceModule module, Spec spec,
                                    List<(RoleSpec Role, NebulaVolumeData Data, Material Material)> layers,
                                    StringBuilder report)
@@ -778,7 +837,7 @@ namespace CosmicSimulation.EditorTools
                     // with the dome switched off is the Helix's blue-green interior and orange rim against
                     // black, and with it on everything is a pale lavender haze. A dimmed backdrop may yet be
                     // better than none; that is a look decision for the headset.
-                    if (!child.name.StartsWith("card_") && child.name != "place_shell") continue;
+                    if (!child.name.StartsWith("card_")) continue;
                     child.gameObject.SetActive(false);
                     darkened++;
                 }
@@ -812,10 +871,12 @@ namespace CosmicSimulation.EditorTools
                          .Append($"{layer.Role.Role.ToString().ToLowerInvariant()} {layer.Data.points.Length:N0}");
                 }
 
+                var sky = Sky(root, spec.Id);
+
                 PrefabUtility.SaveAsPrefabAsset(root, path);
 
                 report.AppendLine(
-                    $"  {spec.Id}: {total:N0} points ({tally}), {spec.Model} model, radius " +
+                    $"  {spec.Id}: {total:N0} points ({tally}), sky {sky}, {spec.Model} model, radius " +
                     $"{spec.RadiusMetres:0.00} m, plate {Path.GetFileNameWithoutExtension(spec.PlatePath)}" +
                     (stripped > 0 ? $" (replaced {stripped} existing)" : string.Empty) +
                     (darkened > 0 ? $", {darkened} flat layer(s) switched off" : string.Empty));
