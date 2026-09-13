@@ -87,6 +87,7 @@ namespace GalaxyExplorer.Editor
             // 1. The intro must not eat a click. Asking for a place while it runs should end it and open that
             //    place - the defect this walk was written for.
             var first = FirstModule();
+            var askedDuringIntro = false;
             Add(0.4f, () =>
             {
                 Check(_director != null, "the director is in the scene");
@@ -96,11 +97,15 @@ namespace GalaxyExplorer.Editor
                     Skip("the intro click: the intro was already over when the walk started");
                     return;
                 }
-                if (first != null) _director.Switch(first);
+                if (first == null) return;
+                askedDuringIntro = true;
+                _director.Switch(first);
             });
             Add(SettleSeconds * 3f, () =>
             {
-                if (first == null) return;
+                // Only assert what was actually exercised: asserting after a skip turns "we did not test this"
+                // into a failure, which is worse than saying nothing.
+                if (!askedDuringIntro) return;
                 Check(!_director.IntroRunning, "a place asked for during the intro ends the intro");
                 Check(_director.Current == first, $"and that place opens ({Name(_director.Current)})");
             });
@@ -123,7 +128,11 @@ namespace GalaxyExplorer.Editor
                 });
                 Add(0.4f, () => { if (clickable) _holding = () => Press(ScreenOf(wanted.transform), true); });
                 Add(0.2f, () => { if (clickable) { _holding = null; Press(ScreenOf(wanted.transform), false); } });
-                Add(SettleSeconds, () =>
+                // A switch is a scene load for some places, and a fixed wait would call the slowest of them a
+                // failure. Wait for the director to stop switching, up to a bound.
+                Add(0.2f, () => { });
+                AddWaitWhile(() => _director.IsSwitching, 6f);
+                Add(0.4f, () =>
                 {
                     // The decision was made before the click, not after: a dock that hides itself on a switch
                     // would otherwise turn a real result into a silent skip.
@@ -254,6 +263,23 @@ namespace GalaxyExplorer.Editor
         }
 
         private static void Add(float wait, Action run) => Steps.Add(new Step { Wait = wait, Run = run });
+
+        // Polls a condition on the step clock rather than blocking: the walk runs from EditorApplication.update
+        // and a spin here would freeze the editor it is measuring.
+        private static void AddWaitWhile(Func<bool> busy, float limitSeconds)
+        {
+            var started = -1.0;
+            Add(0.1f, () =>
+            {
+                if (started < 0) started = EditorApplication.timeSinceStartup;
+                if (busy() && EditorApplication.timeSinceStartup - started < limitSeconds)
+                {
+                    // Re-queue this step by stepping the cursor back one; the clock does the waiting.
+                    _cursor--;
+                    _due = EditorApplication.timeSinceStartup + 0.1f;
+                }
+            });
+        }
 
         private static void Check(bool ok, string what)
         {

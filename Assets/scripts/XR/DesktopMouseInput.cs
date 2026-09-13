@@ -156,7 +156,13 @@ namespace GalaxyExplorer.XR
             var hit = !overUI && Physics.Raycast(ray, out var hitInfo, RaycastDistance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide)
                 ? hitInfo
                 : (RaycastHit?)null;
-            var target = hit.HasValue ? hit.Value.collider.GetComponent<GEInteractable>() : null;
+            // GetComponentInParent, not GetComponent: an interactable owns its child colliders, which is how
+            // XRI treats them for the hands, and several of ours put the collider on a child on purpose - a
+            // destination tag's box lives on the pill that grows under the pointer, not on the tag root that
+            // carries the LabelButton. Looking only at the collider's own object meant a mouse click on every
+            // Milky Way destination tag hit the collider, found no interactable, and was dropped in silence,
+            // while the same tag answered a hand ray. Hands worked, the monitor did not.
+            var target = hit.HasValue ? hit.Value.collider.GetComponentInParent<GEInteractable>() : null;
 
             if (_pressed == null && !_orbiting)
             {
