@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51e790f7b7cd42c0908778fa98a326ea, type: 3}
+  m_Name: crab
+  m_EditorClassIdentifier: Cosmic.Runtime::Cosmic.Place
+  id: crab
+  title: Crab Nebula
+  subtitle: Supernova remnant - 6,500 light-years
+  thumbnail: {fileID: 0}
+  room: 2
+  panel:
+    title: Crab Nebula
+    paragraphs:
+    - The wreckage of a star that exploded in 1054, bright enough that Chinese and Japanese astronomers recorded seeing it in daylight for more than three weeks.
+    - At its centre spins a neutron star the size of a city, turning thirty times a second. Its beam sweeps the whole cloud and keeps it glowing nearly a thousand years later.
+    - What surrounds you is an impression built from the photograph, projected around you so the filaments can be seen at size. In reality this is nine light-years of expanding debris viewed from four thousand light-years away, and no camera has ever been within it.
+    stats: []
+    instruction: 
+  content: {fileID: 0}
+  layouts: []
+  narration: {fileID: 0}
+  ambience: {fileID: 0}
+  bodies: []
+  destinations: []
+  galaxy: {fileID: 0}
+  volume:
+    points: {fileID: 0}
+    radiusMetres: 0
+    plateAssetPath: 
+    provenance: 

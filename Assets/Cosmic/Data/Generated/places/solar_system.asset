@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51e790f7b7cd42c0908778fa98a326ea, type: 3}
+  m_Name: solar_system
+  m_EditorClassIdentifier: Cosmic.Runtime::Cosmic.Place
+  id: solar_system
+  title: Solar System
+  subtitle: THE ORBITS
+  thumbnail: {fileID: 0}
+  room: 1
+  panel:
+    title: Solar System
+    paragraphs:
+    - Eight planets, several dwarf planets, and countless moons, asteroids and comets orbit one ordinary star. The Sun holds 99.8 per cent of all the mass; everything else is the remainder.
+    - Sizes and spacing here are simplified. At true scale the planets would be invisible specks and Neptune would sit far outside your room.
+    stats: []
+    instruction: One hand moves the model, two hands tilt or resize it.
+  content: {fileID: 0}
+  layouts: []
+  narration: {fileID: 0}
+  ambience: {fileID: 0}
+  bodies: []
+  destinations: []
+  galaxy: {fileID: 0}
+  volume:
+    points: {fileID: 0}
+    radiusMetres: 0
+    plateAssetPath: 
+    provenance: 

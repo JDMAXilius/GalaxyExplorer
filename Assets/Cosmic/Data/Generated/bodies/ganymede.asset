@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e32477ecd874bb5888c5a3b12435c0e, type: 3}
+  m_Name: ganymede
+  m_EditorClassIdentifier: Cosmic.Runtime::Cosmic.Body
+  id: ganymede
+  title: Ganymede
+  subtitle: JUPITER
+  paragraph: The largest moon in the solar system, wider than Mercury, and the only one known to make its own magnetic field.
+  stats:
+  - label: ORBITS
+    value: Jupiter
+    unit: 
+    exponent: 0
+  - label: DIAMETER
+    value: 5,268
+    unit: km
+    exponent: 0
+  - label: ONE ORBIT
+    value: 7.2
+    unit: days
+    exponent: 0
+  kind: 1
+  moons: []
+  orbits: {fileID: 11400000, guid: 1f10adebc00b1bd4f9d6c4217b055541, type: 2}
+  diameterKm: 5268
+  orbitSemiMajorAu: 0
+  sourcePrefab: {fileID: 0}
+  appearance:
+    bodyClass: 0
+    illuminantTemperatureK: 5772
+    equilibriumTemperatureK: 0
+    insolationEarth: 0
+    geometricAlbedo: -1
+    axialTiltDegrees: 0
+    spin: 2
+    rotationPeriodHours: 0
+    ringOuterRadiusPlanetRadii: 0
+  narration: {fileID: 0}
+  ambience: {fileID: 0}

@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51e790f7b7cd42c0908778fa98a326ea, type: 3}
+  m_Name: pillars
+  m_EditorClassIdentifier: Cosmic.Runtime::Cosmic.Place
+  id: pillars
+  title: Pillars of Creation
+  subtitle: Star-forming region - 6,500 light-years
+  thumbnail: {fileID: 0}
+  room: 2
+  panel:
+    title: Pillars of Creation
+    paragraphs:
+    - Towers of cold gas and dust several light-years tall, standing in the Eagle Nebula and sculpted by radiation pouring off young stars nearby.
+    - New stars are condensing inside the columns while the same radiation eats them away from outside. Hubble's photograph of them in 1995 became one of the most recognised images in astronomy.
+    - What surrounds you is an impression built from the Hubble and Webb photographs, projected around you so the columns stand at size. They are four to five light-years tall and are genuinely something you could be among; no camera has been.
+    stats: []
+    instruction: 
+  content: {fileID: 0}
+  layouts: []
+  narration: {fileID: 0}
+  ambience: {fileID: 0}
+  bodies: []
+  destinations: []
+  galaxy: {fileID: 0}
+  volume:
+    points: {fileID: 0}
+    radiusMetres: 0
+    plateAssetPath: 
+    provenance: 

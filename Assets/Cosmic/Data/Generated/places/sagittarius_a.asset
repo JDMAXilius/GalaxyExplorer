@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51e790f7b7cd42c0908778fa98a326ea, type: 3}
+  m_Name: sagittarius_a
+  m_EditorClassIdentifier: Cosmic.Runtime::Cosmic.Place
+  id: sagittarius_a
+  title: Galactic Center
+  subtitle: SAGITTARIUS A*
+  thumbnail: {fileID: 0}
+  room: 3
+  panel:
+    title: Galactic Center - Sagittarius A*
+    paragraphs:
+    - At the centre of the Milky Way is a black hole of about 4.3 million solar masses, 26,000 light-years from Earth. Its event horizon measures roughly 25 million kilometres across, some eighteen times the width of the Sun.
+    - The hole itself cannot be seen, only the superheated gas circling it. Light bends so sharply here that the far side of the disc appears above and below the shadow. The Event Horizon Telescope photographed it in 2022.
+    stats: []
+    instruction: Walk around it. Two hands change its size.
+  content: {fileID: 0}
+  layouts: []
+  narration: {fileID: 0}
+  ambience: {fileID: 0}
+  bodies: []
+  destinations: []
+  galaxy: {fileID: 0}
+  volume:
+    points: {fileID: 0}
+    radiusMetres: 0
+    plateAssetPath: 
+    provenance: 

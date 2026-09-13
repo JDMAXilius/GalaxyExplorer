@@ -6,9 +6,6 @@ namespace Cosmic
 {
     public class Audio : MonoBehaviour
     {
-        const int SfxVoices = 8;
-        const float SameClipSeconds = 0.05f;
-
         [SerializeField] AudioLibrary library;
         [SerializeField] float crossfadeSeconds = 2f;
         [SerializeField, Range(0f, 1f)] float musicLevel = 0.35f;
@@ -17,15 +14,13 @@ namespace Cosmic
         [SerializeField, Range(0f, 1f)] float ambienceLevel = 0.35f;
         [SerializeField] float ambienceFadeSeconds = 1f;
 
-        readonly AudioSource[] sfxSources = new AudioSource[SfxVoices];
-        readonly float[] sfxStarted = new float[SfxVoices];
         readonly AudioSource[] musicSources = new AudioSource[2];
         readonly float[] level = new float[2];
         readonly float[] target = new float[2];
-        readonly Dictionary<AudioClip, float> lastPlayed = new Dictionary<AudioClip, float>();
         readonly Queue<AudioClip> voiceQueue = new Queue<AudioClip>();
         readonly List<AudioSource> loops = new List<AudioSource>();
 
+        SfxPool sfx;
         AudioSource voiceSource;
         AudioSource ambienceSource;
         AudioClip ambiencePending;
@@ -47,20 +42,7 @@ namespace Cosmic
         public void Play(AudioClip clip, Transform at = null, float volume = 1f)
         {
             Build();
-            if (clip == null) return;
-            var now = Time.unscaledTime;
-            if (at == null)
-            {
-                if (lastPlayed.TryGetValue(clip, out var last) && now - last < SameClipSeconds) return;
-                lastPlayed[clip] = now;
-            }
-            var source = Take(now);
-            source.Stop();
-            source.transform.position = at != null ? at.position : transform.position;
-            source.spatialBlend = at != null ? 1f : 0f;
-            source.clip = clip;
-            source.volume = volume;
-            source.Play();
+            sfx.Play(clip, at, volume);
         }
 
         public void Say(AudioClip clip, bool replaceQueue = false)
@@ -155,7 +137,7 @@ namespace Cosmic
             ambienceNow = ambienceGoal = 0f;
             Hush(ambienceSource);
             StopVoice();
-            foreach (var s in sfxSources) if (s != null) s.Stop();
+            sfx.Stop();
             foreach (var l in loops) if (l != null) l.Stop();
         }
 
@@ -226,24 +208,12 @@ namespace Cosmic
             Hush(musicSources[index]);
         }
 
-        AudioSource Take(float now)
-        {
-            var oldest = 0;
-            for (var i = 0; i < SfxVoices; i++)
-            {
-                if (sfxSources[i] == null) sfxSources[i] = Make("sfx_" + i, library != null ? library.sfx : null, 0f, false);
-                if (!sfxSources[i].isPlaying) { oldest = i; break; }
-                if (sfxStarted[i] < sfxStarted[oldest]) oldest = i;
-            }
-            sfxStarted[oldest] = now;
-            return sfxSources[oldest];
-        }
-
         void Build()
         {
             if (built) return;
             built = true;
             var has = library != null;
+            sfx = new SfxPool(transform, () => library != null ? library.sfx : null);
             voiceSource = Make("voice", has ? library.voice : null, 0f, false);
             voiceSource.volume = 1f;
             ambienceSource = Make("ambience", has ? library.ambience : null, 0f, true);

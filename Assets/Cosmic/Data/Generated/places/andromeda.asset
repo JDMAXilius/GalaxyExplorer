@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51e790f7b7cd42c0908778fa98a326ea, type: 3}
+  m_Name: andromeda
+  m_EditorClassIdentifier: Cosmic.Runtime::Cosmic.Place
+  id: andromeda
+  title: Andromeda
+  subtitle: M31
+  thumbnail: {fileID: 0}
+  room: 1
+  panel:
+    title: Andromeda (M31)
+    paragraphs:
+    - The nearest large galaxy to our own is a spiral of about a trillion stars, 2.5 million light-years away. On a dark night it can be seen without a telescope, the most distant thing most people ever see with their own eyes.
+    - It is heading toward us at about 110 kilometres per second. In roughly four and a half billion years the two galaxies will merge.
+    stats: []
+    instruction: Grab with two hands to turn it or change its size.
+  content: {fileID: 0}
+  layouts: []
+  narration: {fileID: 0}
+  ambience: {fileID: 0}
+  bodies: []
+  destinations: []
+  galaxy: {fileID: 0}
+  volume:
+    points: {fileID: 0}
+    radiusMetres: 0
+    plateAssetPath: 
+    provenance: 

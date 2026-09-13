@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e32477ecd874bb5888c5a3b12435c0e, type: 3}
+  m_Name: sun
+  m_EditorClassIdentifier: Cosmic.Runtime::Cosmic.Body
+  id: sun
+  title: The Sun
+  subtitle: OUR STAR
+  paragraph: A middle-aged yellow dwarf star holding 99.8 per cent of the solar system's mass. In its core, hydrogen fuses into helium at fifteen million degrees. The light that leaves its surface takes eight minutes and twenty seconds to cross the distance to Earth.
+  stats:
+  - label: Diameter
+    value: 1,392,700
+    unit: km
+    exponent: 0
+  - label: Mass
+    value: 1.989 x 10
+    unit: kg
+    exponent: 30
+  - label: Orbit of the Galaxy
+    value: 230 million
+    unit: years
+    exponent: 0
+  - label: Day Length
+    value: 25.4
+    unit: days
+    exponent: 0
+  kind: 1
+  moons: []
+  orbits: {fileID: 0}
+  diameterKm: 1392700
+  orbitSemiMajorAu: 0
+  sourcePrefab: {fileID: 0}
+  appearance:
+    bodyClass: 0
+    illuminantTemperatureK: 5772
+    equilibriumTemperatureK: 0
+    insolationEarth: 0
+    geometricAlbedo: -1
+    axialTiltDegrees: 0
+    spin: 2
+    rotationPeriodHours: 0
+    ringOuterRadiusPlanetRadii: 0
+  narration: {fileID: 0}
+  ambience: {fileID: 0}

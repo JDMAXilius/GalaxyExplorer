@@ -5,10 +5,16 @@
 Seven scene panels. Each has a title, two paragraphs, and one instruction line
 shown in the secondary colour. ASCII only.
 
+*A **Room** line is optional and is the one field here that is not copy: state it only when the
+room is not the `Dimmed` default, values `Passthrough | Dimmed | Halo | Black`. It is parsed
+case-insensitively and a value that does not parse is **silently ignored**, leaving the default —
+so a full-black place with no Room line renders dimmed and nothing reports it.*
+
 ---
 
 ## cosmic_web
 **Title:** Cosmic Web
+**Room:** Black
 **Dock:** Cosmic Web
 **Second line:** THE LARGEST SCALE
 
@@ -25,6 +31,7 @@ map it by the galaxies strung along it, the way dew picks out a spider's web.
 
 ## galaxies
 **Title:** Galaxies
+**Room:** Black
 **Dock:** Galaxies
 **Second line:** A SKY FULL OF THEM
 
@@ -104,6 +111,7 @@ is a beach ball, and Earth sits in your palm.
 
 ## sagittarius_a
 **Title:** Galactic Center - Sagittarius A*
+**Room:** Black
 **Dock:** Galactic Center
 **Second line:** SAGITTARIUS A*
 

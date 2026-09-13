@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51e790f7b7cd42c0908778fa98a326ea, type: 3}
+  m_Name: galaxies
+  m_EditorClassIdentifier: Cosmic.Runtime::Cosmic.Place
+  id: galaxies
+  title: Galaxies
+  subtitle: A SKY FULL OF THEM
+  thumbnail: {fileID: 0}
+  room: 3
+  panel:
+    title: Galaxies
+    paragraphs:
+    - Every smudge of light here is a galaxy, and each one holds billions of stars. Hubble and Webb found thousands of them in patches of sky no wider than a grain of sand held at arm's length.
+    - Their light has been travelling for billions of years, so looking out into a field like this is also looking a long way back in time.
+    stats: []
+    instruction: Use the passthrough button to put them in your room or in the dark.
+  content: {fileID: 0}
+  layouts: []
+  narration: {fileID: 0}
+  ambience: {fileID: 0}
+  bodies: []
+  destinations: []
+  galaxy: {fileID: 0}
+  volume:
+    points: {fileID: 0}
+    radiusMetres: 0
+    plateAssetPath: 
+    provenance: 

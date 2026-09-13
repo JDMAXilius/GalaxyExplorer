@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51e790f7b7cd42c0908778fa98a326ea, type: 3}
+  m_Name: cosmic_web
+  m_EditorClassIdentifier: Cosmic.Runtime::Cosmic.Place
+  id: cosmic_web
+  title: Cosmic Web
+  subtitle: THE LARGEST SCALE
+  thumbnail: {fileID: 0}
+  room: 3
+  panel:
+    title: Cosmic Web
+    paragraphs:
+    - The universe at its largest scale is not spread evenly. Matter gathers along filaments that run for hundreds of millions of light-years, meeting at dense knots where clusters of galaxies form, with near-empty voids in between.
+    - Most of this structure is dark matter, which no telescope can see directly. We map it by the galaxies strung along it, the way dew picks out a spider's web.
+    stats: []
+    instruction: Grab with two hands to turn the web or change its size.
+  content: {fileID: 0}
+  layouts: []
+  narration: {fileID: 0}
+  ambience: {fileID: 0}
+  bodies: []
+  destinations: []
+  galaxy: {fileID: 0}
+  volume:
+    points: {fileID: 0}
+    radiusMetres: 0
+    plateAssetPath: 
+    provenance: 

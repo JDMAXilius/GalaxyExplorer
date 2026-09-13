@@ -220,6 +220,119 @@ builders before anything asks a nebula, the cosmic web or Andromeda to be grabbe
 
 ---
 
+## Rework — the from-scratch rebuild under `Assets/Cosmic/` (12 Sep 2026)
+
+Everything under `Assets/Cosmic/` is a rebuild that sits **beside** the old tree in its own
+assembly, which is not auto-referenced, so the old code cannot see it and stays bootable until
+a cutover phase. Its rules are `Assets/Cosmic/RULES.md` and they are binding on this track;
+read them before touching anything here. The old `Assets/scripts/` tree is never edited *from*
+this track.
+
+Three phases landed before this file had any row for them, authored in a cloud session and
+tracked only by their commit messages. Their rows are written here after the fact:
+
+| Phase | Commit | What landed |
+|---|---|---|
+| P0 | `734eb06b` | Two asmdefs, `actions.inputactions` (XR map verbatim from XRI, desktop map = the whole key contract), `Theme`, `AudioLibrary`, `RULES.md` |
+| P1 | `56978e9e` | Data layer — five ScriptableObject types replace nine; `Body` merges the copy record and the astrophysics profile; `Copy.cs` importer + `Markdown.cs`; `tools/parity/check_data.py` |
+| P2 | `e1edf980` | `Audio` (four channels on one bus), `Room`, `Prefs`, `Tween` — four files replace fourteen |
+
+**Budget** (`RULES.md`, a budget and not a quota — a file that takes runtime past 29 displaces one):
+
+| Kind | Target | Now |
+|---|---|---|
+| Runtime scripts | 29 | 12 |
+| Editor scripts | 6 | 2 |
+| Shaders | 16 | 0 |
+| Scenes | 1 | 0 |
+
+Two of the three permitted singletons do not exist yet: `App` and `Director`. `Room` does.
+
+### The gates
+
+`RULES.md`: *every exit gate is a play-mode or device observation, not a compile.* "It builds"
+closes nothing.
+
+| ID | Track | Title | Depends | Status |
+|---|---|---|---|---|
+| CS-126 | TERM | Run P1's exit gate for the first time: **Cosmic → Import Copy**, then `python tools/parity/check_data.py`; categorise every loss | — | done |
+| CS-127 | CC | Copy deck states the room for the three full-black places | CS-126 | done |
+| CS-128 | CC | Split the one-shot pool out of `Audio.cs` — P2's declared debt (278 lines against ~250) | — | done |
+| CS-129 | TERM | Wiring step: resolve the 52 asset references the copy deck cannot own — 34 `Narration`, 11 `ContentPrefab`, 7 `DockThumbnail` | CS-126 | todo |
+| CS-130 | CC | Extend `docs/copy/` with the four places and seven bodies it never got: `hd110067`, `pinwheel`, `triangulum`, `whirlpool`, `hd110067_star` and `hd110067_b`–`g` | CS-126 | todo |
+| CS-131 | CC | Port the layout builder — `solar_row`, `relative_size`, `hd110067_row`, `hd110067_relative`, and the `Layouts` reference on `solar_system_planets` | CS-126 | todo |
+| CS-132 | TERM | P1's gate passes: `check_data.py` exits 0 | CS-129, CS-130, CS-131 | todo |
+| CS-133 | CC | Author the `AudioLibrary` asset — the `Sfx` enum → clip mapping, the per-room music beds, the mixer groups. None exists, so every channel runs with a null library | — | todo |
+| CS-134 | TERM | P2's exit gate, the listen test: every channel *heard* in play mode — one-shots, the voice queue, the room-keyed music crossfade, per-place ambience ducking under narration, the Sun's raw loop | CS-133 | blocked-cc |
+| CS-135 | CC | Rework P3 and beyond: `App` and `Director`, then `Interaction/`, `UI/`, `Shaders/`, `Prefabs/`, `Content/` and the one scene. Not yet broken into tickets — do that when P1 and P2 are actually closed | CS-132, CS-134 | todo |
+
+### Notes
+
+**CS-126 (done, 12 Sep 2026, terminal session, the first live editor run of this track).**
+`Cosmic/Import Copy` had never been run: `Assets/Cosmic/Data/Generated` did not exist. It ran
+clean and produced **37 assets** — 10 bodies, 11 moons, 7 places, 7 destinations, 2 hints — and
+the importer is **idempotent**: a second run left 37, not 74, as `RULES.md` requires of every
+builder. The gate then exited 1 with **71 losses**, which CS-127 took to **68**. They are not a
+single problem and are split into the three tickets above:
+
+- **52** are asset references the copy deck *cannot* own, because a markdown deck holds no
+  `AudioClip`, `GameObject` or `Sprite`. P1's own commit predicted exactly this ("references the
+  copy deck does not own, which a wiring step sets"). The wiring step does not exist — CS-129.
+  Related: `Copy.Wire()` reports **0 references wired**, because it reads `Bodies:` and
+  `Destinations:` fields from `experiences.md` that the deck has never contained. Those two are
+  *new* authored relationships, not recoverable from the old assets, which carry no such field.
+- **11** are content the deck never got. `docs/copy/` predates `450a2468` (HD 110067) and
+  `bea0a068` (three more galaxies), so four places and seven bodies in the old data have no copy
+  at all. The importer can only ever emit what the deck holds — CS-130.
+- **5** are the layouts, from a builder not yet ported — CS-131.
+
+**CS-127 (done).** Three places — `cosmic_web`, `galaxies`, `sagittarius_a` — are
+`Environment: 3` (`FullBlack`) in the old data. The enums line up exactly
+(`Passthrough, Dimmed, BlackHalo/Halo, FullBlack/Black`), so this was a real value regression,
+not a rename: the deck stated no room, `Enum.TryParse` failed, and `Place.room` silently kept
+its `Dimmed` default. `**Room:** Black` now appears in `experiences.md` for those three and the
+gate no longer reports an `Environment` loss. The importer's comment — "the room is not copy, so
+it is only taken when the deck states one; otherwise it is authored" — is honoured: the deck now
+states one where the value is not the default.
+
+**CS-128 (done).** `SfxPool.cs` takes the voice array, the start times, the same-clip debounce
+and `Take`; `Audio.cs` is **249** lines, inside the budget. `Audio.Play` delegates.
+
+Two things the adversarial review caught before this committed, both worth keeping in mind for
+the rest of the track:
+
+- The mixer group must be asked for **per voice**, not captured once. The original made each
+  voice lazily and re-read `library.sfx` at that moment; a pool that froze the group at `Build`
+  time would route every one-shot to the default group for any library that arrived later — which
+  is exactly the CS-133 → CS-134 order, where the `AudioLibrary` asset is authored and assigned
+  after the bus already exists. The pool takes a `Func<AudioMixerGroup>` for this reason.
+- A first draft guarded the teardown as `sfx?.Stop()` and this note claimed a probe had exercised
+  the null path. It had not, and could not: `OnDisable` calls `StopVoice()` two lines earlier,
+  whose first statement is `Build()`, so `sfx` is unconditionally assigned by then. The guard was
+  removed and the claim with it. `RULES.md` asks for what was *seen*; a defensive `?.` is not an
+  observation.
+
+`SfxPool.Stop` deliberately does **not** clear the debounce map, matching what `OnDisable` did
+before: a bus disabled and re-enabled inside the 50 ms window still swallows a repeat of the same
+UI clip.
+
+**CS-134 is blocked, and it is worth being exact about why.** No `AudioLibrary` asset exists
+anywhere in the project — the type landed in P0, an instance never did. Every channel therefore
+runs with `library == null`, so nothing can be *heard* and the listen test cannot be the
+observation `RULES.md` asks for. What *was* observed in play mode today is narrower and is only
+a regression check on CS-128: the bus builds its four sources on enable (`voice`, `ambience`,
+`music_a`, `music_b`), the sfx pool stays lazy until a real clip arrives, every channel accepts
+a null clip without throwing, and disable-then-re-enable is clean. That is construction and
+teardown, not sound. The four moon materials play mode leaked into were
+reverted before committing, per `tools/mcp/README.md` §6.
+
+**Harness note for this track.** A lingering `relay_win.exe` makes every relay call return an
+empty tool list — "the relay has no Unity_RunCommand", with the tool list blank rather than
+absent, which reads like a broken relay and is not. Kill every `relay_win` immediately before
+each `umcp.js` or `compile.ps1` invocation.
+
+---
+
 ## Phase 0 — Foundation and rebrand
 
 | ID | Track | Title | Depends | Status |
