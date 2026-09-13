@@ -17,6 +17,7 @@ namespace Cosmic
             public float worldSpaceScale;
             public Color tint;
             public float tintMultiplier;
+            public Vector2 ellipseRadii;
         }
 
         static readonly int StarsId = Shader.PropertyToID("_Stars");
@@ -25,6 +26,7 @@ namespace Cosmic
         static readonly int TransitionAlphaId = Shader.PropertyToID("_TransitionAlpha");
         static readonly int AgeId = Shader.PropertyToID("_Age");
         static readonly int EllipseSizeId = Shader.PropertyToID("_EllipseSize");
+        static readonly int RadiusId = Shader.PropertyToID("_Radius");
         static readonly int LocalCamDirId = Shader.PropertyToID("_LocalCamDir");
 
         public Layer[] layers = Array.Empty<Layer>();
@@ -149,7 +151,8 @@ namespace Cosmic
                 instance.SetVector(ColorId, layer.tint * layer.tintMultiplier);
                 instance.SetFloat(TransitionAlphaId, alpha);
                 instance.SetFloat(AgeId, age);
-                instance.SetVector(EllipseSizeId, ellipse);
+                instance.SetVector(EllipseSizeId, layer.ellipseRadii.x > 0f ? new Vector4(layer.ellipseRadii.x, layer.ellipseRadii.y, 0f, 0f) : ellipse);
+                instance.SetFloat(RadiusId, layer.cloud != null && layer.cloud.radiusMetres > 0f ? layer.cloud.radiusMetres : 1f);
                 instance.SetVector(LocalCamDirId, LocalCamDir);
             }
         }

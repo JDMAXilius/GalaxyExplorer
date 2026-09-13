@@ -5,6 +5,7 @@ Shader "Cosmic/Points"
         _MainTex ("Point sprite atlas", 2D) = "white" {}
         [HDR] _Color ("Tint", Color) = (1, 1, 1, 1)
         _WSScale ("Sprite half size (m)", Float) = 1
+        _Radius ("Cloud radius (m)", Float) = 1
         _TransitionAlpha ("Transition alpha", Float) = 1
         _Age ("Rotation (rad)", Float) = 0
 
@@ -75,6 +76,7 @@ Shader "Cosmic/Points"
 
             float4 _Color;
             float _WSScale;
+            float _Radius;
             float _TransitionAlpha;
             float3 _LocalCamDir;
 
@@ -114,7 +116,9 @@ Shader "Cosmic/Points"
                 StarQuadCorner(v.vid, pointIndex, corner);
                 StarVert p = _Stars[pointIndex];
 
-            #if defined(_LAYER_WEB) || defined(_LAYER_NEBULA)
+            #if defined(_LAYER_NEBULA)
+                float3 localPos = CylinderPosition(p) * _Radius;
+            #elif defined(_LAYER_WEB)
                 float3 localPos = CylinderPosition(p);
             #else
                 float3 localPos = SpiralPosition(p);

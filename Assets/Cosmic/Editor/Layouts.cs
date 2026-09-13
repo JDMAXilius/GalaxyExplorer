@@ -13,6 +13,7 @@ namespace Cosmic.Editor
         const float TransitionSeconds = 0.8f;
         const float OrbitTransitionSeconds = 1f;
         const float RowDiameterMetres = 0.15f;
+        const float SchematicSunMetres = 0.3f;
         const float RowPitchMetres = 0.25f;
         const float RowHeightMetres = 1.2f;
         const float ArcRadiusMetres = 1.1f;
@@ -114,7 +115,7 @@ namespace Cosmic.Editor
                 placements[i] = new Placement
                 {
                     id = specs[i].id,
-                    diameterMetres = RowDiameterMetres,
+                    diameterMetres = specs[i].id == "sun" ? SchematicSunMetres : RowDiameterMetres,
                     spanMetres = RowDiameterMetres * specs[i].ringSpans,
                     spanRatio = specs[i].spanRatio,
                 };

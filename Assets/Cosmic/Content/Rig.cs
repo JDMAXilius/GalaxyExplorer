@@ -35,7 +35,7 @@ namespace Cosmic
             if (body == null) return null;
             if (anchors.TryGetValue(body, out var known) && known != null) return known;
             var name = $"home_{(string.IsNullOrEmpty(body.id) ? body.name : body.id)}";
-            var anchor = transform.Find(name);
+            var anchor = transform.Find(name) ?? Deep(transform, name);
             if (anchor == null)
             {
                 anchor = new GameObject(name).transform;
@@ -57,6 +57,7 @@ namespace Cosmic
             if (orbit != null)
             {
                 if (orbiting) BindOrbit();
+                orbit.Blend = orbiting && duration > 0f ? 0f : 1f;
                 orbit.Running = orbiting;
             }
             var realism = layout.kind == LayoutKind.Realistic ? 1f : 0f;
@@ -70,16 +71,31 @@ namespace Cosmic
             if (orbitBound) return;
             Transform sun = null;
             var pairs = new List<(Body body, Transform anchor)>(bodies.Count);
+            var moons = new List<(Body moon, Transform planetAnchor, Transform moonAnchor)>();
             for (var i = 0; i < bodies.Count; i++)
             {
                 var body = bodies[i];
                 var anchor = Anchor(body);
                 if (anchor == null) continue;
-                if (sun == null && body.kind == BodyKind.Star) sun = anchor;
+                if (anchor.parent != transform) moons.Add((body, anchor.parent != null ? anchor.parent.parent : null, anchor));
+                else if (sun == null && body.kind == BodyKind.Star) sun = anchor;
                 else pairs.Add((body, anchor));
             }
             orbit.Bind(sun != null ? sun : transform, pairs);
+            orbit.BindMoons(moons);
             orbitBound = true;
+        }
+
+        static Transform Deep(Transform root, string name)
+        {
+            for (var i = 0; i < root.childCount; i++)
+            {
+                var child = root.GetChild(i);
+                if (child.name == name) return child;
+                var found = Deep(child, name);
+                if (found != null) return found;
+            }
+            return null;
         }
 
         void Plan(Layout layout, bool orbiting, float realism)
@@ -104,7 +120,7 @@ namespace Cosmic
                     fromScale = anchor.localScale,
                     toScale = Vector3.one * (orbiting && orbit != null ? orbit.BodyScaleAt(realism, slot.scale) : Mathf.Max(0.0001f, slot.scale)),
                     fromRing = rings != null ? rings.localScale : Vector3.one,
-                    toRing = Vector3.one * (factors[i] * Mathf.Max(1f, slot.spanRatio)),
+                    toRing = Vector3.one * factors[i],
                 });
             }
         }
@@ -117,19 +133,21 @@ namespace Cosmic
             var at = new Vector3[count];
             var half = new float[count];
             var spans = new float[count];
+            var ringed = new bool[count];
             for (var i = 0; i < count; i++)
             {
                 factors[i] = 1f;
                 spans[i] = 1f;
                 var anchor = Anchor(bodies[i]);
                 if (anchor == null) continue;
+                ringed[i] = anchor.Find($"body_{bodies[i].id}/rings") != null;
                 at[i] = anchor.localPosition;
                 var diameter = Mathf.Max(0.0001f, anchor.localScale.x);
                 if (!orbiting && layout.TryFind(bodies[i], out var slot))
                 {
                     at[i] = slot.localPosition;
                     diameter = Mathf.Max(0.0001f, slot.scale);
-                    spans[i] = Mathf.Max(1f, slot.spanRatio);
+                    spans[i] = ringed[i] ? Mathf.Max(1f, slot.spanRatio) : 1f;
                 }
                 half[i] = diameter * spans[i] * 0.5f;
             }
@@ -138,13 +156,13 @@ namespace Cosmic
             var clearance = Mathf.Max(0f, ringClearanceMetres);
             for (var i = 0; i < count; i++)
             {
-                if (spans[i] <= 1.0001f || half[i] <= 0f) continue;
+                if (!ringed[i] || half[i] <= 0f) continue;
                 var allowed = 1f;
                 for (var j = 0; j < count; j++)
                 {
                     if (j == i || half[j] <= 0f) continue;
                     var available = Vector3.Distance(at[i], at[j]) - clearance;
-                    var limit = spans[j] > 1.0001f
+                    var limit = ringed[j]
                         ? available / (half[i] + half[j])
                         : (available - half[j]) / half[i];
                     if (limit < allowed) allowed = limit;
@@ -183,7 +201,11 @@ namespace Cosmic
                 move.anchor.localScale = Vector3.LerpUnclamped(move.fromScale, move.toScale, k);
                 if (move.rings != null) move.rings.localScale = Vector3.LerpUnclamped(move.fromRing, move.toRing, k);
             }
-            if (orbiting && orbit != null) orbit.Realism = Mathf.LerpUnclamped(fromRealism, realism, k);
+            if (orbiting && orbit != null)
+            {
+                orbit.Realism = Mathf.LerpUnclamped(fromRealism, realism, k);
+                orbit.Blend = Mathf.Clamp01(k);
+            }
         }
 
         void Finish(float realism, bool orbiting)

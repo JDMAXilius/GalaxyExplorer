@@ -32,6 +32,7 @@ namespace Cosmic
         {
             public Elements elements;
             public Transform anchor;
+            public Vector3 start;
             public double days;
         }
 
@@ -110,6 +111,8 @@ namespace Cosmic
 
         public float Realism { get => realism; set => realism = Mathf.Clamp01(value); }
         public float Alpha { get; set; } = 1f;
+        public float Blend { get; set; } = 1f;
+        bool wasRunning;
         public int Count => orbiters.Count;
 
         Vector3 SunOrigin => sunShares ? sun.localPosition : Vector3.zero;
@@ -138,7 +141,7 @@ namespace Cosmic
             frameRoot = orbiters.Count > 0 && orbiters[0].anchor != null ? orbiters[0].anchor.parent : null;
             sunShares = sun != null && frameRoot != null && sun.parent == frameRoot;
             if (unknown != null)
-                Debug.LogWarning($"Orbit has no elements for {unknown}; those bodies stay where they are.", this);
+                Debug.Log($"Orbit has no elements for {unknown}; those bodies stay where they are.", this);
             BuildRings();
         }
 
@@ -157,7 +160,7 @@ namespace Cosmic
                     unknown = unknown == null ? moon.id : unknown + ", " + moon.id;
             }
             if (unknown != null)
-                Debug.LogWarning($"Orbit has no moon orbit for {unknown}; those moons stay where they are.", this);
+                Debug.Log($"Orbit has no moon orbit for {unknown}; those moons stay where they are.", this);
         }
 
         public void Sample(int bodyIndex, float t01, float realism, out Vector3 local)
@@ -181,14 +184,18 @@ namespace Cosmic
                     var orbiter = orbiters[i];
                     if (orbiter.anchor == null)
                         continue;
+                    if (!wasRunning) orbiter.start = orbiter.anchor.localPosition;
                     var elements = orbiter.elements;
                     orbiter.days += dt * DaysPerSecond * Mathf.Lerp(elements.speedMultiplier, elements.speedMultiplierReal, realism);
-                    orbiter.anchor.localPosition = origin + frame * PositionAt(elements, MeanAnomalyAt(elements, orbiter.days, realism), realism);
+                    var goal = origin + frame * PositionAt(elements, MeanAnomalyAt(elements, orbiter.days, realism), realism);
+                    orbiter.anchor.localPosition = Blend >= 1f ? goal : Vector3.LerpUnclamped(orbiter.start, goal, Blend);
                 }
                 for (var i = 0; i < riders.Count; i++)
                     Ride(riders[i], dt);
+                DrawRings();
             }
-            DrawRings();
+            else rings?.Detach();
+            wasRunning = Running;
         }
 
         void OnDisable() => rings?.Detach();
@@ -205,10 +212,8 @@ namespace Cosmic
                 return;
             if (rider.elements.orbitSeconds > 0f)
                 rider.degrees += 360f / rider.elements.orbitSeconds * dt;
-            var diameter = rider.planetAnchor.localScale.x;
-            var radius = rider.elements.radiusRatio * (diameter > 0.0001f ? diameter : 1f);
             var turn = Quaternion.Euler(rider.elements.planeDegrees, 0f, 0f) * Quaternion.Euler(0f, rider.degrees, 0f);
-            rider.anchor.localPosition = rider.planetAnchor.localPosition + turn * (Vector3.right * radius);
+            rider.anchor.localPosition = turn * (Vector3.right * rider.elements.radiusRatio);
         }
 
         void DrawRings()

@@ -58,6 +58,9 @@ namespace Cosmic
         public int drawIndex;
         public float dustRingPeak;
         public float dustRingWidth;
+        public float xRadii;
+        public float zRadii;
+        public float windingDegrees;
     }
 
     [CreateAssetMenu(menuName = "Cosmic/Galaxy", fileName = "galaxy")]
@@ -79,11 +82,18 @@ namespace Cosmic
         public float zRadii = 1f;
         public int armCount = 2;
         public float windingDegrees = 370f;
+        public float[] armOffsetsDegrees = Array.Empty<float>();
         public float velocityMultiplier = 0.05f;
         public GalaxyLayerSpec[] layers = Array.Empty<GalaxyLayerSpec>();
         public GalaxyPalette palette = new GalaxyPalette();
 
         public float ArmSpacingDegrees => armCount > 0 ? 360f / armCount : 0f;
+
+        public float ArmOffsetDegrees(int arm) => armOffsetsDegrees != null && arm < armOffsetsDegrees.Length ? armOffsetsDegrees[arm] : ArmSpacingDegrees * arm;
+
+        public Vector2 RadiiOf(in GalaxyLayerSpec layer) => new Vector2(layer.xRadii > 0f ? layer.xRadii : xRadii, layer.zRadii > 0f ? layer.zRadii : zRadii);
+
+        public float WindingOf(in GalaxyLayerSpec layer) => layer.windingDegrees > 0f ? layer.windingDegrees : windingDegrees;
 
         public int TotalPoints
         {

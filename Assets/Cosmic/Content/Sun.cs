@@ -24,7 +24,7 @@ namespace Cosmic
         [SerializeField] Transform rightHand;
         [SerializeField] Mouse mouse;
         [SerializeField] float handStillMetres = 0.001f;
-        [SerializeField] Transform[] flareRoots;
+        [SerializeField] Transform[] flareQuads;
         [SerializeField] Renderer[] flares;
         [SerializeField] Vector2[] flareFrom = { new Vector2(-0.36f, 0f), new Vector2(-0.77f, 0f), new Vector2(-0.46f, 0f) };
         [SerializeField] Vector2[] flareTo = { new Vector2(0.4f, 0f), new Vector2(0.2f, 0f), new Vector2(0.36f, 0f) };
@@ -85,7 +85,8 @@ namespace Cosmic
             if (leftHand != null) leftWas = leftHand.position;
             if (rightHand != null) rightWas = rightHand.position;
             if (glow != null && glow.sharedMaterial != null && glow.sharedMaterial.HasProperty(ColorAParamsId)) glowParams = glow.sharedMaterial.GetVector(ColorAParamsId);
-            var count = Mathf.Max(flareRoots != null ? flareRoots.Length : 0, flares != null ? flares.Length : 0);
+            var count = Mathf.Max(flareQuads != null ? flareQuads.Length : 0, flares != null ? flares.Length : 0);
+            if (flareQuads != null && flares != null && flareQuads.Length != flares.Length) Debug.LogError($"Sun on '{name}': flareQuads and flares must list the same twelve quads.", this);
             flareBlocks = new MaterialPropertyBlock[count];
             flareTiling = new Vector2[count];
             flareWait = new float[count];
@@ -198,8 +199,8 @@ namespace Cosmic
                 var scale = t <= 0f ? 0f
                     : t < 0.5f ? Mathf.Lerp(0f, flareScale, Mathf.SmoothStep(0f, 1f, t * 2f))
                     : Mathf.Lerp(flareScale, 0f, Mathf.SmoothStep(0f, 1f, (t - 0.5f) * 2f));
-                var root = flareRoots != null && i < flareRoots.Length ? flareRoots[i] : null;
-                if (root != null) root.localScale = Vector3.one * scale;
+                var pivot = flareQuads != null && i < flareQuads.Length ? flareQuads[i] : null;
+                if (pivot != null) pivot.localScale = Vector3.one * scale;
 
                 var quad = Quad(i);
                 if (quad == null) continue;

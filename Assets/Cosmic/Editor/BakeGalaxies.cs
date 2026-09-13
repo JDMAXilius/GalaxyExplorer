@@ -28,6 +28,9 @@ namespace Cosmic.Editor
             layers[0].yRange = 0.1f;
             layers[1].ellipses = 200;
             layers[1].starsPerEllipse = 10;
+            layers[1].xRadii = 0.9f;
+            layers[1].zRadii = 1.1f;
+            layers[1].windingDegrees = 540f;
             layers[1].fuzz = new Vector2(1f, 1.15f);
             layers[1].yRange = 0.04f;
             layers[1].worldSpaceScale = 0.03f;
@@ -39,6 +42,7 @@ namespace Cosmic.Editor
             layers[2].yRange = 0.1f;
             layers[2].worldSpaceScale = 0.005f;
             g.layers = layers;
+            g.armOffsetsDegrees = new[] { 0f, 95f };
             g.palette = Palette(
                 new[] { Stop(0f, 1.00f, 0.97f, 0.92f), Stop(0.35f, 0.97f, 0.97f, 0.97f),
                         Stop(0.70f, 0.86f, 0.90f, 1.00f), Stop(1f, 0.78f, 0.86f, 1.00f) },

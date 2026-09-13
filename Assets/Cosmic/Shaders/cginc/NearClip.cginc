@@ -1,3 +1,5 @@
+#ifndef COSMIC_NEARCLIP_INCLUDED
+#define COSMIC_NEARCLIP_INCLUDED
 // Vertex and pixel versions: the sun glow card needs the per-pixel one.
 
 
@@ -36,3 +38,4 @@ min16float4 ApplyVertClipAmount(min16float4 color, min16float clipAmount)
 {
 	return min16float4(color.rgb * clipAmount, color.a);
 }
+#endif

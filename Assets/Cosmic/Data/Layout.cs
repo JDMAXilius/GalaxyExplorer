@@ -14,7 +14,7 @@ namespace Cosmic
 
         public float scale;
 
-        // Rings included, as a multiple of the diameter; zero reads as 1 because a struct field cannot carry an initialiser here.
+        // Rings included, as a multiple of the diameter that `scale` carries in metres; zero reads as 1 (no struct initialisers here).
         public float spanRatio;
     }
 

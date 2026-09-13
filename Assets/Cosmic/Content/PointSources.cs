@@ -21,11 +21,11 @@ namespace Cosmic
             var n = 0;
             for (var arm = 0; arm < arms; arm++)
             {
-                var armOffsetDegrees = galaxy.ArmSpacingDegrees * arm;
+                var armOffsetDegrees = galaxy.ArmOffsetDegrees(arm);
                 for (var i = 0; i < layer.ellipses; i++)
                 {
                     var p = i / (float)layer.ellipses;
-                    var offsetRadians = (armOffsetDegrees + galaxy.windingDegrees * p) * Mathf.Deg2Rad;
+                    var offsetRadians = (armOffsetDegrees + galaxy.WindingOf(layer) * p) * Mathf.Deg2Rad;
                     var baseDistance = Mathf.Lerp(layer.minEllipseScale, layer.maxEllipseScale, p);
                     for (var j = 0; j < layer.starsPerEllipse; j++)
                     {
@@ -35,6 +35,13 @@ namespace Cosmic
             }
 
             return points;
+        }
+
+        static float MaxLayerRadius(Galaxy galaxy)
+        {
+            var best = 0f;
+            if (galaxy.layers != null) foreach (var layer in galaxy.layers) best = Mathf.Max(best, layer.xRadii, layer.zRadii);
+            return best;
         }
 
         public static float Envelope(StarVert[] points, Galaxy galaxy)
@@ -48,7 +55,7 @@ namespace Cosmic
                 }
             }
 
-            return reach * Mathf.Max(galaxy.xRadii, galaxy.zRadii);
+            return reach * Mathf.Max(galaxy.xRadii, galaxy.zRadii, MaxLayerRadius(galaxy));
         }
 
         public static StarVert[] Nebula(float[] luminance, int width, int height, Color[] plate,
