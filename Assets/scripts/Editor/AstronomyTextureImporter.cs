@@ -26,15 +26,29 @@ namespace CosmicSimulation.EditorTools
             "Assets/Textures/galaxies/",
         };
 
+        /// <summary>
+        /// Folders inside the ones above that this must keep its hands off. The galaxy portraits live under
+        /// Textures/galaxies because that is where galaxy imagery belongs, but they are sprites with alpha,
+        /// not deep-field plates: the rules below would set them to Default and, worse, strip their alpha
+        /// channel outright, which is the thing that carries their light. That failure is silent - a portrait
+        /// simply stops loading as a Sprite and the pin that wanted it gets nothing.
+        /// </summary>
+        private static readonly string[] NotOurs =
+        {
+            "Assets/Textures/galaxies/portraits/",
+        };
+
         // Bump when the rules below change, or Unity will not reimport plates it has already processed and a
         // stale setting ships silently.
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
 
         private void OnPreprocessTexture()
         {
             var match = Array.Exists(Folders,
                 f => assetPath.StartsWith(f, StringComparison.OrdinalIgnoreCase));
-            if (!match)
+            var excluded = Array.Exists(NotOurs,
+                f => assetPath.StartsWith(f, StringComparison.OrdinalIgnoreCase));
+            if (!match || excluded)
             {
                 return;
             }

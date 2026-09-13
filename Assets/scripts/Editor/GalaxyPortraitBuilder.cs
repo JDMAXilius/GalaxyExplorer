@@ -33,12 +33,20 @@ namespace CosmicSimulation.EditorTools
             var written = 0;
             var missing = new System.Collections.Generic.List<string>();
 
+            var paths = new System.Collections.Generic.List<string>();
             foreach (var profile in GalaxyProfiles.All())
             {
-                if (Build(profile)) written++;
+                var path = Build(profile);
+                if (path != null) { written++; paths.Add(path); }
                 else missing.Add(profile.Id);
             }
 
+            // Import settings in a second pass, after a refresh. On the first write the asset does not exist
+            // in the database yet, so AssetImporter.GetAtPath answers null and every setting is dropped in
+            // silence - which is how four portraits ended up as plain textures that LoadAssetAtPath<Sprite>
+            // could not see at all.
+            AssetDatabase.Refresh();
+            foreach (var path in paths) AsSprite(path);
             AssetDatabase.Refresh();
             Debug.Log($"GalaxyPortraitBuilder: {written} portrait(s) written to {Folder}"
                       + (missing.Count > 0 ? $"; nothing baked yet for: {string.Join(", ", missing)}" : string.Empty));
@@ -89,10 +97,26 @@ namespace CosmicSimulation.EditorTools
             }
         }
 
-        private static bool Build(GalaxyProfile profile)
+        private static void AsSprite(string path)
+        {
+            if (!(AssetImporter.GetAtPath(path) is TextureImporter importer))
+            {
+                Debug.LogWarning($"GalaxyPortraitBuilder: {path} has no texture importer, so it stays a plain texture.");
+                return;
+            }
+
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.alphaIsTransparency = true;
+            importer.mipmapEnabled = true;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.SaveAndReimport();
+        }
+
+        private static string Build(GalaxyProfile profile)
         {
             var acc = GalaxyPreview.Accumulate(profile);
-            if (acc == null) return false;
+            if (acc == null) return null;
 
             var edge = GalaxyPreview.Edge;
             Soften(acc, edge);
@@ -121,18 +145,7 @@ namespace CosmicSimulation.EditorTools
             File.WriteAllBytes(path, texture.EncodeToPNG());
             Object.DestroyImmediate(texture);
 
-            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
-            if (AssetImporter.GetAtPath(path) is TextureImporter importer)
-            {
-                importer.textureType = TextureImporterType.Sprite;
-                importer.spriteImportMode = SpriteImportMode.Single;
-                importer.alphaIsTransparency = true;
-                importer.mipmapEnabled = true;
-                importer.wrapMode = TextureWrapMode.Clamp;
-                importer.SaveAndReimport();
-            }
-
-            return true;
+            return path;
         }
     }
 }
