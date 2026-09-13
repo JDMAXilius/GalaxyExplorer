@@ -220,116 +220,203 @@ builders before anything asks a nebula, the cosmic web or Andromeda to be grabbe
 
 ---
 
-## Rework — the from-scratch rebuild under `Assets/Cosmic/` (12 Sep 2026)
+## Rework — terminal verification (13 Sep 2026)
 
-Everything under `Assets/Cosmic/` is a rebuild that sits **beside** the old tree in its own
-assembly, which is not auto-referenced, so the old code cannot see it and stays bootable until
-a cutover phase. Its rules are `Assets/Cosmic/RULES.md` and they are binding on this track;
-read them before touching anything here. The old `Assets/scripts/` tree is never edited *from*
-this track.
+The rework is the ground-up rebuild under `Assets/Cosmic/` (see `Assets/Cosmic/RULES.md`); the old tree
+stays bootable and is never edited from it. **Phases 0–2 are committed and have never been compiled and
+never run.** They also have no scene presence at all: no `AudioLibrary` asset, no dim material, no host
+GameObject, nothing to press. So verification needs a harness that first *makes* those things and then
+drives the components in play mode with assertions.
 
-Three phases landed before this file had any row for them, authored in a cloud session and
-tracked only by their commit messages. Their rows are written here after the fact:
+Everything below is driven through the Unity MCP relay from a terminal — `node tools/mcp/umcp.js run …`
+and `pwsh tools/mcp/compile.ps1` — and **one client at a time**, because the relay is a single shared
+connection and two clients deadlock. The wrappers live in `tools/mcp/rework/` (read its README first);
+the work they call lives in menu items under `Cosmic/Verify/…` in `Assets/Cosmic/Editor/Verify.cs`,
+because the runner's throwaway assembly cannot name `Room`, `Audio` or `Prefs` but a menu item can.
 
-| Phase | Commit | What landed |
-|---|---|---|
-| P0 | `734eb06b` | Two asmdefs, `actions.inputactions` (XR map verbatim from XRI, desktop map = the whole key contract), `Theme`, `AudioLibrary`, `RULES.md` |
-| P1 | `56978e9e` | Data layer — five ScriptableObject types replace nine; `Body` merges the copy record and the astrophysics profile; `Copy.cs` importer + `Markdown.cs`; `tools/parity/check_data.py` |
-| P2 | `e1edf980` | `Audio` (four channels on one bus), `Room`, `Prefs`, `Tween` — four files replace fourteen |
-
-**Budget** (`RULES.md`, a budget and not a quota — a file that takes runtime past 29 displaces one):
-
-| Kind | Target | Now |
-|---|---|---|
-| Runtime scripts | 29 | 12 |
-| Editor scripts | 6 | 2 |
-| Shaders | 16 | 0 |
-| Scenes | 1 | 0 |
-
-Two of the three permitted singletons do not exist yet: `App` and `Director`. `Room` does.
-
-### The gates
-
-`RULES.md`: *every exit gate is a play-mode or device observation, not a compile.* "It builds"
-closes nothing.
+`Verify.cs` is test tooling and is outside RULES.md's six-editor-script budget, which it says in its own
+one comment line. The two assets its setup step writes — `Assets/Cosmic/Data/Generated/audio_library.asset`
+and `Assets/Cosmic/Prefabs/room_dim.mat` — are **not throwaways**: they are the real inputs Phase 6 wires
+into the one scene, built here because Phase 2 is the first thing that needs them. Both are committed.
 
 | ID | Track | Title | Depends | Status |
 |---|---|---|---|---|
-| CS-126 | TERM | Run P1's exit gate for the first time: **Cosmic → Import Copy**, then `python tools/parity/check_data.py`; categorise every loss | — | done |
-| CS-127 | CC | Copy deck states the room for the three full-black places | CS-126 | done |
-| CS-128 | CC | Split the one-shot pool out of `Audio.cs` — P2's declared debt (278 lines against ~250) | — | done |
-| CS-129 | TERM | Wiring step: resolve the 52 asset references the copy deck cannot own — 34 `Narration`, 11 `ContentPrefab`, 7 `DockThumbnail` | CS-126 | todo |
-| CS-130 | CC | Extend `docs/copy/` with the four places and seven bodies it never got: `hd110067`, `pinwheel`, `triangulum`, `whirlpool`, `hd110067_star` and `hd110067_b`–`g` | CS-126 | todo |
-| CS-131 | CC | Port the layout builder — `solar_row`, `relative_size`, `hd110067_row`, `hd110067_relative`, and the `Layouts` reference on `solar_system_planets` | CS-126 | todo |
-| CS-132 | TERM | P1's gate passes: `check_data.py` exits 0 | CS-129, CS-130, CS-131 | todo |
-| CS-133 | CC | Author the `AudioLibrary` asset — the `Sfx` enum → clip mapping, the per-room music beds, the mixer groups. None exists, so every channel runs with a null library | — | todo |
-| CS-134 | TERM | P2's exit gate, the listen test: every channel *heard* in play mode — one-shots, the voice queue, the room-keyed music crossfade, per-place ambience ducking under narration, the Sun's raw loop | CS-133 | blocked-cc |
-| CS-135 | CC | Rework P3 and beyond: `App` and `Director`, then `Interaction/`, `UI/`, `Shaders/`, `Prefabs/`, `Content/` and the one scene. Not yet broken into tickets — do that when P1 and P2 are actually closed | CS-132, CS-134 | todo |
+| CS-126 | TERM | Compile the Cosmic assemblies | — | done |
+| CS-127 | TERM | Import copy and run the parity gate | CS-126 | done |
+| CS-128 | TERM | Phase 2 setup — audio library, dim material, host object | CS-126 | todo |
+| CS-129 | TERM | Phase 2 play-mode verification | CS-128 | todo |
+| CS-130 | TERM | Teardown and commit the generated assets | CS-129 | todo |
+| CS-131 | TERM | Wiring step: the 52 asset references the copy deck cannot own — 34 `Narration`, 11 `ContentPrefab`, 7 `DockThumbnail` | CS-127 | todo |
+| CS-132 | CC | Extend `docs/copy/` with the four places and seven bodies it never got: `hd110067`, `pinwheel`, `triangulum`, `whirlpool`, `hd110067_star` and `hd110067_b`–`g` | CS-127 | todo |
+| CS-133 | CC | Port the layout builder — `solar_row`, `relative_size`, `hd110067_row`, `hd110067_relative`, and the `Layouts` reference on `solar_system_planets` | CS-127 | todo |
+| CS-134 | TERM | P1's gate passes: `check_data.py` exits 0 | CS-131, CS-132, CS-133 | todo |
+| CS-135 | CC | Split the one-shot pool out of `Audio.cs` — P2's declared debt (278 lines against ~250) | — | done |
+| CS-136 | CC | Rework P3 and beyond: `App` and `Director`, then `Interaction/`, `UI/`, `Shaders/`, `Prefabs/`, `Content/` and the one scene. Break into tickets once P1 and P2 are closed | CS-134, CS-129 | todo |
 
-### Notes
+*CS-126 — compile the Cosmic assemblies.* `pwsh tools/mcp/compile.ps1`, then
+`node tools/mcp/umcp.js run tools/mcp/rework/p0_compile.cs`, then
+`node tools/mcp/umcp.js call Unity_GetConsoleLogs '{}'`. **Accept:** zero `error CS####` lines from the
+refresh; `[P0] PASS both Cosmic assemblies are present` (both `Cosmic.Runtime` and `Cosmic.Editor` in
+`AppDomain.CurrentDomain.GetAssemblies()`); and `[P0] PASS the actions asset imports as an
+InputActionAsset with both the XR and Desktop maps`, with the counts line reading `XR=10 actions,
+Desktop=29 actions`. If the menu item does not exist, that *is* the failure — `Cosmic.Editor` did not
+build; read the errors and stop here, because nothing after this means anything.
 
-**CS-126 (done, 12 Sep 2026, terminal session, the first live editor run of this track).**
-`Cosmic/Import Copy` had never been run: `Assets/Cosmic/Data/Generated` did not exist. It ran
-clean and produced **37 assets** — 10 bodies, 11 moons, 7 places, 7 destinations, 2 hints — and
-the importer is **idempotent**: a second run left 37, not 74, as `RULES.md` requires of every
-builder. The gate then exited 1 with **71 losses**, which CS-127 took to **68**. They are not a
-single problem and are split into the three tickets above:
+*CS-127 — import copy and run the parity gate.*
+`node tools/mcp/umcp.js run tools/mcp/rework/p1_data.cs` (not in play mode), read the console, then from
+the repo root run `python3 tools/parity/check_data.py`. The menu item runs `Cosmic/Import Copy` **twice**
+and compares every generated asset's GUID across the two runs. **Accept:** `[P1] PASS a second import
+left all N generated GUIDs unchanged` — a builder that duplicates or re-creates on the second run is a
+bug per RULES.md — and a parity report whose remaining loss is only the predicted classes and nothing
+else: unowned `Narration`, `ContentPrefab` and `DockThumbnail` references (the rework has no owner for
+them until Phase 6 wiring), 3 room modes the copy deck does not state and which stay authored, 1 layout
+(Copy writes none; `Generated/layouts/` is a placeholder folder), and 11 builder-owned assets. Any other
+class of loss is a regression in `Copy.cs`, not an expected gap.
 
-- **52** are asset references the copy deck *cannot* own, because a markdown deck holds no
-  `AudioClip`, `GameObject` or `Sprite`. P1's own commit predicted exactly this ("references the
-  copy deck does not own, which a wiring step sets"). The wiring step does not exist — CS-129.
-  Related: `Copy.Wire()` reports **0 references wired**, because it reads `Bodies:` and
-  `Destinations:` fields from `experiences.md` that the deck has never contained. Those two are
-  *new* authored relationships, not recoverable from the old assets, which carry no such field.
-- **11** are content the deck never got. `docs/copy/` predates `450a2468` (HD 110067) and
-  `bea0a068` (three more galaxies), so four places and seven bodies in the old data have no copy
-  at all. The importer can only ever emit what the deck holds — CS-130.
-- **5** are the layouts, from a builder not yet ported — CS-131.
+*CS-128 — Phase 2 setup.* Open a **saved** scene with a camera tagged `MainCamera` by hand first —
+`Assets/scenes/development_scenes/solar_system_prefab_scene.unity` is the recommended host — because
+nothing here calls `OpenScene` in Single mode, where the save prompt is modal and blocks the relay
+outright, and because `SaveScene` on an untitled scene opens a file dialog for the same reason. Then
+`node tools/mcp/umcp.js run tools/mcp/rework/p2_setup.cs`. **Accept:**
+`Assets/Cosmic/Data/Generated/audio_library.asset` exists with every `Sfx` id wired to its CS-070 clip
+under `Assets/audio/ui_audio_clips/` (`GrowIn` deliberately has none) and `musicByRoom` set per D-006
+(Passthrough→`background_music`, Dimmed→`bgm_system`, Halo and Black→`bgm_galaxy`), mixer groups left
+null; `Assets/Cosmic/Prefabs/room_dim.mat` exists on `CosmicSimulation/EnvironmentTint`, black at alpha
+0; a root `cosmic_verify` in the open scene carrying `Cosmic.Audio` with its library assigned and
+`Cosmic.Room` with its `dimMaterial` assigned (the AR fields stay null on desktop); and the scene is
+**saved**, so the objects survive the play-mode domain reload. Re-running the step updates in place and
+says `updated` rather than `created` — it is a builder, so it is idempotent.
 
-**CS-127 (done).** Three places — `cosmic_web`, `galaxies`, `sagittarius_a` — are
-`Environment: 3` (`FullBlack`) in the old data. The enums line up exactly
-(`Passthrough, Dimmed, BlackHalo/Halo, FullBlack/Black`), so this was a real value regression,
-not a rename: the deck stated no room, `Enum.TryParse` failed, and `Place.room` silently kept
-its `Dimmed` default. `**Room:** Black` now appears in `experiences.md` for those three and the
-gate no longer reports an `Environment` loss. The importer's comment — "the room is not copy, so
-it is only taken when the deck states one; otherwise it is authored" — is honoured: the deck now
-states one where the value is not the default.
+*CS-129 — Phase 2 play-mode verification.* Switch Error Pause **off** in the console first: a FAIL is a
+`Debug.LogError` and would pause play mode mid-sequence. Then
+`node tools/mcp/umcp.js run tools/mcp/rework/p2_enter_play.cs` (it assigns `EditorApplication.isPlaying`
+directly — the only thing that works through the relay, per CS-119 — so poll `isPlaying`, do not trust
+the reply, and expect "Unity not detected" for a few seconds while the domain reloads), then
+`node tools/mcp/umcp.js run tools/mcp/rework/p2_run.cs`, wait about fifteen seconds, then
+`node tools/mcp/umcp.js call Unity_GetConsoleLogs '{}'`. **Accept: `[P2] DONE 30/30` with no `[P2] FAIL`
+line anywhere.** The thirty checks, in order:
 
-**CS-128 (done).** `SfxPool.cs` takes the voice array, the start times, the same-clip debounce
-and `Take`; `Audio.cs` is **249** lines, inside the budget. `Audio.Play` delegates.
+| # | Check |
+|---|---|
+| 1 | `room_dim_quad` is an active `MeshRenderer` after `Room.Set(Dimmed)` |
+| 2 | its shared material reaches alpha 0.5 ± 0.05 within 0.5 s |
+| 3 | `Room.Changed` fired exactly once entering Dimmed |
+| 4 | exactly one of the two `music_*` sources is playing `bgm_system` |
+| 5 | setting Dimmed a second time does **not** fire `Room.Changed` |
+| 6 | the bed kept playing rather than restarting (same source, `time` advanced) |
+| 7 | `Room.Set(Black)` → `Camera.main.backgroundColor.a == 1` |
+| 8 | `Room.Changed` fired entering Black |
+| 9 | 2.5 s later `bgm_galaxy` is playing at 0.35 ± 0.05 (the 2 s crossfade completed) |
+| 10 | the outgoing music source stopped (quieter-source rule held) |
+| 11 | `Room.ForcePassthrough(true)` → `Room.Effective == Passthrough` |
+| 12 | it fired `Room.Changed` exactly once |
+| 13 | in Halo, `Room.Halo(subject, 0.5)` gives a `room_halo_quad` renderer that is enabled |
+| 14 | its alpha passes 0.9 within 0.7 s |
+| 15 | `Room.Forget(subject)` destroys the halo quad |
+| 16 | music sits at 0.35 ± 0.05 before the duck |
+| 17 | `Say(clip)` sets `Audio.Speaking` |
+| 18 | music ducks to 0.1925 ± 0.05 (0.35 × 0.55) within 0.6 s |
+| 19 | `StopVoice()` clears `Speaking` |
+| 20 | music recovers to 0.35 ± 0.05 |
+| 21 | two unplaced `Play(Sfx.Select)` calls in one frame debounce to **one** voice |
+| 22 | two placed `Play(Sfx.Select, t)` calls give **two** voices (spatial is exempt) |
+| 23 | `Ambience(clip)` gives an `ambience` source that is playing and fading up |
+| 24 | `Loop(clip)` returns a playing, looped source |
+| 25 | `Release(source)` destroys it |
+| 26 | `Prefs.Muted = true` → `AudioListener.volume == 0` |
+| 27 | `Prefs.TextScale = 1.3f` reads back 1.25 |
+| 28 | the mute preference is restored afterwards |
+| 29 | `Tween.To` lands exactly on target after ~0.45 s |
+| 30 | `Tween.To` never overshoots (max progress ≤ 1) |
 
-Two things the adversarial review caught before this committed, both worth keeping in mind for
-the rest of the track:
+The run also logs one `[P2] PlayerPrefs written:` line with the five `Cosmic.*` keys and their values, so
+the key names are on the record rather than inferred from `Prefs.cs`.
 
-- The mixer group must be asked for **per voice**, not captured once. The original made each
-  voice lazily and re-read `library.sfx` at that moment; a pool that froze the group at `Build`
-  time would route every one-shot to the default group for any library that arrived later — which
-  is exactly the CS-133 → CS-134 order, where the `AudioLibrary` asset is authored and assigned
-  after the bus already exists. The pool takes a `Func<AudioMixerGroup>` for this reason.
-- A first draft guarded the teardown as `sfx?.Stop()` and this note claimed a probe had exercised
-  the null path. It had not, and could not: `OnDisable` calls `StopVoice()` two lines earlier,
-  whose first statement is `Build()`, so `sfx` is unconditionally assigned by then. The guard was
-  removed and the claim with it. `RULES.md` asks for what was *seen*; a defensive `?.` is not an
-  observation.
+**Listen and look — the owner does this part, no assertion can.** (a) Take the room from Passthrough to
+Dimmed to Black and confirm the music crossfade is a clean **2 s** with no click and no restart when the
+same state is set twice. (b) Under narration the duck must be clearly audible without swamping the voice.
+(c) The dim must read as a soft grey veil over the room, not a hard-edged plate in front of the face —
+frame the **scene view** at the player's eye (`SceneView.pivot`/`rotation` from `Camera.main`) and capture
+it with `Unity_Camera_Capture '{}'`; never `ScreenCapture`, which the relay refuses outright, and never
+`cameraInstanceID`, which only the scene view answers reliably. Remember the scene view ignores the game
+camera's clear colour, so Black reads as the editor's light background there.
 
-`SfxPool.Stop` deliberately does **not** clear the debounce map, matching what `OnDisable` did
-before: a bus disabled and re-enabled inside the 50 ms window still swallows a repeat of the same
-UI clip.
+*CS-130 — teardown.* `node tools/mcp/umcp.js run tools/mcp/rework/p2_leave_play.cs`, confirm
+`isPlaying=false` (`compile.ps1` reports it), then
+`node tools/mcp/umcp.js run tools/mcp/rework/p2_teardown.cs`. **Accept:** `cosmic_verify` and any stray
+`cosmic_verify_*` objects are gone from the scene and the scene is saved clean; `audio_library.asset` and
+`room_dim.mat` are **kept** and committed, because they are the Phase 6 wiring inputs and not fixtures.
+Check `git status` before committing and revert any shared material that play mode wrote runtime values
+into (`about_material`, `earth_clouds`, the Jupiter clouds).
 
-**CS-134 is blocked, and it is worth being exact about why.** No `AudioLibrary` asset exists
-anywhere in the project — the type landed in P0, an instance never did. Every channel therefore
-runs with `library == null`, so nothing can be *heard* and the listen test cannot be the
-observation `RULES.md` asks for. What *was* observed in play mode today is narrower and is only
-a regression check on CS-128: the bus builds its four sources on enable (`voice`, `ambience`,
-`music_a`, `music_b`), the sfx pool stays lazy until a real clip arrives, every channel accepts
-a null clip without throwing, and disable-then-re-enable is clean. That is construction and
-teardown, not sound. The four moon materials play mode leaked into were
-reverted before committing, per `tools/mcp/README.md` §6.
+### Reconciliation — the terminal ran CS-126 and CS-127 before this plan was pulled (12 Sep 2026)
 
-**Harness note for this track.** A lingering `relay_win.exe` makes every relay call return an
-empty tool list — "the relay has no Unity_RunCommand", with the tool list blank rather than
-absent, which reads like a broken relay and is not. Kill every `relay_win` immediately before
-each `umcp.js` or `compile.ps1` invocation.
+Two sessions worked the rework in parallel and neither could see the other. The plan above is the
+rework author's own and is **authoritative**; it landed on `main` first. A terminal session had by
+then already executed its first two steps by hand and committed the result. The rows are marked
+`done` from that run and the numbers are below. Nothing above was renumbered; the tickets this
+session added start at **CS-131**, after the plan's five.
+
+**CS-126 — done.** `COMPILE CLEAN`, no `error CS` lines. It did not compile when the editor was
+first opened: the merge that brought the rework onto `quest3-port` had left *two* independent
+drag-bar implementations in `DockController.cs`, both declaring `LateUpdate` — `CS0111`. Fixed in
+`5e60a03f` by keeping the complete implementation and folding the other's two behaviours into it.
+That was in the old tree, not the rework, but nothing in the rework could compile until it was gone.
+
+**CS-127 — done, and it found one regression the acceptance line did not predict.** `Cosmic/Import
+Copy` had never run; `Assets/Cosmic/Data/Generated` did not exist. It produced **37 assets** — 10
+bodies, 11 moons, 7 places, 7 destinations, 2 hints — and is **idempotent**: a second run left 37,
+not 74. The gate exited 1 with **71 losses**, which the fix below took to **68**:
+
+- **52** unowned `Narration` / `ContentPrefab` / `DockThumbnail` references — exactly as predicted,
+  now CS-131. Related and worth knowing before that ticket starts: `Copy.Wire()` reports **0
+  references wired**, because it reads `Bodies:` and `Destinations:` fields from `experiences.md`
+  that the deck has never contained — and the old `ExperienceModule` assets carry no such field
+  either, so those are *new* authored relationships, not something recoverable.
+- **11** places and bodies the deck never got — now CS-132. `docs/copy/` predates `450a2468`
+  (HD 110067) and `bea0a068` (three more galaxies), so four places and seven bodies that exist in
+  the old data have no copy at all and the importer can never emit them.
+- **5** layouts — now CS-133.
+
+**The one divergence, raised rather than applied quietly.** The plan's CS-127 acceptance line
+expects "3 room modes the copy deck does not state and which stay authored" as a *predicted* loss.
+They are not authored anywhere, and nothing reports it: `cosmic_web`, `galaxies` and
+`sagittarius_a` are `Environment: 3` (`FullBlack`) in the old data, the enums correspond exactly
+(`Passthrough, Dimmed, BlackHalo/Halo, FullBlack/Black`), so the value is simply lost —
+`Enum.TryParse` fails on a deck that states nothing and `Place.room` keeps its `Dimmed` default.
+Three places would render in a dimmed room instead of black. `**Room:** Black` was therefore added
+to those three sections of `experiences.md`, which `Copy.cs:175` explicitly supports ("the room is
+not copy, so it is only taken when the deck states one"), and the deck's preamble now documents the
+field and the silent-ignore. **This changes the plan's acceptance line: the expected room-mode
+losses are now 0, not 3.** If the intent really was to author them elsewhere, revert the three deck
+lines and say where.
+
+**A second, smaller divergence.** `Generated/layouts/` is described above as a placeholder folder,
+but git does not track empty directories: committing `layouts.meta` with no folder beside it gives
+a fresh clone an orphaned meta, which Unity deletes with a warning, after which CS-133 regenerates
+the folder under a different GUID. The empty folder and its meta are therefore *not* committed.
+`Copy.EnsureFolders` recreates the folder on every import, so `p1_data.cs` is unaffected.
+
+**CS-135 — done.** P2's declared debt. `SfxPool.cs` takes the voice array, the start times, the
+same-clip debounce and `Take`; `Audio.cs` goes 278 → **249** lines. The mixer group is asked for
+per voice through a `Func<AudioMixerGroup>` rather than captured at `Build` time — the original made
+each voice lazily and re-read `library.sfx` at that moment, and freezing it would route every
+one-shot to the default group whenever the library is assigned *after* the bus exists, which is
+precisely the order CS-128 puts it in. `SfxPool.Stop` deliberately does not clear the debounce map,
+matching the old `OnDisable`.
+
+**What this session did *not* do, and CS-128–CS-130 still own.** No `AudioLibrary` asset existed
+when this ran, so no channel could be heard and P2's real listen test was not attempted. What was
+observed in play mode is only a regression check on CS-135: the bus builds its four sources
+(`voice`, `ambience`, `music_a`, `music_b`), the pool stays lazy until a real clip arrives, every
+channel accepts a null clip without throwing, and disable-then-re-enable is clean. Construction and
+teardown, not sound. `Verify.cs` and `p2_setup.cs` are the right way to close it.
+
+**Harness note.** A lingering `relay_win.exe` makes every relay call return an *empty tool list* —
+"the relay has no `Unity_RunCommand`", with the list blank rather than the tool absent, which reads
+like a broken relay and is not. Kill every `relay_win` immediately before each `umcp.js` or
+`compile.ps1` invocation. This cost the first three calls of the session.
+
 
 ---
 
