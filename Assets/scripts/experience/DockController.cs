@@ -1,4 +1,4 @@
-// Licensed under the MIT License. See LICENSE in the project root for license information.
+﻿// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Collections.Generic;
 using GalaxyExplorer.XR;
@@ -384,7 +384,7 @@ namespace CosmicSimulation
             // pointer it no longer holds, so nothing is left stuck; the player simply pinches again. Done here
             // rather than at the top because a recentre that gives up above has not moved anything, and taking
             // a grab away for nothing would be worse than leaving it.
-            var grab = DragGrab();
+            var grab = DragHandler();
             if (grab != null && grab.IsManipulating)
             {
                 grab.enabled = false;
@@ -517,101 +517,6 @@ namespace CosmicSimulation
 
         // ---------- the drag bar
         //
-        // GDD 8.1: the bar under the dock "moves the whole dock (it re-tilts toward the player)". The moving
-        // is the ManipulationHandler on the bar, whose hostTransform the UI prefab builder points at this root
-        // — the bar itself is only the handle. The re-tilting is here, because the handler has one idea of
-        // rotation and it is the wrong one: a one-handed grab carries the host's rotation with the wrist, and
-        // a dock rolled onto its side by a turned hand is unreadable. LateUpdate runs after every Update, so
-        // writing the rotation here is the last word on it each frame and the handler's own attempt never
-        // shows. Position it leaves alone.
-
-        private ManipulationHandler _dragGrab;
-        private bool _dragResolved;
-        private bool _wasDragging;
-
-        /// <summary>True while a hand or a ray is holding the bar.</summary>
-        private bool IsBeingDragged
-        {
-            get
-            {
-                var grab = DragGrab();
-                return grab != null && grab.IsManipulating;
-            }
-        }
-
-        // Resolved on first ask rather than in Awake: this is reached from Recenter, which Start calls, and
-        // from LateUpdate, and the project has twice been bitten by assuming Awake has run.
-        private ManipulationHandler DragGrab()
-        {
-            if (_dragResolved)
-            {
-                return _dragGrab;
-            }
-
-            _dragResolved = true;
-            if (dragBar == null)
-            {
-                return null;
-            }
-
-            _dragGrab = dragBar.GetComponent<ManipulationHandler>();
-            if (_dragGrab == null)
-            {
-                return null;
-            }
-
-            // A prefab built before CS-108 has no hostTransform on the bar, and reading HostTransform is what
-            // makes it default to the bar itself. Refusing the grab outright is much better than allowing one:
-            // the failure then is a dock whose bar does nothing, which is what it did before, rather than a
-            // bar that tears off the dock the first time somebody pinches it.
-            if (_dragGrab.HostTransform != transform)
-            {
-                Debug.LogError(
-                    $"{name}: the drag bar's ManipulationHandler would move {_dragGrab.HostTransform.name} " +
-                    "rather than the dock, so the bar has been disabled. Run Cosmic Simulation > Build UI " +
-                    "Prefabs, which sets its hostTransform to the dock root.", this);
-                _dragGrab.enabled = false;
-                _dragGrab = null;
-            }
-
-            return _dragGrab;
-        }
-
-        private void LateUpdate()
-        {
-            var dragging = IsBeingDragged;
-
-            if (dragging)
-            {
-                if (!_wasDragging && popup != null)
-                {
-                    // The layout pop-up hangs 40 mm above the tile that opened it and is placed once, so the
-                    // dock would slide out from under it. It is a momentary choice, not a window: shut it.
-                    popup.Close();
-                }
-
-                FaceThePlayer();
-            }
-            else if (_wasDragging)
-            {
-                // Once more on the frame the grab ends, in case the release was processed after this ran.
-                FaceThePlayer();
-
-                // The settings window is placed beside the dock when it opens and never again, so it has to be
-                // told the dock has moved. Open() on an already-open window is exactly that and nothing else:
-                // it re-places it, with no sound and no repaint. Asked only of a window that exists and is
-                // open, so this can neither create one nor re-open one the player closed mid-drag.
-                if (_utility != null && _utility.IsOpen)
-                {
-                    _utility.Open();
-                }
-            }
-
-            _wasDragging = dragging;
-        }
-
-        // ---------- the drag bar
-        //
         // GDD 8.1: the 60 mm bar under the dock "moves the whole dock (it re-tilts toward the player)". Three
         // things have to be true for that and none of them was, which is why the bar has never moved anything.
         //
@@ -672,6 +577,16 @@ namespace CosmicSimulation
             return _dragHandler;
         }
 
+        /// <summary>True while a hand or a ray is holding the bar.</summary>
+        private bool IsBeingDragged
+        {
+            get
+            {
+                var handler = DragHandler();
+                return handler != null && handler.IsManipulating;
+            }
+        }
+
         // Runs after every Update, including the manipulation handler's, so what it writes is what the frame
         // ends with. The handler is left owning the position — that is the whole gesture — and the dock keeps
         // the two parts of its pose that are not the player's to set by hand.
@@ -686,6 +601,13 @@ namespace CosmicSimulation
             {
                 // Captured per grab, not once at startup, so this can never undo a size set between grabs.
                 _dragScale = transform.localScale;
+
+                // The layout pop-up hangs 40 mm above the tile that opened it and is placed once, so the dock
+                // would slide out from under it. It is a momentary choice, not a window: shut it.
+                if (popup != null)
+                {
+                    popup.Close();
+                }
             }
 
             if (dragging)
@@ -705,6 +627,15 @@ namespace CosmicSimulation
             if (!dragging && _dragging)
             {
                 Placed();
+
+                // The settings window is placed beside the dock when it opens and never again, so it has to be
+                // told the dock has moved. Open() on an already-open window is exactly that and nothing else:
+                // it re-places it, with no sound and no repaint. Asked only of a window that exists and is
+                // open, so this can neither create one nor re-open one the player closed mid-drag.
+                if (_utility != null && _utility.IsOpen)
+                {
+                    _utility.Open();
+                }
             }
 
             _dragging = dragging;
