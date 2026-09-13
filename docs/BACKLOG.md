@@ -330,6 +330,11 @@ utility window's text-size button did nothing at all until this commit.
 and the room mode correct for all seven places. The P6 build check is 26 items, not the 23 the harness
 README predicts.
 
+**`main.unity` is not byte-stable across builds either.** A rebuild from the committed tree passes
+`[P6] DONE 26/26` and still rewrites 677 of its lines — the same objects with renumbered fileIDs, the
+churn already recorded for `dock.prefab` and `utility.prefab`. The scene's GUID is stable, which is
+what the build check asserts; the file's contents are not, so a rebuild always shows as a diff.
+
 **Console after the final smoke run: clean except one class of warning, now CS-167.** Eleven moons each
 warn twice that their `SphereCollider` is already registered with another interactable. It is content,
 not the app layer, and it did not affect any assertion.
