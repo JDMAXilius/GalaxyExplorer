@@ -8,7 +8,7 @@ namespace Cosmic.Editor
     {
         const string Models = "Assets/models/";
         const string Shaders = "Assets/Cosmic/Shaders/";
-        const string BeamShaderPath = "Assets/shaders/force_pull_shaders/tractor_beam_shader.shader";
+        const string BeamShaderPath = "Assets/Cosmic/Shaders/Beam.shader";
         const string UnitSphere = Models + "planet_unit_sphere_model.fbx";
         const string GlowTexture = "glow_normal_alpha_texture.tga";
         const string CloudNoise = "clouds_noise_alpha_texture.tga";
@@ -372,6 +372,7 @@ namespace Cosmic.Editor
             var node = Content.Draw(parent, name, Content.Mesh(model, mesh), material,
                                     Vector3.one * (skin.modelMetres * scale));
             node.transform.localRotation = Quaternion.Euler(skin.tiltDegrees, 0f, 0f);
+            if (name == "halo") node.gameObject.AddComponent<Billboard>().OffsetEulerDegrees = new Vector3(0f, -90f, 0f);
         }
 
         // Sun.flareQuads and Sun.flares are the same quads: Sun scales each one from zero, so the arm carries the offset.
@@ -443,7 +444,9 @@ namespace Cosmic.Editor
             Content.F(material, "_TransitionAlpha", 1f);
             Content.F(material, "_SRCBLEND", 1f);
             Content.F(material, "_DSTBLEND", 1f);
-            return Content.Draw(parent, name, Content.Builtin("Quad.fbx"), material, Vector3.one * scale);
+            var card = Content.Draw(parent, name, Content.Builtin("Quad.fbx"), material, Vector3.one * scale);
+            card.gameObject.AddComponent<Billboard>();
+            return card;
         }
 
         static Renderer Lens(Transform parent, Skin skin)
@@ -454,8 +457,10 @@ namespace Cosmic.Editor
             Content.C(material, "_Tint", C(1.298f, 0.9786931f, 0.6776324f));
             Content.V(material, "_FadeParams", V(9f, 14f, 0f, 0f));
             Content.F(material, "_TransitionAlpha", 1f);
-            return Content.Draw(parent, "lens_flare", Content.Builtin("Quad.fbx"), material,
-                                Vector3.one * (skin.modelMetres * SunGlowScale));
+            var card = Content.Draw(parent, "lens_flare", Content.Builtin("Quad.fbx"), material,
+                                    Vector3.one * (skin.modelMetres * SunGlowScale));
+            card.gameObject.AddComponent<Billboard>();
+            return card;
         }
 
         static Skin Skinned(string id, MoonSpec moon)
