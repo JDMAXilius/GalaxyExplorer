@@ -283,6 +283,7 @@ into the one scene, built here because Phase 2 is the first thing that needs the
 | CS-165 | TERM | Rework P7c: the APK — **Cosmic Simulation → Quest 3 → Configure Project** (keeps `Assets/build_scripts` as the one build tool; bundle id `com.jdmaxilius.cosmicsimulationxr`), **Build APK**, install, and the device pass: intro by hand, every place, stereo on both eyes for Points, Orbit, Planet and Sun, OVR Metrics under budget | CS-164, CS-149 | todo |
 | CS-166 | CC | Rework P7d: docs cutover — `docs/TECHNICAL_OVERVIEW.md` rewritten for the Cosmic tree (38 runtime scripts, 11 builders, 17 shaders, one scene), `CLAUDE.md`'s key-code section repointed, `tools/mcp/smoke_legacy.cs` removed, `RULES.md`'s table settled at the landed counts | CS-164 | todo |
 | CS-167 | CC | Every moon registers one `SphereCollider` with two interactables — `body_moon`, `body_phobos`, `body_deimos`, `body_ganymede`, `body_callisto`, `body_io`, `body_europa`, `body_titan`, `body_mimas`, `body_iapetus`, `body_enceladus` each warn twice on load ("a collider used by an Interactable object is already registered"); XRI keeps the first association and drops the second, so one of the two components is inert on every moon | CS-144 | todo |
+| CS-168 | TERM | Run **Cosmic Simulation → Verify → App Check** against `main_scene` and fix what it finds: every dock tile clicked, the room mode each asks for, a Milky Way destination tag clicked, Escape, restore, console clean | — | doing (written and compiled; not yet run) |
 
 **Terminal run, 13 Sep 2026 — CS-128, CS-129, CS-130, CS-156, CS-160 and CS-161 all pass, and four real
 defects had to be fixed to get there.** The editor was opened on this project for the first time in this
@@ -349,6 +350,27 @@ left on disk, uncommitted.
 owner's sign-off — it needs a headset and a person, and CS-131's wiring step (narration and ambience are
 null until then) sits in front of it. CS-164, the cutover, deletes 1097 paths and is explicitly gated on
 that sign-off; CS-165 needs CS-164 and a device; CS-166 follows CS-164. None of them were touched here.
+
+**CS-168 (new, 13 Sep 2026): the shipping app gets the rework's acceptance walk.** The one thing the
+rework had that `main_scene` did not was an executable check — every defect found this session was found
+by one, and the product scene had none. `Assets/scripts/Editor/AppCheck.cs`, menu **Cosmic Simulation →
+Verify → App Check**, with the relay wrapper `tools/mcp/legacy/app_check.cs`, walks the shipping app:
+the director and dock are present; a place asked for during the intro ends the intro and opens (the fix
+in `f0b5bc22`, now permanently asserted); **every dock tile is clicked at its own screen position** and
+has to open its module and set the room mode the module asks for; the Milky Way is opened and a
+**destination tag is clicked with a real mouse**, which has to open that destination; Escape closes it;
+R restores; and the console has to have stayed clean. The verdict goes to `Logs/app_check.log` as well as
+the console.
+
+Three shapes are carried over from the rework's harness deliberately: every queued input event is followed
+by `InputSystem.Update()`, because with the Game view unfocused nothing flushes the queue and the device
+keeps reading `(0, 0)` — the cause of a whole session's phantom failures; tiles are **clicked**, not
+`Choose()`d, because calling the handler tests the handler and the complaint is about the click; and the
+verdict is written to a file, because the console holds 200 entries and one chatty component buries a run
+before anyone reads it.
+
+**Not yet run.** The editor had an unsaved `DemoScene` open, and opening `main_scene` over it would have
+risked the owner's unsaved work, so the walk is written, compiled and waiting.
 
 **CS-131, the product-side audit (13 Sep 2026).** With the legacy app as the product, the question CS-131
 really asks is whether `Assets/data` — the assets the shipping app reads — is missing any reference. All
