@@ -232,6 +232,108 @@ namespace GalaxyExplorer.Editor
             Say($"start: {Steps.Count} steps, about {Total():0} s. Every click is a real mouse click at the thing's own screen position.");
         }
 
+        /// <summary>
+        /// The tag click, alone, with the pointer's own state read at every stage. The walk can tell you that
+        /// a tag click opens nothing; this says which step stopped being true - whether the mouse ever hovered
+        /// the tag, whether the press was taken, and what the director did with the release.
+        /// </summary>
+        [MenuItem("Cosmic Simulation/Verify/Tag Probe")]
+        public static void TagProbe()
+        {
+            if (!EditorApplication.isPlaying)
+            {
+                Debug.LogError("[TAG] FAIL not in play mode. Press Play on main_scene, then run this.");
+                return;
+            }
+
+            if (Steps.Count > 0) { Debug.Log($"[TAG] already running, step {_cursor}/{Steps.Count}"); return; }
+
+            _director = UnityEngine.Object.FindAnyObjectByType<ExperienceDirector>();
+            if (_director == null) { Debug.LogError("[TAG] FAIL no ExperienceDirector"); return; }
+
+            Steps.Clear();
+            _cursor = _passes = _total = _errors = 0;
+            try { System.IO.File.Delete(LogPath); } catch (Exception) { }
+
+            Transform tag = null;
+            Add(0.5f, () => { Say($"opening the Milky Way (now: {Name(_director.Current)}, intro {_director.IntroRunning})"); _director.Switch("milky_way"); });
+            AddWaitWhile(() => _director.IsSwitching || Name(_director.Current) != "milky_way", 20f);
+            Add(2.0f, () =>
+            {
+                Say($"open: {Name(_director.Current)}; DestinationTags in scene: {UnityEngine.Object.FindObjectsByType<DestinationTags>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length}");
+                tag = FindTag();
+                Check(tag != null, "a destination tag is on screen to click");
+                if (tag == null) return;
+                Say($"aiming at {tag.parent?.name ?? tag.name} at screen {ScreenOf(tag)}");
+                _holding = () => Move(ScreenOf(tag));
+            });
+            Add(1.0f, () =>
+            {
+                if (tag == null) return;
+                Say("with the mouse on it: " + Pointer());
+                _holding = () => Press(ScreenOf(tag), true);
+            });
+            Add(0.6f, () =>
+            {
+                if (tag == null) return;
+                Say("with the button down: " + Pointer());
+                _holding = null;
+                Press(ScreenOf(tag), false);
+            });
+            Add(1.5f, () =>
+            {
+                if (tag == null) return;
+                Say("after the release: " + Pointer());
+                Check(_director.HasOpenDestination || Name(_director.Current) != "milky_way",
+                    $"the tag click did something (destination {(_director.OpenDestinationModule == null ? "none" : _director.OpenDestinationModule.Id)}, place {Name(_director.Current)})");
+            });
+
+            _due = EditorApplication.timeSinceStartup + Steps[0].Wait;
+            EditorApplication.update += Tick;
+            Say("start: the tag click, one stage at a time");
+        }
+
+        /// <summary>What the desktop pointer thinks it is doing, read off its own fields.</summary>
+        private static string Pointer()
+        {
+            var mouse = UnityEngine.Object.FindAnyObjectByType<GalaxyExplorer.XR.DesktopMouseInput>();
+            if (mouse == null) return "no DesktopMouseInput";
+
+            var type = typeof(GalaxyExplorer.XR.DesktopMouseInput);
+            var hovered = Field(type, mouse, "_hovered") as GalaxyExplorer.XR.GEInteractable;
+            var pressed = Field(type, mouse, "_pressed") as GalaxyExplorer.XR.GEInteractable;
+            var orbiting = Field(type, mouse, "_orbiting");
+            var device = MouseDevice.current;
+            var camera = Field(type, mouse, "_camera") as Camera;
+            var main = Camera.main;
+
+            // The ray the pointer would actually cast, from the camera it actually holds. A pointer casting
+            // from a camera nobody is looking through hovers nothing and says nothing about why.
+            var cast = "no camera";
+            if (camera != null && device != null)
+            {
+                var at = device.position.ReadValue();
+                var ray = camera.ScreenPointToRay(new Vector3(at.x, at.y, 0f));
+                cast = Physics.Raycast(ray, out var what, 100f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide)
+                    ? $"{what.collider.gameObject.name}@{what.distance:0.00}m"
+                    : "nothing";
+            }
+
+            return $"hovered={(hovered == null ? "NOTHING" : hovered.gameObject.name)}"
+                 + $" pressed={(pressed == null ? "none" : pressed.gameObject.name)}"
+                 + $" orbiting={orbiting}"
+                 + $" device={(device == null ? "null" : device.position.ReadValue().ToString("F0"))}"
+                 + $" button={(device != null && device.leftButton.isPressed)}"
+                 + $" camera={(camera == null ? "NULL" : camera.name + (camera == main ? "" : $" (not Camera.main, which is {(main == null ? "null" : main.name)})"))}"
+                 + $" itsRayMeets={cast}";
+        }
+
+        private static object Field(Type type, object instance, string name)
+        {
+            var field = type.GetField(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            return field?.GetValue(instance);
+        }
+
         private static ExperienceModule FirstModule()
         {
             foreach (var tile in _tiles) if (tile != null && tile.Module != null) return tile.Module;
