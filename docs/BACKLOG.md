@@ -350,6 +350,24 @@ owner's sign-off — it needs a headset and a person, and CS-131's wiring step (
 null until then) sits in front of it. CS-164, the cutover, deletes 1097 paths and is explicitly gated on
 that sign-off; CS-165 needs CS-164 and a device; CS-166 follows CS-164. None of them were touched here.
 
+**CS-131, the product-side audit (13 Sep 2026).** With the legacy app as the product, the question CS-131
+really asks is whether `Assets/data` — the assets the shipping app reads — is missing any reference. All
+46 were checked field by field:
+
+- **`Narration`: 8 unset of 46** — `experiences/solar_system_planets` and the seven `hd110067_*` bodies.
+  No clip exists on disk for any of them, so this is **CS-071/CS-072 work (record the lines), not wiring**.
+  Everything else, all 38 of them, is already wired.
+- **`DockThumbnail`: 11 unset of 18** — the four new experiences (`hd110067`, `pinwheel`, `triangulum`,
+  `whirlpool`) and the seven nebula destinations. `Assets/ui/thumbnails/` holds exactly seven PNGs and all
+  seven are wired. The destinations are not dock tiles — the dock carries seven, the same seven — so only
+  the four experiences are a real gap, and they need **artwork that does not exist**, not a reference.
+- **`ContentPrefab`: 3 unset** — `milky_way`, `sagittarius_a`, `solar_system`. By design: those three load
+  a view scene through `SceneName` instead of spawning a prefab.
+- **`Ambience`: 46 unset of 46** — nothing anywhere has an ambience bed, which is **CS-077**, already open.
+
+**So there is nothing left to wire in the product's data.** Every reference that an existing asset could
+satisfy is satisfied; what remains is eight narration clips and four thumbnails that have to be made.
+
 **Direction change, 13 Sep 2026, owner's call: the legacy `main_scene` app is the product, and the Cosmic
 rework stops being the shipping path.** The fixes found while verifying the rework are to be carried into
 the legacy app where they apply. Two of the three do not transfer as diffs: the data wiring (CS-131) was
