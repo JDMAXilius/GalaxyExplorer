@@ -74,12 +74,13 @@ namespace CosmicSimulation.EditorTools
         private const int SampleSize = 512;
 
         /// <summary>
-        /// Points per cloud, across all three roles. Ten thousand, which is *fewer* than the 28 000 a single
-        /// undifferentiated layer used, and it looks better: measuring the galaxy places showed they carry only
-        /// 8 600 points each and read as gas, dust and stars because every layer does one job at one size. A
-        /// nebula built as one layer was three times the cost of a galaxy and read as a scatter of grains.
+        /// Points per cloud, across all three roles, and the number is the Cosmic Web's: 40 000 in a 5 m volume
+        /// is what a room made of points costs, and it is a tenth of the 400 000 the frame is allowed across
+        /// both eyes. The roles are still what makes it read - a galaxy place gets its gas, dust and stars from
+        /// 8 600 points because each layer does one job at one size - but a volume you stand inside needs the
+        /// density of one, not the density of an ornament.
         /// </summary>
-        private const int PointCount = 10000;
+        private const int PointCount = 40000;
 
         /// <summary>What a point is for. Each role is its own buffer, its own material and its own sprite size.</summary>
         private enum Role
@@ -101,12 +102,20 @@ namespace CosmicSimulation.EditorTools
             public readonly float SizeScale;
             public readonly bool Subtractive;
 
-            public RoleSpec(Role role, int count, float sizeScale, bool subtractive)
+            /// <summary>
+            /// Half-width of this layer's sprite in metres, written onto the component. The default 0.012 was
+            /// chosen for a 70 cm ball; in a 5 m room it is a grain of dust, which is why the gas read as
+            /// sparkle rather than as smoke. Gas wants sprites you cannot count, stars want sprites you can.
+            /// </summary>
+            public readonly float SpriteMetres;
+
+            public RoleSpec(Role role, int count, float sizeScale, bool subtractive, float spriteMetres)
             {
                 Role = role;
                 Count = count;
                 SizeScale = sizeScale;
                 Subtractive = subtractive;
+                SpriteMetres = spriteMetres;
             }
         }
 
@@ -116,9 +125,13 @@ namespace CosmicSimulation.EditorTools
         /// </summary>
         private static readonly RoleSpec[] Roles =
         {
-            new RoleSpec(Role.Clouds, 3000, 3.0f, false),
-            new RoleSpec(Role.Dust,   2000, 2.4f, true),
-            new RoleSpec(Role.Stars,  5000, 0.35f, false),
+            // The sprite sizes are a measured band, not a guess. At 0.012 - the size chosen for a 70 cm ball -
+            // a 5 m room reads as sparkle, every grain countable. At 0.075 the grains merge and keep merging:
+            // additive light saturates, the Helix's blue and gold both go white, and the whole nebula is milk.
+            // 0.03 is where the gas is continuous and still coloured.
+            new RoleSpec(Role.Clouds, 12000, 3.0f, false, 0.030f),
+            new RoleSpec(Role.Dust,    8000, 2.4f, true,  0.028f),
+            new RoleSpec(Role.Stars,  20000, 0.35f, false, 0.010f),
         };
 
         /// <summary>
@@ -163,9 +176,11 @@ namespace CosmicSimulation.EditorTools
             public readonly Model Model;
 
             /// <summary>
-            /// Half the cloud's width in metres. Was 0.35, sized to GDD 4.3's 70 cm overlay - an object held at
-            /// arm's length. A nebula is now a place the player stands in the middle of, so it matches the
-            /// galaxy places instead: Andromeda is 1.2 m across and the library galaxies 0.95 to 1.35.
+            /// Half the cloud's width in metres. It has been three things. 0.35 was GDD 4.3's 70 cm overlay,
+            /// an object held at arm's length. 0.60 matched the galaxy places, which is right for a galaxy you
+            /// lean over and still wrong for gas you stand in: at that size the walls are inside your reach and
+            /// the whole nebula is one bright smear. 2.50 is the Cosmic Web's own volume - GDD 4.7's 5 m room,
+            /// the one place in this app that already surrounds the player - and that is what a nebula is.
             /// </summary>
             public readonly float RadiusMetres;
 
@@ -193,22 +208,22 @@ namespace CosmicSimulation.EditorTools
         {
             // A planetary nebula seen close to face-on: a shell whose near and far walls project onto the same
             // ring. This is the case the shell model was written for.
-            new Spec("helix", "Assets/Textures/nebulae/helix_texture.jpg", Model.Shell, 0.60f, 0.22f),
+            new Spec("helix", "Assets/Textures/nebulae/helix_texture.jpg", Model.Shell, 2.50f, 0.22f),
 
             // A supernova remnant. Not a clean sphere - it is a filamentary cage around a pulsar wind nebula -
             // but it is a genuine expanding shell, and a shell is far closer to the truth than a flat card.
-            new Spec("crab", "Assets/Textures/nebulae/crab_texture.jpg", Model.Shell, 0.60f, 0.30f),
+            new Spec("crab", "Assets/Textures/nebulae/crab_texture.jpg", Model.Shell, 2.50f, 0.30f),
 
             // Another planetary nebula, and a notably round one; its common name is the Oyster.
-            new Spec("ngc1501", "Assets/Textures/ngc1501_texture.jpg", Model.Shell, 0.60f, 0.24f),
+            new Spec("ngc1501", "Assets/Textures/ngc1501_texture.jpg", Model.Shell, 2.50f, 0.24f),
 
             // Two lobes either side of Eta Carinae, thrown out in the 1840s eruption.
-            new Spec("homunculus", "Assets/Textures/nebulae/homunculus_texture.jpg", Model.Bipolar, 0.60f, 0.34f),
+            new Spec("homunculus", "Assets/Textures/nebulae/homunculus_texture.jpg", Model.Bipolar, 2.50f, 0.34f),
 
             // Irregular clouds. Depth is convention here, and says so.
-            new Spec("orion", "Assets/Textures/nebulae/orion_texture.jpg", Model.Cloud, 0.60f, 0.45f),
-            new Spec("pillars", "Assets/Textures/pillars_texture.tga", Model.Cloud, 0.60f, 0.40f),
-            new Spec("trumpler14", "Assets/Textures/trumpler_texture.jpg", Model.Cloud, 0.60f, 0.45f),
+            new Spec("orion", "Assets/Textures/nebulae/orion_texture.jpg", Model.Cloud, 2.50f, 0.45f),
+            new Spec("pillars", "Assets/Textures/pillars_texture.tga", Model.Cloud, 2.50f, 0.40f),
+            new Spec("trumpler14", "Assets/Textures/trumpler_texture.jpg", Model.Cloud, 2.50f, 0.45f),
         };
 
         private static readonly Dictionary<Model, string> ModelProvenance = new Dictionary<Model, string>
@@ -428,7 +443,10 @@ namespace CosmicSimulation.EditorTools
                     return new Color(tint.r, tint.g, tint.b, 0.55f);
 
                 default:
-                    return plate;
+                    // Held back, because this layer overlaps itself: twelve thousand additive sprites through
+                    // one volume add up, and at full plate brightness the sum saturates and every colour in the
+                    // nebula ends as white. The colour has to survive the stacking, not just the sample.
+                    return plate * 0.55f;
             }
         }
 
@@ -786,6 +804,7 @@ namespace CosmicSimulation.EditorTools
                     var so = new SerializedObject(volume);
                     so.FindProperty("data").objectReferenceValue = layer.Data;
                     so.FindProperty("pointsMaterial").objectReferenceValue = layer.Material;
+                    so.FindProperty("pointSizeMetres").floatValue = layer.Role.SpriteMetres;
                     so.ApplyModifiedPropertiesWithoutUndo();
 
                     total += layer.Data.points.Length;

@@ -150,7 +150,7 @@ MonoBehaviour:
   forceFullBlack: 1
   hideInPassthrough: 1
   rendererLayer: 0
---- !u!1 &2294846549227593565
+--- !u!1 &405711104186106814
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -158,8 +158,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 8046069287250015342}
-  - component: {fileID: 5819158044835882779}
+  - component: {fileID: 173758148301165592}
+  - component: {fileID: 935919568396305393}
   m_Layer: 0
   m_Name: nebula_volume_clouds
   m_TagString: Untagged
@@ -167,28 +167,28 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &8046069287250015342
+--- !u!4 &173758148301165592
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2294846549227593565}
+  m_GameObject: {fileID: 405711104186106814}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 876496278978954253}
+  m_Father: {fileID: 7303248010896795875}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5819158044835882779
+--- !u!114 &935919568396305393
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2294846549227593565}
+  m_GameObject: {fileID: 405711104186106814}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d59cd5c96d40b3f48808a63c380b608b, type: 3}
@@ -197,7 +197,7 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: 5f5d04d8e4afad2469b0fd2054126897, type: 2}
   pointsMaterial: {fileID: 2100000, guid: a6dfabe9ee4639a4191ec94743a9717d, type: 2}
   cameraEvent: 16
-  pointSizeMetres: 0.012
+  pointSizeMetres: 0.03
   rotationDegreesPerMinute: 0.4
 --- !u!1 &2409670606923518696
 GameObject:
@@ -240,7 +240,7 @@ Transform:
   - {fileID: 3015054995733985598}
   - {fileID: 1963635816548382595}
   - {fileID: 3591783247172015613}
-  - {fileID: 876496278978954253}
+  - {fileID: 7303248010896795875}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2242254384069931106
@@ -432,6 +432,55 @@ MonoBehaviour:
   customMaxMetres: 3
   measureFrom: {fileID: 0}
   authoredMetresAtUnitScale: 0
+--- !u!1 &2883167444744546134
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3778091963667029843}
+  - component: {fileID: 2278271920673016335}
+  m_Layer: 0
+  m_Name: nebula_volume_stars
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3778091963667029843
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2883167444744546134}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7303248010896795875}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2278271920673016335
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2883167444744546134}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d59cd5c96d40b3f48808a63c380b608b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.NebulaVolume
+  data: {fileID: 11400000, guid: 1da33029eecc78b4db931b039dacd6de, type: 2}
+  pointsMaterial: {fileID: 2100000, guid: 59f384d827f8fba4baf9f30aeaffc1c1, type: 2}
+  cameraEvent: 16
+  pointSizeMetres: 0.01
+  rotationDegreesPerMinute: 0.4
 --- !u!1 &3903859379383141685
 GameObject:
   m_ObjectHideFlags: 0
@@ -522,7 +571,7 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!1 &4086649082265204260
+--- !u!1 &5492142803038780812
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -530,57 +579,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 4124047060377454753}
-  - component: {fileID: 827768400604537700}
-  m_Layer: 0
-  m_Name: nebula_volume_stars
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &4124047060377454753
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4086649082265204260}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 876496278978954253}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &827768400604537700
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4086649082265204260}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d59cd5c96d40b3f48808a63c380b608b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.NebulaVolume
-  data: {fileID: 11400000, guid: 1da33029eecc78b4db931b039dacd6de, type: 2}
-  pointsMaterial: {fileID: 2100000, guid: 59f384d827f8fba4baf9f30aeaffc1c1, type: 2}
-  cameraEvent: 16
-  pointSizeMetres: 0.012
-  rotationDegreesPerMinute: 0.4
---- !u!1 &4488539926042490923
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 6169815742990813037}
-  - component: {fileID: 5172697842383708026}
+  - component: {fileID: 4192466020099095518}
+  - component: {fileID: 8702346186518923126}
   m_Layer: 0
   m_Name: nebula_volume_dust
   m_TagString: Untagged
@@ -588,28 +588,28 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &6169815742990813037
+--- !u!4 &4192466020099095518
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4488539926042490923}
+  m_GameObject: {fileID: 5492142803038780812}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 876496278978954253}
+  m_Father: {fileID: 7303248010896795875}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5172697842383708026
+--- !u!114 &8702346186518923126
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4488539926042490923}
+  m_GameObject: {fileID: 5492142803038780812}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d59cd5c96d40b3f48808a63c380b608b, type: 3}
@@ -618,7 +618,7 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: 783e95aed987f2d41b751dcfe02187f5, type: 2}
   pointsMaterial: {fileID: 2100000, guid: 58b9bdc93d7277b4f9a70c18d1d56cc5, type: 2}
   cameraEvent: 16
-  pointSizeMetres: 0.012
+  pointSizeMetres: 0.028
   rotationDegreesPerMinute: 0.4
 --- !u!1 &5915725294901463600
 GameObject:
@@ -710,7 +710,7 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!1 &6681819786427964886
+--- !u!1 &7192235545199172717
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -718,8 +718,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 876496278978954253}
-  - component: {fileID: 4895700645207046601}
+  - component: {fileID: 7303248010896795875}
+  - component: {fileID: 4100403708528314295}
   m_Layer: 0
   m_Name: nebula_volume
   m_TagString: Untagged
@@ -727,31 +727,31 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &876496278978954253
+--- !u!4 &7303248010896795875
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6681819786427964886}
+  m_GameObject: {fileID: 7192235545199172717}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 8046069287250015342}
-  - {fileID: 6169815742990813037}
-  - {fileID: 4124047060377454753}
+  - {fileID: 173758148301165592}
+  - {fileID: 4192466020099095518}
+  - {fileID: 3778091963667029843}
   m_Father: {fileID: 7275677355589003828}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4895700645207046601
+--- !u!114 &4100403708528314295
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6681819786427964886}
+  m_GameObject: {fileID: 7192235545199172717}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d6495f3c2fa3b8e4ebd3d468b375d7cd, type: 3}
