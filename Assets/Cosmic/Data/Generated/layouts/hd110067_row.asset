@@ -15,33 +15,41 @@ MonoBehaviour:
   id: hd110067_row
   title: Row
   subtitle: One line, all the same size
+  kind: 0
   transitionSeconds: 0.8
   slots:
   - body: {fileID: 11400000, guid: b946defc5d04122479d64a9aa99fb5d5, type: 2}
     localPosition: {x: -0.6944862, y: 1.2, z: 0.8530469}
     localEuler: {x: 0, y: 140.85013, z: 0}
     scale: 0.15
+    spanRatio: 1
   - body: {fileID: 11400000, guid: cc7879e40434cbd4fb481b62e07add8a, type: 2}
     localPosition: {x: -0.48393163, y: 1.2, z: 0.9878311}
     localEuler: {x: 0, y: 153.90009, z: 0}
     scale: 0.15
+    spanRatio: 1
   - body: {fileID: 11400000, guid: 8a4f620ffc061d04c965335f5fd43939, type: 2}
     localPosition: {x: -0.2483806, y: 1.2, z: 1.0715909}
     localEuler: {x: 0, y: 166.95004, z: 0}
     scale: 0.15
+    spanRatio: 1
   - body: {fileID: 11400000, guid: 00bb213ab69161e45a85446cf10d7952, type: 2}
     localPosition: {x: 0, y: 1.2, z: 1.1}
     localEuler: {x: 0, y: 180, z: 0}
     scale: 0.15
+    spanRatio: 1
   - body: {fileID: 11400000, guid: d748bf4630904624f9947a609abf1d2f, type: 2}
     localPosition: {x: 0.2483806, y: 1.2, z: 1.0715909}
     localEuler: {x: 0, y: 193.04996, z: 0}
     scale: 0.15
+    spanRatio: 1
   - body: {fileID: 11400000, guid: fc8b6544f06dfdf47a8ad0467486f84f, type: 2}
     localPosition: {x: 0.48393163, y: 1.2, z: 0.9878311}
     localEuler: {x: 0, y: 206.09991, z: 0}
     scale: 0.15
+    spanRatio: 1
   - body: {fileID: 11400000, guid: e723b304656c2b343a85fc16f4f06da9, type: 2}
     localPosition: {x: 0.6944862, y: 1.2, z: 0.8530469}
     localEuler: {x: 0, y: 219.14987, z: 0}
     scale: 0.15
+    spanRatio: 1

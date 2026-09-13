@@ -25,7 +25,7 @@ MonoBehaviour:
     - What surrounds you is an impression built from the photograph of the two lobes, opened out around you. The real Homunculus is a shell of ejecta about a light-year across wrapped close around Eta Carinae, and this is a way of showing it rather than a view from within.
     stats: []
     instruction: 
-  content: {fileID: 0}
+  content: {fileID: 8849478374346508270, guid: 3fb9cc63b8b00fa46bf5f53de5c9b074, type: 3}
   layouts: []
   narration: {fileID: 0}
   ambience: {fileID: 0}
@@ -33,7 +33,7 @@ MonoBehaviour:
   destinations: []
   galaxy: {fileID: 0}
   volume:
-    points: {fileID: 0}
-    radiusMetres: 0
-    plateAssetPath: 
-    provenance: 
+    points: {fileID: 11400000, guid: 9fc11316f7802a141aca9507ade2856c, type: 2}
+    radiusMetres: 0.35
+    plateAssetPath: Assets/Textures/nebulae/homunculus_texture.jpg
+    provenance: 'Cosmic/Build/Nebulae: PointSources.Nebula Bipolar, thickness 0.34, seed -125960356, 28000 points from Assets/Textures/nebulae/homunculus_texture.jpg at 512 px.'

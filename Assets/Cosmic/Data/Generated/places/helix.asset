@@ -25,7 +25,7 @@ MonoBehaviour:
     - What surrounds you is an impression built from the Hubble photograph of the nebula, wrapped around you so you can see its colours at size. The real shell is two and a half light-years across and we see it from the outside, face-on; nobody has been inside it.
     stats: []
     instruction: 
-  content: {fileID: 0}
+  content: {fileID: 6514727732052072797, guid: 8cccb39e6fc6fe941b3b304312b3a586, type: 3}
   layouts: []
   narration: {fileID: 0}
   ambience: {fileID: 0}
@@ -33,7 +33,7 @@ MonoBehaviour:
   destinations: []
   galaxy: {fileID: 0}
   volume:
-    points: {fileID: 0}
-    radiusMetres: 0
-    plateAssetPath: 
-    provenance: 
+    points: {fileID: 11400000, guid: 31ae7244e9b8f2544a98efea93d213cb, type: 2}
+    radiusMetres: 0.35
+    plateAssetPath: Assets/Textures/nebulae/helix_texture.jpg
+    provenance: 'Cosmic/Build/Nebulae: PointSources.Nebula Shell, thickness 0.22, seed 1655445127, 28000 points from Assets/Textures/nebulae/helix_texture.jpg at 512 px.'

@@ -24,7 +24,7 @@ MonoBehaviour:
     - Most of this structure is dark matter, which no telescope can see directly. We map it by the galaxies strung along it, the way dew picks out a spider's web.
     stats: []
     instruction: Grab with two hands to turn the web or change its size.
-  content: {fileID: 0}
+  content: {fileID: 5399538905341230446, guid: a6cbead16fa38404aa0248054130c106, type: 3}
   layouts: []
   narration: {fileID: 0}
   ambience: {fileID: 0}
@@ -32,7 +32,7 @@ MonoBehaviour:
   destinations: []
   galaxy: {fileID: 0}
   volume:
-    points: {fileID: 0}
-    radiusMetres: 0
+    points: {fileID: 11400000, guid: 53c092e711c7f444c9c414005fb8d0be, type: 2}
+    radiusMetres: 2.5
     plateAssetPath: 
-    provenance: 
+    provenance: 'Cosmic/Build/Cosmic Web: PointSources.Web, seed 20260912, 40000 points, radius 2.50 m.'

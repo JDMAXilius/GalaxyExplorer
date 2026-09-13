@@ -24,7 +24,7 @@ MonoBehaviour:
     - Sizes and spacing here are simplified. At true scale the planets would be invisible specks and Neptune would sit far outside your room.
     stats: []
     instruction: One hand moves the model, two hands tilt or resize it.
-  content: {fileID: 0}
+  content: {fileID: 5476566143895782758, guid: d2a496f95bbdeaa4c8462c93d145d7da, type: 3}
   layouts: []
   narration: {fileID: 0}
   ambience: {fileID: 0}

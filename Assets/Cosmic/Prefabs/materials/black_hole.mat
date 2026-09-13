@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: black_hole
+  m_Shader: {fileID: 4800000, guid: 2dfdbc6ca2a94e7f91e707aa7d72da4b, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 0c4a24d108be0c94f8c4cb558dea195e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex2:
+        m_Texture: {fileID: 2800000, guid: 2ca3325b9a312c743ab6bab27e480c61, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex3:
+        m_Texture: {fileID: 2800000, guid: b7c6066c2a9dfd6499e247e4004a525f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BlackHoleMass: 0.333
+    - _DiscInnerDistance: 0.18
+    - _DiscOuterDistance: 0.8
+    - _EventHorizonDistance: 0.36
+    - _EventHorizonDistanceDisc: 0.34
+    - _EventHorizonPower: 4.01
+    - _EventHorizonTint: 1
+    - _FrontStepExtension: -0.51
+    - _MaxStepCount: 4
+    - _ParallaxAmount: 0.035
+    - _RadialTextureScale: 3.142
+    - _Scale: 0.78
+    - _SkyboxFade: 1
+    - _SpinSpeed1: 0.01
+    - _SpinSpeed2: 0.02
+    - _SpinSpeed3: 0
+    - _StepSizeExtension: 0.12
+    m_Colors:
+    - _Tint1: {r: 0.8088235, g: 0.59357476, b: 0.32115054, a: 1}
+    - _Tint2: {r: 0.63235295, g: 0.58232903, b: 0.49286333, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

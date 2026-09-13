@@ -25,7 +25,7 @@ MonoBehaviour:
     - What surrounds you is an impression built from the photograph, opened out around you so its structure can be seen. The real nebula is about a third of a light-year across - a small, compact object seen from outside - so this is a way of looking closely, not a place.
     stats: []
     instruction: 
-  content: {fileID: 0}
+  content: {fileID: 6528085672286135959, guid: 7b7f5d891eb43fa43824b1e92b284dff, type: 3}
   layouts: []
   narration: {fileID: 0}
   ambience: {fileID: 0}
@@ -33,7 +33,7 @@ MonoBehaviour:
   destinations: []
   galaxy: {fileID: 0}
   volume:
-    points: {fileID: 0}
-    radiusMetres: 0
-    plateAssetPath: 
-    provenance: 
+    points: {fileID: 11400000, guid: 3dc506098e61ca549bb069ed4683de19, type: 2}
+    radiusMetres: 0.35
+    plateAssetPath: Assets/Textures/ngc1501_texture.jpg
+    provenance: 'Cosmic/Build/Nebulae: PointSources.Nebula Shell, thickness 0.24, seed 1495633278, 28000 points from Assets/Textures/ngc1501_texture.jpg at 512 px.'

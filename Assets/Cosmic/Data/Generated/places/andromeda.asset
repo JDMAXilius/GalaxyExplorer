@@ -24,13 +24,13 @@ MonoBehaviour:
     - It is heading toward us at about 110 kilometres per second. In roughly four and a half billion years the two galaxies will merge.
     stats: []
     instruction: Grab with two hands to turn it or change its size.
-  content: {fileID: 0}
+  content: {fileID: 3430107821830483445, guid: c84fb96ec6005054688532d237a87ac9, type: 3}
   layouts: []
   narration: {fileID: 0}
   ambience: {fileID: 0}
   bodies: []
   destinations: []
-  galaxy: {fileID: 0}
+  galaxy: {fileID: 11400000, guid: d654e118c6ff7284982dafb7087fed18, type: 2}
   volume:
     points: {fileID: 0}
     radiusMetres: 0

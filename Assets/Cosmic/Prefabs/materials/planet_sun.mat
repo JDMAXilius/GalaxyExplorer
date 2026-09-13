@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: planet_sun
+  m_Shader: {fileID: 4800000, guid: 1ebf74f0b66f484ab4245db65610ab5b, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 124f647f013397e47928eee68ab86b97, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _DSTBLEND: 0
+    - _SRCBLEND: 1
+    - _TouchBodyGain: 0.7
+    - _TouchBrightness: 0
+    - _TouchRimGain: 1.5
+    - _TransitionAlpha: 1
+    m_Colors:
+    - _AddCycleParams: {r: 0.82, g: 0.1, b: 0.34, a: 0.63}
+    - _AlbedoMultiplier: {r: 1, g: 1, b: 1, a: 1}
+    - _CycleParams: {r: 0.82, g: 0.1, b: 1.9, a: 0.5}
+    - _FresnelColor: {r: 3.632, g: 2.2425573, b: 1.1750586, a: 1}
+    - _FresnelTerm: {r: 0.54, g: 0.81, b: 0, a: 0}
+    - _TintColor: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

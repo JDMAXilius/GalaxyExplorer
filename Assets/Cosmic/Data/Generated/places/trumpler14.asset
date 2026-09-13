@@ -25,7 +25,7 @@ MonoBehaviour:
     - What surrounds you is an impression built from the photograph of the Carina Nebula that holds this cluster, wrapped around you. The cloud is a place you could be inside; the arrangement here, and the stars scattered through it, are ours rather than measured.
     stats: []
     instruction: 
-  content: {fileID: 0}
+  content: {fileID: 3329448080888145129, guid: 43267ddf55f191d4aa524a1a26c2cde2, type: 3}
   layouts: []
   narration: {fileID: 0}
   ambience: {fileID: 0}
@@ -33,7 +33,7 @@ MonoBehaviour:
   destinations: []
   galaxy: {fileID: 0}
   volume:
-    points: {fileID: 0}
-    radiusMetres: 0
-    plateAssetPath: 
-    provenance: 
+    points: {fileID: 11400000, guid: 9e51bd039f12c2449b2d56da47a6f5c7, type: 2}
+    radiusMetres: 0.35
+    plateAssetPath: Assets/Textures/trumpler_texture.jpg
+    provenance: 'Cosmic/Build/Nebulae: PointSources.Nebula Cloud, thickness 0.45, seed -2016516993, 28000 points from Assets/Textures/trumpler_texture.jpg at 512 px.'

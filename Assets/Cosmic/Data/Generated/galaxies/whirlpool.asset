@@ -1,0 +1,122 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a6e44ab160b4d8ba0436434f7fcb90f, type: 3}
+  m_Name: whirlpool
+  m_EditorClassIdentifier: Cosmic.Runtime::Cosmic.Galaxy
+  id: whirlpool
+  kind: 0
+  seed: 1
+  widthMetres: 1.1
+  discTiltDegrees: 20
+  discYawDegrees: 20
+  minScaleMetres: 0.5
+  maxScaleMetres: 3
+  grabRadiusFraction: 1
+  xRadii: 0.62
+  zRadii: 1
+  armCount: 2
+  windingDegrees: 406.0339
+  armOffsetsDegrees: []
+  velocityMultiplier: 0.05
+  layers:
+  - layer: 0
+    id: clouds
+    shader: {fileID: 4800000, guid: 1733282903014a95a616d3879e2bd4ad, type: 3}
+    points: {fileID: 11400000, guid: bef5212484f185a40b1f0c01ee13766c, type: 2}
+    seed: 31415
+    ellipses: 250
+    starsPerEllipse: 10
+    minEllipseScale: 0.02
+    maxEllipseScale: 0.45
+    fuzz: {x: 0.9, y: 1.1}
+    thicknessAtCentre: 1
+    thicknessAtRim: 0.25
+    yRange: 0.07
+    worldSpaceScale: 0.02
+    tint: {r: 1, g: 1, b: 1, a: 1}
+    tintMultiplier: 0.3
+    drawIndex: 0
+    dustRingPeak: 0.5
+    dustRingWidth: 0.55
+    xRadii: 0
+    zRadii: 0
+    windingDegrees: 0
+  - layer: 1
+    id: dust
+    shader: {fileID: 4800000, guid: 1733282903014a95a616d3879e2bd4ad, type: 3}
+    points: {fileID: 11400000, guid: 3e2742d8577d1ee40b78bc6426f38b29, type: 2}
+    seed: 27182
+    ellipses: 200
+    starsPerEllipse: 8
+    minEllipseScale: 0.18
+    maxEllipseScale: 1
+    fuzz: {x: 0.94, y: 1.06}
+    thicknessAtCentre: 0.4
+    thicknessAtRim: 0.4
+    yRange: 0.018
+    worldSpaceScale: 0.02
+    tint: {r: 0.07, g: 0.06, b: 0.06, a: 0.4}
+    tintMultiplier: 1
+    drawIndex: 1
+    dustRingPeak: 0.5
+    dustRingWidth: 0.55
+    xRadii: 0
+    zRadii: 0
+    windingDegrees: 0
+  - layer: 2
+    id: stars
+    shader: {fileID: 4800000, guid: 1733282903014a95a616d3879e2bd4ad, type: 3}
+    points: {fileID: 11400000, guid: 2c001a214a347cf4986f800bf93326c8, type: 2}
+    seed: 16180
+    ellipses: 300
+    starsPerEllipse: 15
+    minEllipseScale: 0.1
+    maxEllipseScale: 1
+    fuzz: {x: 0.965, y: 1.035}
+    thicknessAtCentre: 1
+    thicknessAtRim: 0.1
+    yRange: 0.05
+    worldSpaceScale: 0.008
+    tint: {r: 1, g: 1, b: 1, a: 1}
+    tintMultiplier: 1.15
+    drawIndex: 2
+    dustRingPeak: 0.5
+    dustRingWidth: 0.55
+    xRadii: 0
+    zRadii: 0
+    windingDegrees: 0
+  palette:
+    disc:
+    - t: 0
+      color: {r: 1, g: 0.95, b: 0.86, a: 1}
+    - t: 0.25
+      color: {r: 0.94, g: 0.92, b: 0.88, a: 1}
+    - t: 0.55
+      color: {r: 0.72, g: 0.82, b: 0.98, a: 1}
+    - t: 1
+      color: {r: 0.58, g: 0.74, b: 1, a: 1}
+    clouds:
+    - t: 0
+      color: {r: 1, g: 0.97, b: 0.9, a: 1}
+    - t: 0.5
+      color: {r: 0.97, g: 0.9, b: 0.79, a: 1}
+    - t: 1
+      color: {r: 0.8, g: 0.68, b: 0.6, a: 1}
+    dust:
+    - t: 0
+      color: {r: 0.42, g: 0.34, b: 0.34, a: 1}
+    - t: 0.55
+      color: {r: 0.52, g: 0.4, b: 0.38, a: 1}
+    - t: 1
+      color: {r: 0.44, g: 0.36, b: 0.36, a: 1}
+    hiiKnot: {r: 1, g: 0.42, b: 0.52, a: 1}
+    blueGiant: {r: 0.6, g: 0.78, b: 1, a: 1}

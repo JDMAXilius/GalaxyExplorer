@@ -25,7 +25,7 @@ MonoBehaviour:
     - What surrounds you is an impression built from the photograph, projected around you so the filaments can be seen at size. In reality this is nine light-years of expanding debris viewed from four thousand light-years away, and no camera has ever been within it.
     stats: []
     instruction: 
-  content: {fileID: 0}
+  content: {fileID: 4793141712233572885, guid: b0b5836faf47d4d408b5d3f050eb87fa, type: 3}
   layouts: []
   narration: {fileID: 0}
   ambience: {fileID: 0}
@@ -33,7 +33,7 @@ MonoBehaviour:
   destinations: []
   galaxy: {fileID: 0}
   volume:
-    points: {fileID: 0}
-    radiusMetres: 0
-    plateAssetPath: 
-    provenance: 
+    points: {fileID: 11400000, guid: ceaa02495d72fce41914f0f136d0eda1, type: 2}
+    radiusMetres: 0.35
+    plateAssetPath: Assets/Textures/nebulae/crab_texture.jpg
+    provenance: 'Cosmic/Build/Nebulae: PointSources.Nebula Shell, thickness 0.30, seed -1874824093, 28000 points from Assets/Textures/nebulae/crab_texture.jpg at 512 px.'

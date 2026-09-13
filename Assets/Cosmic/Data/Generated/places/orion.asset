@@ -25,7 +25,7 @@ MonoBehaviour:
     - What surrounds you is an impression built from the photograph, projected onto the sky around you. The nebula really is a cloud you could be inside - twenty-four light-years of it - but this is that photograph arranged around you, not a view recorded from in there.
     stats: []
     instruction: 
-  content: {fileID: 0}
+  content: {fileID: 6318737070179139324, guid: b0eb0c903dfdf964d8d3120ee975ab4b, type: 3}
   layouts: []
   narration: {fileID: 0}
   ambience: {fileID: 0}
@@ -33,7 +33,7 @@ MonoBehaviour:
   destinations: []
   galaxy: {fileID: 0}
   volume:
-    points: {fileID: 0}
-    radiusMetres: 0
-    plateAssetPath: 
-    provenance: 
+    points: {fileID: 11400000, guid: 5ad5617029b771b4eba119e056ad3963, type: 2}
+    radiusMetres: 0.35
+    plateAssetPath: Assets/Textures/nebulae/orion_texture.jpg
+    provenance: 'Cosmic/Build/Nebulae: PointSources.Nebula Cloud, thickness 0.45, seed -579418382, 28000 points from Assets/Textures/nebulae/orion_texture.jpg at 512 px.'

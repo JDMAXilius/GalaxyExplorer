@@ -24,10 +24,12 @@ MonoBehaviour:
     - 'Switch to relative size to see the truth of it: the Sun fills the room, Jupiter is a beach ball, and Earth sits in your palm.'
     stats: []
     instruction: Pinch a planet to lift it out, two hands to grow it, let go to leave it.
-  content: {fileID: 0}
+  content: {fileID: 9159056870669937973, guid: a89bee0b058671c4f9fd77141b200533, type: 3}
   layouts:
   - {fileID: 11400000, guid: 982ebc0f45308a5449b1c6f9f0f5a1a9, type: 2}
   - {fileID: 11400000, guid: b5dac9d9597270a44891584556b7b21c, type: 2}
+  - {fileID: 11400000, guid: a89dd1951fa4ef0498bc8d04847f6288, type: 2}
+  - {fileID: 11400000, guid: c58f2e8976eb8ce4b8377b044d143575, type: 2}
   narration: {fileID: 0}
   ambience: {fileID: 0}
   bodies: []

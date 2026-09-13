@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Cosmic
 {
     // Order and packing are the shader's, minus the trailing unread `random` float the old baked assets carry.
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     [Serializable]
     public struct StarVert
     {

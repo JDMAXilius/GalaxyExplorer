@@ -7,7 +7,7 @@ namespace Cosmic
 {
     public class OrbitRings
     {
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public struct OrbitPoint
         {
             public Vector3 schematic;
@@ -15,7 +15,7 @@ namespace Cosmic
         }
 
         // The planet position rides in the per-orbit record so one small buffer carries both, replacing nine uniforms.
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public struct Span
         {
             public int start;

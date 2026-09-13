@@ -24,7 +24,7 @@ MonoBehaviour:
     - Their light has been travelling for billions of years, so looking out into a field like this is also looking a long way back in time.
     stats: []
     instruction: Use the passthrough button to put them in your room or in the dark.
-  content: {fileID: 0}
+  content: {fileID: 964365405489064641, guid: 9b9b807801ca7f0469ac5b584c6b4827, type: 3}
   layouts: []
   narration: {fileID: 0}
   ambience: {fileID: 0}

@@ -24,13 +24,13 @@ MonoBehaviour:
     - It sits about 21 million light years away in Ursa Major. The real galaxy is noticeably lopsided, brighter and more extended on one side; what you are holding is more even than that.
     stats: []
     instruction: Grab it with two hands to turn it or change its size.
-  content: {fileID: 0}
+  content: {fileID: 3400468954283647018, guid: 9c13984dbae4bba4092b49827368997c, type: 3}
   layouts: []
   narration: {fileID: 0}
   ambience: {fileID: 0}
   bodies: []
   destinations: []
-  galaxy: {fileID: 0}
+  galaxy: {fileID: 11400000, guid: 749e7f7b80b37404aa91645301acac05, type: 2}
   volume:
     points: {fileID: 0}
     radiusMetres: 0

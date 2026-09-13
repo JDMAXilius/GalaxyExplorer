@@ -61,6 +61,8 @@ namespace Cosmic
                 orbit.Running = orbiting;
             }
             var realism = layout.kind == LayoutKind.Realistic ? 1f : 0f;
+            // Step writes Realism only while orbiting, so a Row or Relative layout would leave it stale at 1.
+            if (orbit != null && !orbiting) orbit.Realism = realism;
             Plan(layout, orbiting, realism);
             if (duration <= 0f || !isActiveAndEnabled) Finish(realism, orbiting);
             else running = StartCoroutine(Run(realism, orbiting, duration));

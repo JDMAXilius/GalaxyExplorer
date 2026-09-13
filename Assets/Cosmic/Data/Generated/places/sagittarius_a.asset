@@ -24,7 +24,7 @@ MonoBehaviour:
     - The hole itself cannot be seen, only the superheated gas circling it. Light bends so sharply here that the far side of the disc appears above and below the shadow. The Event Horizon Telescope photographed it in 2022.
     stats: []
     instruction: Walk around it. Two hands change its size.
-  content: {fileID: 0}
+  content: {fileID: 7434897944724298706, guid: 14fe203b124df7140a404f1a7be73954, type: 3}
   layouts: []
   narration: {fileID: 0}
   ambience: {fileID: 0}

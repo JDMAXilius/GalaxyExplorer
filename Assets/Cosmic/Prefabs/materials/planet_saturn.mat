@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: planet_saturn
+  m_Shader: {fileID: 4800000, guid: bc94d2ae65544598b215e5582c4f2779, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _SATURN
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: f49fd062e00924a48bfc75045f897394, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalAlpha:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RingsAlphaTex:
+        m_Texture: {fileID: 2800000, guid: 23ee363a00bab4247a0e64970b1bd9f8, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _CULL: 2
+    - _DSTBLEND: 10
+    - _InnerRingRadius: 0.0175
+    - _OuterRingRadius: 0.025
+    - _SRCBLEND: 5
+    - _TransitionAlpha: 1
+    - _ZWRITE: 1
+    m_Colors:
+    - _AlbedoMultiplier: {r: 1, g: 1, b: 1, a: 1}
+    - _AmbientColor: {r: 0.19999999, g: 0.19291963, b: 0.19290778, a: 1}
+    - _FresnelColor: {r: 0.466, g: 0.42451015, b: 0.36674199, a: 1}
+    - _FresnelDarkSideColor: {r: 0.46599996, g: 0.44652116, b: 0.41939998, a: 1}
+    - _FresnelTerm: {r: 1.6, g: 0.8, b: 0, a: 0}
+    - _LightAmount: {r: 0.58, g: 0, b: 0, a: 0}
+    - _LightGammaCorrection: {r: 1.2, g: 0.8, b: 1, a: 1}
+    - _LightTint: {r: 1, g: 1, b: 1, a: 1}
+    - _NightLightColor: {r: 0, g: 0, b: 0, a: 0}
+    - _NormalScale: {r: 0, g: 0, b: 0.1, a: 0}
+    - _SpecParams: {r: 60, g: 0, b: 0, a: 0}
+    - _SunDirection: {r: 1, g: 1, b: 1, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

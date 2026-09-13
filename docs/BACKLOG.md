@@ -260,9 +260,9 @@ into the one scene, built here because Phase 2 is the first thing that needs the
 | CS-142 | CC | Rework P4b: `Content/Orbit.cs` + `OrbitRings.cs` (Kepler solver, realism lerp, moons, one-buffer ring renderer) with `Shaders/Orbit.shader`; `Content/Rig.cs` (anchors between Row, Relative, Schematic, Realistic layouts, ring clamp on the `rings` child); `Layout.kind`, `Slot.spanRatio`, two orbit layouts from `Editor/Layouts.cs` (renamed from Content.cs) | CS-141 | done (unrun) |
 | CS-143 | CC | Rework P4c: `Content/Sun.cs` (touch brightness, rumble, flares, glow, lens flare, spin) with `Sun`, `SunCorona`, `SunFlare`, `SunGlow`, `LensFlare` shaders; planet family folded into `Planet` (`_EARTH`/`_SATURN`/`_ALPHA`), `Rings` (`_BASIC`), `Clouds` (`_DIFFUSE`), `Atmosphere`, `Halo`, all with the full stereo set | CS-141 | done (unrun) |
 | CS-144 | CC | Rework P4d: `Editor/Content.cs` + `Bodies.cs` menus **Cosmic → Build → Bodies / Places** (every Place asset → one prefab, every Body → one nested prefab, materials from the surveyed values); `Content/Field.cs` + `Field.shader` (deep-field sprite shell); `BlackHole.shader` port; P4 harness (`Cosmic/Verify/P4 …`, `tools/mcp/rework/p4_*.cs`) | CS-142, CS-143 | done (unrun) |
-| CS-145 | TERM | Rework P4 compile and bake: compile, **Cosmic → Verify → P4 Bake** (Bake All twice, GUIDs stable, point counts 6400/4000/8320 for the Milky Way, seven nebulae at 28 000, web at 40 000, every `points_*.mat` uninstanced on `Cosmic/Points`) | CS-144 | todo |
-| CS-146 | TERM | Rework P4 build: **Cosmic → Verify → P4 Build** (Layouts, Bodies, Places twice; milky_way `galaxy` child with three layers, helix `volume`, solar_system_planets with Rig, Orbit, ten anchors, saturn `rings`, Sun on the star) | CS-145 | todo |
-| CS-147 | TERM | Rework P4 play: **P4 Setup → Enter Play → Run → Leave Play → Teardown**: command buffers on the camera, galaxy spins, Rig through all four layouts, orbit rings at AfterForwardAlpha, sun touch by mouse, restore on the galaxy; `[P4] DONE n/m` with no FAIL | CS-146 | todo |
+| CS-145 | TERM | Rework P4 compile and bake: compile, **Cosmic → Verify → P4 Bake** (Bake All twice, GUIDs stable, point counts 6400/4000/8320 for the Milky Way, seven nebulae at 28 000, web at 40 000, every `points_*.mat` uninstanced on `Cosmic/Points`) | CS-144 | done |
+| CS-146 | TERM | Rework P4 build: **Cosmic → Verify → P4 Build** (Layouts, Bodies, Places twice; milky_way `galaxy` child with three layers, helix `volume`, solar_system_planets with Rig, Orbit, ten anchors, saturn `rings`, Sun on the star) | CS-145 | done |
+| CS-147 | TERM | Rework P4 play: **P4 Setup → Enter Play → Run → Leave Play → Teardown**: command buffers on the camera, galaxy spins, Rig through all four layouts, orbit rings at AfterForwardAlpha, sun touch by mouse, restore on the galaxy; `[P4] DONE n/m` with no FAIL | CS-146 | done |
 | CS-148 | TERM | Rework P4 parity: scene-view captures of the Milky Way, Andromeda, one nebula, the cosmic web and the solar row against the old build's screenshots; `_Age` speed, sprite sizes and colours read the same; owner accepts the seed-regenerated Milky Way or asks for a baked-buffer fallback on `Galaxy` | CS-147 | todo |
 | CS-149 | TERM | Rework P4 device budget: APK with the rework places loaded one at a time, OVR Metrics per place (frame time, GPU), every place under 13.9 ms on Quest 3 with hands; stereo confirmed on device for `Points`, `Orbit`, `Planet`, `Sun` (both eyes) | CS-148 | todo |
 | CS-150 | CC | Rework P4 debt: `WebSource.cs` 294 lines, `Orbit.cs` 312, `Layouts.cs` 322, `Field.cs` 336, `Editor/Content.cs` 561 and `Bodies.cs` 574 against the ~250 budget; editor scripts at 9 against the table's 6 (Bake split three ways, Bodies); `Content/Field.cs` reads plates through a blit at enable; planets do not spin (only the Sun did in the old build, so nothing is lost yet); Jupiter's cloud-band rig and the Neptune/Pluto glows were dropped for mobile weight (reversible); the sun's lens-flare card size is a chosen number | CS-144 | todo |
@@ -341,6 +341,61 @@ restore tween, mouse parity — and its acceptance line ends "owner signs off on
 headset or a Link session and a human judgement that nothing here can stand in for. Note also that a
 default Link session cannot verify stereo work at all (Android ships Single Pass Instanced, Windows
 multi-pass), so anything that looks right on Link still owes a device run.
+
+*CS-145, CS-146 and CS-147 — all three pass (13 Sep 2026, terminal session).* `[P4] DONE 40/40`,
+`17/17` and `26/26`, the last of those eight times running. Two defects had to be fixed first and
+both are described below, because neither was visible from reading the code.
+
+**The compile was never clean — and `compile.ps1` said it was, three times.** `Cosmic.Runtime` had
+three real errors: `LayoutKind` does not contain `Sequential`, at `OrbitRings.cs:10`, `:18` and
+`PointCloud.cs:8`. The rework declares its own `Cosmic.LayoutKind` (`Row/Relative/Schematic/
+Realistic`) in `Data/Layout.cs`, and inside `namespace Cosmic` that shadows
+`System.Runtime.InteropServices.LayoutKind`, so `[StructLayout(LayoutKind.Sequential)]` resolved to
+the wrong type. Fixed by fully qualifying at the three use sites. **A `using LayoutKind = …` alias
+at file scope does not work** and was tried first: a file-level using alias loses to a member of the
+enclosing namespace, so the error survived it unchanged.
+
+**Why the harness could not see this, which matters more than the bug.** `compile.ps1` reports
+`error CS` lines written to `Logs/Editor.log` *since its own refresh*. When a compile has already
+failed, Unity keeps the last good assembly and does not recompile on a refresh that changes nothing,
+so no new error is logged and the script prints `COMPILE CLEAN`. **It cannot tell "compiled cleanly"
+from "did not compile at all".** The tell is that `Cosmic/Verify/P4 Bake` did not exist while
+`Cosmic/Verify/P0 Compile Check` — declared in the same file — did, which is a stale assembly, not a
+missing menu item. The durable check is the assembly timestamp: `Library/ScriptAssemblies/
+Cosmic.Editor.dll` was an hour older than `Verify.cs`. Compare those two before trusting a clean
+report, and note that `EditorUtility.RequestScriptReload()` does **not** help — it reloads the domain
+against the assemblies already built. `CompilationPipeline.RequestScriptCompilation()` is the one
+that rebuilds.
+
+**`Rig` left `Orbit.Realism` stale, and it is a real defect, not test noise.** `Rig.Step` writes
+`orbit.Realism` only inside `if (orbiting …)`, so applying a Row or Relative layout left it at
+whatever the last Schematic or Realistic layout set. The visible consequence: go **Realistic → Row →
+Schematic** and the first second of the Schematic view runs at the wrong realism, tweening down from
+1 instead of holding 0. `Apply` now sets it for the non-orbiting layouts too, one line beside the
+existing `Blend`/`Running` block.
+
+The arithmetic that identified it, since the symptom looked like flaky timing: the run passed 26/26
+on a fresh play session and 25/26 on every repeat, failing only
+`a Schematic layout holds Orbit.Realism at 0` and reporting 0.339, 0.339, 0.340 — a drifting value,
+which reads like a race. It is not. `solar_schematic.transitionSeconds` is 1, the assertion runs
+0.3 s after the apply, and `EaseOutCubic(0.3)` is 0.657, so `Lerp(1, 0, 0.657)` is 0.343. The first
+run passed only because a fresh scene starts at realism 0; every repeat started at 1. After the fix,
+eight consecutive `26/26` in one session.
+
+Two `[P4] SKIP` lines are expected and are not failures — the `_Age` advance and the alpha-0 draw,
+neither observable from script while `Points` keeps its material instances private.
+
+**Two things the harness asks for that its own README does not.** The recommended host scene,
+`solar_system_prefab_scene`, has a `MainCamera`, and `P4 Setup` instantiates a rig that brings a
+second one; the run then FAILs on `more than one active MainCamera`. Deactivate the host's camera
+first. And `P4 Teardown` removes the `cosmic_verify` root but **leaves the rig instance in the host
+scene** — about 9 900 lines of it, plus baked lighting data in a new folder beside the scene. The
+scene was reverted here rather than committed; check `git status` for it after any P4 play session.
+
+**CS-148 and CS-149 are not runnable from this machine.** CS-148 wants captures compared against the
+old build's screenshots, and CS-149 wants an APK, OVR Metrics and stereo confirmed on the Quest.
+Neither can be settled over Link: Android ships Single Pass Instanced and Windows multi-pass, so a
+clean Link session says nothing about the eye that breaks.
 
 *CS-126 — compile the Cosmic assemblies.* `pwsh tools/mcp/compile.ps1`, then
 `node tools/mcp/umcp.js run tools/mcp/rework/p0_compile.cs`, then

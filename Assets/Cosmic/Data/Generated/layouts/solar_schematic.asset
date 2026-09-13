@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bee74d550fbf4196bd0a25678707d8b4, type: 3}
+  m_Name: solar_schematic
+  m_EditorClassIdentifier: Cosmic.Runtime::Cosmic.Layout
+  id: solar_schematic
+  title: Schematic
+  subtitle: Even orbit spacing, planets enlarged
+  kind: 2
+  transitionSeconds: 1
+  slots:
+  - body: {fileID: 11400000, guid: ac997cd2758536f4b82d26fc368d028d, type: 2}
+    localPosition: {x: 0, y: 0, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    scale: 0.3
+    spanRatio: 1
+  - body: {fileID: 11400000, guid: d6f966baf6ca045498bbfdb76db15dd6, type: 2}
+    localPosition: {x: 0, y: 0, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    scale: 0.15
+    spanRatio: 1
+  - body: {fileID: 11400000, guid: 783920636aa85924e8c2f0d33c7eb738, type: 2}
+    localPosition: {x: 0, y: 0, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    scale: 0.15
+    spanRatio: 1.01
+  - body: {fileID: 11400000, guid: dafc51cc0bcb515479378ac2aba1a4a1, type: 2}
+    localPosition: {x: 0, y: 0, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    scale: 0.15
+    spanRatio: 1.01
+  - body: {fileID: 11400000, guid: 37a168f648fc1714c92c09653c0f8878, type: 2}
+    localPosition: {x: 0, y: 0, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    scale: 0.15
+    spanRatio: 1.0000002
+  - body: {fileID: 11400000, guid: 1f10adebc00b1bd4f9d6c4217b055541, type: 2}
+    localPosition: {x: 0, y: 0, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    scale: 0.15
+    spanRatio: 1.0072546
+  - body: {fileID: 11400000, guid: f3198134b5fd8894286dab59c1d3f0ef, type: 2}
+    localPosition: {x: 0, y: 0, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    scale: 0.15
+    spanRatio: 2.257225
+  - body: {fileID: 11400000, guid: 3f81572e749677842bdd73ad87069fbb, type: 2}
+    localPosition: {x: 0, y: 0, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    scale: 0.15
+    spanRatio: 1.9908094
+  - body: {fileID: 11400000, guid: 10d00af91267a9947b8201b3ad55ddde, type: 2}
+    localPosition: {x: 0, y: 0, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    scale: 0.15
+    spanRatio: 1
+  - body: {fileID: 11400000, guid: ee9cfc49c8466fc478e2a8020ed99212, type: 2}
+    localPosition: {x: 0, y: 0, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    scale: 0.15
+    spanRatio: 1

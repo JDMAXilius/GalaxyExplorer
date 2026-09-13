@@ -24,13 +24,13 @@ MonoBehaviour:
     - Its arms are flocculent - short, patchy fragments rather than long sweeping ones - and it has almost no central bulge. The version here is smoother and more organised than the real thing, which the generator cannot yet break up.
     stats: []
     instruction: Grab it with two hands to turn it or change its size.
-  content: {fileID: 0}
+  content: {fileID: 1996486552423858607, guid: c3b9a514f02266745a3c260e23d7676b, type: 3}
   layouts: []
   narration: {fileID: 0}
   ambience: {fileID: 0}
   bodies: []
   destinations: []
-  galaxy: {fileID: 0}
+  galaxy: {fileID: 11400000, guid: c20fab29a9c464a45a277cfbb7f9b42e, type: 2}
   volume:
     points: {fileID: 0}
     radiusMetres: 0

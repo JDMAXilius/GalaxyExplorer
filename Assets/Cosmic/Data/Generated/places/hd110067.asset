@@ -25,7 +25,7 @@ MonoBehaviour:
     - The whole system would fit comfortably inside the orbit of Mercury.
     stats: []
     instruction: Pinch a world to lift it out, two hands to grow it, let go to leave it.
-  content: {fileID: 0}
+  content: {fileID: 4678751791542623573, guid: efda19b28a48ad04baef91640c2f3b60, type: 3}
   layouts:
   - {fileID: 11400000, guid: e42d0986eb2b5dd429ebec36f5d07879, type: 2}
   - {fileID: 11400000, guid: abcc6218da2cece49bd0263384c843ef, type: 2}
