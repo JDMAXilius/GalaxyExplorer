@@ -220,6 +220,131 @@ builders before anything asks a nebula, the cosmic web or Andromeda to be grabbe
 
 ---
 
+## Rework — terminal verification (13 Sep 2026)
+
+The rework is the ground-up rebuild under `Assets/Cosmic/` (see `Assets/Cosmic/RULES.md`); the old tree
+stays bootable and is never edited from it. **Phases 0–2 are committed and have never been compiled and
+never run.** They also have no scene presence at all: no `AudioLibrary` asset, no dim material, no host
+GameObject, nothing to press. So verification needs a harness that first *makes* those things and then
+drives the components in play mode with assertions.
+
+Everything below is driven through the Unity MCP relay from a terminal — `node tools/mcp/umcp.js run …`
+and `pwsh tools/mcp/compile.ps1` — and **one client at a time**, because the relay is a single shared
+connection and two clients deadlock. The wrappers live in `tools/mcp/rework/` (read its README first);
+the work they call lives in menu items under `Cosmic/Verify/…` in `Assets/Cosmic/Editor/Verify.cs`,
+because the runner's throwaway assembly cannot name `Room`, `Audio` or `Prefs` but a menu item can.
+
+`Verify.cs` is test tooling and is outside RULES.md's six-editor-script budget, which it says in its own
+one comment line. The two assets its setup step writes — `Assets/Cosmic/Data/Generated/audio_library.asset`
+and `Assets/Cosmic/Prefabs/room_dim.mat` — are **not throwaways**: they are the real inputs Phase 6 wires
+into the one scene, built here because Phase 2 is the first thing that needs them. Both are committed.
+
+| ID | Track | Title | Depends | Status |
+|---|---|---|---|---|
+| CS-126 | TERM | Compile the Cosmic assemblies | — | todo |
+| CS-127 | TERM | Import copy and run the parity gate | CS-126 | todo |
+| CS-128 | TERM | Phase 2 setup — audio library, dim material, host object | CS-126 | todo |
+| CS-129 | TERM | Phase 2 play-mode verification | CS-128 | todo |
+| CS-130 | TERM | Teardown and commit the generated assets | CS-129 | todo |
+
+*CS-126 — compile the Cosmic assemblies.* `pwsh tools/mcp/compile.ps1`, then
+`node tools/mcp/umcp.js run tools/mcp/rework/p0_compile.cs`, then
+`node tools/mcp/umcp.js call Unity_GetConsoleLogs '{}'`. **Accept:** zero `error CS####` lines from the
+refresh; `[P0] PASS both Cosmic assemblies are present` (both `Cosmic.Runtime` and `Cosmic.Editor` in
+`AppDomain.CurrentDomain.GetAssemblies()`); and `[P0] PASS the actions asset imports as an
+InputActionAsset with both the XR and Desktop maps`, with the counts line reading `XR=10 actions,
+Desktop=29 actions`. If the menu item does not exist, that *is* the failure — `Cosmic.Editor` did not
+build; read the errors and stop here, because nothing after this means anything.
+
+*CS-127 — import copy and run the parity gate.*
+`node tools/mcp/umcp.js run tools/mcp/rework/p1_data.cs` (not in play mode), read the console, then from
+the repo root run `python3 tools/parity/check_data.py`. The menu item runs `Cosmic/Import Copy` **twice**
+and compares every generated asset's GUID across the two runs. **Accept:** `[P1] PASS a second import
+left all N generated GUIDs unchanged` — a builder that duplicates or re-creates on the second run is a
+bug per RULES.md — and a parity report whose remaining loss is only the predicted classes and nothing
+else: unowned `Narration`, `ContentPrefab` and `DockThumbnail` references (the rework has no owner for
+them until Phase 6 wiring), 3 room modes the copy deck does not state and which stay authored, 1 layout
+(Copy writes none; `Generated/layouts/` is a placeholder folder), and 11 builder-owned assets. Any other
+class of loss is a regression in `Copy.cs`, not an expected gap.
+
+*CS-128 — Phase 2 setup.* Open a **saved** scene with a camera tagged `MainCamera` by hand first —
+`Assets/scenes/development_scenes/solar_system_prefab_scene.unity` is the recommended host — because
+nothing here calls `OpenScene` in Single mode, where the save prompt is modal and blocks the relay
+outright, and because `SaveScene` on an untitled scene opens a file dialog for the same reason. Then
+`node tools/mcp/umcp.js run tools/mcp/rework/p2_setup.cs`. **Accept:**
+`Assets/Cosmic/Data/Generated/audio_library.asset` exists with every `Sfx` id wired to its CS-070 clip
+under `Assets/audio/ui_audio_clips/` (`GrowIn` deliberately has none) and `musicByRoom` set per D-006
+(Passthrough→`background_music`, Dimmed→`bgm_system`, Halo and Black→`bgm_galaxy`), mixer groups left
+null; `Assets/Cosmic/Prefabs/room_dim.mat` exists on `CosmicSimulation/EnvironmentTint`, black at alpha
+0; a root `cosmic_verify` in the open scene carrying `Cosmic.Audio` with its library assigned and
+`Cosmic.Room` with its `dimMaterial` assigned (the AR fields stay null on desktop); and the scene is
+**saved**, so the objects survive the play-mode domain reload. Re-running the step updates in place and
+says `updated` rather than `created` — it is a builder, so it is idempotent.
+
+*CS-129 — Phase 2 play-mode verification.* Switch Error Pause **off** in the console first: a FAIL is a
+`Debug.LogError` and would pause play mode mid-sequence. Then
+`node tools/mcp/umcp.js run tools/mcp/rework/p2_enter_play.cs` (it assigns `EditorApplication.isPlaying`
+directly — the only thing that works through the relay, per CS-119 — so poll `isPlaying`, do not trust
+the reply, and expect "Unity not detected" for a few seconds while the domain reloads), then
+`node tools/mcp/umcp.js run tools/mcp/rework/p2_run.cs`, wait about fifteen seconds, then
+`node tools/mcp/umcp.js call Unity_GetConsoleLogs '{}'`. **Accept: `[P2] DONE 30/30` with no `[P2] FAIL`
+line anywhere.** The thirty checks, in order:
+
+| # | Check |
+|---|---|
+| 1 | `room_dim_quad` is an active `MeshRenderer` after `Room.Set(Dimmed)` |
+| 2 | its shared material reaches alpha 0.5 ± 0.05 within 0.5 s |
+| 3 | `Room.Changed` fired exactly once entering Dimmed |
+| 4 | exactly one of the two `music_*` sources is playing `bgm_system` |
+| 5 | setting Dimmed a second time does **not** fire `Room.Changed` |
+| 6 | the bed kept playing rather than restarting (same source, `time` advanced) |
+| 7 | `Room.Set(Black)` → `Camera.main.backgroundColor.a == 1` |
+| 8 | `Room.Changed` fired entering Black |
+| 9 | 2.5 s later `bgm_galaxy` is playing at 0.35 ± 0.05 (the 2 s crossfade completed) |
+| 10 | the outgoing music source stopped (quieter-source rule held) |
+| 11 | `Room.ForcePassthrough(true)` → `Room.Effective == Passthrough` |
+| 12 | it fired `Room.Changed` exactly once |
+| 13 | in Halo, `Room.Halo(subject, 0.5)` gives a `room_halo_quad` renderer that is enabled |
+| 14 | its alpha passes 0.9 within 0.7 s |
+| 15 | `Room.Forget(subject)` destroys the halo quad |
+| 16 | music sits at 0.35 ± 0.05 before the duck |
+| 17 | `Say(clip)` sets `Audio.Speaking` |
+| 18 | music ducks to 0.1925 ± 0.05 (0.35 × 0.55) within 0.6 s |
+| 19 | `StopVoice()` clears `Speaking` |
+| 20 | music recovers to 0.35 ± 0.05 |
+| 21 | two unplaced `Play(Sfx.Select)` calls in one frame debounce to **one** voice |
+| 22 | two placed `Play(Sfx.Select, t)` calls give **two** voices (spatial is exempt) |
+| 23 | `Ambience(clip)` gives an `ambience` source that is playing and fading up |
+| 24 | `Loop(clip)` returns a playing, looped source |
+| 25 | `Release(source)` destroys it |
+| 26 | `Prefs.Muted = true` → `AudioListener.volume == 0` |
+| 27 | `Prefs.TextScale = 1.3f` reads back 1.25 |
+| 28 | the mute preference is restored afterwards |
+| 29 | `Tween.To` lands exactly on target after ~0.45 s |
+| 30 | `Tween.To` never overshoots (max progress ≤ 1) |
+
+The run also logs one `[P2] PlayerPrefs written:` line with the five `Cosmic.*` keys and their values, so
+the key names are on the record rather than inferred from `Prefs.cs`.
+
+**Listen and look — the owner does this part, no assertion can.** (a) Take the room from Passthrough to
+Dimmed to Black and confirm the music crossfade is a clean **2 s** with no click and no restart when the
+same state is set twice. (b) Under narration the duck must be clearly audible without swamping the voice.
+(c) The dim must read as a soft grey veil over the room, not a hard-edged plate in front of the face —
+frame the **scene view** at the player's eye (`SceneView.pivot`/`rotation` from `Camera.main`) and capture
+it with `Unity_Camera_Capture '{}'`; never `ScreenCapture`, which the relay refuses outright, and never
+`cameraInstanceID`, which only the scene view answers reliably. Remember the scene view ignores the game
+camera's clear colour, so Black reads as the editor's light background there.
+
+*CS-130 — teardown.* `node tools/mcp/umcp.js run tools/mcp/rework/p2_leave_play.cs`, confirm
+`isPlaying=false` (`compile.ps1` reports it), then
+`node tools/mcp/umcp.js run tools/mcp/rework/p2_teardown.cs`. **Accept:** `cosmic_verify` and any stray
+`cosmic_verify_*` objects are gone from the scene and the scene is saved clean; `audio_library.asset` and
+`room_dim.mat` are **kept** and committed, because they are the Phase 6 wiring inputs and not fixtures.
+Check `git status` before committing and revert any shared material that play mode wrote runtime values
+into (`about_material`, `earth_clouds`, the Jupiter clouds).
+
+---
+
 ## Phase 0 — Foundation and rebrand
 
 | ID | Track | Title | Depends | Status |
