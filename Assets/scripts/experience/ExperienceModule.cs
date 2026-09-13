@@ -84,5 +84,17 @@ namespace CosmicSimulation
         public AudioClip Ambience;
 
         public bool HasLayoutChoice => Layouts != null && Layouts.Length > 1;
+
+        [Tooltip("Places this tile offers instead of opening one itself: the Galaxies tile lists the galaxies " +
+                 "we know, and picking one opens it as its own place, exactly as Andromeda's tile does. Leave " +
+                 "empty for a tile that simply opens.")]
+        public ExperienceModule[] Places = Array.Empty<ExperienceModule>();
+
+        /// <summary>
+        /// Whether this tile offers a choice of places. A single entry is still a choice worth showing - a
+        /// list of one is what a second galaxy being added looks like on the way - so unlike
+        /// <see cref="HasLayoutChoice"/> this does not require two.
+        /// </summary>
+        public bool HasPlaceChoice => Places != null && Places.Length > 0;
     }
 }

@@ -151,6 +151,7 @@ namespace CosmicSimulation
             if (popup != null)
             {
                 popup.LayoutChosen -= OnLayoutChosen;
+                popup.PlaceChosen -= DockController.ChoosePlace;
             }
         }
 
@@ -163,6 +164,7 @@ namespace CosmicSimulation
             if (popup != null)
             {
                 popup.LayoutChosen += OnLayoutChosen;
+                popup.PlaceChosen += DockController.ChoosePlace;
             }
 
             if (passthroughButton != null)
@@ -820,7 +822,10 @@ namespace CosmicSimulation
                 return;
             }
 
-            if (tile.Module.HasLayoutChoice && popup != null)
+            // A tile that offers a choice - layouts to rearrange what is open, or places to go to - shows the
+            // panel instead of opening something itself. The Galaxies tile is the second kind: it lists the
+            // galaxies we know, and each one opens as its own place the way Andromeda does.
+            if ((tile.Module.HasLayoutChoice || tile.Module.HasPlaceChoice) && popup != null)
             {
                 popup.Open(tile);
                 return;
@@ -832,6 +837,17 @@ namespace CosmicSimulation
             }
 
             ExperienceDirector.Instance?.Switch(tile.Module);
+        }
+
+        /// <summary>Opens the place the player picked from a tile that offers several.</summary>
+        public static void ChoosePlace(ExperienceModule place)
+        {
+            if (place == null)
+            {
+                return;
+            }
+
+            ExperienceDirector.Instance?.Switch(place);
         }
 
         /// <summary>Commits the layout the player picked in a pop-up.</summary>

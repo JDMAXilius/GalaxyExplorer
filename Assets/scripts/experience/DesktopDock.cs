@@ -91,6 +91,7 @@ namespace CosmicSimulation
             if (popup != null)
             {
                 popup.LayoutChosen -= DockController.ChooseLayout;
+                popup.PlaceChosen -= DockController.ChoosePlace;
             }
         }
 
@@ -115,6 +116,7 @@ namespace CosmicSimulation
             if (popup != null)
             {
                 popup.LayoutChosen += DockController.ChooseLayout;
+                popup.PlaceChosen += DockController.ChoosePlace;
 
                 // The pop-up's options are GEButtons, driven by a poke or a hand ray. Neither exists on a
                 // monitor, so each one gets a uGUI Button that presses it. Wired here rather than saved into

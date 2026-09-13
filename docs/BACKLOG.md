@@ -284,6 +284,7 @@ into the one scene, built here because Phase 2 is the first thing that needs the
 | CS-166 | CC | Rework P7d: docs cutover — `docs/TECHNICAL_OVERVIEW.md` rewritten for the Cosmic tree (38 runtime scripts, 11 builders, 17 shaders, one scene), `CLAUDE.md`'s key-code section repointed, `tools/mcp/smoke_legacy.cs` removed, `RULES.md`'s table settled at the landed counts | CS-164 | todo |
 | CS-167 | CC | Every moon registers one `SphereCollider` with two interactables — `body_moon`, `body_phobos`, `body_deimos`, `body_ganymede`, `body_callisto`, `body_io`, `body_europa`, `body_titan`, `body_mimas`, `body_iapetus`, `body_enceladus` each warn twice on load ("a collider used by an Interactable object is already registered"); XRI keeps the first association and drops the second, so one of the two components is inert on every moon | CS-144 | todo |
 | CS-168 | TERM | Run **Cosmic Simulation → Verify → App Check** against `main_scene` and fix what it finds: every dock tile clicked, the room mode each asks for, a Milky Way destination tag clicked, Escape, restore, console clean | — | doing (written and compiled; not yet run) |
+| CS-169 | CC | The outside galaxies (M51, M101, M33) become places chosen from the Galaxies tile's panel, beside Andromeda, instead of pins on the Milky Way map | — | done (verified by App Check) |
 
 **Terminal run, 13 Sep 2026 — CS-128, CS-129, CS-130, CS-156, CS-160 and CS-161 all pass, and four real
 defects had to be fixed to get there.** The editor was opened on this project for the first time in this
@@ -350,6 +351,39 @@ left on disk, uncommitted.
 owner's sign-off — it needs a headset and a person, and CS-131's wiring step (narration and ambience are
 null until then) sits in front of it. CS-164, the cutover, deletes 1097 paths and is explicitly gated on
 that sign-off; CS-165 needs CS-164 and a device; CS-166 follows CS-164. None of them were touched here.
+
+**CS-169 (new, 13 Sep 2026, owner's design): the outside galaxies become places, chosen from the Galaxies
+tile.** M51, M101 and M33 were pins on the Milky Way's map, which said they are features of our galaxy.
+They are places you go to, the way Andromeda is. So: the three came off the map (it now carries **nine**
+tags, every one genuinely inside this galaxy), and the **Galaxies tile offers a list** — Andromeda,
+Whirlpool (M51), Pinwheel (M101), Triangulum (M33) — from which each opens as its own place through the
+same `ExperienceDirector.Switch` a dock tile calls. Andromeda is listed beside them deliberately, so the
+panel reads as every galaxy we know rather than as the leftovers.
+
+The pieces: `ExperienceModule.Places` and `HasPlaceChoice`; `DockPopup` now offers either layouts or
+places and grows its plate to a second row for four of them; `DockController.ChoosePlace` opens the pick;
+both docks subscribe; `UiPrefabBuilder` builds four option slots instead of two; and
+`Cosmic Simulation → Build Galaxy Choices` fills the list reproducibly. **The three keep
+`ExperienceKind.Destination` on purpose** — `Kind` is what the dock builds tiles from, and promoting them
+would take the dock from seven tiles to ten and change its curve on desktop and headset alike.
+
+**Verified end to end with real mouse clicks** (`Logs/app_check.log`, 13 Sep): *the Galaxies tile offers
+places (4)*, *clicking the Galaxies tile opens the galaxy list*, *picking Whirlpool from the list opens it
+as its own place (whirlpool)*.
+
+**And the walk taught us something about itself:** a tile that offers a choice answers with the panel
+rather than opening, so asserting that it switched called correct behaviour a failure — twice, for
+`solar_system_planets` (layouts) and then `galaxies` (places). The walk now expects the panel for those
+tiles. The earlier "the Solar System Planets tile does not open" line was never a defect.
+
+**Still open: the Milky Way destination tag click does not work, and the first fix was not the cause.**
+`DesktopMouseInput` resolved a hit with `collider.GetComponent<GEInteractable>()`, which is wrong for any
+interactable whose collider sits on a child, and that is now `GetComponentInParent` — but a tag's collider
+and its `GEInteractable` do in fact share the `grow` object, so the click was already reaching an
+interactable. The click lands on `grow` (the walk records *"the tag click met: grow at 2.15 m"*) and
+nothing opens. Next: watch `DesktopMouseInput._hovered` and the dispatch from `grow` up to the
+`LabelButton` on the tag root while a live session stays up — the last two attempts lost play mode
+mid-probe.
 
 **CS-168 (new, 13 Sep 2026): the shipping app gets the rework's acceptance walk.** The one thing the
 rework had that `main_scene` did not was an executable check — every defect found this session was found

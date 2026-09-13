@@ -491,27 +491,40 @@ namespace CosmicSimulation.EditorTools
 
         private static void BuildDockPopup()
         {
+            // Four slots, two to a row. Two of them is the layout pair this panel has always shown and the
+            // plate keeps its old 90 mm; four is the galaxy list, and DockPopup.Fit grows the plate to 142 mm
+            // for the second row. Slots the module does not need are hidden, not destroyed.
+            const int Slots = 4;
+            const float RowHeight = 52f;
+            const float Padding = 38f;
+            var tallest = RowHeight * (Slots / 2) + Padding;
+
             var root = Root("dock_popup_prefab", true);
             var rt = (RectTransform)root.transform;
-            rt.sizeDelta = new Vector2(240f, 90f);
+            rt.sizeDelta = new Vector2(240f, tallest);
 
-            Panel("plate", rt, 240f, 90f, Load("ui_rounded_r48"), Plate).raycastTarget = false;
+            var plate = Panel("plate", rt, 240f, tallest, Load("ui_rounded_r48"), Plate);
+            plate.raycastTarget = false;
 
             var popup = root.AddComponent<DockPopup>();
             var so = new SerializedObject(popup);
+            so.FindProperty("plate").objectReferenceValue = plate.rectTransform;
             var buttons = so.FindProperty("optionButtons");
             var labels = so.FindProperty("optionLabels");
             var fills = so.FindProperty("optionFills");
-            buttons.arraySize = 2;
-            labels.arraySize = 2;
-            fills.arraySize = 2;
+            buttons.arraySize = Slots;
+            labels.arraySize = Slots;
+            fills.arraySize = Slots;
 
-            for (var i = 0; i < 2; i++)
+            var seed = new[] { "Schematic", "Realistic", "Option 3", "Option 4" };
+            for (var i = 0; i < Slots; i++)
             {
                 var fill = Panel($"option_{i}", rt, 108f, 44f, Load("ui_rounded_r32"), i == 0 ? Cyan : Plate);
-                fill.rectTransform.anchoredPosition = new Vector2(i == 0 ? -58f : 58f, -6f);
+                var column = i % 2 == 0 ? -58f : 58f;
+                var row = -6f - RowHeight * (i / 2);
+                fill.rectTransform.anchoredPosition = new Vector2(column, row);
 
-                var text = Label("label", fill.rectTransform, 100f, 12f, i == 0 ? "Schematic" : "Realistic",
+                var text = Label("label", fill.rectTransform, 100f, 12f, seed[i],
                     5f, i == 0 ? OnAccent : Ink, TextAlignmentOptions.Center, FontWeight.Medium);
                 text.rectTransform.anchoredPosition = Vector2.zero;
 
@@ -526,7 +539,7 @@ namespace CosmicSimulation.EditorTools
             }
 
             var close = SquareButton("close_button", rt, 9f, 6f, Load("icon_close"), Plate, Ink);
-            ((RectTransform)close.transform).anchoredPosition = new Vector2(112f, 36f);
+            ((RectTransform)close.transform).anchoredPosition = new Vector2(112f, tallest * 0.5f - 9f);
             so.FindProperty("closeButton").objectReferenceValue = close;
             so.ApplyModifiedPropertiesWithoutUndo();
 

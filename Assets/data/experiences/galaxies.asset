@@ -29,3 +29,8 @@ MonoBehaviour:
   Layouts: []
   Narration: {fileID: 8300000, guid: e07c3338431c4e14f9dd0a3dcb737c9a, type: 3}
   Ambience: {fileID: 0}
+  Places:
+  - {fileID: 11400000, guid: a30d4d474bbdcb44dae9145de463632d, type: 2}
+  - {fileID: 11400000, guid: e002f2043ae0cb04b85186f2f90ce95e, type: 2}
+  - {fileID: 11400000, guid: 42b62bae9cf838440bdafc0ac010fbf1, type: 2}
+  - {fileID: 11400000, guid: 9748772cf1dd5bc43a2ec793b5d1da7b, type: 2}

@@ -137,6 +137,19 @@ namespace GalaxyExplorer.Editor
                     // The decision was made before the click, not after: a dock that hides itself on a switch
                     // would otherwise turn a real result into a silent skip.
                     if (!clickable) return;
+
+                    // A tile that offers a choice - the Solar System's layouts, the Galaxies tile's galaxies -
+                    // answers with the panel instead of opening something. Asserting that it switched called
+                    // correct behaviour a failure twice before this was written down.
+                    if (wanted.Module.HasLayoutChoice || wanted.Module.HasPlaceChoice)
+                    {
+                        var panel = UnityEngine.Object.FindAnyObjectByType<DockPopup>();
+                        Check(panel != null && panel.IsOpen,
+                            $"clicking the {wanted.Module.Id} tile offers its choices rather than opening ({(panel == null ? "no pop-up" : panel.IsOpen ? "open" : "shut")})");
+                        if (panel != null && panel.IsOpen) panel.Close();
+                        return;
+                    }
+
                     Check(_director.Current == wanted.Module,
                         $"clicking the {wanted.Module.Id} tile opens it ({Name(_director.Current)})");
                     var room = EnvironmentController.Instance;
@@ -145,7 +158,42 @@ namespace GalaxyExplorer.Editor
                 });
             }
 
-            // 3. A destination tag on the Milky Way, clicked with the mouse. This is the one the owner asked
+            // 3. The Galaxies tile offers the galaxies we know, and picking one opens it as its own place -
+            //    the same switch Andromeda's tile makes. Clicked, not called.
+            DockTile galaxiesTile = null;
+            foreach (var tile in _tiles)
+                if (tile != null && tile.Module != null && tile.Module.Id == "galaxies") galaxiesTile = tile;
+            Transform galaxyOption = null;
+            Add(0.3f, () =>
+            {
+                if (galaxiesTile == null) { Skip("the galaxy list: there is no Galaxies tile"); return; }
+                Check(galaxiesTile.Module.HasPlaceChoice,
+                    $"the Galaxies tile offers places ({(galaxiesTile.Module.Places == null ? 0 : galaxiesTile.Module.Places.Length)})");
+                if (!OnScreen(galaxiesTile.transform)) { Skip("the galaxy list: the Galaxies tile is not on screen"); return; }
+                _holding = () => Move(ScreenOf(galaxiesTile.transform));
+            });
+            Add(0.4f, () => { if (galaxiesTile != null) _holding = () => Press(ScreenOf(galaxiesTile.transform), true); });
+            Add(0.2f, () => { if (galaxiesTile != null) { _holding = null; Press(ScreenOf(galaxiesTile.transform), false); } });
+            Add(SettleSeconds, () =>
+            {
+                if (galaxiesTile == null) return;
+                var popup = UnityEngine.Object.FindAnyObjectByType<DockPopup>();
+                Check(popup != null && popup.IsOpen, "clicking the Galaxies tile opens the galaxy list");
+                galaxyOption = FindOption(popup, "Whirlpool");
+                if (galaxyOption == null) { Skip("the galaxy pick: no Whirlpool option is on screen"); return; }
+                _holding = () => Move(ScreenOf(galaxyOption));
+            });
+            Add(0.4f, () => { if (galaxyOption != null) _holding = () => Press(ScreenOf(galaxyOption), true); });
+            Add(0.2f, () => { if (galaxyOption != null) { _holding = null; Press(ScreenOf(galaxyOption), false); } });
+            AddWaitWhile(() => _director.IsSwitching, 8f);
+            Add(SettleSeconds, () =>
+            {
+                if (galaxyOption == null) return;
+                Check(Name(_director.Current) == "whirlpool",
+                    $"picking Whirlpool from the list opens it as its own place ({Name(_director.Current)})");
+            });
+
+            // 4. A destination tag on the Milky Way, clicked with the mouse. This is the one the owner asked
             //    about by name, and the one nothing had ever proven.
             Transform tag = null;
             Add(0.3f, () => _director.Switch("milky_way"));
@@ -169,7 +217,7 @@ namespace GalaxyExplorer.Editor
             Add(0.1f, () => Tap(Key.Escape, false));
             Add(SettleSeconds, () => Check(!_director.HasOpenDestination, "Escape closes the destination"));
 
-            // 4. Restore, and the console.
+            // 5. Restore, and the console.
             Add(0.2f, () => Tap(Key.R, true));
             Add(0.1f, () => Tap(Key.R, false));
             Add(SettleSeconds, () =>
@@ -187,6 +235,19 @@ namespace GalaxyExplorer.Editor
         private static ExperienceModule FirstModule()
         {
             foreach (var tile in _tiles) if (tile != null && tile.Module != null) return tile.Module;
+            return null;
+        }
+
+        /// <summary>An option in the pop-up whose label says this, or null. Hidden options do not count.</summary>
+        private static Transform FindOption(DockPopup popup, string text)
+        {
+            if (popup == null) return null;
+            foreach (var label in popup.GetComponentsInChildren<TMPro.TMP_Text>(false))
+            {
+                if (label.text == null || label.text.IndexOf(text, StringComparison.OrdinalIgnoreCase) < 0) continue;
+                var option = label.transform.parent != null ? label.transform.parent : label.transform;
+                if (OnScreen(option)) return option;
+            }
             return null;
         }
 
