@@ -98,6 +98,8 @@ namespace Cosmic
             if (ambienceNow <= 0f) ApplyAmbience();
         }
 
+        public AudioSource Loop(Sfx id) => library != null ? Loop(library.Clip(id)) : null;
+
         public AudioSource Loop(AudioClip clip)
         {
             Build();
