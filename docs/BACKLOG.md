@@ -270,8 +270,8 @@ into the one scene, built here because Phase 2 is the first thing that needs the
 | CS-152 | CC | Rework P5b: `UI/Dock.cs` + `Tile.cs` (seven tiles on a 1.2 m curve, active underline, hover lift, press depth, passthrough tile, drag bar as a Grabbable, palm-up and Tab show/hide, recenter at 0.55 x head height, hotkey relay), `UI/Popup.cs` (layout choice), `UI/Utility.cs` (scale, mute, narration, text size, about) | CS-151 | done (unrun) |
 | CS-153 | CC | Rework P5c: `Editor/Ui.cs` + `Cards.cs` menu **Cosmic → Build → UI**: `theme.asset` (Selawik) and nine prefabs under `Assets/Cosmic/Prefabs/ui/` (dock, three panels, three labels, toast, about) | CS-152 | done (unrun) |
 | CS-154 | CC | Rework P5 harness: `Cosmic/Verify/P5 Build · Setup · Enter Play · Run · Leave Play · Teardown` and `tools/mcp/rework/p5_*.cs` | CS-153 | done (unrun) |
-| CS-155 | TERM | Rework P5 compile and build: compile, **Cosmic → Verify → P5 Build** (nine prefabs, theme with Selawik, dock with seven tiles, popup, utility, one collider on the bar; second run keeps GUIDs) | CS-154 | todo |
-| CS-156 | TERM | Rework P5 play: dock recentres in front of the eye and tilts 25 degrees, Tab and palm-up toggle it, a tile click raises Picked, the Solar System tile opens the popup 40 mm above it, the utility window changes text size, a body panel sits 30 mm off Earth on the view-centre side, a card label grows on hover; `[P5] DONE n/m` | CS-155 | todo |
+| CS-155 | TERM | Rework P5 compile and build: compile, **Cosmic → Verify → P5 Build** (nine prefabs, theme with Selawik, dock with seven tiles, popup, utility, one collider on the bar; second run keeps GUIDs) | CS-154 | done |
+| CS-156 | TERM | Rework P5 play: dock recentres in front of the eye and tilts 25 degrees, Tab and palm-up toggle it, a tile click raises Picked, the Solar System tile opens the popup 40 mm above it, the utility window changes text size, a body panel sits 30 mm off Earth on the view-centre side, a card label grows on hover; `[P5] DONE n/m` | CS-155 | blocked-term |
 | CS-157 | TERM | Rework P5 look: offscreen render of every UI prefab against the Figma frames; owner signs off the dock, panel and tag before P6 | CS-156 | todo |
 
 *CS-132 done, unrun (13 Sep 2026).* Deck only; no importer change was needed. Seven body blocks and four place blocks ported verbatim from the old assets, plus the wiring fields the importer always read and the deck never carried: `**Bodies:**` on `solar_system` and `hd110067`, `**Destinations:**` on `milky_way` (nine, per GDD 4.3). All four new places are Dimmed, read from the old assets, so no `**Room:**` line. A Python re-implementation of the parser resolves 10/10, 7/7 and 9/9 ids. **Two things ported faithfully rather than fixed, for the owner:** the HD 110067 prose exceeds the deck's word caps (recorded as an exception in the README), and its four measured masses lack the `x 10` mantissa suffix the other bodies carry, so they will render as a bare mantissa with a superscript until the value text is changed — changing it would also change what the parity gate compares against. Terminal: **Cosmic → Import Copy**, then `check_data.py` should drop from 11 missing assets to 0 and `Wire()` should report references wired; then re-run **Cosmic → Build → Layouts** so the two HD 110067 layouts fill their slots.
@@ -407,6 +407,64 @@ scene was reverted here rather than committed; check `git status` for it after a
 old build's screenshots, and CS-149 wants an APK, OVR Metrics and stereo confirmed on the Quest.
 Neither can be settled over Link: Android ships Single Pass Instanced and Windows multi-pass, so a
 clean Link session says nothing about the eye that breaks.
+
+*CS-155 — done (13 Sep 2026, terminal session).* `[P5] DONE 13/13`. Nine prefabs, the theme on Selawik,
+the dock with seven tiles, one collider on the bar, GUIDs stable across a second build. Both are
+committed, as the earlier generated content was.
+
+**One compile error had to be fixed first, and the new guard is what found it.** `Verify.cs:1197`
+declared a second `UiFolder` — `CS0102`. The two are genuinely different things: the P2 one is the
+audio clip folder `Assets/audio/ui_audio_clips/` and the P5 one is `Assets/Cosmic/Prefabs/ui`. The
+audio constant is renamed `UiClipFolder`, which also pairs it with the `MusicFolder` beside it; the
+P5 one keeps the name it earned with ten use sites.
+
+**`compile.ps1`'s new staleness check had a false positive, now fixed.** It computed "the newest
+source" over all of `Assets/Cosmic` and compared it against *both* assemblies, so editing any
+Editor-only file reported `Cosmic.Runtime.dll` stale when Runtime had correctly not been rebuilt —
+which is most harness work, and it fired on the very first run here. Each assembly is now compared
+against its own sources, `Cosmic/Editor` for the editor assembly and everything outside it for the
+runtime one. The check itself is right and earned its keep the same session: it caught the `CS0102`
+as `COMPILE FAILED` where the old script would have said CLEAN.
+
+*CS-156 — does NOT pass; blocked on the environment, with one measured cause and one unresolved.*
+Best result **16/20**; across four runs the score was 13, 16, 14, 14 on unchanged code, so **the run
+is not reproducible on this machine** and no score from it should be recorded as a verdict.
+
+**What passes every time, and is worth banking:** Recenter parks the dock 0.75 m ahead and at
+`max(0.7, 0.55 x head)` = 0.748 m, the 25-degree tilt, the dock starting visible, Tab hiding and
+showing it, **F2 relaying the first tile's place through `Dock.Picked`**, Escape closing the popup and
+the utility window, the body panel fading in, sitting 30 mm off the sphere's edge and facing the
+player, and `Room.Changed` never firing. The geometry and the keyboard path are sound.
+
+**The measured cause, which is not flakiness.** With the camera at `(0, 1.360, 0)` looking level and a
+60-degree vertical FOV, the visible half-height at 0.75 m is `tan(30) x 0.75` = 0.433 m, but the dock
+parks 1.360 - 0.750 = **0.61 m below the eye**. Every tile projects to a negative screen Y (-136 to
+-219 measured) and so does the utility window (-229). Both are simply **below the viewport**, so a
+synthetic click can never land on them. The two controls that pass the pointer tests are the ones at
+eye height: the label at y 1.360 and the panel at y 1.210 both project on-screen. That accounts for
+four of the failures — the tile click, the two that cascade from it (no popup, so the popup-position
+check measures 223 mm), and the text-size button inside the off-screen utility window.
+
+**Whether that is a product fault or a harness fault is the owner's call and is not taken here.** In a
+headset the player looks down and the dock is there; on the desktop at a level gaze it is off-screen
+at rest, which either means the desktop pose needs to pitch down or look up at the dock, or the
+desktop dock belongs higher. GDD 11's chest height is the reason it sits where it does.
+
+**The unresolved part.** The label hover and label click passed once and failed on later runs with
+nothing changed, and the Game view's own height changed between runs (1060 then 970 px), which moves
+every projected point. The README asks for a visible Game view *and* the real mouse kept off it; the
+first was missing until this session opened one — that alone took the score from 13 to 16 — and the
+second cannot be guaranteed from here. **Do not treat the remaining label failures as defects without
+a run on a machine that can hold both preconditions.**
+
+**One experiment recorded because it failed.** Widening the camera FOV to 110 degrees put all seven
+tiles on screen, but the run then scored 14/20 and broke the two label assertions that had just
+passed. Changing the FOV mid-session perturbs the harness's own screen-point arithmetic instead of
+isolating the variable, so it proves nothing either way. The direct `WorldToScreenPoint` measurement
+above stands on its own and does not depend on it.
+
+*CS-157 is the owner's.* It is an offscreen render of every UI prefab against the Figma frames and
+ends in a sign-off on the dock, panel and tag.
 
 *CS-126 — compile the Cosmic assemblies.* `pwsh tools/mcp/compile.ps1`, then
 `node tools/mcp/umcp.js run tools/mcp/rework/p0_compile.cs`, then

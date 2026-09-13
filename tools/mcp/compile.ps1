@@ -288,12 +288,21 @@ try {
     # A refresh that changes nothing does not recompile, and a build that already failed keeps the last good
     # assembly, so a clean log can mean "did not compile at all" (13 Sep 2026: three CS0117 errors reported
     # CLEAN three times). The assembly on disk has to be newer than the newest script it was built from.
+    # Each assembly is compared against its OWN sources, not against every script under Assets/Cosmic.
+    # Editor-only files are not part of Cosmic.Runtime, so touching one used to report Runtime stale when it
+    # had correctly not been rebuilt - which is most harness edits.
+    $editorRoot = Join-Path $ProjectPath 'Assets\Cosmic\Editor'
     $stale = @()
     foreach ($assembly in @('Cosmic.Runtime', 'Cosmic.Editor')) {
         $dll = Join-Path $ProjectPath "Library\ScriptAssemblies\$assembly.dll"
         if (-not (Test-Path $dll)) { $stale += "$assembly.dll is missing"; continue }
-        $newest = Get-ChildItem (Join-Path $ProjectPath 'Assets\Cosmic') -Recurse -Filter *.cs |
-            Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+        $sources = Get-ChildItem (Join-Path $ProjectPath 'Assets\Cosmic') -Recurse -Filter *.cs
+        if ($assembly -eq 'Cosmic.Editor') {
+            $sources = $sources | Where-Object { $_.FullName.StartsWith($editorRoot, 'OrdinalIgnoreCase') }
+        } else {
+            $sources = $sources | Where-Object { -not $_.FullName.StartsWith($editorRoot, 'OrdinalIgnoreCase') }
+        }
+        $newest = $sources | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
         if ($newest -and $newest.LastWriteTimeUtc -gt (Get-Item $dll).LastWriteTimeUtc) {
             $stale += "$assembly.dll is older than $($newest.Name)"
         }

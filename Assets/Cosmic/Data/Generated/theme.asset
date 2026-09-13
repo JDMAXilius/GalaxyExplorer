@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fdce9683c7a7ed20348bb979ba345fc, type: 3}
+  m_Name: theme
+  m_EditorClassIdentifier: Cosmic.Runtime::Cosmic.Theme
+  ink: {r: 1, g: 1, b: 1, a: 1}
+  inkSecondary: {r: 0.61960787, g: 0.72156864, b: 0.76862746, a: 1}
+  accentCyan: {r: 0.42352942, g: 0.8117647, b: 0.8666667, a: 1}
+  tagDark: {r: 0.05490196, g: 0.078431375, b: 0.09411765, a: 0.8}
+  titleMm: 24
+  subtitleMm: 8
+  statMm: 12
+  labelMm: 6.5
+  bodyMm: 9.5
+  tagMm: 5
+  moonSmallMm: 5
+  moonLargeMm: 18
+  tagRadiusMm: 4
+  plateRadiusMm: 6
+  panelWidthMm: 161
+  tagSizeMm: {x: 60, y: 24}
+  dockTileMm: {x: 110, y: 62}
+  font: {fileID: 11400000, guid: 1433d7619f3172144afee0fef52ec9cd, type: 2}

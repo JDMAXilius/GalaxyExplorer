@@ -32,7 +32,7 @@ namespace Cosmic.Editor
         const string LibraryPath = Generated + "/audio_library.asset";
         const string DimPath = "Assets/Cosmic/Prefabs/room_dim.mat";
         const string ActionsPath = "Assets/Cosmic/Input/actions.inputactions";
-        const string UiFolder = "Assets/audio/ui_audio_clips/";
+        const string UiClipFolder = "Assets/audio/ui_audio_clips/";
         const string MusicFolder = "Assets/audio/music_audio_clips/";
         const string VoicePath = "Assets/audio/vo_audio_clips/vo_intro_audio_clips/vo_intro_01_audio_clip.wav";
         const string AmbiencePath = "Assets/audio/ambience_audio_clips/ambience_earth_audio_clip.wav";
@@ -653,8 +653,8 @@ namespace Cosmic.Editor
             AudioClip clip = null;
             if (clipName != null)
             {
-                clip = AssetDatabase.LoadAssetAtPath<AudioClip>(UiFolder + clipName + "_audio_clip.wav");
-                if (clip == null) Debug.LogError($"[P2] FAIL missing clip {UiFolder}{clipName}_audio_clip.wav for {id}");
+                clip = AssetDatabase.LoadAssetAtPath<AudioClip>(UiClipFolder + clipName + "_audio_clip.wav");
+                if (clip == null) Debug.LogError($"[P2] FAIL missing clip {UiClipFolder}{clipName}_audio_clip.wav for {id}");
             }
             return new AudioLibrary.Entry { id = id, clip = clip, volume = 1f };
         }
