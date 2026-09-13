@@ -110,25 +110,29 @@ namespace GalaxyExplorer.Editor
             {
                 var wanted = tile;
                 if (wanted == null || wanted.Module == null) continue;
+                var clickable = false;
                 Add(0.3f, () =>
                 {
-                    if (!OnScreen(wanted.transform.position))
+                    clickable = OnScreen(wanted.transform);
+                    if (!clickable)
                     {
                         Skip($"the {wanted.Module.Id} tile: it is not on screen to click");
                         return;
                     }
-                    _holding = () => Move(At(wanted.transform.position));
+                    _holding = () => Move(ScreenOf(wanted.transform));
                 });
-                Add(0.4f, () => { if (_holding != null) _holding = () => Press(At(wanted.transform.position), true); });
-                Add(0.2f, () => { if (_holding != null) { _holding = null; Press(At(wanted.transform.position), false); } });
+                Add(0.4f, () => { if (clickable) _holding = () => Press(ScreenOf(wanted.transform), true); });
+                Add(0.2f, () => { if (clickable) { _holding = null; Press(ScreenOf(wanted.transform), false); } });
                 Add(SettleSeconds, () =>
                 {
-                    if (!OnScreen(wanted.transform.position)) return;
+                    // The decision was made before the click, not after: a dock that hides itself on a switch
+                    // would otherwise turn a real result into a silent skip.
+                    if (!clickable) return;
                     Check(_director.Current == wanted.Module,
                         $"clicking the {wanted.Module.Id} tile opens it ({Name(_director.Current)})");
                     var room = EnvironmentController.Instance;
-                    Check(room == null || room.EffectiveMode == wanted.Module.Environment,
-                        $"and the room goes to {wanted.Module.Environment} ({(room == null ? "no controller" : room.EffectiveMode.ToString())})");
+                    Check(room != null && room.EffectiveMode == wanted.Module.Environment,
+                        $"and the room goes to {wanted.Module.Environment} ({(room == null ? "there is no EnvironmentController" : room.EffectiveMode.ToString())})");
                 });
             }
 
@@ -141,16 +145,16 @@ namespace GalaxyExplorer.Editor
                 Check(Name(_director.Current) == "milky_way", $"the Milky Way opens ({Name(_director.Current)})");
                 tag = FindTag();
                 if (tag == null) { Skip("the destination tag click: no tag with a collider is on screen"); return; }
-                _holding = () => Move(At(tag.position));
+                _holding = () => Move(ScreenOf(tag));
             });
-            Add(0.5f, () => { if (tag != null) _holding = () => Press(At(tag.position), true); });
-            Add(0.2f, () => { if (tag != null) { _holding = null; Press(At(tag.position), false); } });
+            Add(0.5f, () => { if (tag != null) _holding = () => Press(ScreenOf(tag), true); });
+            Add(0.2f, () => { if (tag != null) { _holding = null; Press(ScreenOf(tag), false); } });
             Add(SettleSeconds * 2f, () =>
             {
                 if (tag == null) return;
                 Check(_director.HasOpenDestination,
                     $"clicking a destination tag on the Milky Way opens it ({(_director.OpenDestinationModule == null ? "nothing" : _director.OpenDestinationModule.Id)})");
-                if (!_director.HasOpenDestination) Say($"the tag click met: {WhatIsUnder(At(tag.position))}");
+                if (!_director.HasOpenDestination) Say($"the tag click met: {WhatIsUnder(ScreenOf(tag))}");
                 Tap(Key.Escape, true);
             });
             Add(0.1f, () => Tap(Key.Escape, false));
@@ -184,7 +188,7 @@ namespace GalaxyExplorer.Editor
             foreach (var child in tags.GetComponentsInChildren<Transform>(false))
             {
                 if (child == tags.transform || child.GetComponent<Collider>() == null) continue;
-                if (OnScreen(child.position)) return child;
+                if (OnScreen(child)) return child;
             }
             return null;
         }
@@ -275,21 +279,43 @@ namespace GalaxyExplorer.Editor
 
         private static string Name(ExperienceModule module) => module == null ? "nothing" : module.Id;
 
-        private static bool OnScreen(Vector3 world)
+        // The desktop dock is a screen-space canvas, and a screen-space canvas already holds its tiles at
+        // pixel coordinates: tile_milky_way sits at (1533, 66, 0), which through Camera.WorldToScreenPoint
+        // would come back as nonsense and aim every click at nothing. So the canvas decides how a position
+        // becomes a screen point, and only objects that are genuinely in the world go through the camera.
+        private static Vector2 ScreenOf(Transform thing)
         {
-            var cam = Camera.main;
-            if (cam == null) return false;
-            var screen = cam.WorldToScreenPoint(world);
-            return screen.z > 0.05f && screen.x > 8f && screen.y > 8f
-                   && screen.x < cam.pixelWidth - 8f && screen.y < cam.pixelHeight - 8f;
-        }
+            if (thing == null) return Vector2.zero;
+            var canvas = thing.GetComponentInParent<Canvas>();
+            if (canvas != null)
+            {
+                var through = canvas.renderMode == RenderMode.ScreenSpaceOverlay
+                    ? null
+                    : canvas.worldCamera != null ? canvas.worldCamera : Camera.main;
+                return RectTransformUtility.WorldToScreenPoint(through, thing.position);
+            }
 
-        private static Vector2 At(Vector3 world)
-        {
             var cam = Camera.main;
             if (cam == null) return Vector2.zero;
-            var screen = cam.WorldToScreenPoint(world);
+            var screen = cam.WorldToScreenPoint(thing.position);
             return new Vector2(screen.x, screen.y);
+        }
+
+        private static bool Behind(Transform thing)
+        {
+            if (thing == null) return true;
+            if (thing.GetComponentInParent<Canvas>() != null) return false;
+            var cam = Camera.main;
+            return cam == null || cam.WorldToScreenPoint(thing.position).z <= 0.05f;
+        }
+
+        private static bool OnScreen(Transform thing)
+        {
+            var cam = Camera.main;
+            if (cam == null || Behind(thing)) return false;
+            var screen = ScreenOf(thing);
+            return screen.x > 8f && screen.y > 8f
+                   && screen.x < cam.pixelWidth - 8f && screen.y < cam.pixelHeight - 8f;
         }
 
         private static void Move(Vector2 at) => Send(at, false);
