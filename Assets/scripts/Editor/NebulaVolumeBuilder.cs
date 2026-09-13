@@ -770,6 +770,11 @@ namespace CosmicSimulation.EditorTools
                 var parent = new GameObject(NodeName);
                 parent.transform.SetParent(root.transform, false);
 
+                // The gas centres on the player when the place opens, so they are standing in it rather than
+                // looking at it from a metre away. Only the volume moves: the panel and anything else on the
+                // prefab keep the position the place gave them, which is where a player expects to read them.
+                parent.AddComponent<CentreOnViewer>();
+
                 var total = 0;
                 var tally = new StringBuilder();
                 foreach (var layer in layers)
