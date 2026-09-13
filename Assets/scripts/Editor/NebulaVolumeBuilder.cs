@@ -66,6 +66,7 @@ namespace CosmicSimulation.EditorTools
         private const string DataFolder = "Assets/data/nebula_volumes";
         private const string MaterialFolder = "Assets/materials/nebula_volumes";
         private const string ShaderName = "CosmicSimulation/NebulaVolume";
+        private const string DustShaderName = "CosmicSimulation/NebulaVolumeDust";
         private const string AtlasPath = "Assets/Textures/stars_small_atlas.tga";
         private const string NodeName = "nebula_volume";
 
@@ -73,10 +74,71 @@ namespace CosmicSimulation.EditorTools
         private const int SampleSize = 512;
 
         /// <summary>
-        /// Points per cloud. 28 000 is 56 000 triangles an eye - about 14% of the 400 000-point frame budget in
-        /// Technical Overview 7.4, and a destination overlay is the only heavy thing on screen while it is open.
+        /// Points per cloud, across all three roles. Ten thousand, which is *fewer* than the 28 000 a single
+        /// undifferentiated layer used, and it looks better: measuring the galaxy places showed they carry only
+        /// 8 600 points each and read as gas, dust and stars because every layer does one job at one size. A
+        /// nebula built as one layer was three times the cost of a galaxy and read as a scatter of grains.
         /// </summary>
-        private const int PointCount = 28000;
+        private const int PointCount = 10000;
+
+        /// <summary>What a point is for. Each role is its own buffer, its own material and its own sprite size.</summary>
+        private enum Role
+        {
+            /// <summary>The glow. Large, soft, additive - this is what reads as smoke.</summary>
+            Clouds,
+
+            /// <summary>The lanes. Premultiplied dark, subtractive, so the cloud has silhouette and depth.</summary>
+            Dust,
+
+            /// <summary>The stars in and around the gas. Small, bright, additive.</summary>
+            Stars,
+        }
+
+        private readonly struct RoleSpec
+        {
+            public readonly Role Role;
+            public readonly int Count;
+            public readonly float SizeScale;
+            public readonly bool Subtractive;
+
+            public RoleSpec(Role role, int count, float sizeScale, bool subtractive)
+            {
+                Role = role;
+                Count = count;
+                SizeScale = sizeScale;
+                Subtractive = subtractive;
+            }
+        }
+
+        /// <summary>
+        /// The three roles and their share of the budget, in the proportions the galaxy layers use: the glow is
+        /// large and sparse, the dust is fewer still, and the stars are many and small.
+        /// </summary>
+        private static readonly RoleSpec[] Roles =
+        {
+            new RoleSpec(Role.Clouds, 3000, 3.0f, false),
+            new RoleSpec(Role.Dust,   2000, 2.4f, true),
+            new RoleSpec(Role.Stars,  5000, 0.35f, false),
+        };
+
+        /// <summary>
+        /// How far a pixel has to stand above its surroundings to be a star, and how far below to be dust.
+        /// Measured against a blur of the plate, which is the cheapest stand-in for "its surroundings".
+        /// </summary>
+        /// <summary>
+        /// How far a pixel has to stand above the *broad* background to be a star. Deliberately small, and
+        /// measured against a wide blur rather than a narrow one: a star raises its own neighbourhood, so
+        /// against a six-pixel blur even a bright star barely clears its own glow - which is why the first
+        /// build gave the Helix 145 stars out of 5,000 and NGC 1501 sixty-five.
+        /// </summary>
+        private const float StarPeakRatio = 1.05f;
+        private const float DustHoleRatio = 1.40f;
+
+        /// <summary>Radius of the blur that defines "surroundings", in sample pixels.</summary>
+        private const int NeighbourhoodRadius = 6;
+
+        /// <summary>The wider background a star is judged against.</summary>
+        private const int BackgroundRadius = 20;
 
         /// <summary>Below this share of the plate's peak luminance a pixel is empty sky and seeds nothing.</summary>
         private const float LuminanceFloor = 0.10f;
@@ -100,7 +162,11 @@ namespace CosmicSimulation.EditorTools
             public readonly string PlatePath;
             public readonly Model Model;
 
-            /// <summary>Half the cloud's width in metres. GDD 4.3 asks for a 70 cm overlay.</summary>
+            /// <summary>
+            /// Half the cloud's width in metres. Was 0.35, sized to GDD 4.3's 70 cm overlay - an object held at
+            /// arm's length. A nebula is now a place the player stands in the middle of, so it matches the
+            /// galaxy places instead: Andromeda is 1.2 m across and the library galaxies 0.95 to 1.35.
+            /// </summary>
             public readonly float RadiusMetres;
 
             /// <summary>
@@ -127,22 +193,22 @@ namespace CosmicSimulation.EditorTools
         {
             // A planetary nebula seen close to face-on: a shell whose near and far walls project onto the same
             // ring. This is the case the shell model was written for.
-            new Spec("helix", "Assets/Textures/nebulae/helix_texture.jpg", Model.Shell, 0.35f, 0.22f),
+            new Spec("helix", "Assets/Textures/nebulae/helix_texture.jpg", Model.Shell, 0.60f, 0.22f),
 
             // A supernova remnant. Not a clean sphere - it is a filamentary cage around a pulsar wind nebula -
             // but it is a genuine expanding shell, and a shell is far closer to the truth than a flat card.
-            new Spec("crab", "Assets/Textures/nebulae/crab_texture.jpg", Model.Shell, 0.35f, 0.30f),
+            new Spec("crab", "Assets/Textures/nebulae/crab_texture.jpg", Model.Shell, 0.60f, 0.30f),
 
             // Another planetary nebula, and a notably round one; its common name is the Oyster.
-            new Spec("ngc1501", "Assets/Textures/ngc1501_texture.jpg", Model.Shell, 0.35f, 0.24f),
+            new Spec("ngc1501", "Assets/Textures/ngc1501_texture.jpg", Model.Shell, 0.60f, 0.24f),
 
             // Two lobes either side of Eta Carinae, thrown out in the 1840s eruption.
-            new Spec("homunculus", "Assets/Textures/nebulae/homunculus_texture.jpg", Model.Bipolar, 0.35f, 0.34f),
+            new Spec("homunculus", "Assets/Textures/nebulae/homunculus_texture.jpg", Model.Bipolar, 0.60f, 0.34f),
 
             // Irregular clouds. Depth is convention here, and says so.
-            new Spec("orion", "Assets/Textures/nebulae/orion_texture.jpg", Model.Cloud, 0.35f, 0.45f),
-            new Spec("pillars", "Assets/Textures/pillars_texture.tga", Model.Cloud, 0.35f, 0.40f),
-            new Spec("trumpler14", "Assets/Textures/trumpler_texture.jpg", Model.Cloud, 0.35f, 0.45f),
+            new Spec("orion", "Assets/Textures/nebulae/orion_texture.jpg", Model.Cloud, 0.60f, 0.45f),
+            new Spec("pillars", "Assets/Textures/pillars_texture.tga", Model.Cloud, 0.60f, 0.40f),
+            new Spec("trumpler14", "Assets/Textures/trumpler_texture.jpg", Model.Cloud, 0.60f, 0.45f),
         };
 
         private static readonly Dictionary<Model, string> ModelProvenance = new Dictionary<Model, string>
@@ -173,6 +239,12 @@ namespace CosmicSimulation.EditorTools
             }
 
             var shader = Shader.Find(ShaderName);
+            var dustShader = Shader.Find(DustShaderName);
+            if (dustShader == null)
+            {
+                Debug.LogWarning($"NebulaVolumeBuilder: shader '{DustShaderName}' not found, so the dust layer " +
+                                 "will be skipped and every nebula will be glow and stars only.");
+            }
             if (shader == null)
             {
                 Debug.LogError($"NebulaVolumeBuilder: shader '{ShaderName}' not found. " +
@@ -225,9 +297,21 @@ namespace CosmicSimulation.EditorTools
 
                 try
                 {
-                    var data = Bake(spec, plate);
-                    var material = WriteMaterial(shader, atlas, spec.Id);
-                    if (Attach(module, spec, data, material, report))
+                    var layers = new List<(RoleSpec Role, NebulaVolumeData Data, Material Material)>();
+                    foreach (var role in Roles)
+                    {
+                        var data = Bake(spec, plate, role);
+                        var roleShader = role.Subtractive ? dustShader : shader;
+                        if (roleShader == null)
+                        {
+                            report.AppendLine($"  {spec.Id}: no shader for the {role.Role} layer, skipped.");
+                            continue;
+                        }
+
+                        layers.Add((role, data, WriteMaterial(roleShader, atlas, spec.Id, role.Role)));
+                    }
+
+                    if (Attach(module, spec, layers, report))
                     {
                         built++;
                     }
@@ -325,7 +409,68 @@ namespace CosmicSimulation.EditorTools
 
         // ---------- the bake
 
-        private static NebulaVolumeData Bake(Spec spec, Texture2D plate)
+        /// <summary>
+        /// The colour a point of this layer carries. Gas and stars keep the plate's own colour - the stars
+        /// brightened towards white, because a star is a star rather than a coloured smudge, and the plate has
+        /// already spread its light into the pixels around it. Dust is written premultiplied and dark, with the
+        /// opacity in alpha, because its shader darkens with One OneMinusSrcAlpha rather than adding.
+        /// </summary>
+        private static Color Paint(RoleSpec role, Color plate)
+        {
+            switch (role.Role)
+            {
+                case Role.Stars:
+                    return Color.Lerp(plate, Color.white, 0.45f);
+
+                case Role.Dust:
+                    // A little of the plate's own hue survives, so a lane in a red nebula is not a grey one.
+                    var tint = plate * 0.10f;
+                    return new Color(tint.r, tint.g, tint.b, 0.55f);
+
+                default:
+                    return plate;
+            }
+        }
+
+        /// <summary>A separable box blur of the luminance field, run once per layer. Edges clamp.</summary>
+        private static float[] Blur(float[] source, int edge, int radius)
+        {
+            var temp = new float[source.Length];
+            var outp = new float[source.Length];
+            var window = radius * 2 + 1;
+
+            for (var y = 0; y < edge; y++)
+            {
+                for (var x = 0; x < edge; x++)
+                {
+                    var sum = 0f;
+                    for (var k = -radius; k <= radius; k++)
+                    {
+                        sum += source[y * edge + Mathf.Clamp(x + k, 0, edge - 1)];
+                    }
+
+                    temp[y * edge + x] = sum / window;
+                }
+            }
+
+            for (var x = 0; x < edge; x++)
+            {
+                for (var y = 0; y < edge; y++)
+                {
+                    var sum = 0f;
+                    for (var k = -radius; k <= radius; k++)
+                    {
+                        sum += temp[Mathf.Clamp(y + k, 0, edge - 1) * edge + x];
+                    }
+
+                    outp[y * edge + x] = sum / window;
+                }
+            }
+
+            return outp;
+        }
+
+        private static NebulaVolumeData Bake(Spec spec, Texture2D plate, RoleSpec role)
         {
             var pixels = plate.GetPixels();
 
@@ -346,29 +491,73 @@ namespace CosmicSimulation.EditorTools
 
             var floor = peak * LuminanceFloor;
 
-            // A deterministic seed per destination, so a rebuild reproduces the same cloud exactly and a diff
-            // of the asset is empty when nothing changed.
-            var random = new System.Random(spec.Id.GetHashCode());
+            // "Its surroundings", cheaply: a blur of the same luminance field. A star is a pixel standing well
+            // above its surroundings; a dust lane is a pixel sitting well below surroundings that are
+            // themselves lit. Neither can be told from the pixel alone, which is why one layer could never be
+            // three.
+            var neighbourhood = Blur(weights, SampleSize, NeighbourhoodRadius);
+            var background = role.Role == Role.Stars ? Blur(weights, SampleSize, BackgroundRadius) : neighbourhood;
 
-            var points = new List<StarVertDescriptor>(PointCount);
+            // A deterministic seed per destination *and role*, so a rebuild reproduces the same cloud exactly
+            // and the three layers do not land on the same points.
+            var random = new System.Random(spec.Id.GetHashCode() ^ (int)role.Role * 7919);
+
+            // What this layer is looking for, as a field over the plate, so the sampler can be proportional to
+            // it. Built once per layer: the gas follows the light, the stars follow what stands above its
+            // surroundings, the dust follows what sits below surroundings that are themselves lit.
+            var want = new float[weights.Length];
+            var wantPeak = 0f;
+            for (var i = 0; i < weights.Length; i++)
+            {
+                var here = weights[i];
+                var around = neighbourhood[i];
+                float w;
+                switch (role.Role)
+                {
+                    case Role.Stars:
+                        w = here - background[i] * StarPeakRatio;
+                        break;
+
+                    case Role.Dust:
+                        // Only where there is light behind it: a dark pixel in a dark corner is empty sky.
+                        w = around > floor * 1.5f ? around - here * (1f / DustHoleRatio) : 0f;
+                        break;
+
+                    default:
+                        w = here - floor;
+                        break;
+                }
+
+                want[i] = Mathf.Max(0f, w);
+                if (want[i] > wantPeak) wantPeak = want[i];
+            }
+
+            if (wantPeak <= 1e-5f)
+            {
+                wantPeak = 1e-5f;
+            }
+
+            var points = new List<StarVertDescriptor>(role.Count);
             var attempts = 0;
-            var maxAttempts = PointCount * 60;
+            var maxAttempts = role.Count * 60;
 
-            while (points.Count < PointCount && attempts++ < maxAttempts)
+            while (points.Count < role.Count && attempts++ < maxAttempts)
             {
                 var px = random.Next(SampleSize);
                 var py = random.Next(SampleSize);
                 var index = py * SampleSize + px;
 
-                var weight = weights[index] - floor;
+                // Rejection sampling against *this layer's* own weight field, not against raw brightness.
+                // Sharing one field was wrong in a way the counts made obvious: dust wants dark pixels, and a
+                // brightness-proportional sampler had already thrown every dark pixel away before the dust
+                // test could see it, so four of the seven nebulae came out with fewer than forty dust points.
+                var weight = want[index];
                 if (weight <= 0f)
                 {
                     continue;
                 }
 
-                // Rejection sampling against the plate's own brightness, so the cloud's two-dimensional
-                // structure is the photograph's and nothing else.
-                if (random.NextDouble() > weight / Mathf.Max(peak - floor, 1e-4f))
+                if (random.NextDouble() > weight / wantPeak)
                 {
                     continue;
                 }
@@ -384,9 +573,9 @@ namespace CosmicSimulation.EditorTools
                 }
 
                 var local = new Vector3(u, v, w) * spec.RadiusMetres;
-                var colour = pixels[index];
+                var colour = Paint(role, pixels[index]);
 
-                points.Add(Describe(local, colour, spec.RadiusMetres, random));
+                points.Add(Describe(local, colour, spec.RadiusMetres, random, role.SizeScale));
             }
 
             var asset = ScriptableObject.CreateInstance<NebulaVolumeData>();
@@ -396,7 +585,8 @@ namespace CosmicSimulation.EditorTools
             asset.radiusMetres = spec.RadiusMetres;
             asset.Provenance = ModelProvenance[spec.Model];
 
-            var path = $"{DataFolder}/nebula_volume_{spec.Id}.asset";
+            var path = $"{DataFolder}/nebula_volume_{spec.Id}_{role.Role.ToString().ToLowerInvariant()}.asset";
+            asset.name = Path.GetFileNameWithoutExtension(path);
             var existing = AssetDatabase.LoadAssetAtPath<NebulaVolumeData>(path);
             if (existing != null)
             {
@@ -504,7 +694,7 @@ namespace CosmicSimulation.EditorTools
         /// with this method.
         /// </summary>
         private static StarVertDescriptor Describe(Vector3 local, Color colour, float radius,
-                                                   System.Random random)
+                                                   System.Random random, float sizeScale)
         {
             // Cylindrical, because the shader turns the whole cloud with a single add on the angle rather than
             // a matrix - the same trick the Cosmic Web uses.
@@ -518,7 +708,7 @@ namespace CosmicSimulation.EditorTools
             // A little size variation, weighted towards the small: a cloud of identical grains reads as a
             // texture rather than as gas.
             var t = (float)random.NextDouble();
-            var size = Mathf.Lerp(0.55f, 1.6f, t * t);
+            var size = Mathf.Lerp(0.55f, 1.6f, t * t) * sizeScale;
 
             // Which cell of the 2x2 sprite atlas. Same convention as the Cosmic Web's points.
             var cell = random.Next(4);
@@ -539,7 +729,8 @@ namespace CosmicSimulation.EditorTools
 
         // ---------- attaching
 
-        private static bool Attach(ExperienceModule module, Spec spec, NebulaVolumeData data, Material material,
+        private static bool Attach(ExperienceModule module, Spec spec,
+                                   List<(RoleSpec Role, NebulaVolumeData Data, Material Material)> layers,
                                    StringBuilder report)
         {
             var path = AssetDatabase.GetAssetPath(module.ContentPrefab);
@@ -554,23 +745,58 @@ namespace CosmicSimulation.EditorTools
             {
                 var stripped = StripVolumes(root);
 
-                var node = new GameObject(NodeName);
-                node.transform.SetParent(root.transform, false);
+                // The flat cards go dark. They were the nebula when a nebula was a picture opened in front of
+                // the map; the player now stands inside the gas itself, and a photograph of it hanging in the
+                // same space reads as a poster in the room. Disabled rather than deleted, so the overlay look
+                // can be put back by hand if this turns out to be worse.
+                var darkened = 0;
+                foreach (var child in root.GetComponentsInChildren<Transform>(true))
+                {
+                    if (!child.gameObject.activeSelf) continue;
 
-                var volume = node.AddComponent<NebulaVolume>();
-                var so = new SerializedObject(volume);
-                so.FindProperty("data").objectReferenceValue = data;
-                so.FindProperty("pointsMaterial").objectReferenceValue = material;
-                so.ApplyModifiedPropertiesWithoutUndo();
+                    // The cards, and the photographic dome with them. The dome was written to stand behind a
+                    // 70 cm overlay and it is right for that; from inside it is the entire sky at full
+                    // brightness, and it washes the gas out completely - measured, not guessed: the same view
+                    // with the dome switched off is the Helix's blue-green interior and orange rim against
+                    // black, and with it on everything is a pale lavender haze. A dimmed backdrop may yet be
+                    // better than none; that is a look decision for the headset.
+                    if (!child.name.StartsWith("card_") && child.name != "place_shell") continue;
+                    child.gameObject.SetActive(false);
+                    darkened++;
+                }
+
+                // One node per role, under a shared parent, so the three can be hidden or tuned separately and
+                // a rebuild replaces the lot by name.
+                var parent = new GameObject(NodeName);
+                parent.transform.SetParent(root.transform, false);
+
+                var total = 0;
+                var tally = new StringBuilder();
+                foreach (var layer in layers)
+                {
+                    var node = new GameObject(NodeName + "_" + layer.Role.Role.ToString().ToLowerInvariant());
+                    node.transform.SetParent(parent.transform, false);
+
+                    var volume = node.AddComponent<NebulaVolume>();
+                    var so = new SerializedObject(volume);
+                    so.FindProperty("data").objectReferenceValue = layer.Data;
+                    so.FindProperty("pointsMaterial").objectReferenceValue = layer.Material;
+                    so.ApplyModifiedPropertiesWithoutUndo();
+
+                    total += layer.Data.points.Length;
+                    tally.Append(tally.Length > 0 ? ", " : string.Empty)
+                         .Append($"{layer.Role.Role.ToString().ToLowerInvariant()} {layer.Data.points.Length:N0}");
+                }
 
                 PrefabUtility.SaveAsPrefabAsset(root, path);
 
                 report.AppendLine(
-                    $"  {spec.Id}: {data.points.Length:N0} points, {spec.Model} model, radius " +
+                    $"  {spec.Id}: {total:N0} points ({tally}), {spec.Model} model, radius " +
                     $"{spec.RadiusMetres:0.00} m, plate {Path.GetFileNameWithoutExtension(spec.PlatePath)}" +
-                    (stripped > 0 ? $" (replaced {stripped} existing)" : string.Empty));
+                    (stripped > 0 ? $" (replaced {stripped} existing)" : string.Empty) +
+                    (darkened > 0 ? $", {darkened} flat layer(s) switched off" : string.Empty));
 
-                return true;
+                return layers.Count > 0;
             }
             finally
             {
@@ -586,12 +812,19 @@ namespace CosmicSimulation.EditorTools
                 Object.DestroyImmediate(volume.gameObject);
             }
 
+            // The parent the layers hang under, left behind once its children are gone.
+            var parent = root.transform.Find(NodeName);
+            if (parent != null)
+            {
+                Object.DestroyImmediate(parent.gameObject);
+            }
+
             return found.Length;
         }
 
-        private static Material WriteMaterial(Shader shader, Texture2D atlas, string id)
+        private static Material WriteMaterial(Shader shader, Texture2D atlas, string id, Role role)
         {
-            var path = $"{MaterialFolder}/nebula_volume_{id}.mat";
+            var path = $"{MaterialFolder}/nebula_volume_{id}_{role.ToString().ToLowerInvariant()}.mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (material == null)
             {

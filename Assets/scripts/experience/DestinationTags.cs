@@ -249,15 +249,12 @@ namespace CosmicSimulation
                 return;
             }
 
-            // Picking the open destination again closes it. GDD 4.3 gives the headset a close pinch outside the
-            // halo and the desktop Escape, and neither of those is the thing the player is already pointing at.
-            if (director.OpenDestinationModule == module)
-            {
-                director.ClearDestinations();
-                return;
-            }
-
-            director.OpenDestination(module, OpenPosition(), Diameter(module));
+            // A nebula is a place you travel to, not a picture that opens in front of the map. It used to be
+            // the second thing: a 70 cm ball hung a metre away in Halo while the Milky Way stayed dimmed
+            // behind it - an object held at arm's length. Every one of the seven now has a real volume of gas,
+            // dust and stars around its own centre, so picking it goes there, the way Andromeda's tile does.
+            // ClearDestinations and the overlay path stay for anything that still wants to hang beside the map.
+            director.Switch(module);
         }
 
         /// <summary>

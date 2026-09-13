@@ -19,7 +19,7 @@ MonoBehaviour:
   DockThumbnail: {fileID: 0}
   SceneName: 
   ContentPrefab: {fileID: 2409670606923518696, guid: 3ffe5afa8740fd247a07beb143d2ba23, type: 3}
-  Environment: 2
+  Environment: 3
   Panel:
     Title: Helix Nebula
     Paragraphs:

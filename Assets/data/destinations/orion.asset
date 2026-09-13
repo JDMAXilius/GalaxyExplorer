@@ -19,7 +19,7 @@ MonoBehaviour:
   DockThumbnail: {fileID: 0}
   SceneName: 
   ContentPrefab: {fileID: 6832103769052129594, guid: a874798eb1aa17941bc62d4e1de0c5e8, type: 3}
-  Environment: 2
+  Environment: 3
   Panel:
     Title: Orion Nebula
     Paragraphs:

@@ -19,7 +19,7 @@ MonoBehaviour:
   DockThumbnail: {fileID: 0}
   SceneName: 
   ContentPrefab: {fileID: 6702559684577448657, guid: 41b56764a32d6b6429234e564b5aa510, type: 3}
-  Environment: 2
+  Environment: 3
   Panel:
     Title: Pillars of Creation
     Paragraphs:
