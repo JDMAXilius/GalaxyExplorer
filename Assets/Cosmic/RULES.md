@@ -26,7 +26,9 @@ Everything under `Assets/Cosmic/` is the rework. The old tree stays bootable and
   cannot show it.
 - `Shader.Find` is not safe for built-ins. Ship the shader and register it under Always Included Shaders.
 - Every hand interaction has a mouse or keyboard equivalent in the Desktop action map.
-- Nothing snaps back. The player arranges objects and they stay arranged.
+- Nothing snaps back. The player arranges objects and they stay arranged. The one exception is a lost
+  object: left out of reach or below the floor for five seconds it comes home, so nothing is ever unreachable.
+  Off by default (`Grabbable.autoReturn`); the owner signs it off in CS-140.
 
 ## Shape of the rework
 

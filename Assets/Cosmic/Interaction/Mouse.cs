@@ -8,7 +8,7 @@ using MouseDevice = UnityEngine.InputSystem.Mouse;
 namespace Cosmic
 {
     [DefaultExecutionOrder(XRInteractionUpdateOrder.k_ScreenSpaceRayPoseDriver)]
-    public class Mouse : XRRayInteractor
+    public class Mouse : XRRayInteractor, IXRInputButtonReader
     {
         const float RawWheelNotch = 120f;
 
@@ -25,7 +25,8 @@ namespace Cosmic
         Camera cam;
         Grabbable spinning;
         Pose home;
-        bool orbiting, homed, configured;
+        bool orbiting, homed, configured, pressed, wasPressed;
+        int pressFrame = -1, releaseFrame = -1;
 
         public void ResetView()
         {
@@ -67,18 +68,35 @@ namespace Cosmic
             Right(mouse);
             Wheel(mouse);
 
-            var press = mouse.leftButton.isPressed && !orbiting;
-            selectInput.QueueManualState(press, press ? 1f : 0f);
-            uiPressInput.QueueManualState(press, press ? 1f : 0f);
+            wasPressed = pressed;
+            pressed = mouse.leftButton.isPressed && !orbiting;
+            if (pressed && !wasPressed) pressFrame = Time.frameCount;
+            if (!pressed && wasPressed) releaseFrame = Time.frameCount;
+        }
+
+        public bool ReadIsPerformed() => pressed;
+
+        public bool ReadWasPerformedThisFrame() => pressFrame == Time.frameCount;
+
+        public bool ReadWasCompletedThisFrame() => releaseFrame == Time.frameCount;
+
+        public float ReadValue() => pressed ? 1f : 0f;
+
+        public bool TryReadValue(out float value)
+        {
+            value = ReadValue();
+            return true;
         }
 
         void Configure()
         {
             if (configured) return;
             configured = true;
-            // Manual readers because the press is a mouse button, not a device action; the block is XRI's own and tests canvas render mode, so world-space UI still takes the ray.
-            selectInput.inputSourceMode = XRInputButtonReader.InputSourceMode.ManualValue;
-            uiPressInput.inputSourceMode = XRInputButtonReader.InputSourceMode.ManualValue;
+            // This component is the button reader (queued manual state re-arms every frame and never lands); the UI block is XRI's own and tests canvas render mode, so world-space UI still takes the ray.
+            selectInput.inputSourceMode = XRInputButtonReader.InputSourceMode.ObjectReference;
+            selectInput.SetObjectReference(this);
+            uiPressInput.inputSourceMode = XRInputButtonReader.InputSourceMode.ObjectReference;
+            uiPressInput.SetObjectReference(this);
             enableUIInteraction = true;
             blockInteractionsWithScreenSpaceUI = true;
             manipulateAttachTransform = false;
@@ -96,7 +114,7 @@ namespace Cosmic
         void Right(MouseDevice mouse)
         {
             var button = mouse.rightButton;
-            if (button.wasPressedThisFrame) spinning = Target(true);
+            if (button.wasPressedThisFrame) spinning = Target(true) is Grabbable free && !free.isSelected ? free : null;
             else if (button.wasReleasedThisFrame) spinning = null;
             if (!button.isPressed) return;
             var delta = mouse.delta.ReadValue();
@@ -113,8 +131,9 @@ namespace Cosmic
             var notches = Mathf.Abs(scroll) > 10f ? scroll / RawWheelNotch : scroll;
             var held = Target(true);
             var keyboard = Keyboard.current;
-            if (held == null) Zoom(notches);
-            else if (keyboard != null && keyboard.shiftKey.isPressed) Push(notches);
+            var shift = keyboard != null && keyboard.shiftKey.isPressed;
+            if (held == null || (shift && !hasSelection)) Zoom(notches);
+            else if (shift) Push(notches);
             else held.ScaleBy(Mathf.Pow(scalePerNotch, notches));
         }
 

@@ -1199,33 +1199,6 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Orbit",
-                    "type": "Button",
-                    "id": "acc0b6a4-1f13-44a2-a6ed-a96ba8e4bb7f",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
-                    "name": "Pan",
-                    "type": "Button",
-                    "id": "0cbd3d53-6cd1-4516-b6b9-12f0861db139",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
-                    "name": "Zoom",
-                    "type": "Value",
-                    "id": "bfb55372-ff44-4afa-840d-89cf49f38239",
-                    "expectedControlType": "Vector2",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
                     "name": "Mute",
                     "type": "Button",
                     "id": "88f27efc-33c2-4430-a501-8a16522de224",
@@ -1539,39 +1512,6 @@
                     "processors": "",
                     "groups": "",
                     "action": "Moon",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "81991845-a423-4708-8879-165f8f034e10",
-                    "path": "<Mouse>/leftButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Orbit",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "5bd9d02d-04bc-44cb-a138-bacb10ebeeda",
-                    "path": "<Mouse>/rightButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Pan",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "f4b6a8f3-c2ab-4748-b9f5-906ed33e4353",
-                    "path": "<Mouse>/scroll",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Zoom",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

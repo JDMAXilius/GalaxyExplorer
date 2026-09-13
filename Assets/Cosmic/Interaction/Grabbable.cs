@@ -31,6 +31,7 @@ namespace Cosmic
         Vector3 homePosition, homeScale = Vector3.one;
         Quaternion homeRotation = Quaternion.identity;
         Upright upright;
+        XRGeneralGrabTransformer general;
         Camera cam;
         Coroutine restoring;
         float metresPerScale, strayTimer;
@@ -39,7 +40,7 @@ namespace Cosmic
         public bool Placed { get; private set; }
         public bool Restoring => restoring != null;
         public bool KeepUpright => keepUpright;
-        public float MinMetres => customMaxMetres > 0f ? customMinMetres : limits == Limits.Model ? 0.4f : limits == Limits.Nebula ? 0.3f : 0.05f;
+        public float MinMetres => customMinMetres > 0f ? customMinMetres : limits == Limits.Model ? 0.4f : limits == Limits.Nebula ? 0.3f : 0.05f;
         public float MaxMetres => customMaxMetres > 0f ? customMaxMetres : limits == Limits.Model ? 4f : limits == Limits.Nebula ? 2f : 3f;
         public float WidthMetres => MetresPerScale() * transform.localScale.x;
 
@@ -59,6 +60,7 @@ namespace Cosmic
         public void Restore(float seconds = 0.8f)
         {
             Init();
+            if (isSelected && interactionManager != null) interactionManager.CancelInteractableSelection((IXRSelectInteractable)this);
             if (restoring != null) StopCoroutine(restoring);
             restoring = null;
             strayTimer = 0f;
@@ -131,7 +133,7 @@ namespace Cosmic
             base.OnSelectExited(args);
             if (!args.isCanceled)
             {
-                if (Vector3.Distance(transform.localPosition, homePosition) > placedMetres) Placed = true;
+                if (Vector3.Distance(transform.position, HomeWorld()) > placedMetres) Placed = true;
                 if (Bus != null) Bus.Play(Sfx.Release, transform);
             }
             Released?.Invoke(this);
@@ -165,6 +167,10 @@ namespace Cosmic
             homePosition = transform.localPosition;
             homeRotation = transform.localRotation;
             homeScale = transform.localScale;
+            general = GetComponent<XRGeneralGrabTransformer>();
+            if (general == null) general = gameObject.AddComponent<XRGeneralGrabTransformer>();
+            AddSingleGrabTransformer(general);
+            AddMultipleGrabTransformer(general);
             upright = new Upright(this);
             AddSingleGrabTransformer(upright);
             AddMultipleGrabTransformer(upright);
@@ -172,7 +178,6 @@ namespace Cosmic
 
         void ApplyClamp()
         {
-            var general = GetComponent<XRGeneralGrabTransformer>();
             if (general == null) return;
             general.allowTwoHandedScaling = limits != Limits.Fixed;
             var width = WidthMetres;
@@ -189,6 +194,8 @@ namespace Cosmic
             Placed = false;
             Restored?.Invoke(this);
         }
+
+        Vector3 HomeWorld() => transform.parent != null ? transform.parent.TransformPoint(homePosition) : homePosition;
 
         Transform View()
         {

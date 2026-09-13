@@ -73,6 +73,7 @@ namespace Cosmic.Editor
             var left = Hand(offset, "Left");
             var right = Hand(offset, "Right");
             var mouse = Child(offset, "Mouse").gameObject.AddComponent<Mouse>();
+            var content = Child(root.transform, "Content");
 
             var session = Child(root.transform, "AR Session").gameObject.AddComponent<ARSession>();
             session.enabled = false;
@@ -103,6 +104,7 @@ namespace Cosmic.Editor
             var hotkeys = root.AddComponent<Hotkeys>();
             Wire(hotkeys, "actions", actions);
             Wire(mouse, "hotkeys", hotkeys);
+            Wire(mouse, "pivot", content);
         }
 
         static Camera Eye(Transform parent)

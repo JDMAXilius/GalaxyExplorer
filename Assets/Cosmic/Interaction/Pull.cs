@@ -18,6 +18,7 @@ namespace Cosmic
         [SerializeField] float pulledDiameterMetres = 0.25f;
         [SerializeField] float arriveMetres = 0.05f;
         [SerializeField] float pullSmoothSeconds = 0.18f;
+        [SerializeField] float maxFlightSeconds = 3f;
         [SerializeField] float cameraDistanceMetres = 1f;
         [SerializeField] float beamWidthMm = 4f;
         [SerializeField] Material beamMaterial;
@@ -36,7 +37,7 @@ namespace Cosmic
         MaterialPropertyBlock block;
         AudioSource beamLoop;
         IXRInteractor puller;
-        float dwell, forgive, goalScale;
+        float dwell, forgive, goalScale, flight;
         bool dwelling;
 
         public State Current { get; private set; }
@@ -47,7 +48,8 @@ namespace Cosmic
             Bind();
             puller = interactor;
             StopDwell();
-            goalScale = grab.ScaleForWidth(pulledDiameterMetres);
+            goalScale = transform.localScale.x > 0f ? grab.ScaleForWidth(pulledDiameterMetres) : 0f;
+            flight = 0f;
             Set(State.Pulling);
         }
 
@@ -108,15 +110,26 @@ namespace Cosmic
             Beam = 1f;
             var goal = Goal();
             var k = 1f - Mathf.Exp(-dt / Mathf.Max(0.01f, pullSmoothSeconds));
+            flight += dt;
             transform.position = Vector3.LerpUnclamped(transform.position, goal, k);
             var current = transform.localScale.x;
             if (current > 0f && goalScale > 0f) transform.localScale *= Mathf.LerpUnclamped(current, goalScale, k) / current;
-            if (Vector3.Distance(transform.position, goal) > arriveMetres) return;
-            if (goalScale > 0f && Mathf.Abs(transform.localScale.x - goalScale) > goalScale * 0.05f) return;
+            var late = flight >= maxFlightSeconds;
+            if (!late && Vector3.Distance(transform.position, goal) > arriveMetres) return;
+            if (!late && goalScale > 0f && Mathf.Abs(transform.localScale.x - goalScale) > goalScale * 0.05f) return;
             transform.position = goal;
+            if (goalScale > 0f && current > 0f) transform.localScale *= goalScale / transform.localScale.x;
             grab.enabled = true;
             Beam = 0f;
             Set(State.Loose);
+            Rejoin();
+        }
+
+        void Rejoin()
+        {
+            if (!(puller is IXRSelectInteractor selector) || !selector.isSelectActive || grab.isSelected) return;
+            var manager = grab.interactionManager;
+            if (manager != null && grab.IsSelectableBy(selector)) manager.SelectEnter(selector, grab);
         }
 
         Vector3 Goal()
@@ -131,7 +144,7 @@ namespace Cosmic
 
         void OnHoverEntered(HoverEnterEventArgs args)
         {
-            if (Current == State.Pulling || !IsFar(args.interactorObject)) return;
+            if (Current != State.Parked || !IsFar(args.interactorObject)) return;
             far.Add(args.interactorObject);
             dwelling = true;
             forgive = 0f;
@@ -179,7 +192,8 @@ namespace Cosmic
             dwell = 0f;
             forgive = 0f;
             if (Current != State.Pulling) Beam = 0f;
-            if (Grabbable.Bus != null) Grabbable.Bus.Release(beamLoop);
+            if (beamLoop != null && Grabbable.Bus != null) Grabbable.Bus.Release(beamLoop);
+            else if (beamLoop != null) beamLoop.Stop();
             beamLoop = null;
         }
 
