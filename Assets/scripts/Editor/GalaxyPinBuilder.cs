@@ -16,8 +16,11 @@ namespace CosmicSimulation.EditorTools
     /// not among them and cannot be - nobody photographed it in the Ultra Deep Field. So each galaxy we have
     /// built gets a pin: its own portrait (<see cref="GalaxyPortraitBuilder"/>, plotted from its own baked
     /// stars) hanging at its own galactic bearing, with a label under it that opens that galaxy as a place.
-    /// The Milky Way is pinned too, at l = 0, b = 0 - the direction of our own galactic centre, which is the
-    /// only honest place to point when the player is standing inside the thing being named.</para>
+    ///
+    /// <para><b>Not the Milky Way.</b> It was pinned here at l = 0, b = 0 and that was wrong twice over: the
+    /// only picture of it we own is its dock thumbnail, which is a piece of interface rather than a galaxy,
+    /// and a sphere of other galaxies is not where a player goes to find the one they are standing in. It is
+    /// reached from the bar across the top of this place instead.</para>
     ///
     /// <para><b>The convention, written down because nothing else in the project fixes it.</b> Galactic
     /// longitude runs from Unity's +Z, which is where the player faces when the sphere opens, and increases
@@ -69,7 +72,6 @@ namespace CosmicSimulation.EditorTools
         /// </summary>
         private static readonly Pin[] Pins =
         {
-            new Pin("milky_way",    0.00f,   0.00f, "Assets/ui/thumbnails/milky_way.png"),
             new Pin("andromeda",  121.17f, -21.57f, PortraitFolder + "/andromeda_portrait.png"),
             new Pin("whirlpool",  104.85f,  68.56f, PortraitFolder + "/whirlpool_portrait.png"),
             new Pin("pinwheel",   102.04f,  59.77f, PortraitFolder + "/pinwheel_portrait.png"),

@@ -216,6 +216,18 @@ namespace CosmicSimulation.EditorTools
                 desktopDock = instance.GetComponent<DesktopDock>();
             }
 
+            // The galaxies bar. Installed here rather than inside the Galaxies content prefab because it has to
+            // survive the switch that opens a galaxy from it: a bar that lived in the sphere would be
+            // destroyed by its own click. It shows itself only while the sphere is the open place.
+            var barAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/prefabs/ui/galaxy_bar_prefab.prefab");
+            var galaxyBar = root.GetComponentInChildren<GalaxyBar>(true);
+            if (galaxyBar == null && barAsset != null)
+            {
+                var barInstance = (GameObject)PrefabUtility.InstantiatePrefab(barAsset, root.transform);
+                barInstance.name = "galaxy_bar";
+                galaxyBar = barInstance.GetComponent<GalaxyBar>();
+            }
+
             // Music sits beside the EnvironmentController because the beds are per room state (GDD 9), not per
             // experience, and the room state is what that component owns.
             var music = root.GetComponent<MusicController>() ?? root.AddComponent<MusicController>();
@@ -232,6 +244,7 @@ namespace CosmicSimulation.EditorTools
             Debug.Log($"ExperienceWiring: systems installed in {scene.name} " +
                       $"({ordered.Length} tiles, {destinations.Length} destinations, " +
                       $"dock={(dock != null ? "yes" : "MISSING")}, desktop={(desktopDock != null ? "yes" : "MISSING")}, " +
+                      $"galaxyBar={(galaxyBar != null ? "yes" : "MISSING")}, " +
                       $"music={(musicWired ? "yes" : "MISSING")}).");
         }
 
