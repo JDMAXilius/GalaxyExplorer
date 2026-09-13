@@ -246,9 +246,9 @@ into the one scene, built here because Phase 2 is the first thing that needs the
 | CS-128 | TERM | Phase 2 setup — audio library, dim material, host object | CS-126 | todo |
 | CS-129 | TERM | Phase 2 play-mode verification | CS-128 | todo |
 | CS-130 | TERM | Teardown and commit the generated assets | CS-129 | todo |
-| CS-131 | TERM | Wiring step: the 52 asset references the copy deck cannot own — 34 `Narration`, 11 `ContentPrefab`, 7 `DockThumbnail` | CS-127 | todo |
-| CS-132 | CC | Extend `docs/copy/` with the four places and seven bodies it never got: `hd110067`, `pinwheel`, `triangulum`, `whirlpool`, `hd110067_star` and `hd110067_b`–`g` | CS-127 | done (unrun) |
-| CS-133 | CC | Port the layout builder — `solar_row`, `relative_size`, `hd110067_row`, `hd110067_relative`, and the `Layouts` reference on `solar_system_planets` | CS-127 | done (unrun) |
+| CS-131 | TERM | Wiring step: the 60 asset references the copy deck cannot own — 38 `Narration`, 15 `ContentPrefab`, 7 `DockThumbnail`. **The only class of loss left in the gate** | CS-127 | todo |
+| CS-132 | CC | Extend `docs/copy/` with the four places and seven bodies it never got: `hd110067`, `pinwheel`, `triangulum`, `whirlpool`, `hd110067_star` and `hd110067_b`–`g` | CS-127 | done |
+| CS-133 | CC | Port the layout builder — `solar_row`, `relative_size`, `hd110067_row`, `hd110067_relative`, and the `Layouts` reference on `solar_system_planets` | CS-127 | done |
 | CS-134 | TERM | P1's gate passes: `check_data.py` exits 0 | CS-131, CS-132, CS-133 | todo |
 | CS-135 | CC | Split the one-shot pool out of `Audio.cs` — P2's declared debt (278 lines against ~250) | — | done |
 | CS-136 | CC | Rework P3 and beyond — broken out below into CS-137 onward as each phase starts; this row is the index | — | superseded |
@@ -262,6 +262,42 @@ into the one scene, built here because Phase 2 is the first thing that needs the
 *CS-137 done, unrun (13 Sep 2026, commit `30d0247`).* One interactable per logical object, on its root with the child colliders listed — the structure that makes the old bubbling layer, its forwarder and the "handler must not implement the interface" rule all unnecessary. Fifteen toolkit members could not be verified against package source (not vendored here); each is contained so a wrong name is a two-line fix, and the phase notes in the commit list them. One structural deviation, recorded in `Pull.cs`'s single comment: the toolkit writes the transform every frame while an interactor selects, so the interactable is disabled for the flight and re-enabled on arrival, which also hands it back to a pinch still held. The bus gained `Loop(Sfx)` so the beam sound comes from the library. The spawn order every later builder must honour: instantiate → `CaptureHome()` → grow-in.
 
 *CS-133 done, unrun (13 Sep 2026, commit `183f66f`).* `Assets/Cosmic/Editor/Content.cs`, menu **Cosmic → Build → Layouts** — the first part of the plan's single data-driven content builder. Every position, rotation and scale of all four layouts matches the old assets to seven decimal places, checked by reimplementing the arithmetic in Python; slots hold a `Body` object reference rather than a string id. Two derivations are typed on purpose and the file says so: Relative Size uses the GDD's own diameter table (scaling from `diameterKm` puts Mars and Jupiter outside parity tolerance and loses Pluto's deliberate 5 mm), and the two ring spans, because the generated bodies carry no ring figure yet. **Expected on the first run, not a regression:** the two HD 110067 layouts build with zero slots and log one `no body asset` error per body until CS-132's bodies are imported; re-run after CS-132 and they fill with no code change. Terminal: compile, run twice (second run logs `updated`, no GUID churn), then `python3 tools/parity/check_data.py --kinds layouts --skip 'hd110067.*'` should report zero losses for `solar_row` and `relative_size`, and `solar_system_planets.asset` should hold both in that order. Saturn's rings 2.5 mm from Jupiter, by hand, as the original builder recorded.
+
+*CS-132 and CS-133 — run in the editor, both pass (13 Sep 2026, terminal session).* Order matters
+and is the whole trick: **import first, then build layouts.** Both notes above predict the two HD
+110067 layouts building with zero slots and one `no body asset` error per body on a first run; that
+is only true if Layouts runs before Import Copy. Run the other way round there is no error at all
+and both fill immediately.
+
+- **Cosmic → Import Copy** — `Generated` goes **37 → 48 assets**, exactly the +11 the deck gained.
+  All 15 previously-missing assets now exist.
+- **`Copy.Wire()` finally wires.** It reported **0 references** every run before this, because it
+  reads `Bodies:` and `Destinations:` fields the deck had never carried. `solar_system` now holds
+  **10** body references and `milky_way` **9** destinations, per GDD 4.3.
+- **Cosmic → Build → Layouts**, run twice — all four layouts build and **every GUID is unchanged**
+  across the two runs, so the builder is idempotent as RULES.md requires. `hd110067_row` and
+  `hd110067_relative` carry **7 slots each**, not 0. `solar_system_planets` holds `solar_row` then
+  `relative_size`, in that order.
+- **`check_data.py --kinds layouts`: 152 values, 0 losses.** CS-133's gate passes outright.
+- **The whole gate: 68 → 60 losses, and values checked 573 → 951.** Every remaining loss is a single
+  class — 38 `Narration`, 15 `ContentPrefab`, 7 `DockThumbnail`. The counts rose from 34/11 because
+  the four new places brought their own references. Nothing else is lost: no missing asset, no room
+  mode, no layout, no value mismatch.
+
+**So CS-134 is now blocked on CS-131 alone.** The wiring step is the last thing between the data
+layer and a passing gate.
+
+*CS-137 — compiles clean (13 Sep 2026, terminal session).* Not its gate, which is CS-139 and CS-140,
+but worth recording because its own note flags **fifteen toolkit members that could not be verified
+against package source**, XRI not being vendored here. All fifteen resolve: `Grabbable.cs`,
+`Pull.cs` and `Content.cs` compile with no errors against the packages actually installed. The
+two-line-fix contingency the note describes is not needed.
+
+**Still open from CS-132's own note, for the owner rather than the terminal:** the HD 110067 prose
+exceeds the deck's word caps (recorded as an exception in `docs/copy/README.md`), and its four
+measured masses lack the `x 10` mantissa suffix the other bodies carry, so they render as a bare
+mantissa with a superscript. Changing the value text also changes what the parity gate compares
+against, so it is a deliberate decision, not a cleanup.
 
 *CS-126 — compile the Cosmic assemblies.* `pwsh tools/mcp/compile.ps1`, then
 `node tools/mcp/umcp.js run tools/mcp/rework/p0_compile.cs`, then
