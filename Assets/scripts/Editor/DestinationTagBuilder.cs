@@ -280,9 +280,11 @@ namespace CosmicSimulation.EditorTools
             // All three feet land on the disc inside its 0.8 m rim, so the leaders read as drop lines to it.
             // M33's range is the one the clamp in FromBearing bites on: taken at face value it put the foot at
             // 1.04, a quarter of a metre off the edge of the galaxy, and the tag with it.
-            new Bearing("whirlpool",  104.85f,  68.56f, 0.34f),
-            new Bearing("pinwheel",   102.04f,  59.77f, 0.48f),
-            new Bearing("triangulum", 133.61f, -31.33f, 0.55f),
+            // Empty on purpose, and the bearings above are kept as a comment rather than deleted because the
+            // arithmetic that produced them is the expensive part. The three outside galaxies are no longer
+            // pins on our own map: a galaxy is a place you go to, the way Andromeda is, not a label on the
+            // Milky Way. They are selected from the Galaxies experience instead - see docs/GDD.md - and this
+            // table now holds only what is genuinely inside this galaxy.
         };
 
         [MenuItem("Cosmic Simulation/Build Destination Tags")]
