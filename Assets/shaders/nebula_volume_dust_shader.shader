@@ -85,6 +85,9 @@ Shader "CosmicSimulation/NebulaVolumeDust"
             #include "cginc/StarVertDescriptor.cginc"
             #include "cginc/StarQuad.cginc"
 
+            float _Aniso;
+            float _Opacity;
+
             // SV_VertexID is the only real input: every point is expanded from the buffer. The instance id sits
             // beside it because that is where UNITY_SETUP_INSTANCE_ID looks for it under single-pass instanced
             // and multiview stereo.
@@ -151,7 +154,20 @@ Shader "CosmicSimulation/NebulaVolumeDust"
                 // Near gas larger, far gas smaller. A quarter either side of the authored size is enough to
                 // read without making the far side vanish.
                 float sizeByDepth = lerp(0.78, 1.25, depth);
-                o.vertex = StarQuadOffset(clipPos, corner, p.size * _WSScale * sizeByDepth);
+                float halfSize = max(p.size * _WSScale * sizeByDepth, 0);
+
+                // Same oriented splat as the gas: dust that is all identical squares reads as noise, and dust
+                // is the layer whose whole job is shape.
+                float splatAngle = p.random * 6.2831853;
+                float2 dir = float2(cos(splatAngle), sin(splatAngle));
+                float2 unit = StarQuadOffsets[corner];
+                float2 stretched = float2(unit.x * _Aniso, unit.y / max(_Aniso, 1e-3));
+                float2 oriented = float2(stretched.x * dir.x - stretched.y * dir.y,
+                                         stretched.x * dir.y + stretched.y * dir.x) * halfSize;
+
+                clipPos.x += oriented.x * UNITY_MATRIX_P._11;
+                clipPos.y += oriented.y * UNITY_MATRIX_P._22;
+                o.vertex = clipPos;
                 o.uv = StarQuadUVs[corner] * 0.5 + p.uv + float2(0, .5);
 
                 float shimmer = 1.0 + _Shimmer * sin(_Time.y * _ShimmerSpeed + p.random * 6.2831853);

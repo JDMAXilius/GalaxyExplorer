@@ -895,10 +895,32 @@ namespace CosmicSimulation.EditorTools
                 // the map; the player now stands inside the gas itself, and a photograph of it hanging in the
                 // same space reads as a poster in the room. Disabled rather than deleted, so the overlay look
                 // can be put back by hand if this turns out to be worse.
+                // The flat layers are removed, not hidden. They were the nebula when a nebula was a picture;
+                // they have been switched off for several builds and nothing has wanted them back, and a
+                // disabled card is still a card somebody has to wonder about later. The overlay component
+                // that drove them goes with them - it exists to slide and billboard a stack that is no
+                // longer there. Recoverable from git if the flat look is ever wanted again.
                 var darkened = 0;
+                var doomed = new List<GameObject>();
                 foreach (var child in root.GetComponentsInChildren<Transform>(true))
                 {
-                    if (!child.gameObject.activeSelf) continue;
+                    if (child != root.transform && child.name.StartsWith("card_")) doomed.Add(child.gameObject);
+                }
+
+                foreach (var card in doomed)
+                {
+                    Object.DestroyImmediate(card);
+                    darkened++;
+                }
+
+                foreach (var overlay in root.GetComponents<NebulaOverlay>())
+                {
+                    Object.DestroyImmediate(overlay);
+                }
+
+                foreach (var child in root.GetComponentsInChildren<Transform>(true))
+                {
+                    if (child == null || !child.gameObject.activeSelf) continue;
 
                     // The cards, and the photographic dome with them. The dome was written to stand behind a
                     // 70 cm overlay and it is right for that; from inside it is the entire sky at full
@@ -906,9 +928,8 @@ namespace CosmicSimulation.EditorTools
                     // with the dome switched off is the Helix's blue-green interior and orange rim against
                     // black, and with it on everything is a pale lavender haze. A dimmed backdrop may yet be
                     // better than none; that is a look decision for the headset.
-                    if (!child.name.StartsWith("card_")) continue;
-                    child.gameObject.SetActive(false);
-                    darkened++;
+                    // nothing left to hide here; the flat layers are gone above
+                    break;
                 }
 
                 // You cannot pick up the room you are standing in. The prefab root carries a grab sphere and a
@@ -966,7 +987,7 @@ namespace CosmicSimulation.EditorTools
                     $"  {spec.Id}: {total:N0} points ({tally}), sky {sky}, {spec.Model} model, radius " +
                     $"{spec.RadiusMetres:0.00} m, plate {Path.GetFileNameWithoutExtension(spec.PlatePath)}" +
                     (stripped > 0 ? $" (replaced {stripped} existing)" : string.Empty) +
-                    (darkened > 0 ? $", {darkened} flat layer(s) switched off" : string.Empty) +
+                    (darkened > 0 ? $", {darkened} flat card(s) deleted" : string.Empty) +
                     (freed > 0 ? ", grab collider off so the view can orbit" : string.Empty));
 
                 return layers.Count > 0;

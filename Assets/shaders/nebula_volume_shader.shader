@@ -58,7 +58,7 @@ Shader "CosmicSimulation/NebulaVolume"
 
         Pass
         {
-            Blend One One
+            Blend One OneMinusSrcAlpha
             Cull Off
             ZWrite Off
             ZTest LEqual
@@ -74,6 +74,9 @@ Shader "CosmicSimulation/NebulaVolume"
             #include "UnityCG.cginc"
             #include "cginc/StarVertDescriptor.cginc"
             #include "cginc/StarQuad.cginc"
+
+            float _Aniso;
+            float _Opacity;
 
             // SV_VertexID is the only real input: every point is expanded from the buffer. The instance id sits
             // beside it because that is where UNITY_SETUP_INSTANCE_ID looks for it under single-pass instanced
@@ -141,7 +144,24 @@ Shader "CosmicSimulation/NebulaVolume"
                 // Near gas larger, far gas smaller. A quarter either side of the authored size is enough to
                 // read without making the far side vanish.
                 float sizeByDepth = lerp(0.78, 1.25, depth);
-                o.vertex = StarQuadOffset(clipPos, corner, p.size * _WSScale * sizeByDepth);
+                float halfSize = max(p.size * _WSScale * sizeByDepth, 0);
+
+                // An oriented, stretched splat rather than a screen-facing square. This is the difference
+                // between gas and confetti: a field of identical squares reads as what it is however many you
+                // draw, because every one of them is the same shape at the same angle. A splat carries its own
+                // orientation - the covariance a Gaussian splat would store, reduced to one angle and one
+                // stretch, which is all that fits in the shared vertex struct. The angle comes from the point's
+                // own random so it is stable frame to frame and free.
+                float splatAngle = p.random * 6.2831853;
+                float2 dir = float2(cos(splatAngle), sin(splatAngle));
+                float2 unit = StarQuadOffsets[corner];
+                float2 stretched = float2(unit.x * _Aniso, unit.y / max(_Aniso, 1e-3));
+                float2 oriented = float2(stretched.x * dir.x - stretched.y * dir.y,
+                                         stretched.x * dir.y + stretched.y * dir.x) * halfSize;
+
+                clipPos.x += oriented.x * UNITY_MATRIX_P._11;
+                clipPos.y += oriented.y * UNITY_MATRIX_P._22;
+                o.vertex = clipPos;
                 o.uv = StarQuadUVs[corner] * 0.5 + p.uv + float2(0, .5);
 
                 float shimmer = 1.0 + _Shimmer * sin(_Time.y * _ShimmerSpeed + p.random * 6.2831853);
@@ -167,8 +187,13 @@ Shader "CosmicSimulation/NebulaVolume"
                 UNITY_SETUP_INSTANCE_ID(i);
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
-                float3 rgb = i.tint * tex2D(_MainTex, i.uv).a;
-                return fixed4(rgb, saturate(dot(rgb, 1.0)));
+                // Premultiplied: colour already carries its own coverage, and alpha says how much of what is
+                // behind survives. Additive could only ever add, which is why thick gas summed past 1 and every
+                // colour in the nebula ended white however carefully the plate was sampled.
+                float coverage = tex2D(_MainTex, i.uv).a;
+                float3 rgb = i.tint * coverage;
+                float alpha = saturate(coverage * _Opacity * saturate(dot(i.tint, 1.0)));
+                return fixed4(rgb, alpha);
             }
             ENDCG
         }
