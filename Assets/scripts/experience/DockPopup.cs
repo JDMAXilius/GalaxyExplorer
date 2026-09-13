@@ -84,7 +84,7 @@ namespace CosmicSimulation
 
         public void Open(DockTile tile)
         {
-            if (tile == null || tile.Module == null || !(tile.Module.HasLayoutChoice || tile.Module.HasPlaceChoice))
+            if (tile == null || tile.Module == null || !tile.Module.HasLayoutChoice)
             {
                 Close();
                 return;
