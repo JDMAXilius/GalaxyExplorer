@@ -27,6 +27,7 @@ namespace Cosmic
         [SerializeField] float heightFraction = 0.55f;
         [SerializeField] float minHeightMetres = 0.7f;
         [SerializeField] float tiltDegrees = 25f;
+        [SerializeField] float desktopFrustumFraction = 0.7f;
         [SerializeField] float curveRadiusMetres = 1.2f;
         [SerializeField] float fadeSeconds = 0.35f;
         [SerializeField] float palmSeconds = 0.5f;
@@ -73,6 +74,8 @@ namespace Cosmic
             var height = Mathf.Max(minHeightMetres, view.position.y * heightFraction);
             var origin = transform.parent != null ? transform.parent.position.y : 0f;
             var goal = new Vector3(view.position.x, origin + height, view.position.z) + forward * aheadMetres;
+            if (!UnityEngine.XR.XRSettings.isDeviceActive)
+                goal = view.position + view.forward * aheadMetres - view.up * (Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * aheadMetres * desktopFrustumFraction);
             transform.SetPositionAndRotation(goal, Quaternion.LookRotation(forward, Vector3.up) * Quaternion.Euler(-tiltDegrees, 0f, 0f));
             if (bar != null) bar.CaptureHome();
             if (utility != null) utility.ResetScale();

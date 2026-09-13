@@ -34,7 +34,7 @@ Everything under `Assets/Cosmic/` is the rework. The old tree stays bootable and
 
 | Kind | Target |
 |---|---|
-| Runtime scripts | 29 planned, 34 landed (Points split three ways, OrbitRings, Billboard, Tile; CS-150) |
+| Runtime scripts | 29 planned, 38 landed (Points split three ways, OrbitRings, Billboard, Tile, Panels; CS-150) |
 | Editor scripts | 6 planned, 11 landed (Bake split three ways, Bodies beside Content, Cards beside Ui; CS-150) |
 | Shaders | 16 |
 | Scenes | 1 |

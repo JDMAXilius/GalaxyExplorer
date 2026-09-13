@@ -42,6 +42,12 @@ still applies here.
 | `p5_run.cs` | `Cosmic/Verify/P5 Run` | CS-156 |
 | `p5_leave_play.cs` | `Cosmic/Verify/P5 Leave Play` | CS-156 |
 | `p5_teardown.cs` | `Cosmic/Verify/P5 Teardown` | CS-156 |
+| `p6_build.cs` | `Cosmic/Verify/P6 Build` | CS-160 |
+| `p6_setup.cs` | `Cosmic/Verify/P6 Setup` | CS-161 |
+| `p6_enter_play.cs` | `Cosmic/Verify/P6 Enter Play` | CS-161 |
+| `p6_run.cs` / `../smoke.cs` | `Cosmic/Verify/P6 Run` | CS-161 |
+| `p6_leave_play.cs` | `Cosmic/Verify/P6 Leave Play` | CS-161 |
+| `p6_teardown.cs` | `Cosmic/Verify/P6 Teardown` | CS-161 |
 
 ---
 
@@ -577,3 +583,39 @@ the pointer, raises `Picked` on click and settles when the pointer leaves; `Room
 Palm-up show/hide needs a tracked left hand; the drag bar needs a pinch; poke depth needs a fingertip.
 All three are CS-156's headset half. How any of it looks — type, spacing, the tile pictures — is
 CS-157, the offscreen render against the Figma frames, and the owner's call.
+
+---
+
+## Phase 6 — the app: boot, intro, every place, the smoke run
+
+Phase 6 is `Core/App.cs`, `Director.cs`, `Anchor.cs`, `Panels.cs` and the main scene that
+**Cosmic → Build → Main Scene** writes to `Assets/Cosmic/Scenes/main.unity`: the rig prefab, an `app`
+root carrying the four components, the dock, toast and about prefabs under `app/ui`, the intro's logo
+text, floor and Earth pin, and the seven dock places on `App`.
+
+### Preconditions
+
+12. **Phases 3, 4 and 5 built:** `rig.prefab`, the place and body prefabs, the UI prefabs and the
+    theme. The main scene nests them and refuses nothing, but a missing prefab is listed as `missing:`
+    in the builder's log line and the run then fails at the step that needed it.
+13. **A host scene can stay open.** `P6 Setup` opens `main.unity` additively, which never prompts, and
+    parks the host's `MainCamera`; `P6 Teardown` closes the additive scene without saving and wakes it.
+
+### The sequence
+
+`p6_build.cs` → `p6_setup.cs` → `p6_enter_play.cs` (poll `isPlaying`) → `smoke.cs` or `p6_run.cs`
+(about 20 s) → `p6_leave_play.cs` → `p6_teardown.cs`.
+
+### What PASS looks like
+
+`p6_build.cs`: `[P6] DONE 23/23`. `p6_run.cs`: `[P6] DONE 25/25` — the intro is running at boot;
+Escape skips the logo; a click on the floor 1.2 m ahead places the content root and ends the intro; App
+boots; the Milky Way opens first with Points; the dock is visible and marks it; each of the seven dock
+places opens in order and sets its room mode; back on the Milky Way there are destination tags; the
+Helix overlay opens in Halo; Escape closes it and the room returns to Dimmed; R restores.
+
+### What Phase 6 cannot be asserted on
+
+Narration and ambience (the clip references are CS-131's wiring step and are null until then), the
+hand-pinch half of placement, and what any of it looks like. The desktop mouse places the pin through
+`XRRayInteractor.TryGetHitInfo`; a hand's `NearFarInteractor` follows through `TryGetCurveEndPoint`.

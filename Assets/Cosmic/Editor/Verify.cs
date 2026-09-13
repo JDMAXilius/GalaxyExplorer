@@ -1505,6 +1505,189 @@ namespace Cosmic.Editor
             TeardownHost();
         }
 
+        const string MainScenePath = "Assets/Cosmic/Scenes/main.unity";
+        static App app;
+        static Director director;
+
+        [MenuItem("Cosmic/Verify/P6 Build")]
+        public static void P6Build()
+        {
+            tag = "[P6]";
+            if (!Ready("the main scene builder")) return;
+            passes = total = 0;
+            if (!EditorApplication.ExecuteMenuItem("Cosmic/Build/Main Scene")) { Debug.LogError($"{tag} FAIL the menu item Cosmic/Build/Main Scene does not exist; Cosmic.Editor did not compile"); return; }
+            var guid = AssetDatabase.AssetPathToGUID(MainScenePath);
+            Check(!string.IsNullOrEmpty(guid) && System.IO.File.Exists(MainScenePath), $"{MainScenePath} exists");
+            var scene = EditorSceneManager.OpenScene(MainScenePath, OpenSceneMode.Additive);
+            try
+            {
+                App found = null;
+                foreach (var root in scene.GetRootGameObjects()) if (found == null) found = root.GetComponentInChildren<App>(true);
+                Check(found != null, "the main scene carries App");
+                if (found != null)
+                {
+                    var serialized = new SerializedObject(found);
+                    foreach (var field in new[] { "director", "anchor", "dock", "toast", "about", "hotkeys", "audio", "start" })
+                        Check(serialized.FindProperty(field)?.objectReferenceValue != null, $"App.{field} is wired");
+                    var places = serialized.FindProperty("places");
+                    Check(places != null && places.arraySize == 7, $"App lists the seven dock places ({(places == null ? 0 : places.arraySize)})");
+                    var anchorObject = found.GetComponent<Anchor>();
+                    var anchorSerialized = anchorObject != null ? new SerializedObject(anchorObject) : null;
+                    var contentRef = anchorSerialized?.FindProperty("content")?.objectReferenceValue as Transform;
+                    var mouseRef = UnityEngine.Object.FindAnyObjectByType<Cosmic.Mouse>(FindObjectsInactive.Include);
+                    var pivot = mouseRef != null ? new SerializedObject(mouseRef).FindProperty("pivot")?.objectReferenceValue as Transform : null;
+                    Check(contentRef != null && contentRef == pivot, "Anchor.content is the same transform the mouse orbits");
+                    foreach (var field in new[] { "logo", "pin", "floor", "audio", "logoClip", "placementClip" })
+                        Check(anchorSerialized?.FindProperty(field)?.objectReferenceValue != null, $"Anchor.{field} is wired");
+                    var panelsObject = found.GetComponent<Panels>();
+                    var panelsSerialized = panelsObject != null ? new SerializedObject(panelsObject) : null;
+                    foreach (var field in new[] { "scenePrefab", "bodyPrefab", "moonPrefab", "tagPrefab", "namePrefab" })
+                        Check(panelsSerialized?.FindProperty(field)?.objectReferenceValue != null, $"Panels.{field} is wired");
+                }
+                var cameras = 0;
+                foreach (var root in scene.GetRootGameObjects()) foreach (var camera in root.GetComponentsInChildren<Camera>(true)) if (camera.CompareTag("MainCamera")) cameras++;
+                Check(cameras == 1, $"the main scene has exactly one MainCamera ({cameras})");
+                var listed = System.Array.FindIndex(EditorBuildSettings.scenes, entry => entry.path == MainScenePath);
+                Check(listed == 0, $"the main scene is the first scene in Build Settings (index {listed})");
+            }
+            finally
+            {
+                EditorSceneManager.CloseScene(scene, true);
+            }
+            EditorApplication.ExecuteMenuItem("Cosmic/Build/Main Scene");
+            Check(AssetDatabase.AssetPathToGUID(MainScenePath) == guid, "a second build keeps the scene's GUID");
+            Debug.Log($"{tag} DONE {passes}/{total}");
+        }
+
+        [MenuItem("Cosmic/Verify/P6 Setup")]
+        public static void P6Setup()
+        {
+            tag = "[P6]";
+            if (EditorApplication.isPlaying) { Debug.LogError(tag + " FAIL the editor is in play mode; leave play mode first"); return; }
+            if (!System.IO.File.Exists(MainScenePath)) { Debug.LogError(tag + " FAIL " + MainScenePath + " does not exist; run Cosmic/Verify/P6 Build first"); return; }
+            var scene = UnityEngine.SceneManagement.SceneManager.GetSceneByPath(MainScenePath);
+            if (!scene.isLoaded) scene = EditorSceneManager.OpenScene(MainScenePath, OpenSceneMode.Additive);
+            Camera eye = null;
+            foreach (var root in scene.GetRootGameObjects()) foreach (var camera in root.GetComponentsInChildren<Camera>(true)) if (camera.CompareTag("MainCamera")) eye = camera;
+            if (eye == null) { Debug.LogError(tag + " FAIL the main scene has no MainCamera; re-run Cosmic/Verify/P6 Build"); return; }
+            var strays = ParkStrayCameras(eye);
+            Debug.Log($"{tag} setup: {MainScenePath} is open additively" + (strays.Length > 0 ? "; parked the host scene's MainCamera(s):" + strays : string.Empty) +
+                      ". The host scene is not saved. Next: Cosmic/Verify/P6 Enter Play.");
+        }
+
+        [MenuItem("Cosmic/Verify/P6 Enter Play")]
+        public static void P6EnterPlay() { if (!EditorApplication.isPlaying) { EditorApplication.isPlaying = true; Debug.Log("[P6] play requested; poll isPlaying"); } }
+
+        [MenuItem("Cosmic/Verify/P6 Leave Play")]
+        public static void P6LeavePlay() { if (EditorApplication.isPlaying) { EditorApplication.isPlaying = false; Debug.Log("[P6] leaving play mode"); } }
+
+        [MenuItem("Cosmic/Verify/P6 Run")]
+        public static void P6Run()
+        {
+            if (!EditorApplication.isPlaying) { Debug.LogError("[P6] FAIL not in play mode; run Cosmic/Verify/P6 Enter Play, poll isPlaying, then run this"); return; }
+            if (steps.Count > 0) { Debug.Log($"{tag} already running, step {cursor}/{steps.Count}"); return; }
+            tag = "[P6]";
+            app = UnityEngine.Object.FindAnyObjectByType<App>();
+            director = app != null ? app.Director : null;
+            dock = UnityEngine.Object.FindAnyObjectByType<Dock>(FindObjectsInactive.Include);
+            keys = UnityEngine.Object.FindAnyObjectByType<Hotkeys>();
+            pointer = UnityEngine.Object.FindAnyObjectByType<Cosmic.Mouse>();
+            if (app == null || director == null || dock == null) { Debug.LogError("[P6] FAIL no App, Director or Dock in the loaded scenes; run Cosmic/Verify/P6 Setup, then enter play"); return; }
+            if (Camera.main == null || pointer == null || keys == null || MouseDevice.current == null || KeyboardDevice.current == null) { Debug.LogError("[P6] FAIL no Camera.main, Cosmic.Mouse, Hotkeys, mouse or keyboard device"); return; }
+            var cam = Camera.main.transform;
+            var anchorObject = app.GetComponent<Anchor>();
+            var order = new List<Place>();
+            foreach (var tile in dock.Tiles) if (tile.place != null) order.Add(tile.place);
+            steps.Clear();
+            cursor = passes = total = 0;
+
+            Add(0.5f, () => { Check(anchorObject != null && anchorObject.IntroRunning, "the intro is running at boot"); Tap(Key.Escape, true); });
+            Add(0.05f, () => Tap(Key.Escape, false));
+            Add(0.6f, () =>
+            {
+                var floorPoint = cam.position + Anchor.FlatForward(cam) * 1.2f;
+                floorPoint.y = 0f;
+                Move(At(floorPoint));
+            });
+            Add(0.3f, () => Press(At(FloorAhead(cam)), true, false, Vector2.zero));
+            Add(0.1f, () => Press(At(FloorAhead(cam)), false, false, Vector2.zero));
+            Add(2.5f, () =>
+            {
+                Check(anchorObject != null && anchorObject.Placed && !anchorObject.IntroRunning, "a click on the floor places the content root and ends the intro");
+                Check(app.Booted, "App booted after the intro");
+                Check(director.Current != null && director.Current.id == "milky_way", $"the Milky Way opens first ({(director.Current == null ? "nothing" : director.Current.id)})");
+                Check(director.Content != null && director.Content.GetComponentInChildren<Points>(true) != null, "the Milky Way content is instantiated with Points");
+                Check(dock.Visible && dock.GetComponent<CanvasGroup>().alpha > 0.9f, "the dock is visible after boot");
+                Check(dock.Active == director.Current, "the dock marks the open place");
+                Move(Idle());
+            });
+            foreach (var place in order)
+            {
+                var wanted = place;
+                Add(0.2f, () => director.Open(wanted));
+                Add(1.5f, () =>
+                {
+                    Check(director.Current == wanted && director.Content != null && director.Content.name == wanted.id, $"{wanted.id} opens from the dock order ({(director.Current == null ? "nothing" : director.Current.id)})");
+                    Check(Room.Effective == wanted.room || Room.PassthroughForced, $"{wanted.id} sets the room to {wanted.room} ({Room.Effective})");
+                });
+            }
+            Add(0.2f, () => director.Open(order.Find(p => p.id == "milky_way")));
+            Add(1.5f, () =>
+            {
+                var helix = AssetDatabase.LoadAssetAtPath<Place>($"{Generated}/places/helix.asset");
+                var tags = director.Content != null ? director.Content.GetComponentsInChildren<Label>(true).Length : 0;
+                Check(tags >= 6, $"the Milky Way carries destination tags ({tags})");
+                if (helix != null) director.OpenDestinationPlace(helix, cam.position + cam.forward);
+                else Skip("the destination overlay: no helix.asset");
+            });
+            Add(1.2f, () =>
+            {
+                Check(director.OpenDestination != null && director.OpenDestination.id == "helix", "the Helix overlay opens as a destination");
+                Check(Room.Effective == RoomMode.Halo, $"a destination puts the room in Halo ({Room.Effective})");
+                Tap(Key.Escape, true);
+            });
+            Add(0.05f, () => Tap(Key.Escape, false));
+            Add(0.6f, () =>
+            {
+                Check(director.OpenDestination == null, "Escape closes the destination");
+                Check(Room.Effective == RoomMode.Dimmed, $"closing it returns the room to the Milky Way's mode ({Room.Effective})");
+                Tap(Key.R, true);
+            });
+            Add(0.05f, () => Tap(Key.R, false));
+            Add(0.5f, () => Check(director.Current != null && director.Current.id == "milky_way" && !director.Switching, "R restores without switching"));
+
+            cleanup = () =>
+            {
+                holding = null;
+                Tap(Key.Escape, false);
+                Tap(Key.R, false);
+                var device = MouseDevice.current;
+                if (device != null) Move(device.position.ReadValue());
+            };
+            due = EditorApplication.timeSinceStartup + steps[0].waitSeconds;
+            EditorApplication.update += Tick;
+            Debug.Log($"[P6] start: {steps.Count} steps, about {2.5f + order.Count * 1.7f + 5f:0} s. This is the smoke run: boot, intro, every place, a destination, restore.");
+        }
+
+        static Vector3 FloorAhead(Transform cam)
+        {
+            var point = cam.position + Anchor.FlatForward(cam) * 1.2f;
+            point.y = 0f;
+            return point;
+        }
+
+        [MenuItem("Cosmic/Verify/P6 Teardown")]
+        public static void P6Teardown()
+        {
+            tag = "[P6]";
+            if (EditorApplication.isPlaying) { Debug.LogError(tag + " FAIL leave play mode first"); return; }
+            var scene = UnityEngine.SceneManagement.SceneManager.GetSceneByPath(MainScenePath);
+            var closed = scene.isLoaded && EditorSceneManager.CloseScene(scene, true);
+            var woken = 0;
+            for (var i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++) woken += WakeParkedCameras(UnityEngine.SceneManagement.SceneManager.GetSceneAt(i));
+            Debug.Log($"{tag} teardown: {(closed ? "closed" : "did not need to close")} {MainScenePath}, woke {woken} parked camera(s). Nothing was saved.");
+        }
+
         static Vector2 At(Vector3 world)
         {
             var cam = Camera.main;

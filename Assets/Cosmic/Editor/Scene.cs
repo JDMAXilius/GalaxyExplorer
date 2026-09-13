@@ -107,6 +107,123 @@ namespace Cosmic.Editor
             Wire(mouse, "pivot", content);
         }
 
+        const string MainScenePath = "Assets/Cosmic/Scenes/main.unity";
+        const string UiFolder = "Assets/Cosmic/Prefabs/ui";
+        const string Places = "Assets/Cosmic/Data/Generated/places";
+        const string EarthPrefab = "Assets/Cosmic/Prefabs/bodies/earth.prefab";
+        const string LogoSfx = "Assets/audio/sfx_audio_clips/sfx_intro_logo_enter_audio_clip.wav";
+        const string PlacementSfx = "Assets/audio/sfx_audio_clips/sfx_intro_globe_placement_audio_clip.wav";
+        static readonly string[] DockOrder = { "cosmic_web", "galaxies", "milky_way", "andromeda", "solar_system", "solar_system_planets", "sagittarius_a" };
+
+        [MenuItem("Cosmic/Build/Main Scene")]
+        public static void BuildMain()
+        {
+            if (EditorApplication.isPlaying) { Debug.LogError("Cosmic main scene: refused in play mode."); return; }
+            Missing.Clear();
+            if (!AssetDatabase.IsValidFolder("Assets/Cosmic/Scenes")) AssetDatabase.CreateFolder("Assets/Cosmic", "Scenes");
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+            try
+            {
+                var rigAsset = Optional<GameObject>(RigPath);
+                var rig = rigAsset != null ? (GameObject)PrefabUtility.InstantiatePrefab(rigAsset, scene) : new GameObject("rig");
+                var content = rig.transform.Find("Content") ?? Child(rig.transform, "Content");
+                var app = new GameObject("app");
+                SceneManager.MoveGameObjectToScene(app, scene);
+                var director = app.AddComponent<Director>();
+                var anchor = app.AddComponent<Anchor>();
+                var panels = app.AddComponent<Panels>();
+                var main = app.AddComponent<App>();
+                var ui = Child(app.transform, "ui");
+                var dock = Nest($"{UiFolder}/dock.prefab", ui);
+                var toast = Nest($"{UiFolder}/toast.prefab", ui);
+                var about = Nest($"{UiFolder}/about.prefab", ui);
+                var hotkeys = rig.GetComponentInChildren<Hotkeys>(true);
+                var audio = rig.GetComponentInChildren<Audio>(true);
+                var mouse = rig.GetComponentInChildren<Mouse>(true);
+                Intro(app.transform, content, anchor, audio);
+                Wire(director, "anchor", anchor);
+                Wire(director, "audio", audio);
+                Wire(director, "toast", toast != null ? toast.GetComponent<Toast>() : null);
+                Wire(director, "panels", panels);
+                Wire(panels, "scenePrefab", Optional<GameObject>($"{UiFolder}/panel_scene.prefab")?.GetComponent<Panel>());
+                Wire(panels, "bodyPrefab", Optional<GameObject>($"{UiFolder}/panel_body.prefab")?.GetComponent<Panel>());
+                Wire(panels, "moonPrefab", Optional<GameObject>($"{UiFolder}/panel_moon.prefab")?.GetComponent<Panel>());
+                Wire(panels, "tagPrefab", Optional<GameObject>($"{UiFolder}/label_card.prefab")?.GetComponent<Label>());
+                Wire(panels, "namePrefab", Optional<GameObject>($"{UiFolder}/label_name.prefab")?.GetComponent<Label>());
+                if (dock != null)
+                {
+                    Wire(dock.GetComponent<Dock>(), "hotkeys", hotkeys);
+                    Wire(dock.GetComponent<Dock>(), "toast", toast != null ? toast.GetComponent<Toast>() : null);
+                }
+                if (toast != null) Wire(toast.GetComponent<Toast>(), "hotkeys", hotkeys);
+                if (mouse != null) Wire(mouse, "pivot", content);
+                Wire(main, "director", director);
+                Wire(main, "anchor", anchor);
+                Wire(main, "dock", dock != null ? dock.GetComponent<Dock>() : null);
+                Wire(main, "toast", toast != null ? toast.GetComponent<Toast>() : null);
+                Wire(main, "about", about != null ? about.GetComponent<About>() : null);
+                Wire(main, "hotkeys", hotkeys);
+                Wire(main, "audio", audio);
+                var places = new List<Object>();
+                foreach (var id in DockOrder)
+                {
+                    var place = AssetDatabase.LoadAssetAtPath<Place>($"{Places}/{id}.asset");
+                    if (place == null) Missing.Add($"{Places}/{id}.asset");
+                    else places.Add(place);
+                }
+                var serialized = new SerializedObject(main);
+                var list = serialized.FindProperty("places");
+                list.arraySize = places.Count;
+                for (var i = 0; i < places.Count; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = places[i];
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                Wire(main, "start", AssetDatabase.LoadAssetAtPath<Place>($"{Places}/milky_way.asset"));
+                EditorSceneManager.SaveScene(scene, MainScenePath);
+                Register();
+            }
+            finally
+            {
+                EditorSceneManager.CloseScene(scene, true);
+            }
+            Debug.Log($"Cosmic main scene -> {MainScenePath}; " + (Missing.Count > 0 ? $"missing: {string.Join(", ", Missing)}" : "nothing missing"));
+        }
+
+        static void Intro(Transform app, Transform content, Anchor anchor, Audio audio)
+        {
+            var logo = Child(app, "logo").gameObject.AddComponent<TMPro.TextMeshPro>();
+            logo.text = "Cosmic Simulation XR";
+            logo.fontSize = 0.12f;
+            logo.alignment = TMPro.TextAlignmentOptions.Center;
+            logo.rectTransform.sizeDelta = new Vector2(1.6f, 0.4f);
+            var theme = Optional<Theme>("Assets/Cosmic/Data/Generated/theme.asset");
+            if (theme != null && theme.font != null) logo.font = theme.font;
+            var floor = Child(app, "floor").gameObject;
+            floor.AddComponent<BoxCollider>().size = new Vector3(20f, 0.02f, 20f);
+            var floorInteractable = floor.AddComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable>();
+            var pin = Nest(EarthPrefab, app);
+            if (pin != null)
+            {
+                pin.name = "pin";
+                pin.transform.localScale = Vector3.one * 0.1f;
+                foreach (var grab in pin.GetComponentsInChildren<Grabbable>(true)) grab.enabled = false;
+                foreach (var pull in pin.GetComponentsInChildren<Pull>(true)) pull.enabled = false;
+            }
+            Wire(anchor, "content", content);
+            Wire(anchor, "logo", logo);
+            Wire(anchor, "pin", pin);
+            Wire(anchor, "floor", floorInteractable);
+            Wire(anchor, "audio", audio);
+            Wire(anchor, "logoClip", Optional<AudioClip>(LogoSfx));
+            Wire(anchor, "placementClip", Optional<AudioClip>(PlacementSfx));
+        }
+
+        static void Register()
+        {
+            var scenes = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
+            if (scenes.Exists(s => s.path == MainScenePath)) return;
+            scenes.Insert(0, new EditorBuildSettingsScene(MainScenePath, true));
+            EditorBuildSettings.scenes = scenes.ToArray();
+        }
+
         static Camera Eye(Transform parent)
         {
             var go = new GameObject("Main Camera") { tag = "MainCamera" };
