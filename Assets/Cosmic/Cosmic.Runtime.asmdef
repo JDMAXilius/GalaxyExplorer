@@ -9,7 +9,8 @@
         "Unity.XR.CoreUtils",
         "Unity.XR.Management",
         "Unity.XR.OpenXR",
-        "Unity.XR.ARFoundation"
+        "Unity.XR.ARFoundation",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
