@@ -254,7 +254,7 @@ into the one scene, built here because Phase 2 is the first thing that needs the
 | CS-136 | CC | Rework P3 and beyond — broken out below into CS-137 onward as each phase starts; this row is the index | — | superseded |
 | CS-137 | CC | Rework P3a: `Interaction/Grabbable.cs` (native XRI grab interactable: home pose, restore, placed, auto-return, metre scale limits, upright transformer, Spin/ScaleBy) and `Interaction/Pull.cs` (force-pull as three states, dwell as a hover timer) | CS-126 | done (unrun) |
 | CS-138 | CC | Rework P3b: `Interaction/Mouse.cs` (the desktop pointer as an XRI ray interactor), `Interaction/Hotkeys.cs` (the Desktop action map), `Editor/Scene.cs` menu **Cosmic → Build → Rig** (the XR rig prefab assembled by script from the vendored XRI and hands samples) | CS-137 | doing |
-| CS-139 | TERM | Rework P3 compile and rig build: compile, run **Cosmic → Build → Rig**, confirm `Assets/Cosmic/Prefabs/rig.prefab` exists with both hands, the mouse interactor, one interaction manager, one event system on the XR UI input module | CS-138 | todo |
+| CS-139 | TERM | Rework P3 compile and rig build: compile, run **Cosmic → Build → Rig**, confirm `Assets/Cosmic/Prefabs/rig.prefab` exists with both hands, the mouse interactor, one interaction manager, one event system on the XR UI input module | CS-138 | done |
 | CS-140 | TERM | Rework P3 feel test on one planet, desktop and Link: near pinch, far pinch, 2 s dwell pull with beam, two-hand scale and rotate within limits, release stays, restore tween, mouse LMB/drag/wheel/RMB parity, auto-return after 5 s out of reach; owner signs off on feel before P6 | CS-139 | todo |
 
 *CS-132 done, unrun (13 Sep 2026).* Deck only; no importer change was needed. Seven body blocks and four place blocks ported verbatim from the old assets, plus the wiring fields the importer always read and the deck never carried: `**Bodies:**` on `solar_system` and `hd110067`, `**Destinations:**` on `milky_way` (nine, per GDD 4.3). All four new places are Dimmed, read from the old assets, so no `**Room:**` line. A Python re-implementation of the parser resolves 10/10, 7/7 and 9/9 ids. **Two things ported faithfully rather than fixed, for the owner:** the HD 110067 prose exceeds the deck's word caps (recorded as an exception in the README), and its four measured masses lack the `x 10` mantissa suffix the other bodies carry, so they will render as a bare mantissa with a superscript until the value text is changed — changing it would also change what the parity gate compares against. Terminal: **Cosmic → Import Copy**, then `check_data.py` should drop from 11 missing assets to 0 and `Wire()` should report references wired; then re-run **Cosmic → Build → Layouts** so the two HD 110067 layouts fill their slots.
@@ -298,6 +298,33 @@ exceeds the deck's word caps (recorded as an exception in `docs/copy/README.md`)
 measured masses lack the `x 10` mantissa suffix the other bodies carry, so they render as a bare
 mantissa with a superscript. Changing the value text also changes what the parity gate compares
 against, so it is a deliberate decision, not a cleanup.
+
+*CS-139 — done (13 Sep 2026, terminal session).* Compiles clean, and every assertion in the
+acceptance line passes against the prefab read back off disk rather than the build's own report.
+
+- `Assets/Cosmic/Prefabs/rig.prefab` exists, and **Cosmic → Build → Rig** run twice leaves the same
+  GUID, so the builder is idempotent as RULES.md requires.
+- Exactly **one** `XRInteractionManager`, **one** `EventSystem`, **one** `XRUIInputModule` on it,
+  **one** `Mouse`, **one** `Hotkeys`. The "one of each" part of the line is the whole point of it —
+  a second event system is the failure this ticket exists to catch, and there is not one.
+- Both hands are complete: `NearFarInteractor` with its curve visual, a poke interactor on its own
+  pose, `XRHandTrackingEvents` / `XRHandSkeletonDriver` / `XRHandMeshController`, and the full
+  26-joint skeleton under each wrist.
+- `Main Camera` carries `Camera`, `AudioListener`, `TrackedPoseDriver` and `ARCameraManager`;
+  `AR Session` is present and **disabled**, which is correct for the desktop mode.
+- `XROrigin` is written through `SerializedObject` deliberately (`Scene.cs:83`) because the setters
+  move the offset and poke the XR subsystem.
+
+One thing worth knowing for anyone reading a hierarchy dump of this prefab: the mouse node prints as
+`Mouse [Transform Mouse]` with no interactor component beside it, which looks like a missing
+interactor and is not. `Mouse` **is** the interactor — `Mouse : XRRayInteractor` (`Mouse.cs:11`) —
+so the derived name is all that shows.
+
+**CS-140 is the owner's, not the terminal's.** It is a feel test — pinch, dwell, two-hand scale,
+restore tween, mouse parity — and its acceptance line ends "owner signs off on feel". It needs a
+headset or a Link session and a human judgement that nothing here can stand in for. Note also that a
+default Link session cannot verify stereo work at all (Android ships Single Pass Instanced, Windows
+multi-pass), so anything that looks right on Link still owes a device run.
 
 *CS-126 — compile the Cosmic assemblies.* `pwsh tools/mcp/compile.ps1`, then
 `node tools/mcp/umcp.js run tools/mcp/rework/p0_compile.cs`, then
