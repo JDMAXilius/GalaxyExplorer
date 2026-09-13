@@ -106,7 +106,7 @@ namespace CosmicSimulation.EditorTools
         /// 8 600 points because each layer does one job at one size - but a volume you stand inside needs the
         /// density of one, not the density of an ornament.
         /// </summary>
-        private const int PointCount = 40000;
+        private const int PointCount = 52000;
 
         /// <summary>What a point is for. Each role is its own buffer, its own material and its own sprite size.</summary>
         private enum Role
@@ -159,9 +159,9 @@ namespace CosmicSimulation.EditorTools
             // 5 m sphere is not gas, it is a wall: it closes over the sky in every direction and there is
             // nothing to see past it - no black, no individual stars, no colour, because additive light with
             // nothing between it saturates. Gas has to be something you see *through*.
-            new RoleSpec(Role.Clouds,  6000, 3.0f, false, 0.022f),
-            new RoleSpec(Role.Dust,    8000, 2.4f, true,  0.028f),
-            new RoleSpec(Role.Stars,  20000, 0.35f, false, 0.010f),
+            new RoleSpec(Role.Clouds, 16000, 3.0f, false, 0.110f),
+            new RoleSpec(Role.Dust,   12000, 2.4f, true,  0.100f),
+            new RoleSpec(Role.Stars,  24000, 0.35f, false, 0.030f),
         };
 
         /// <summary>
@@ -184,7 +184,7 @@ namespace CosmicSimulation.EditorTools
         private const int BackgroundRadius = 20;
 
         /// <summary>Stars scattered through the whole volume, on top of the ones the plate itself shows.</summary>
-        private const int FieldStars = 9000;
+        private const int FieldStars = 14000;
 
         /// <summary>Below this share of the plate's peak luminance a pixel is empty sky and seeds nothing.</summary>
         private const float LuminanceFloor = 0.10f;
@@ -241,22 +241,22 @@ namespace CosmicSimulation.EditorTools
         {
             // A planetary nebula seen close to face-on: a shell whose near and far walls project onto the same
             // ring. This is the case the shell model was written for.
-            new Spec("helix", "Assets/Textures/nebulae/helix_texture.jpg", Model.Shell, 2.50f, 0.22f),
+            new Spec("helix", "Assets/Textures/nebulae/helix_texture.jpg", Model.Shell, 9.00f, 0.22f),
 
             // A supernova remnant. Not a clean sphere - it is a filamentary cage around a pulsar wind nebula -
             // but it is a genuine expanding shell, and a shell is far closer to the truth than a flat card.
-            new Spec("crab", "Assets/Textures/nebulae/crab_texture.jpg", Model.Shell, 2.50f, 0.30f),
+            new Spec("crab", "Assets/Textures/nebulae/crab_texture.jpg", Model.Shell, 9.00f, 0.30f),
 
             // Another planetary nebula, and a notably round one; its common name is the Oyster.
-            new Spec("ngc1501", "Assets/Textures/ngc1501_texture.jpg", Model.Shell, 2.50f, 0.24f),
+            new Spec("ngc1501", "Assets/Textures/ngc1501_texture.jpg", Model.Shell, 9.00f, 0.24f),
 
             // Two lobes either side of Eta Carinae, thrown out in the 1840s eruption.
-            new Spec("homunculus", "Assets/Textures/nebulae/homunculus_texture.jpg", Model.Bipolar, 2.50f, 0.34f),
+            new Spec("homunculus", "Assets/Textures/nebulae/homunculus_texture.jpg", Model.Bipolar, 9.00f, 0.34f),
 
             // Irregular clouds. Depth is convention here, and says so.
-            new Spec("orion", "Assets/Textures/nebulae/orion_texture.jpg", Model.Cloud, 2.50f, 0.45f),
-            new Spec("pillars", "Assets/Textures/pillars_texture.tga", Model.Cloud, 2.50f, 0.40f),
-            new Spec("trumpler14", "Assets/Textures/trumpler_texture.jpg", Model.Cloud, 2.50f, 0.45f),
+            new Spec("orion", "Assets/Textures/nebulae/orion_texture.jpg", Model.Cloud, 9.00f, 0.45f),
+            new Spec("pillars", "Assets/Textures/pillars_texture.tga", Model.Cloud, 9.00f, 0.40f),
+            new Spec("trumpler14", "Assets/Textures/trumpler_texture.jpg", Model.Cloud, 9.00f, 0.45f),
         };
 
         private static readonly Dictionary<Model, string> ModelProvenance = new Dictionary<Model, string>
@@ -483,7 +483,7 @@ namespace CosmicSimulation.EditorTools
                     // Held back, because this layer overlaps itself: twelve thousand additive sprites through
                     // one volume add up, and at full plate brightness the sum saturates and every colour in the
                     // nebula ends as white. The colour has to survive the stacking, not just the sample.
-                    return plate * 0.32f;
+                    return plate * 0.60f;
             }
         }
 
@@ -867,7 +867,7 @@ namespace CosmicSimulation.EditorTools
                 material.SetFloat("_PlatePitch", 0f);
 
                 // A backdrop, not a light source: the gas in front has to stay the brightest thing.
-                if (material.HasProperty("_PlateGain")) material.SetFloat("_PlateGain", 0.55f);
+                if (material.HasProperty("_PlateGain")) material.SetFloat("_PlateGain", 0.32f);
                 EditorUtility.SetDirty(material);
                 touched++;
             }
