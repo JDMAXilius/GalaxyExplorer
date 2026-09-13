@@ -190,7 +190,7 @@ namespace CosmicSimulation.EditorTools
         private const float LuminanceFloor = 0.10f;
 
         /// <summary>How the third dimension is reconstructed for one object.</summary>
-        private enum Model
+        internal enum Model
         {
             /// <summary>A roughly spherical shell of ejecta. Depth is derived from the projection.</summary>
             Shell,
@@ -202,7 +202,7 @@ namespace CosmicSimulation.EditorTools
             Cloud,
         }
 
-        private readonly struct Spec
+        internal readonly struct Spec
         {
             public readonly string Id;
             public readonly string PlatePath;
@@ -276,6 +276,53 @@ namespace CosmicSimulation.EditorTools
                 "low-frequency noise field, spread wider where the plate is brighter. Only the colour and the " +
                 "two-dimensional structure come from the photograph.",
         };
+
+        /// <summary>The seven, for anything else that has to bake the same objects from the same table.</summary>
+        internal static Spec[] AllSpecs => Specs;
+
+        /// <summary>
+        /// How much gas the shape model puts at one point of the volume, in -1..1 local units, as a 0..1
+        /// weight. The point bake asks the inverse question - given a pixel, at what depth does it sit - and a
+        /// field has to ask this one, at every voxel. Same three models, same numbers, one place.
+        /// </summary>
+        internal static float ShapeDensity(Spec spec, float u, float v, float w)
+        {
+            switch (spec.Model)
+            {
+                case Model.Shell:
+                {
+                    // A shell of ejecta: gas lives in a skin at radius 1, and the middle is genuinely empty.
+                    var r = Mathf.Sqrt(u * u + v * v + w * w);
+                    var wall = Mathf.Abs(r - 1f) / Mathf.Max(spec.Thickness, 1e-3f);
+                    return r > 1f + spec.Thickness ? 0f : Mathf.Clamp01(1f - wall);
+                }
+
+                case Model.Bipolar:
+                {
+                    // Two lobes on the vertical axis, each a shell of its own, as the Homunculus is.
+                    var lobe = Mathf.Max(spec.Thickness, 1e-3f);
+                    var best = 0f;
+                    for (var side = -1; side <= 1; side += 2)
+                    {
+                        var dv = v - side * (1f - lobe);
+                        var r = Mathf.Sqrt(u * u + dv * dv + w * w) / lobe;
+                        best = Mathf.Max(best, Mathf.Clamp01(1f - Mathf.Abs(r - 0.75f) / 0.75f));
+                    }
+
+                    return best;
+                }
+
+                default:
+                {
+                    // An irregular cloud: a slab as deep as the model says, softened towards its edges, with
+                    // no claim that the depth is anything but a declared convention.
+                    var depth = Mathf.Abs(w) / Mathf.Max(spec.Thickness, 1e-3f);
+                    var radial = Mathf.Sqrt(u * u + v * v);
+                    var edge = Mathf.Clamp01(1f - Mathf.Max(0f, radial - 0.75f) / 0.25f);
+                    return Mathf.Clamp01(1f - depth) * edge;
+                }
+            }
+        }
 
         [MenuItem("Cosmic Simulation/Build Nebula Volumes")]
         public static void BuildAll()
@@ -423,7 +470,7 @@ namespace CosmicSimulation.EditorTools
         ///
         /// The caller destroys the result.
         /// </summary>
-        private static Texture2D ReadPlate(string path, out string error)
+        internal static Texture2D ReadPlate(string path, out string error)
         {
             var source = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
             if (source == null)
