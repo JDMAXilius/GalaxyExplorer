@@ -1,4 +1,4 @@
-# `tools/mcp/rework/` — verifying the rework's Phases 0–2 from a terminal
+# `tools/mcp/rework/` — verifying the rework's Phases 0–3 from a terminal
 
 Phases 0–2 of the Cosmic rework are committed but have **never been through a compiler and never run**.
 They also have no scene presence: no `AudioLibrary` asset, no dim material, no host GameObject. So there
@@ -23,6 +23,12 @@ still applies here.
 | `p2_run.cs` | `Cosmic/Verify/P2 Run` | CS-129 |
 | `p2_leave_play.cs` | `Cosmic/Verify/P2 Leave Play` | CS-130 |
 | `p2_teardown.cs` | `Cosmic/Verify/P2 Teardown` | CS-130 |
+| `p3_build_rig.cs` | `Cosmic/Verify/P3 Build Rig` | CS-139 |
+| `p3_setup.cs` | `Cosmic/Verify/P3 Setup` | CS-140 |
+| `p3_enter_play.cs` | `Cosmic/Verify/P3 Enter Play` | CS-140 |
+| `p3_run.cs` | `Cosmic/Verify/P3 Run` | CS-140 |
+| `p3_leave_play.cs` | `Cosmic/Verify/P3 Leave Play` | CS-140 |
+| `p3_teardown.cs` | `Cosmic/Verify/P3 Teardown` | CS-140 |
 
 ---
 
@@ -165,3 +171,170 @@ those are the real inputs Phase 6 wires into the one scene, not fixtures. Commit
 
 `Verify.cs` is test tooling and says so in its own one comment line — it does not count against RULES.md's
 six-editor-script budget for the rework.
+
+---
+
+## Phase 3 — the rig and the feel test (CS-139, CS-140)
+
+Phase 3 is `Interaction/Grabbable.cs`, `Interaction/Pull.cs`, `Interaction/Mouse.cs`, `Interaction/Hotkeys.cs`
+and the rig builder in `Editor/Scene.cs`. None of it has run either. CS-139 is the compile-and-build gate;
+CS-140 is one planet-sized body pulled, grabbed, scaled, spun, restored and left to stray, on the desktop
+pointer alone. The Quest half of CS-140 — near pinch, far pinch, two-handed scale — is not scriptable from
+here and stays with the owner.
+
+### Extra preconditions, on top of the three above
+
+4. **Open a saved scene with no camera tagged `MainCamera`.** The rig prefab brings its own eye. With a
+   second one loaded, `Camera.main` is whichever Unity hands back first, and `Mouse`, `Pull` and `Room` all
+   silently aim through the wrong one. `Cosmic/Verify/P3 Setup` reports that as a `[P3] FAIL` naming the
+   stray camera; deactivate it, or open an empty saved scene, and run setup again. The Phase 2 host scene
+   (`solar_system_prefab_scene`) **does** have a camera, so it is the wrong host for Phase 3.
+5. **`Assets/Cosmic/Prefabs/room_dim.mat` and `Assets/Cosmic/Data/Generated/audio_library.asset` have to
+   exist before `p3_build_rig.cs`.** The rig builder wires both into the rig root; with `Room.dimMaterial`
+   null, `Room` logs its own error the instant play starts, and with `Audio.library` null every grab and
+   pull is silent. The `[P3] rig inputs:` line says which of the two came through, and neither is fatal to
+   the assertions. `Cosmic/Verify/P2 Setup` is what makes them, and `P2 Teardown` keeps them on purpose, so
+   a finished Phase 2 run leaves both in place. If you have to run `P2 Setup` now, run `P2 Teardown`
+   straight after it and before `p3_setup.cs`: setup also drops a `cosmic_verify` host carrying its own
+   `Room` and `Audio`, and a second `Room` next to the rig's is a coin toss over which one is the singleton.
+6. **A Game view has to be open and visible, and the real mouse has to stay off it.** The run drives
+   `Mouse.current` and `Keyboard.current` with synthetic state events; a physical mouse move queues events
+   into the same device and fights them. If the whole run fails at the first hover, that is the usual cause
+   — the other is that the input system is not processing events while the Game view is unfocused, which
+   *Window → Analysis → Input Debugger → Options → Lock Input to Game View* fixes.
+
+### The sequence
+
+```bash
+# CS-139 — compile, then build the rig and check it, twice
+pwsh tools/mcp/compile.ps1
+node tools/mcp/umcp.js run tools/mcp/rework/p3_build_rig.cs
+node tools/mcp/umcp.js call Unity_GetConsoleLogs '{}'
+
+# CS-140 — put the rig and one test body in the open scene and save
+node tools/mcp/umcp.js run tools/mcp/rework/p3_setup.cs
+node tools/mcp/umcp.js call Unity_GetConsoleLogs '{}'
+
+# CS-140 — play mode
+node tools/mcp/umcp.js run tools/mcp/rework/p3_enter_play.cs
+#   wait ~5 s for the domain reload; "Unity not detected" here is the reload, not a fault
+node tools/mcp/umcp.js run tools/mcp/rework/p3_run.cs
+#   wait ~20 s
+node tools/mcp/umcp.js call Unity_GetConsoleLogs '{}'
+
+# CS-140 — stop and clean up
+node tools/mcp/umcp.js run tools/mcp/rework/p3_leave_play.cs
+node tools/mcp/umcp.js run tools/mcp/rework/p3_teardown.cs
+```
+
+### What PASS looks like
+
+`p3_build_rig.cs` — twenty-two assertions and:
+
+```
+Cosmic rig created -> Assets/Cosmic/Prefabs/rig.prefab; nothing missing
+[P3] PASS the rig root carries XROrigin
+...
+[P3] PASS a second Cosmic/Build/Rig left the prefab GUID unchanged (8f1c...)
+[P3] DONE 22/22
+```
+
+`p3_setup.cs`:
+
+```
+[P3] setup: rig instantiated from Assets/Cosmic/Prefabs/rig.prefab, cosmic_verify_body created at
+     (0.0, 1.2, 2.0) - 0.15 m across, 2 m in front of Main Camera, saved into Assets/.../<scene>.unity.
+```
+
+`p3_run.cs`, about twenty seconds later — thirty-one `[P3] PASS` lines, one `[P3] SKIP`, and:
+
+```
+[P3] DONE 31/31
+```
+
+The skip is the orbit: `Mouse.pivot` is unassigned in the rig as built, so an empty-space drag has nothing
+to turn. Wire a pivot and the same run reads `32/32`. A skip is neither a pass nor a failure and is left
+out of the count on purpose.
+
+### The body sits two metres out, not one
+
+`Mouse` parks its attach transform 1 m down the ray, and `Pull.IsFar` calls any interactor whose attach is
+within 12 cm of the body a *near* grab and refuses to start a dwell. A body at exactly 1 m would therefore
+never dwell-pull, and the beam assertions would fail for a reason that has nothing to do with the beam.
+At 2 m the hover is far, and the pull then parks the body at the attach *plus its own half-width standoff*
+— about 1.12 m from the eye, not 1.00 m — which is why that assertion is written against
+`Mouse.attachTransform` with the standoff added, rather than against a flat 1 m.
+
+### What the run asserts, and how tight
+
+| Check | Tolerance |
+|---|---|
+| hover registers, `Pull` still `Parked`, beam rising | 0.35 s after the cursor lands; beam strictly between 0 and 1 |
+| dwell starts a pull | held 2.65 s against a 2 s dwell |
+| pull ends `Loose`, 0.25 m across, at the attach, `Placed` still false | ±0.02 m on width; 0.1 m plus the half-width standoff on position |
+| LMB selects | within 2 player frames of the queued press |
+| 200 px drag moves the held body | more than 0.05 m |
+| release deselects and marks `Placed` | exact |
+| three wheel notches scale by 1.1³ | ±5 % |
+| 60 notches clamp at `MaxMetres` (3 m) | ±0.02 m |
+| −100 notches clamp at `MinMetres` (0.05 m) | ±0.005 m |
+| right-drag spins the body | more than 1° |
+| stray 6 m away for 5 s comes home, clears `Placed`, parks `Pull` | 0.01 m, after a 6.5 s wait (5 s grace plus the 0.8 s tween) |
+| `R` raises `Hotkeys.Restore`, tweens home, parks `Pull`, kills the live dwell | 0.01 m, within 1.3 s of the key |
+| LMB on empty space selects nothing | exact |
+| `Room.Changed` and `Prefs.Changed` never fire | exact |
+
+### NOT-OK, and reading past it
+
+Every wrapper here will usually come back **NOT-OK**, and it means nothing on its own. The relay reports
+NOT-OK whenever *anything at all* was logged as a warning during the command, and this project has two
+warnings that fire on nearly every command (the TouchScript `WindowsTouch.dll.meta` `PluginImporter`
+version, and TMP's `CanvasRenderer` chatter). Phase 3 adds one more, once per play session:
+
+> Hand Tracking Subsystem not found or not running, can't subscribe to hand tracking status. …
+
+That is `XRInputModalityManager` on a desktop editor with no headset. It is expected, it is logged once,
+and the run is unaffected: with no hand subsystem the manager leaves both hand GameObjects inactive, which
+is exactly what the desktop test wants — only the `Mouse` interactor is live. A host scene that still has
+its own `AudioListener` adds a second once-per-session warning next to the rig's; that one means the scene
+is the wrong host (see precondition 4) even though it changes no assertion. Neither is **attributable** to
+any of these commands: `p3_enter_play.cs` returns before play mode actually starts, and `p3_run.cs`
+returns before its first step runs, so both land in the console rather than in a command's result. **Read the `[P3]` lines, never the OK/NOT-OK status.** The only status that means
+anything is the wrapper's own text when a menu item is missing.
+
+### On FAIL
+
+Grep the console for `[P3] FAIL`. The lines are ordered, so the last PASS before the first FAIL says where
+the run got to. These are the ones whose failure usually means something other than what they say:
+
+- **Everything from the first hover onward fails** — no synthetic input is reaching the game. Check that a
+  Game view is open, that the physical mouse is not sitting on it, and turn on *Lock Input to Game View* in
+  the Input Debugger. `[P3] PASS the cursor on the body makes the Grabbable hovered` is the canary: if that
+  one passes, input works and any later failure is real.
+- **`the select lands within 2 frames of the press` fails with a 3** — an editor tick landed either side of
+  a player frame boundary. Re-run before believing it; a real regression fails every time, and the other
+  select assertions fail with it.
+- **`the body is hovered again once it is back to arm's length size` fails** — the wheel clamp left the body
+  3 m across at about 1.1 m from the eye, which puts the camera *inside* the sphere, where a raycast has no
+  front face to hit. The run shrinks it back in code for exactly that reason; if this still fails, the
+  shrink did not take, and the `-100 notches` line below it will fail too for the same reason.
+- **`a placed body left 6 m out of reach comes home by itself` fails** — `Grabbable.autoReturn` is off. It
+  is off by default per RULES.md and `Cosmic/Verify/P3 Setup` turns it on through `SerializedObject`; if the
+  field was renamed, setup logs `[P3] FAIL Grabbable has no serialized field 'autoReturn'` much earlier.
+- **`the R key raises Hotkeys.Restore` fails** — the Desktop action map is not enabled, or `Hotkeys.actions`
+  came through unwired. `Hotkeys` logs its own error in that case at play start.
+- **`Room.Changed never fired` fails** — something outside Phase 3 is in the scene driving the room, most
+  likely a leftover `cosmic_verify` host from the Phase 2 run. `Cosmic/Verify/P2 Teardown` removes it.
+- **The sequence stops partway with no DONE line** — Error Pause is on, or a step threw. A thrown step logs
+  `[P3] FAIL step N threw:` and the sequence carries on, so a silent stop is the pause.
+
+### What Phase 3 cannot be asserted on
+
+Judged, not asserted, and the owner has to do them on the Quest before CS-140 closes: near pinch and far
+pinch with hands, two-handed scale and rotate inside the limits, whether the 2 s dwell *feels* like a
+tractor beam rather than a delay, and whether a released body stays put where the hand left it. The desktop
+run says the state machine is correct; it says nothing about how any of it feels.
+
+`Cosmic/Verify/P3 Teardown` removes `cosmic_verify_body` and the rig instance from the scene and saves. It
+**keeps** `Assets/Cosmic/Prefabs/rig.prefab`: that is not a fixture, it is the rig Phase 6 builds the one
+shipping scene around. Commit it.

@@ -301,6 +301,8 @@ measured masses lack the `x 10` mantissa suffix the other bodies carry, so they 
 mantissa with a superscript. Changing the value text also changes what the parity gate compares
 against, so it is a deliberate decision, not a cleanup.
 
+*CS-139 follow-up (13 Sep 2026).* The rig on `main` was built before the review fix landed in `54b1bd0`; the builder now also wires each near-far interactor's activate and manipulation inputs, both poke poses from the actions asset, and a `Content` child as the mouse's view pivot. Re-run **Cosmic → Build → Rig** once (or **Cosmic → Verify → P3 Build Rig**, which does it and checks it) before CS-140; the GUID stays. The P3 harness is in: `Cosmic/Verify/P3 Build Rig · Setup · Enter Play · Run · Leave Play · Teardown` with `tools/mcp/rework/p3_*.cs` and the README section, 22 rig assertions and 31 play-mode ones, and it turns `autoReturn` on for its own body so the stray test is real.
+
 *CS-139 — done (13 Sep 2026, terminal session).* Compiles clean, and every assertion in the
 acceptance line passes against the prefab read back off disk rather than the build's own report.
 
