@@ -191,6 +191,9 @@ namespace CosmicSimulation
         private float _introWatchdogStarted;
         private bool _saidIntroOverran;
 
+        // The place a player asked for while the intro was still running. Opened once the intro lets go.
+        private ExperienceModule _queuedFromIntro;
+
         private void Awake()
         {
             Instance = this;
@@ -290,6 +293,14 @@ namespace CosmicSimulation
             {
                 waited += Time.unscaledDeltaTime;
                 yield return null;
+            }
+
+            if (_queuedFromIntro != null)
+            {
+                var wanted = _queuedFromIntro;
+                _queuedFromIntro = null;
+                Switch(wanted);
+                yield break;
             }
 
             OpenStartModule();
@@ -424,8 +435,21 @@ namespace CosmicSimulation
             // place of its own, and a poke made a minute earlier arriving on top of that would be a surprise.
             if (IntroRunning)
             {
-                // The player is owed an answer. Logging alone is what made this indistinguishable from a dead
-                // tag: they pinch, nothing happens, nothing anywhere says why.
+                // A click is the player saying they are done watching, so the intro ends here rather than the
+                // click being thrown away. This used to refuse outright, and on desktop the intro lasts as long
+                // as the onboarding narration plus a settle - most of a minute in which every dock tile and every
+                // destination tag did nothing, which reads as a broken app rather than as a busy one. The place
+                // they asked for is opened once the intro's own last stage has finished loading the galaxy, which
+                // is the same wait OpenStartModule already does, so the two cannot stack on each other.
+                BindIntro();
+                if (_introFlow != null && _introFlow.Skip())
+                {
+                    _queuedFromIntro = module;
+                    Debug.Log($"ExperienceDirector: '{module.Id}' asked for during the intro, so the intro is being skipped and it opens next.", this);
+                    return;
+                }
+
+                // Nothing to skip - the flow is gone or already at its end - so the old answer stands.
                 Debug.Log($"ExperienceDirector: '{module.Id}' ignored, the intro is still running.", this);
                 SwitchNotice.Busy(module);
                 return;

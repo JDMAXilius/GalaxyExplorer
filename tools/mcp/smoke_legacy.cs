@@ -785,22 +785,13 @@ internal static class CosmicSmoke
             Notes.Add("Could not clear " + file + ": " + e.Message);
         }
 
-        UnityEngine.ScreenCapture.CaptureScreenshot(file);
-
-        yield return WaitUntil(() => System.IO.File.Exists(file), ScreenshotTimeout);
-
-        if (_ok)
-        {
-            Shots.Add(Relative(file));
-            Record(id, "screenshot", Pass, Relative(file));
-        }
-        else
-        {
-            Record(id, "screenshot", Fail,
-                "CaptureScreenshot wrote nothing to " + file + " within " + ScreenshotTimeout +
-                " s. It writes at the end of a rendered frame, so a Game view that is not rendering " +
-                "produces no file.");
-        }
+        // No capture call here, and deliberately not even the name of one: the relay refuses to run a
+        // command whose code mentions the screen-capture API at all ("User interactions are not supported
+        // for MCP tool calls"), which made this entire walk unrunnable from a terminal - the thing it exists
+        // for. The walk is about behaviour, not pictures, so it records the intent and moves on. For images,
+        // frame the scene view and use Unity_Camera_Capture, which is what CLAUDE.md already says.
+        Record(id, "screenshot", Skip, "not taken: the relay refuses the capture API. Use Unity_Camera_Capture on the scene view, or press play in the editor.");
+        yield return null;
     }
 
     // ---------------------------------------------------------------- console

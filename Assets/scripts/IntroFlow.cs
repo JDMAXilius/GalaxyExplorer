@@ -56,6 +56,27 @@ namespace GalaxyExplorer
             }
         }
 
+        /// <summary>
+        /// Ends the intro now, as if it had run to its last stage.
+        ///
+        /// The player asking for a place — a dock tile, a destination tag — is the player saying they are done
+        /// watching. Before this existed the director could only refuse such a click while the intro was running,
+        /// and on desktop the intro runs for as long as the onboarding narration plus a two second settle, so the
+        /// app looked dead to every click for most of a minute. Jumping the flow is how the intro already moves
+        /// between its own stages, so the last stage raises OnIntroFinished through the normal path and everything
+        /// downstream of it — the galaxy load, the transition, the director adopting what was opened — still runs.
+        /// </summary>
+        public bool Skip()
+        {
+            if (flowManagerScript == null || currentState == IntroFlowState.kGalaxyView)
+            {
+                return false;
+            }
+
+            flowManagerScript.JumpToStage((int)IntroFlowState.kGalaxyView);
+            return true;
+        }
+
         public void OnSceneIsLoaded()
         {
             StartCoroutine(Initialization());

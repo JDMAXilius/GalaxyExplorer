@@ -350,6 +350,33 @@ owner's sign-off — it needs a headset and a person, and CS-131's wiring step (
 null until then) sits in front of it. CS-164, the cutover, deletes 1097 paths and is explicitly gated on
 that sign-off; CS-165 needs CS-164 and a device; CS-166 follows CS-164. None of them were touched here.
 
+**Direction change, 13 Sep 2026, owner's call: the legacy `main_scene` app is the product, and the Cosmic
+rework stops being the shipping path.** The fixes found while verifying the rework are to be carried into
+the legacy app where they apply. Two of the three do not transfer as diffs: the data wiring (CS-131) was
+copied *out of* the legacy `Assets/data` assets, which have always had those 45 references, and the
+input and UI fixes were Cosmic-side code. What transfers is the bug class, and the first one found a real
+defect in the product.
+
+**The legacy app swallowed every click for as long as its intro ran, and on desktop that is most of a
+minute.** `ExperienceDirector.Switch` refused outright while `IntroRunning`, answering with a console line
+and a `SwitchNotice.Busy`. On desktop `PlacementControl` bypasses placement and fires `OnContentPlaced`
+only after the onboarding narration has finished playing plus `DesktopDuration` (2 s), and the intro is
+not over until the flow reaches `kGalaxyView` after that. Until then every dock tile and every destination
+tag did nothing. The 45 s watchdog was the only way out, and it exists precisely because this reads as a
+dead app. **Now a click ends the intro instead of being thrown away:** `IntroFlow.Skip()` jumps the flow
+to its last stage through `FlowManager.JumpToStage`, which raises `OnIntroFinished` on the normal path, and
+the place the player asked for is opened once the intro's own galaxy load has settled — the same wait
+`OpenStartModule` already does, so the two cannot stack. Verified live on `main_scene`: with
+`IntroRunning=True` and nothing open, asking for `milky_way` skipped the intro and left `Current=milky_way`
+with a clean console.
+
+**What the Milky Way's destination tags look like from a mouse, measured in the same session:** the open
+galaxy view carries `destination_tags` with **12 children, every one with a `BoxCollider` and all of them
+on screen**, and `DesktopMouseInput` is present and enabled with its own `GEPointer` created at runtime.
+Synthetic mouse events do reach the device in this app. An end-to-end tag click was **not** confirmed: the
+play session was restarted from the editor several times mid-measurement, and no run survived long enough
+to click a tag and read the result. That is the next thing to check, and it wants the editor to itself.
+
 **CS-131 and CS-134, 13 Sep 2026.** `Assets/Cosmic/Editor/Migrate.cs`, menu **Cosmic → Build → Wire Old
 References**, carries the references the copy deck cannot own from the old ScriptableObjects into the
 generated ones, matched by id: **45 wired** across 20 places and 28 bodies — the 38 `Narration` and 7
