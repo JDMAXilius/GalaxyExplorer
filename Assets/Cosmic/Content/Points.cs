@@ -62,6 +62,8 @@ namespace Cosmic
 
         public Vector3 LocalCamDir { get; private set; }
 
+        public Material Instance(int layer) => instances != null && layer >= 0 && layer < instances.Length ? instances[layer] : null;
+
         public void Rebuild()
         {
             Release();

@@ -359,9 +359,12 @@ prefabs in front of the camera and drives them in play mode.
 ### Extra preconditions, on top of Phase 3's
 
 7. **Run the Phase 3 gates first, or at least `Cosmic/Build/Rig`.** `p4_setup.cs` instantiates
-   `Assets/Cosmic/Prefabs/rig.prefab` and refuses without it. The same "no second `MainCamera`" rule
-   applies, for the same reason, and P4 adds two more things that aim through `Camera.main`: `Points`
-   attaches its command buffers to it, and `Sun` measures its glow distance from it.
+   `Assets/Cosmic/Prefabs/rig.prefab` and refuses without it. A host scene's own `MainCamera` is no
+   longer a failure: since 13 Sep 2026 both `P3 Setup` and `P4 Setup` **park** any other active
+   `MainCamera` (deactivated, renamed with a `(cosmic_verify parked)` suffix) and the matching Teardown
+   wakes it and removes the rig instance the setup made, so the host scene comes back as it was. P4 adds
+   two more things that aim through `Camera.main`: `Points` attaches its command buffers to it, and `Sun`
+   measures its glow distance from it.
 8. **Run `p4_bake.cs` before `p4_build.cs`.** `Cosmic/Build/Places` nests the baked clouds and materials
    into the place prefabs. Built against an empty `Data/Generated/points`, every `Points` layer comes out
    null and the prefabs have to be rebuilt anyway.
@@ -413,10 +416,10 @@ Cosmic galaxies: 5 galaxies, 15 point clouds, 179100 points, 15 materials, 5 pla
 
 `p4_build.cs` — seventeen assertions and `[P4] DONE 17/17`.
 
-`p4_run.cs`, about sixteen seconds later — twenty-six `[P4] PASS` lines, two `[P4] SKIP`, and:
+`p4_run.cs`, about sixteen seconds later — twenty-eight `[P4] PASS` lines, one `[P4] SKIP`, and:
 
 ```
-[P4] DONE 26/26
+[P4] DONE 28/28
 ```
 
 ### The numbers the bake is checked against
@@ -458,11 +461,11 @@ variant only costs a shader permutation on device.
 | `R` restores it home and clears `Placed` | 0.01 m within 1.3 s |
 | `Room.Changed` never fires | exact |
 
-### The two skips, and what would turn them into assertions
+### The one skip, and what would turn it into an assertion
 
-- **`_Age` advancing.** `Points` builds one `Material` instance per layer and keeps the array private,
-  so `_Age` cannot be read from outside. A `public Material Instance(int layer)` on `Points` would make
-  this an assertion. Until then the spin is a thing to look at, not to measure.
+- **`_Age` advancing** is an assertion since 13 Sep 2026: `Points.Instance(layer)` exposes the per-layer
+  material instance and the run checks `_Age` grew over 1.5 s, so the expected verdict is now
+  `[P4] DONE 27/27` with one SKIP.
 - **Alpha 0 drawing nothing.** The command buffer records the same `DrawProcedural` at any alpha — only
   the shader discards — so nothing observable from script tells alpha 0 from alpha 1. It is a capture.
 

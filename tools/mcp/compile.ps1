@@ -115,7 +115,8 @@ internal class CommandScript : IRunCommand
         }
 
         UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.Default);
-        result.Log("REFRESH: requested, isCompiling=" + UnityEditor.EditorApplication.isCompiling);
+        UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
+        result.Log("REFRESH: requested, plus a script compilation so a previously failed build cannot hide behind a no-op refresh, isCompiling=" + UnityEditor.EditorApplication.isCompiling);
     }
 }
 '@
@@ -284,7 +285,27 @@ try {
         exit 1
     }
 
-    Write-Host 'COMPILE CLEAN - no compiler errors since the refresh, and none in the console.' -ForegroundColor Green
+    # A refresh that changes nothing does not recompile, and a build that already failed keeps the last good
+    # assembly, so a clean log can mean "did not compile at all" (13 Sep 2026: three CS0117 errors reported
+    # CLEAN three times). The assembly on disk has to be newer than the newest script it was built from.
+    $stale = @()
+    foreach ($assembly in @('Cosmic.Runtime', 'Cosmic.Editor')) {
+        $dll = Join-Path $ProjectPath "Library\ScriptAssemblies\$assembly.dll"
+        if (-not (Test-Path $dll)) { $stale += "$assembly.dll is missing"; continue }
+        $newest = Get-ChildItem (Join-Path $ProjectPath 'Assets\Cosmic') -Recurse -Filter *.cs |
+            Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+        if ($newest -and $newest.LastWriteTimeUtc -gt (Get-Item $dll).LastWriteTimeUtc) {
+            $stale += "$assembly.dll is older than $($newest.Name)"
+        }
+    }
+    if ($stale.Count -gt 0) {
+        Write-Host 'COMPILE STALE - the log is clean but the assembly was not rebuilt:' -ForegroundColor Red
+        $stale | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+        Write-Host 'The last compile failed and the editor kept the old build. Read the console for `error CS` lines.'
+        exit 1
+    }
+
+    Write-Host 'COMPILE CLEAN - no compiler errors since the refresh, none in the console, and the Cosmic assemblies are newer than their sources.' -ForegroundColor Green
     if ($warnings.Count -gt 0) {
         Write-Host "$($warnings.Count) warning line(s). The relay would answer NOT-OK for these; they are not errors."
         if ($ShowWarnings) { $warnings | ForEach-Object { Write-Host "  $_" } }

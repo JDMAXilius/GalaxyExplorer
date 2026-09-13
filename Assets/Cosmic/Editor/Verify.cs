@@ -586,6 +586,36 @@ namespace Cosmic.Editor
         // A skip is neither a pass nor a failure, so it stays out of the DONE n/m count and says why in words.
         static void Skip(string what) => Debug.Log(tag + " SKIP " + what);
 
+        const string ParkedSuffix = " (cosmic_verify parked)";
+
+        static string ParkStrayCameras(Camera eye)
+        {
+            var parked = string.Empty;
+            foreach (var camera in UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            {
+                if (camera == eye || !camera.CompareTag("MainCamera") || camera.transform.IsChildOf(eye.transform.root)) continue;
+                camera.gameObject.name += ParkedSuffix;
+                camera.gameObject.SetActive(false);
+                parked += " " + camera.name;
+            }
+            return parked;
+        }
+
+        static int WakeParkedCameras(UnityEngine.SceneManagement.Scene scene)
+        {
+            var woken = 0;
+            foreach (var root in scene.GetRootGameObjects())
+                foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                {
+                    if (!t.name.EndsWith(ParkedSuffix)) continue;
+                    t.name = t.name.Substring(0, t.name.Length - ParkedSuffix.Length);
+                    t.gameObject.SetActive(true);
+                    woken++;
+                }
+            return woken;
+        }
+
+
         static bool Near(float value, float expected) => Mathf.Abs(value - expected) <= Tolerance;
 
         static AudioSource Playing(AudioClip clip)
@@ -786,13 +816,10 @@ namespace Cosmic.Editor
                 return;
             }
 
-            var strays = string.Empty;
-            foreach (var camera in UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
-                if (camera != eye && camera.CompareTag("MainCamera")) strays += " " + camera.name;
+            var strays = ParkStrayCameras(eye);
             if (strays.Length > 0)
-                Debug.LogError(tag + " FAIL more than one active MainCamera is loaded:" + strays + ". Camera.main is then whichever Unity " +
-                               "hands back first, and Mouse, Pull and Room would all aim through the wrong one. Deactivate the host scene's " +
-                               "camera, or open a saved scene that has none, and run this again.");
+                Debug.Log(tag + " parked the host scene's MainCamera(s):" + strays + ". Camera.main is otherwise whichever Unity " +
+                               "hands back first. Teardown wakes them again.");
 
             var madeBody = sphere == null;
             if (madeBody)
@@ -937,10 +964,11 @@ namespace Cosmic.Editor
                 UnityEngine.Object.DestroyImmediate(root);
                 removed++;
             }
+            var woken = WakeParkedCameras(scene);
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-            Debug.Log($"{tag} teardown: removed {removed} object(s) from {scene.path}. {RigPath} is kept - it is the rig Phase 6 builds the one scene around.");
+            Debug.Log($"{tag} teardown: removed {removed} object(s) and woke {woken} parked camera(s) in {scene.path}. {RigPath} is kept - it is the rig Phase 6 builds the one scene around.");
         }
 
         static void BuildP3()
@@ -1476,13 +1504,10 @@ namespace Cosmic.Editor
                 return;
             }
 
-            var strays = string.Empty;
-            foreach (var camera in UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
-                if (camera != eye && camera.CompareTag("MainCamera")) strays += " " + camera.name;
+            var strays = ParkStrayCameras(eye);
             if (strays.Length > 0)
-                Debug.LogError(tag + " FAIL more than one active MainCamera is loaded:" + strays + ". Camera.main is then whichever Unity " +
-                               "hands back first, and Mouse, Points and Sun would all aim through the wrong one. Deactivate the host scene's " +
-                               "camera, or open a saved scene that has none, and run this again.");
+                Debug.Log(tag + " parked the host scene's MainCamera(s):" + strays + ". Camera.main is otherwise whichever Unity " +
+                               "hands back first. Teardown wakes them again.");
 
             var madeHost = host == null;
             if (madeHost) host = new GameObject(HostName);
@@ -1652,15 +1677,16 @@ namespace Cosmic.Editor
             var removed = 0;
             foreach (var root in scene.GetRootGameObjects())
             {
-                if (root.name != HostName) continue;
+                if (root.name != HostName && root.GetComponentInChildren<Cosmic.Mouse>(true) == null) continue;
                 removed++;
                 UnityEngine.Object.DestroyImmediate(root);
             }
+            var woken = WakeParkedCameras(scene);
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-            Debug.Log($"{tag} teardown: removed {removed} {HostName} root(s) from {scene.path}. The place and body prefabs, the baked " +
-                      $"clouds and {RigPath} are all kept - none of them is a fixture.");
+            Debug.Log($"{tag} teardown: removed {removed} root(s) ({HostName} and the rig instance) and woke {woken} parked camera(s) in " +
+                      $"{scene.path}. The place and body prefabs, the baked clouds and {RigPath} are all kept - none of them is a fixture.");
         }
 
         static void BuildP4()
@@ -1670,6 +1696,7 @@ namespace Cosmic.Editor
             var frame = systemRig.transform;
             var anchors = new Transform[SolarIds.Length];
             var starts = new Vector3[SolarIds.Length];
+            var ageWas = -1f;
             var point = Vector2.zero;
             var mark = Vector3.zero;
             var mercury = Vector3.zero;
@@ -1715,15 +1742,21 @@ namespace Cosmic.Editor
                 Check(opaque > 0, $"the galaxy Points recorded a command buffer at BeforeForwardOpaque on Camera.main ({opaque})");
                 Check(galaxyPoints.LocalCamDir.sqrMagnitude > 0.0001f,
                       $"Points pushes a per-frame _LocalCamDir ({galaxyPoints.LocalCamDir})");
-                Skip("the _Age advance: Points keeps its per-layer Material instances private, so there is no way to read _Age " +
-                     "from outside. A `public Material Instance(int layer)` on Points would turn this into an assertion; until " +
-                     "then the spin is a thing to look at, not to measure.");
+                var spun = galaxyPoints.Instance(0);
+                ageWas = spun != null ? spun.GetFloat("_Age") : -1f;
+                Check(spun != null, "Points exposes its per-layer material instance");
                 Skip("the Alpha 0 draw: the command buffer still records the same DrawProcedural at any alpha - only the shader " +
                      "discards - so nothing observable from script distinguishes alpha 0 from alpha 1. It is a capture, not a check.");
                 for (var i = 0; i < anchors.Length; i++) starts[i] = anchors[i] != null ? anchors[i].localPosition : Vector3.zero;
                 systemRig.Apply(arrangementAssets[0]);
             });
-            Add(1.5f, () => Settled(Arrangements[0].id, arrangementAssets[0], anchors, starts));
+            Add(1.5f, () =>
+            {
+                Settled(Arrangements[0].id, arrangementAssets[0], anchors, starts);
+                var spun = galaxyPoints.Instance(0);
+                var age = spun != null ? spun.GetFloat("_Age") : -1f;
+                Check(ageWas >= 0f && age > ageWas + 0.01f, $"the galaxy's _Age advanced over 1.5 s ({ageWas:0.000} -> {age:0.000})");
+            });
             Add(0f, () =>
             {
                 for (var i = 0; i < anchors.Length; i++) starts[i] = anchors[i] != null ? anchors[i].localPosition : Vector3.zero;

@@ -33,9 +33,9 @@ internal class CommandScript : IRunCommand
         result.Log(ok
             ? "P4 run: started. It takes about 16 s. Wait, then read the console:\n" +
               "  node tools/mcp/umcp.js call Unity_GetConsoleLogs '{}'\n" +
-              "PASS looks like `[P4] DONE 26/26` with no `[P4] FAIL`, plus two `[P4] SKIP` lines: the _Age\n" +
-              "advance and the alpha-0 draw, neither of which is observable from script while Points keeps its\n" +
-              "material instances private."
+              "PASS looks like `[P4] DONE 28/28` with no `[P4] FAIL`, plus one `[P4] SKIP` line: the alpha-0\n" +
+              "draw, which is not observable from script because the command buffer records the same draw at any\n" +
+              "alpha. The _Age advance is asserted through Points.Instance(layer)."
             : "P4 run: the menu item Cosmic/Verify/P4 Run does not exist - Cosmic.Editor did not compile.");
     }
 }
