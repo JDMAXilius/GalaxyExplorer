@@ -121,3 +121,90 @@ Open questions for the owner, which change the work rather than the polish:
 No new photography, no new colour work, no generator features, and no new shader for the base layer. The
 plates are in `Assets/Textures/nebulae/`, the shapes are decided, the points are baked, and the volume
 shader already handles stereo. The work is density, a smoke layer, a scale number, and a routing change.
+
+---
+
+## 5. Decisions taken, 13 Sep 2026 (owner)
+
+- **You arrive in the middle.** No flight in from outside.
+- **Proportions match the galaxy places**, not real distances. The Pillars will not be light-years tall.
+- **Ambience: researched below, recommendation to follow.**
+- **The target is what the galaxy places already achieve**: inside it, stars visible, gas, colour, smoke.
+
+---
+
+## 6. The revised approach, and it is cheaper than section 3 said
+
+Measuring the galaxy places against the nebula volumes inverts the earlier recommendation:
+
+| | Galaxy place (Whirlpool) | Nebula volume (today) |
+|---|---|---|
+| Points | **8,600** | **28,000** |
+| Layers | **3** | **1** |
+| Width | 1.1–1.35 m | 0.7 m |
+| Reads as | gas, dust and stars | a scatter of dots |
+
+**The nebula already has three times the points and looks worse.** The galaxies do not win on count; they win
+because each layer does one job, with its own shader and its own sprite size:
+
+| Role | Count | World sprite | Shader | Job |
+|---|---|---|---|---|
+| **Clouds** | 250 × 10 = 2,500 | **0.02** (large, soft) | `spiral_stars_cloud_shader` | the glow — this is the smoke |
+| **Dust** | 200 × 8 = 1,600 | 0.02, tint `(0.07,0.06,0.06,0.4)`, `IsShadow` | `spiral_stars_negative_shader` | dark lanes that **subtract** light |
+| **Stars** | 300 × 15 = 4,500 | **0.008** (small, bright) | `spiral_stars_shader` | the stars |
+
+So the recommendation changes from *"raise 28 k to 120 k and add a billboard system"* to:
+
+> **Rebuild the nebula volume as the same three roles, keeping the derived geometry and the plate's colour.**
+
+Concretely, per nebula:
+
+- **Gas/glow layer** (~3,000 large soft points) — placed by the existing Shell / Bipolar / Cloud model, coloured
+  from the plate. This is the smoke, and it is the layer that makes you feel inside something.
+- **Dust layer** (~2,000 subtractive points) — seeded where the plate is *dark against bright surroundings*,
+  which is what a dust lane is. Orion and the Pillars are mostly dust structure; this is what currently reads
+  as "missing".
+- **Star layer** (~5,000 small bright points) — seeded from the plate's point-like peaks, plus a thin field
+  through the volume so there are stars *around* you, not only behind the gas.
+
+That is **~10,000 points, about a third of today's 28,000**, and three shaders that already ship and already
+carry stereo macros. Cheaper on device, and it is the exact look the owner pointed at.
+
+Scale: **1.2 m across**, matching Andromeda's 1.2 m and the three library galaxies' 0.95–1.35 m, with the
+player at the centre. Section 2.2's density problem disappears at this size — it was created by the 4 m
+proposal, which the owner's answer has now retired.
+
+Remaining unknown, and it is a look question rather than an engineering one: at the centre of a **Shell**
+object (Helix, Crab, NGC 1501) the gas is a wall at the shell radius and the middle is genuinely empty.
+That is what the object *is*. It may read as standing in a cathedral, or as standing in an empty room with a
+painted wall. Helix is the slice to build first for exactly this reason.
+
+---
+
+## 7. Ambience: research and recommendation
+
+Nothing in the app has an ambience bed today — all 46 data assets have `Ambience` unset, which is CS-077.
+The wiring exists on both tracks (`AmbienceController`, `ExperienceModule.Ambience`), so this is missing
+audio, not missing code.
+
+Four ways to get it, for **18 places** (11 experiences + 7 destinations):
+
+| Approach | What it costs | What it gives |
+|---|---|---|
+| **A. Generated clips** (Higgsfield, already used for the TTS narration placeholders) | 18 clips to make, review and credit; each a few hundred KB on device; generative models produce short takes, so seamless looping needs a crossfade — which `AmbienceController` already does | Fastest coverage. Per-place character. Needs an owner listen and a credits line each. |
+| **B. Procedural drone in-engine** | One small component; a few detuned oscillators and a filtered noise bed on `OnAudioFilterRead`; no audio assets at all | **Never repeats**, zero download weight, and each place can be given its own seed and colour. The obvious risk is that a synthesised drone sounds synthetic. |
+| **C. Sonified from the plate** | B, plus a mapping from the nebula's own brightness profile to the drone's spectrum; the volume builder already reads every plate | The sound of *that* object, derived rather than chosen — the same principle the volume geometry already follows. Results are unpredictable until heard. |
+| **D. Library / NASA sonifications** | Licence review per asset; NASA material is generally free to use but has to be checked and credited individually | Real, and not ours. Least distinctive. |
+
+**Recommendation: B, seeded per place, with C as the seeding rule for the seven nebulae, and A kept as the
+stopgap** if something audible is wanted before the component exists.
+
+The reasoning: 18 seamless beds is a real authoring and memory cost for audio the player is meant to stop
+noticing, and a looping clip in a place someone stands in for minutes will be heard to loop. A drone that is
+generated never does. Seeding it from the plate costs almost nothing extra once the component exists, and it
+keeps the same promise the rest of this feature makes — that what the player is surrounded by came from the
+real object rather than from taste.
+
+Two constraints either way: it sits **under narration** (the music already ducks 55 %, and ambience should
+duck with it), and it must be **quiet enough to be missed** — an ambience bed that is noticed on purpose is
+too loud.
