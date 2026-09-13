@@ -1194,6 +1194,317 @@ namespace Cosmic.Editor
             };
         }
 
+        const string UiFolder = "Assets/Cosmic/Prefabs/ui";
+        const string TargetName = "cosmic_verify_target";
+        static readonly string[] UiPrefabs = { "dock", "panel_body", "panel_scene", "panel_moon", "label_card", "label_name", "label_moon", "toast", "about" };
+        static Dock dock;
+        static Panel bodyPanel;
+        static Label cardLabel;
+        static Popup popup;
+        static Utility utility;
+        static Transform target;
+
+        [MenuItem("Cosmic/Verify/P5 Build")]
+        public static void P5Build()
+        {
+            tag = "[P5]";
+            if (!Ready("the Phase 5 builder")) return;
+            passes = total = 0;
+            if (!EditorApplication.ExecuteMenuItem("Cosmic/Build/UI"))
+            {
+                Debug.LogError($"{tag} FAIL the menu item Cosmic/Build/UI does not exist; Cosmic.Editor did not compile");
+                return;
+            }
+            var before = UiGuids();
+            var theme = AssetDatabase.LoadAssetAtPath<Theme>(Ui.ThemePath);
+            Check(theme != null && theme.font != null && theme.font.name.ToLowerInvariant().Contains("selaw"),
+                  $"{Ui.ThemePath} exists and carries a Selawik font ({(theme == null ? "missing" : theme.font == null ? "no font" : theme.font.name)})");
+            var missing = string.Empty;
+            foreach (var name in UiPrefabs)
+                if (AssetDatabase.LoadAssetAtPath<GameObject>($"{UiFolder}/{name}.prefab") == null) missing += " " + name;
+            Check(missing.Length == 0, $"all {UiPrefabs.Length} UI prefabs exist in {UiFolder}" + (missing.Length == 0 ? string.Empty : " (missing:" + missing + ")"));
+            var dockPrefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{UiFolder}/dock.prefab");
+            var dockComponent = dockPrefab != null ? dockPrefab.GetComponent<Dock>() : null;
+            var tiles = dockPrefab != null ? dockPrefab.GetComponentsInChildren<Tile>(true).Length : 0;
+            Check(dockComponent != null && tiles == 7, $"dock.prefab carries Dock with seven tiles ({tiles})");
+            var placesWired = 0;
+            if (dockPrefab != null) foreach (var tile in dockPrefab.GetComponentsInChildren<Tile>(true)) if (tile.place != null) placesWired++;
+            Check(placesWired == 7, $"every tile references its Place asset ({placesWired}/7)");
+            Check(dockPrefab != null && dockPrefab.GetComponentInChildren<Popup>(true) != null && dockPrefab.GetComponentInChildren<Utility>(true) != null,
+                  "the dock nests a Popup and a Utility window");
+            var grab = dockPrefab != null ? dockPrefab.GetComponent<Grabbable>() : null;
+            Check(grab != null && grab.colliders.Count == 1 && grab.colliders[0] != null && grab.colliders[0].name == "drag_bar",
+                  $"the dock's Grabbable lists exactly the drag bar as its collider ({(grab == null ? "no Grabbable" : grab.colliders.Count.ToString())})");
+            var canvas = dockPrefab != null ? dockPrefab.GetComponent<Canvas>() : null;
+            Check(canvas != null && canvas.renderMode == RenderMode.WorldSpace && dockPrefab.GetComponent<UnityEngine.XR.Interaction.Toolkit.UI.TrackedDeviceGraphicRaycaster>() != null,
+                  "the dock is a world-space canvas with a tracked-device graphic raycaster");
+            Check(Mathf.Approximately(dockPrefab != null ? dockPrefab.transform.localScale.x : 0f, 0.001f), "the dock canvas is scaled to one millimetre per unit");
+            var panelPrefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{UiFolder}/panel_body.prefab");
+            Check(panelPrefab != null && panelPrefab.GetComponent<Panel>() != null && Descendant(panelPrefab.transform, "stat_3") != null,
+                  "panel_body.prefab carries Panel with four stat cells");
+            var labelPrefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{UiFolder}/label_card.prefab");
+            Check(labelPrefab != null && labelPrefab.GetComponent<Label>() != null && Descendant(labelPrefab.transform, "leader") != null && Descendant(labelPrefab.transform, "plate") != null,
+                  "label_card.prefab carries Label with a plate and a leader");
+            var toastPrefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{UiFolder}/toast.prefab");
+            var hints = toastPrefab != null && toastPrefab.GetComponent<Toast>() != null ? new SerializedObject(toastPrefab.GetComponent<Toast>()).FindProperty("hints").arraySize : 0;
+            Check(hints == 2, $"toast.prefab carries Toast with two hint cards ({hints})");
+            Check(AssetDatabase.LoadAssetAtPath<GameObject>($"{UiFolder}/about.prefab")?.GetComponent<About>() != null, "about.prefab carries About");
+            EditorApplication.ExecuteMenuItem("Cosmic/Build/UI");
+            var after = UiGuids();
+            var churned = 0;
+            foreach (var pair in before) if (!after.TryGetValue(pair.Key, out var guid) || guid != pair.Value) churned++;
+            Check(before.Count > 0 && churned == 0, $"a second build left all {before.Count} UI asset GUIDs unchanged ({churned} churned)");
+            Debug.Log($"{tag} DONE {passes}/{total}");
+        }
+
+        static Dictionary<string, string> UiGuids()
+        {
+            var guids = new Dictionary<string, string>();
+            foreach (var name in UiPrefabs)
+            {
+                var path = $"{UiFolder}/{name}.prefab";
+                if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null) guids[path] = AssetDatabase.AssetPathToGUID(path);
+            }
+            if (AssetDatabase.LoadAssetAtPath<Theme>(Ui.ThemePath) != null) guids[Ui.ThemePath] = AssetDatabase.AssetPathToGUID(Ui.ThemePath);
+            return guids;
+        }
+
+        [MenuItem("Cosmic/Verify/P5 Setup")]
+        public static void P5Setup()
+        {
+            tag = "[P5]";
+            if (EditorApplication.isPlaying) { Debug.LogError(tag + " FAIL the editor is in play mode, so anything written now is thrown away when play stops"); return; }
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (string.IsNullOrEmpty(scene.path)) { Debug.LogError(tag + " FAIL the active scene has never been saved; SaveScene would block the relay on a modal dialog"); return; }
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(RigPath);
+            if (asset == null) { Debug.LogError(tag + " FAIL " + RigPath + " does not exist; run Cosmic/Verify/P3 Build Rig first"); return; }
+            GameObject rig = null, host = null;
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                if (rig == null && root.GetComponentInChildren<Cosmic.Mouse>(true) != null) rig = root;
+                if (root.name == HostName) host = root;
+            }
+            var madeRig = rig == null;
+            if (madeRig)
+            {
+                rig = (GameObject)PrefabUtility.InstantiatePrefab(asset, scene);
+                rig.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            }
+            Camera eye = null;
+            foreach (var camera in rig.GetComponentsInChildren<Camera>(true)) if (camera.CompareTag("MainCamera")) eye = camera;
+            if (eye == null) { Debug.LogError(tag + " FAIL the rig in the scene has no camera tagged MainCamera; re-run Cosmic/Verify/P3 Build Rig"); return; }
+            var strays = ParkStrayCameras(eye);
+            if (strays.Length > 0) Debug.Log(tag + " parked the host scene's MainCamera(s):" + strays + ". Teardown wakes them again.");
+            var madeHost = host == null;
+            if (madeHost) host = new GameObject(HostName);
+            if (host.GetComponent<Room>() != null || host.GetComponent<Cosmic.Audio>() != null)
+            {
+                Debug.LogError(tag + " FAIL " + HostName + " in this scene is the Phase 2 host; run Cosmic/Verify/P2 Teardown first");
+                return;
+            }
+            host.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            var dockObject = SpawnUi(host.transform, "dock");
+            var panelObject = SpawnUi(host.transform, "panel_body");
+            var labelObject = SpawnUi(host.transform, "label_card");
+            if (dockObject == null || panelObject == null || labelObject == null)
+            {
+                Debug.LogError($"{tag} FAIL a prefab is missing from {UiFolder}; run Cosmic/Verify/P5 Build first");
+                return;
+            }
+            var hotkeys = rig.GetComponentInChildren<Hotkeys>(true);
+            Bind(dockObject.GetComponent<Dock>(), "hotkeys", hotkeys);
+            var sphere = host.transform.Find(TargetName);
+            if (sphere == null)
+            {
+                var made = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                made.name = TargetName;
+                sphere = made.transform;
+                sphere.SetParent(host.transform, false);
+            }
+            var view = eye.transform;
+            sphere.position = view.position + view.forward * 1.2f + view.right * 0.3f - Vector3.up * 0.15f;
+            sphere.localScale = Vector3.one * 0.2f;
+            labelObject.transform.position = view.position + view.forward * 1.2f - view.right * 0.3f;
+            labelObject.transform.localScale = Vector3.one * 0.004f;
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log($"{tag} setup: rig {(madeRig ? "instantiated from " + RigPath : "found in the scene")}, {HostName} {(madeHost ? "created" : "updated")} " +
+                      $"with the dock, a body panel, a card label and {TargetName} 1.2 m ahead; scene saved. Next: Cosmic/Verify/P5 Enter Play.");
+        }
+
+        static GameObject SpawnUi(Transform host, string name)
+        {
+            var existing = host.Find(name);
+            if (existing != null) return existing.gameObject;
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>($"{UiFolder}/{name}.prefab");
+            if (asset == null) return null;
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(asset, host.gameObject.scene);
+            instance.name = name;
+            instance.transform.SetParent(host, false);
+            return instance;
+        }
+
+        [MenuItem("Cosmic/Verify/P5 Enter Play")]
+        public static void P5EnterPlay()
+        {
+            if (EditorApplication.isPlaying) { Debug.Log("[P5] already in play mode"); return; }
+            EditorApplication.isPlaying = true;
+            Debug.Log("[P5] play requested; poll isPlaying, it reads false on this frame");
+        }
+
+        [MenuItem("Cosmic/Verify/P5 Leave Play")]
+        public static void P5LeavePlay()
+        {
+            if (!EditorApplication.isPlaying) { Debug.Log("[P5] not in play mode"); return; }
+            EditorApplication.isPlaying = false;
+            Debug.Log("[P5] leaving play mode; the editor stays open");
+        }
+
+        [MenuItem("Cosmic/Verify/P5 Run")]
+        public static void P5Run()
+        {
+            if (!EditorApplication.isPlaying) { Debug.LogError("[P5] FAIL not in play mode; run Cosmic/Verify/P5 Enter Play, poll isPlaying, then run this"); return; }
+            if (steps.Count > 0) { Debug.Log($"{tag} already running, step {cursor}/{steps.Count}"); return; }
+            tag = "[P5]";
+            var host = GameObject.Find(HostName);
+            if (host == null) { Debug.LogError($"[P5] FAIL no active {HostName} in the loaded scenes; run Cosmic/Verify/P5 Setup, then re-enter play mode"); return; }
+            dock = host.GetComponentInChildren<Dock>(true);
+            bodyPanel = host.GetComponentInChildren<Panel>(true);
+            cardLabel = host.GetComponentInChildren<Label>(true);
+            popup = host.GetComponentInChildren<Popup>(true);
+            utility = host.GetComponentInChildren<Utility>(true);
+            target = host.transform.Find(TargetName);
+            pointer = UnityEngine.Object.FindAnyObjectByType<Cosmic.Mouse>();
+            keys = UnityEngine.Object.FindAnyObjectByType<Hotkeys>();
+            if (dock == null || bodyPanel == null || cardLabel == null || target == null) { Debug.LogError($"[P5] FAIL {HostName} lacks the dock, panel, label or target; run Cosmic/Verify/P5 Setup"); return; }
+            if (Camera.main == null || pointer == null || keys == null) { Debug.LogError("[P5] FAIL no Camera.main, Cosmic.Mouse or Hotkeys; the rig instance is missing"); return; }
+            if (MouseDevice.current == null || KeyboardDevice.current == null) { Debug.LogError("[P5] FAIL the input system reports no mouse or no keyboard device"); return; }
+
+            var cam = Camera.main.transform;
+            var group = dock.GetComponent<CanvasGroup>();
+            var earth = AssetDatabase.LoadAssetAtPath<Body>($"{Generated}/bodies/earth.asset");
+            var textScaleWas = Prefs.TextScale;
+            var roomFires = 0;
+            Place picked = null;
+            Label pickedLabel = null;
+            System.Action<Place> onPicked = place => picked = place;
+            System.Action<Label> onLabel = label => pickedLabel = label;
+            System.Action<RoomMode> roomListener = mode => roomFires++;
+            dock.Picked += onPicked;
+            cardLabel.Picked += onLabel;
+            Room.Changed += roomListener;
+            steps.Clear();
+            cursor = passes = total = 0;
+
+            Add(0f, () => { Move(Idle()); dock.Recenter(); });
+            Add(0.3f, () =>
+            {
+                var flat = dock.transform.position - cam.position;
+                flat.y = 0f;
+                var height = dock.transform.position.y - (dock.transform.parent != null ? dock.transform.parent.position.y : 0f);
+                var wantHeight = Mathf.Max(0.7f, cam.position.y * 0.55f);
+                var tilt = Mathf.Asin(Mathf.Clamp(dock.transform.forward.y, -1f, 1f)) * Mathf.Rad2Deg;
+                Check(Mathf.Abs(flat.magnitude - 0.75f) < 0.05f, $"Recenter parks the dock 0.75 m ahead ({flat.magnitude:0.000} m)");
+                Check(Mathf.Abs(height - wantHeight) < 0.03f, $"Recenter puts the dock at max(0.7, 0.55 x head height) = {wantHeight:0.00} m ({height:0.000} m)");
+                Check(Mathf.Abs(tilt - 25f) < 2f, $"the dock tilts 25 degrees toward the face ({tilt:0.0})");
+                Check(group.alpha > 0.9f, $"the dock starts visible ({group.alpha:0.00})");
+                Tap(Key.Tab, true);
+            });
+            Add(0.05f, () => Tap(Key.Tab, false));
+            Add(0.6f, () => { Check(group.alpha < 0.5f && !dock.Visible, $"Tab hides the dock ({group.alpha:0.00})"); Tap(Key.Tab, true); });
+            Add(0.05f, () => Tap(Key.Tab, false));
+            Add(0.6f, () => { Check(group.alpha > 0.9f && dock.Visible, $"Tab shows it again ({group.alpha:0.00})"); picked = null; Tap(Key.F2, true); });
+            Add(0.05f, () => Tap(Key.F2, false));
+            Add(0.2f, () =>
+            {
+                Check(picked != null && picked.id == "cosmic_web", $"F2 relays the first tile's place through Dock.Picked ({(picked == null ? "nothing" : picked.id)})");
+                picked = null;
+                Move(At(dock.Tiles[4].transform.position));
+            });
+            Add(0.2f, () => Press(At(dock.Tiles[4].transform.position), true, false, Vector2.zero));
+            Add(0.1f, () => Press(At(dock.Tiles[4].transform.position), false, false, Vector2.zero));
+            Add(0.4f, () =>
+            {
+                Check(picked != null && picked.id == "solar_system", $"a click on the fifth tile raises Picked for solar_system ({(picked == null ? "nothing" : picked.id)})");
+                var lift = popup != null ? Vector3.Distance(popup.transform.position, dock.Tiles[4].transform.position) : -1f;
+                Check(popup != null && popup.Showing, "the Solar System tile opens the layout popup");
+                Check(lift > 0.06f && lift < 0.08f, $"the popup sits 40 mm above the tile ({lift * 1000f:0} mm from its centre)");
+                Move(Idle());
+                Tap(Key.U, true);
+            });
+            Add(0.05f, () => Tap(Key.U, false));
+            Add(0.4f, () =>
+            {
+                Check(utility != null && utility.Showing, "U opens the utility window");
+                var button = Descendant(dock.transform, "text_size");
+                Move(At(button.position));
+            });
+            Add(0.2f, () => Press(At(Descendant(dock.transform, "text_size").position), true, false, Vector2.zero));
+            Add(0.1f, () => Press(At(Descendant(dock.transform, "text_size").position), false, false, Vector2.zero));
+            Add(0.3f, () =>
+            {
+                Check(!Mathf.Approximately(Prefs.TextScale, textScaleWas), $"the text size button steps Prefs.TextScale ({textScaleWas:0.00} -> {Prefs.TextScale:0.00})");
+                Prefs.TextScale = textScaleWas;
+                Move(Idle());
+                Tap(Key.Escape, true);
+            });
+            Add(0.05f, () => Tap(Key.Escape, false));
+            Add(0.4f, () =>
+            {
+                Check(utility != null && !utility.Showing && popup != null && !popup.Showing, "Escape closes the utility window and the popup");
+                var renderer = target.GetComponent<Renderer>();
+                if (earth != null) bodyPanel.Show(earth, target, renderer);
+                else Skip("the body panel: no earth.asset under Generated/bodies");
+            });
+            Add(0.6f, () =>
+            {
+                var alpha = bodyPanel.GetComponent<CanvasGroup>().alpha;
+                var lateral = Mathf.Abs(Vector3.Dot(bodyPanel.transform.position - target.position, cam.right));
+                Check(earth == null || alpha > 0.9f, $"the body panel fades in ({alpha:0.00})");
+                Check(earth == null || Mathf.Abs(lateral - 0.13f) < 0.015f, $"the panel sits 30 mm off the sphere's edge ({lateral * 1000f:0} mm from its centre, 130 wanted)");
+                Check(earth == null || Vector3.Dot(bodyPanel.transform.forward, (bodyPanel.transform.position - cam.position).normalized) > 0.95f, "the panel faces the player");
+                bodyPanel.Hide();
+                cardLabel.Set("Helix Nebula", "planetary nebula");
+                Move(At(cardLabel.transform.position));
+            });
+            Add(0.5f, () =>
+            {
+                var grow = Descendant(cardLabel.transform, "grow");
+                Check(grow != null && grow.localScale.x > 1.1f, $"a hovered card label grows 15 percent ({(grow == null ? 0f : grow.localScale.x):0.00})");
+                Press(At(cardLabel.transform.position), true, false, Vector2.zero);
+            });
+            Add(0.1f, () => Press(At(cardLabel.transform.position), false, false, Vector2.zero));
+            Add(0.3f, () => { Check(pickedLabel == cardLabel, "a click on the card label raises Label.Picked"); Move(Idle()); });
+            Add(0.5f, () =>
+            {
+                var grow = Descendant(cardLabel.transform, "grow");
+                Check(grow != null && grow.localScale.x < 1.03f, $"the label settles when the pointer leaves ({(grow == null ? 0f : grow.localScale.x):0.00})");
+                Check(roomFires == 0, $"Room.Changed never fired: the UI did not touch the room ({roomFires})");
+            });
+
+            cleanup = () =>
+            {
+                holding = null;
+                dock.Picked -= onPicked;
+                cardLabel.Picked -= onLabel;
+                Room.Changed -= roomListener;
+                Prefs.TextScale = textScaleWas;
+                Tap(Key.Tab, false);
+                var device = MouseDevice.current;
+                if (device != null) Move(device.position.ReadValue());
+            };
+            due = EditorApplication.timeSinceStartup + steps[0].waitSeconds;
+            EditorApplication.update += Tick;
+            Debug.Log($"[P5] start: {steps.Count} steps, about 8 s, driven by synthetic mouse and keyboard events.");
+        }
+
+        [MenuItem("Cosmic/Verify/P5 Teardown")]
+        public static void P5Teardown()
+        {
+            tag = "[P5]";
+            TeardownHost();
+        }
+
         static Vector2 At(Vector3 world)
         {
             var cam = Camera.main;
@@ -1661,6 +1972,11 @@ namespace Cosmic.Editor
         public static void P4Teardown()
         {
             tag = "[P4]";
+            TeardownHost();
+        }
+
+        static void TeardownHost()
+        {
             if (EditorApplication.isPlaying)
             {
                 Debug.LogError(tag + " FAIL the editor is in play mode, so the save would be thrown away; leave play mode first");

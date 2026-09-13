@@ -36,6 +36,12 @@ still applies here.
 | `p4_run.cs` | `Cosmic/Verify/P4 Run` | Phase 4 |
 | `p4_leave_play.cs` | `Cosmic/Verify/P4 Leave Play` | Phase 4 |
 | `p4_teardown.cs` | `Cosmic/Verify/P4 Teardown` | Phase 4 |
+| `p5_build.cs` | `Cosmic/Verify/P5 Build` | CS-155 |
+| `p5_setup.cs` | `Cosmic/Verify/P5 Setup` | CS-156 |
+| `p5_enter_play.cs` | `Cosmic/Verify/P5 Enter Play` | CS-156 |
+| `p5_run.cs` | `Cosmic/Verify/P5 Run` | CS-156 |
+| `p5_leave_play.cs` | `Cosmic/Verify/P5 Leave Play` | CS-156 |
+| `p5_teardown.cs` | `Cosmic/Verify/P5 Teardown` | CS-156 |
 
 ---
 
@@ -528,3 +534,46 @@ Judged, not asserted, and the owner has to do them — on the Quest for the last
 - Whether the sun's touch brightness is felt through a hand rather than seen after the fact.
 - Stereo. Every Phase 4 shader is new, Android ships Single Pass Instanced, and a missing stereo macro
   breaks one eye **and is invisible on Link**. Nothing in this folder can see it; only a device build can.
+
+---
+
+## Phase 5 — the UI: dock, panels, labels, toast, about
+
+Phase 5 is `UI/Dock.cs`, `Tile.cs`, `Popup.cs`, `Utility.cs`, `Panel.cs`, `Label.cs`, `Toast.cs`, `About.cs`
+and the builder behind them, `Editor/Ui.cs` + `Cards.cs` (menu **Cosmic → Build → UI**). Every prefab is a
+world-space canvas at one unit per millimetre with both a graphic raycaster and XRI's tracked-device
+graphic raycaster, so hand rays, pokes and the desktop mouse reach the same buttons through the rig's
+XR UI input module.
+
+### Preconditions, on top of Phase 3's
+
+10. **Run the Phase 3 rig build first.** `p5_setup.cs` instantiates `Assets/Cosmic/Prefabs/rig.prefab`
+    and refuses without it; the dock reads `Hotkeys` off that rig for Tab, U, Esc and F2–F8.
+11. **The Phase 4 places are not needed**, but the generated Place assets are: each dock tile references
+    its Place, and `earth.asset` under `Data/Generated/bodies` is what the panel step shows.
+
+### The sequence
+
+`p5_build.cs` → `p5_setup.cs` → `p5_enter_play.cs` (poll `isPlaying`) → `p5_run.cs` (about 8 s) →
+`p5_leave_play.cs` → `p5_teardown.cs`. Setup parks a host `MainCamera` and Teardown wakes it and removes
+the rig instance it made, exactly as Phase 4's do.
+
+### What PASS looks like
+
+`p5_build.cs`: `[P5] DONE 12/12` — theme on Selawik, nine prefabs, seven tiles each wired to its Place,
+popup and utility nested, the drag bar as the dock's only collider, world-space canvas at 0.001, panel
+with four stat cells, card label with plate and leader, toast with two hints, about, and a second build
+that keeps every GUID.
+
+`p5_run.cs`: `[P5] DONE 19/19` — Recenter parks the dock 0.75 m ahead at max(0.7, 0.55 × head height),
+tilted 25°; Tab hides and shows it; F2 relays `cosmic_web` through `Dock.Picked`; a click on the fifth
+tile raises `solar_system` and opens the popup 40 mm above it; U opens the utility window; the text
+size button steps `Prefs.TextScale` (restored afterwards); Esc closes both; the body panel fades in
+30 mm off the target sphere on the view-centre side and faces the player; a card label grows 15 % under
+the pointer, raises `Picked` on click and settles when the pointer leaves; `Room.Changed` never fires.
+
+### What Phase 5 cannot be asserted on
+
+Palm-up show/hide needs a tracked left hand; the drag bar needs a pinch; poke depth needs a fingertip.
+All three are CS-156's headset half. How any of it looks — type, spacing, the tile pictures — is
+CS-157, the offscreen render against the Figma frames, and the owner's call.
