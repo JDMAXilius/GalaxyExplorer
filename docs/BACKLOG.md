@@ -294,11 +294,44 @@ into the one scene, built here because Phase 2 is the first thing that needs the
 | CS-176 | TERM | Build the being: **Cosmic Simulation → Build Cosmic Being** (writes `Assets/prefabs/being/cosmic_being_prefab.prefab`, the two materials, `Assets/data/being/cosmic_being_settings.asset`, and wires `beingPrefab` into both dock prefabs), then **Build UI Prefabs** and **Build Desktop Dock** for the new button; compile clean; tune `_Size` on `being_hologram.mat` (0.03 is a guess for a 14 cm sphere) | CS-175 | done (14 Sep, live editor) |
 | CS-182 | CC | The being behaves like a body, and looks like the intro object — owner's direction, 14 Sep: `_Size` 0.03 → the intro's own **0.07**; `ManipulationHandler` (one- and two-handed, far on, grab sounds on) so it can be carried; `TouchNudge` so brushing it turns it and it springs back; tap-vs-carry on press/release using CS-174's 0.4 s / 30 mm test; `BeingAnchor` turns the being to face the head and yields to a hand, re-reading its offset on release; `BeingVisual` gains a press pop and a talking swell driven by `BeingSpeaker.Loudness` | CS-176 | done (built and verified structurally; the look and feel are CS-177) |
 | CS-183 | CC | The three prefab builders refuse to run in play mode — `Build UI Prefabs` in play mode threw inside TMP's outline setter (it reaches through a `CanvasRenderer` `Awake` had not wired), aborting `BuildAll` partway and leaving `dock_popup`, `info_panel` and `label_button` at their old contents with only one exception line to show for it | — | done |
-| CS-177 | TERM | Being, no network: press the dock button, the sphere fades in beside the player and follows the head; tap it, it pops and brightens (Listening) and goes idle after the 4 s timeout with nothing said; press the button again, it fades out; the desktop HUD button and `C` do the same. **Also CS-182's acceptance:** the point cloud reads like the intro object, it turns to face the head, a drag carries it and does *not* start listening, a brush turns it and it springs back, and a tap pops it | CS-176, CS-182 | todo |
+| CS-177 | TERM | Being, no network: press the dock button, the sphere fades in beside the player and follows the head; tap it, it pops and brightens (Listening) and goes idle after the 4 s timeout with nothing said; press the button again, it fades out; the desktop HUD button and `C` do the same. **Also CS-182's acceptance:** the point cloud reads like the intro object, it turns to face the head, a drag carries it and does *not* start listening, a brush turns it and it springs back, and a tap pops it | CS-176, CS-182 | doing (14 Sep play-mode run: the state machine passes, the feel is unproven — see the note below) |
+| CS-184 | CC | The press answer should use the placement shader's own `_TouchColor` (and the `_Active` term it already feeds), not size alone. The owner asked for "a happy feedback, something visual" on the click; today `BeingVisual.Press()` only pops the scale, and `intro_placement_object_shader` already carries `_TouchColor`, `_ActiveColor` and a `proximity_size` term that brightens points under a finger — the colour flash is there and unused | CS-182 | todo |
+| CS-185 | CC | The talking pose from the voice's shape, not one number. `BeingSpeaker.Loudness` is a single smoothed RMS, so the sphere breathes but never articulates; the owner's ask is that it "shows it's actually talking depending of the wavelength". Wants a small spectrum (a few bands off `GetSpectrumData`, or an envelope per band) driving per-point displacement in the placement shader, so syllables read as shape and not just size | CS-182 | todo |
+| CS-186 | CC | `BeingVisual.speakFull = 0.20` is a guess at what counts as full voice, and `BeingSpeaker.Loudness`'s real range has never been measured — it is the mean of `Mathf.Abs` over a 24 kHz PCM16 buffer, lerped at 20/s, so its practical ceiling is unknown. Measure it against real TTS audio and set the constant, or normalise `Loudness` to 0..1 at source so the visual has a contract to code against | CS-182 | todo |
 | CS-178 | TERM | Relay round trip: `cp .env.example .env`, keys in, `npm run dev`; set `RelayUrl`; summon the being and hear the greeting; from the editor, `CosmicBeing.Instance.Ask("What am I looking at?")` and hear the answer with the sphere pulsing; tap mid-answer to interrupt; verify the OpenAI model and voice names in `.env.example` against OpenAI's docs (unverifiable from the cloud session) | CS-176 | todo |
 | CS-179 | TERM | Voice in: on desktop, tap and speak, silence ends the recording, the transcript logs on the relay and the answer plays; on the Quest, the microphone permission prompt appears once, then the same; confirm `ClientWebSocket` connects on the Quest build (IL2CPP) — if it does not, swap `BeingLink` to the NativeWebSocket package, same surface | CS-178 | todo |
 | CS-180 | TERM | Actions: "take me to the Crab Nebula" switches places; in the Planets row "show me Saturn" pulls it; "put everything back" restores; the being answers on-topic and declines off-topic in one sentence | CS-178 | todo |
 | CS-181 | TERM | Device pass: latency from tap release to first spoken word measured; frame time with the being active; relay unreachable shows the switch notice and the being goes idle; credits log lines for OpenAI speech; GDD acceptance rows | CS-179, CS-180 | todo |
+
+**Terminal run, 14 Sep 2026 — CS-176 and CS-182 built and CS-177 half-proved.** The editor was opened on this
+project, the relay answered, and the whole being chain was built from menu items: `Build UI Prefabs`,
+`Build Desktop Dock`, then `Build Cosmic Being` last so its wiring is the final word. The prefab carries all ten
+components, the collider is 70 mm on a 140 mm sphere, the voice routes to the VO mixer's Master, and
+`DockController.beingPrefab` points at it. `desktop_dock_prefab` has no `beingPrefab` of its own and does not need
+one — its button calls `DockController.ToggleBeing` — so `BeingBuilder.Wire` on it is a no-op, not a defect.
+
+*What the play-mode run actually showed.* Summoned through `DockController.ToggleBeing`, the being stands at
+`(-0.35, -0.08, 0.80)` from the head — exactly the settings' side, drop and distance — 23.6 degrees off the
+forward axis, and its **facing error is 0.0 degrees**, so the new turn-to-face works. The point cloud generates:
+the hologram's mesh comes up with 1756 vertices. `ManipulationHandler` and `TouchNudge` are both live, the nudge
+at rest. A synthetic press-then-release took it Idle → Listening, and it fell back to Idle on its own after the
+four-second listen timeout with nothing said. `BeingLink.IsOpen` is false, which is right with no relay running.
+
+*What it did not show, and why the row is still `doing`.* The dismiss was requested but not confirmed — the check
+landed inside the 0.6 s reveal fade, so "gone" was never actually observed. And nothing here proves the *feel*:
+synthetic `OnPointerDown`/`OnPointerUp` calls bypass the pointer layer, so a real drag carrying the being without
+starting a conversation, a real brush turning it, and the look of the point cloud at 14 cm are all still unwitnessed.
+An edit-mode capture cannot stand in for them: `PlacementObject` builds its cloud at runtime, so the scene view shows
+only the rim. Those want a Link session or a person at the editor.
+
+*Two things worth keeping.* `GEInputEvents.ExecuteHierarchy` invokes **every** matching handler on the first object
+that has one, so `ManipulationHandler` and `CosmicBeing` both receive the same press — the grab and the tap coexist
+by design, and that was checked rather than assumed. And `label_button_prefab` does not rewrite on a UI build because
+it serialises byte-identical; the fileID churn CS-150 records applies to the dock, popup, panel and utility window,
+not to that one.
+
+*Blocked from here.* CS-178 and CS-179 need `OPENAI_API_KEY` in `tools/being-relay/.env` for speech in and out.
+`ANTHROPIC_API_KEY` is set. Without the OpenAI key the round trip can only be proved as far as text.
 
 **Terminal run, 13 Sep 2026 — CS-128, CS-129, CS-130, CS-156, CS-160 and CS-161 all pass, and four real
 defects had to be fixed to get there.** The editor was opened on this project for the first time in this
