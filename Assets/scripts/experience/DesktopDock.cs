@@ -48,6 +48,7 @@ namespace CosmicSimulation
         [SerializeField] private Button recenterButton;
         [SerializeField] private Button muteButton;
         [SerializeField] private Button helpButton;
+        [SerializeField] private Button beingButton;
 
         [SerializeField]
         [Tooltip("Tinted with the accent while the room is forced visible.")]
@@ -206,6 +207,11 @@ namespace CosmicSimulation
             if (helpButton != null)
             {
                 helpButton.onClick.AddListener(ToggleHelp);
+            }
+
+            if (beingButton != null)
+            {
+                beingButton.onClick.AddListener(() => DockController.Instance?.ToggleBeing());
             }
         }
 

@@ -36,6 +36,8 @@ namespace CosmicSimulation
         [SerializeField] private GEButton recenterButton;
         [SerializeField] private GEButton helpButton;
         [SerializeField] private GEButton utilityButton;
+        [SerializeField] private GEButton beingButton;
+        [SerializeField] private Being.CosmicBeing beingPrefab;
         [SerializeField] private Transform dragBar;
 
         [Header("Utility window")]
@@ -188,6 +190,11 @@ namespace CosmicSimulation
                 utilityButton.OnClick.AddListener(ToggleUtility);
             }
 
+            if (beingButton != null)
+            {
+                beingButton.OnClick.AddListener(ToggleBeing);
+            }
+
             // Wired here as well as lazily, so the bar is draggable from the first frame rather than from the
             // first LateUpdate. See the drag bar section for what this corrects and why.
             DragHandler();
@@ -235,6 +242,8 @@ namespace CosmicSimulation
 
         /// <summary>Opens or closes the settings window (GDD 8.2): scale, mute, narration, text size.</summary>
         public void ToggleUtility() => EnsureUtility()?.Toggle();
+
+        public void ToggleBeing() => Being.CosmicBeing.Toggle(beingPrefab);
 
         /// <summary>The settings window, made the first time anybody asks for it. Null if none was assigned.</summary>
         public UtilityWindow Utility => EnsureUtility();
@@ -686,6 +695,11 @@ namespace CosmicSimulation
             if (helpButton != null)
             {
                 helpButton.gameObject.SetActive(visible);
+            }
+
+            if (beingButton != null)
+            {
+                beingButton.gameObject.SetActive(visible);
             }
 
             if (utilityButton != null)

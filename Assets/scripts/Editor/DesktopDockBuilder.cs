@@ -52,7 +52,7 @@ namespace CosmicSimulation.EditorTools
         private const float Pad = 16f;
         private const float ButtonSize = 28f;
         private const float ButtonGap = 8f;
-        private const int ButtonCount = 4;      // passthrough, recenter, mute, help
+        private const int ButtonCount = 5;      // passthrough, recenter, mute, help, being
         private const float ButtonsWidth = ButtonCount * ButtonSize + (ButtonCount - 1) * ButtonGap; // 136
 
         private const float PlateWidth = Pad + RowWidth + Pad + ButtonsWidth + Pad; // 936
@@ -327,6 +327,10 @@ namespace CosmicSimulation.EditorTools
             ((RectTransform)help.transform).anchoredPosition =
                 new Vector2(firstButtonX + 3f * (ButtonSize + ButtonGap), 0f);
 
+            var being = IconButton("being_button", plate.rectTransform, Load("icon_being"), out _);
+            ((RectTransform)being.transform).anchoredPosition =
+                new Vector2(firstButtonX + 4f * (ButtonSize + ButtonGap), 0f);
+
             // Built last so it draws over the tiles. DesktopDock re-anchors it above whichever tile opened it,
             // which is why it is a sibling of the tile row rather than a child of a tile.
             var popup = BuildPopup(plate.rectTransform);
@@ -341,6 +345,7 @@ namespace CosmicSimulation.EditorTools
             so.FindProperty("recenterButton").objectReferenceValue = recenter;
             so.FindProperty("muteButton").objectReferenceValue = mute;
             so.FindProperty("helpButton").objectReferenceValue = help;
+            so.FindProperty("beingButton").objectReferenceValue = being;
             so.FindProperty("passthroughGlyph").objectReferenceValue = passthroughGlyph;
             so.FindProperty("muteGlyph").objectReferenceValue = muteGlyph;
             so.FindProperty("tilePitch").floatValue = TilePitch;

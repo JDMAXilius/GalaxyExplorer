@@ -202,6 +202,18 @@ Each experience is specified by: what you see, placement and scale, objects, int
 
 ---
 
+### 4.8 The Cosmic Being (voice guide)
+
+**What you see.** A 14 cm sphere of blue points of light, the intro Earth's hologram without the Earth, floating at the left of your view about 0.8 m away and following you gently. Summoned and dismissed from the dock (the small being button; `C` on desktop).
+
+**Interactions.** Tap it (pinch, poke or click) and it brightens and listens; stop talking and it thinks, then speaks, pulsing to its own voice. Tap while it speaks to interrupt. It answers questions about space and about what is in front of you, and on request travels to a place or pulls a body out of the row.
+
+**Audio.** Its voice is generated speech on the narration channel; narration mute silences it.
+
+**Desktop.** Identical, with the mouse as the tap and the computer's microphone.
+
+**Acceptance.** Summon, greet, tap, ask, answer, interrupt, dismiss; a place change on request; relay unreachable reported in the app, not silent. Design and protocol: `docs/COSMIC_BEING.md`.
+
 ## 5. Interaction design
 
 ### 5.1 Hand model (Quest)
@@ -230,6 +242,7 @@ Each experience is specified by: what you see, placement and scale, objects, int
 | Pan view | Right drag on empty |
 | Zoom view | Wheel on empty |
 | Return the view | `Home` |
+| Summon / dismiss the Cosmic Being | `C` |
 | Pull Sun … Pluto | `1`–`9`, `0` |
 | Pull the Moon | `M` |
 | Show / hide name labels | `L` |

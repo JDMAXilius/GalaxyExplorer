@@ -332,6 +332,9 @@ namespace CosmicSimulation.EditorTools
             var utility = SquareButton("utility_button", underRow, 9f, 6f, settingsGlyph, Plate, Ink);
             ((RectTransform)utility.transform).anchoredPosition = new Vector2(384f, 0f);
 
+            var being = SquareButton("being_button", underRow, 9f, 6f, Load("icon_being"), Plate, Ink);
+            ((RectTransform)being.transform).anchoredPosition = new Vector2(372f, 0f);
+
             var dock = root.AddComponent<DockController>();
             var so = new SerializedObject(dock);
             so.FindProperty("tilePrefab").objectReferenceValue = tilePrefab != null ? tilePrefab.GetComponent<DockTile>() : null;
@@ -340,6 +343,9 @@ namespace CosmicSimulation.EditorTools
             so.FindProperty("recenterButton").objectReferenceValue = recenter;
             so.FindProperty("helpButton").objectReferenceValue = help;
             so.FindProperty("utilityButton").objectReferenceValue = utility;
+            so.FindProperty("beingButton").objectReferenceValue = being;
+            so.FindProperty("beingPrefab").objectReferenceValue =
+                AssetDatabase.LoadAssetAtPath<CosmicSimulation.Being.CosmicBeing>("Assets/prefabs/being/cosmic_being_prefab.prefab");
             so.FindProperty("utilityWindowPrefab").objectReferenceValue =
                 utilityWindowPrefab != null ? utilityWindowPrefab.GetComponent<UtilityWindow>() : null;
             so.FindProperty("dragBar").objectReferenceValue = bar.transform;

@@ -393,6 +393,11 @@ namespace GalaxyExplorer.XR
                 Recenter();
             }
 
+            if (keyboard.cKey.wasPressedThisFrame && InputEnabled)
+            {
+                CosmicSimulation.DockController.Instance?.ToggleBeing();
+            }
+
             // P previews on the desktop what the passthrough button does in the headset: there is no room to
             // show through a monitor, so this toggles the dimming and the black backdrop instead.
             // L hides and shows the name labels over every body and moon. The owner asked for the labels
