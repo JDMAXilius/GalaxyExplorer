@@ -61,10 +61,28 @@ namespace CosmicSimulation.EditorTools
                     var instance = (GameObject)PrefabUtility.InstantiatePrefab(module.ContentPrefab, scene);
                     instance.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
 
+                    // CentreOnViewer off, as a scene override only.
+                    //
+                    // It is right in the app: the player travels to a destination and should arrive standing
+                    // in it. In a scene authored to frame the object from outside it is the opposite of what
+                    // is wanted - the moment play begins it drags the nebula onto the camera and the framing
+                    // this scene exists for is gone. Pressing play used to leave a starfield and nothing else.
+                    // Overridden on the instance, so the prefab the app ships is untouched.
+                    foreach (var centring in instance.GetComponentsInChildren<CentreOnViewer>(true))
+                    {
+                        centring.enabled = false;
+                    }
+
                     var sky = BuildSky(spec.Id);
                     if (sky != null)
                     {
                         EditorSceneManager.MoveGameObjectToScene(sky, scene);
+                    }
+
+                    var panel = BuildPanel(spec, module, camera.transform, instance.transform);
+                    if (panel != null)
+                    {
+                        EditorSceneManager.MoveGameObjectToScene(panel, scene);
                     }
 
                     var path = $"{Folder}/{spec.Id}_nebula.unity";
@@ -103,6 +121,51 @@ namespace CosmicSimulation.EditorTools
             var holder = new GameObject("nebula_sky");
             holder.AddComponent<NebulaSky>().Configure(material, 90f);
             return holder;
+        }
+
+        /// <summary>
+        /// The place's own panel - the same prefab the app puts up when a destination opens, bound to the same
+        /// module, so the text read here is the text the player will get.
+        /// </summary>
+        private static GameObject BuildPanel(NebulaVolumeBuilder.Spec spec, ExperienceModule module,
+            Transform camera, Transform subject)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/prefabs/ui/info_panel_prefab.prefab");
+            if (prefab == null)
+            {
+                Debug.LogWarning("NebulaSceneBuilder: no info_panel_prefab, so the scenes get no panel. " +
+                                 "Run Cosmic Simulation/Build UI Prefabs first.");
+                return null;
+            }
+
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            instance.name = "nebula_panel";
+
+            var panel = instance.GetComponent<InfoPanel>();
+            if (panel == null)
+            {
+                Object.DestroyImmediate(instance);
+                Debug.LogWarning("NebulaSceneBuilder: info_panel_prefab has no InfoPanel component.");
+                return null;
+            }
+
+            // The scene variant: a title, prose, and an instruction, with no stats grid. A nebula has no mass
+            // or orbital period to put in a two-by-two, which is exactly the case that variant exists for.
+            var properties = new SerializedObject(panel);
+            var variant = properties.FindProperty("variant");
+            if (variant != null)
+            {
+                variant.enumValueIndex = (int)InfoPanel.Variant.Scene;
+                properties.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            // Off to one side and slightly above the middle, far enough out that it is never inside the gas.
+            // The camera sits back along -Z, so +X puts it to the reader's right.
+            instance.transform.position = new Vector3(
+                spec.RadiusMetres * 1.05f, spec.RadiusMetres * 0.30f, -spec.RadiusMetres * 0.55f);
+
+            instance.AddComponent<NebulaScenePanel>().Configure(panel, module, camera, subject);
+            return instance;
         }
 
         private static GameObject BuildCamera(NebulaVolumeBuilder.Spec spec)
