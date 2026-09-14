@@ -55,15 +55,15 @@ namespace CosmicSimulation
         [SerializeField]
         [Range(8, 64)]
         [Tooltip("March steps. Fewer is cheaper and bands more; the shader dithers the start to hide it.")]
-        private int steps = 28;
+        private int steps = 48;
 
         [SerializeField]
         [Range(0f, 8f)]
-        private float density = 2.5f;
+        private float density = 2.8f;
 
         [SerializeField]
         [Range(0f, 8f)]
-        private float emission = 2.4f;
+        private float emission = 4.3f;
 
         [SerializeField]
         [Range(0f, 8f)]

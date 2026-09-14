@@ -39,9 +39,9 @@ Shader "CosmicSimulation/NebulaField"
     Properties
     {
         _Volume ("Density volume (RGB colour, A density)", 3D) = "" {}
-        _Steps ("March steps", Range(8, 64)) = 32
-        _Density ("Density multiplier", Range(0, 8)) = 2.2
-        _Emission ("Emission multiplier", Range(0, 8)) = 2.4
+        _Steps ("March steps", Range(8, 64)) = 48
+        _Density ("Density multiplier", Range(0, 8)) = 2.8
+        _Emission ("Emission multiplier", Range(0, 8)) = 4.3
         _Extinction ("How much the gas blocks", Range(0, 8)) = 1.6
 
         [Header(Structure)]
@@ -59,9 +59,14 @@ Shader "CosmicSimulation/NebulaField"
         _ColourMix ("How much the ramp overrides the plate", Range(0, 1)) = 0.85
         _RampStart ("Where the rim colour starts", Range(0, 1)) = 0.10
         _RampEnd ("Where the rim colour wins", Range(0, 1)) = 0.90
+        _ColourScale ("Size of the colour regions", Range(0.2, 6)) = 0.85
+        _Saturation ("Colour saturation", Range(0, 3)) = 1.55
+
+        [Header(Flow)]
+        _Streak ("How far the gas streaks outward", Range(0, 0.9)) = 0.44
 
         [Header(Ray)]
-        _Dither ("Ray start dither", Range(0, 2)) = 1
+        _Dither ("Ray start dither", Range(0, 2)) = 0.75
         _StepJitterSpeed ("Dither animation speed", Range(0, 8)) = 1.7
         _Radius ("Volume half-size in local units", Float) = 0.5
     }
@@ -109,6 +114,9 @@ Shader "CosmicSimulation/NebulaField"
             float _ColourMix;
             float _RampStart;
             float _RampEnd;
+            float _ColourScale;
+            float _Saturation;
+            float _Streak;
 
             float _Dither;
             float _StepJitterSpeed;
@@ -234,7 +242,15 @@ Shader "CosmicSimulation/NebulaField"
                 float stepSize = span / steps;
 
                 float2 pixel = i.screenPos.xy / max(i.screenPos.w, 1e-5) * _ScreenParams.xy;
-                float jitter = Dither(pixel + frac(_Time.y * _StepJitterSpeed) * 64.0) * _Dither;
+
+                // White noise from the 3D hash rather than interleaved gradient noise.
+                //
+                // IGN is the better dither for a full-resolution effect, but it is a regular pattern, and at
+                // this step count over a long span it stopped hiding the banding and started showing itself:
+                // the exterior view had a visible mesh across the gas. A hash of the pixel and the frame has
+                // no pattern to see - it reads as film grain, which the eye forgives and bloom softens.
+                float jitter = frac(Dither(pixel)
+                    + Hash(float3(17.0, 43.0, floor(_Time.y * _StepJitterSpeed * 60.0)))) * _Dither;
 
                 float3 position = originLocal + direction * (near + jitter * stepSize);
 
@@ -265,7 +281,19 @@ Shader "CosmicSimulation/NebulaField"
                             Fbm2(q * _WarpScale + float3(31.7, 17.3, 2.9) - drift),
                             Fbm2(q * _WarpScale + float3(57.3, 41.9, 23.1) + drift * 0.5)) * 2.0 - 1.0;
 
-                        float detail = Fbm3((q + warp * _WarpStrength) * _DetailScale);
+                        // Streak the sampling space outward from the centre.
+                        //
+                        // Isotropic noise gives isotropic gas - clouds that are the same in every direction,
+                        // which is not what an expanding remnant or an ionised cavity looks like. The material
+                        // was thrown outward, so the filaments run outward. Compressing the radial component
+                        // of the sample position stretches every feature along that axis, which is the cheapest
+                        // possible anisotropy: no extra noise evaluations, three dot products.
+                        float3 outward = normalize(q + 1e-5);
+                        float along = dot(q, outward);
+                        float3 across = q - outward * along;
+                        float3 flow = across + outward * along * (1.0 - _Streak);
+
+                        float detail = Fbm3((flow + warp * _WarpStrength) * _DetailScale);
 
                         // The detail multiplies rather than adds, so it can empty a region completely -
                         // adding would only ever brighten, and the voids are the point.
@@ -289,10 +317,19 @@ Shader "CosmicSimulation/NebulaField"
                             // on radius alone from inside a hollow shell gives one colour in every direction,
                             // which is what the first version of this did.
                             float radial = saturate(length(q));
-                            // The noise term is centred on zero rather than added, so it pushes the mix both
-                            // ways. Added, it only ever drove the blend towards the rim colour and every
-                            // filament came out the same red however the palette was set.
-                            float mixT = smoothstep(_RampStart, _RampEnd, radial * 0.5 + (detail - 0.5) * 1.25);
+
+                            // Colour comes from its OWN low-frequency field, not from the detail noise.
+                            //
+                            // Blending on the detail meant the colour alternated at the frequency of the
+                            // filaments themselves - every ribbon a different hue from its neighbour, which
+                            // averages to mud at any distance. Real nebulae, and the reference art, put one
+                            // colour across a whole region and another across the next: a blue side and an
+                            // orange side, metres apart, because excitation follows where the hot stars are
+                            // and not where every wisp happens to be. The term is centred on zero so it can
+                            // push the blend both ways; added, it only ever drove towards the rim colour.
+                            float region = Fbm2(q * _ColourScale + float3(5.1, 9.7, 2.3));
+                            float mixT = smoothstep(_RampStart, _RampEnd,
+                                radial * 0.46 + (region - 0.48) * 1.35);
                             float3 ramp = lerp(_CoreColour.rgb, _ShellColour.rgb, mixT);
 
                             // The ramp carries the hue and the plate carries the brightness. Multiplying the
@@ -300,6 +337,14 @@ Shader "CosmicSimulation/NebulaField"
                             // blue, so every nebula came out one colour however the palette was set.
                             float lum = max(dot(baked.rgb, float3(0.2126, 0.7152, 0.0722)), 1e-4);
                             float3 colour = lerp(baked.rgb, ramp * lum, _ColourMix);
+
+                            // Emission gas is not pastel. Its light is a few narrow lines, so what reaches the
+                            // eye is far more saturated than any photograph of it - plates are stretched hard
+                            // to show faint structure and stretching flattens colour towards grey. Pushing it
+                            // back is most of the difference between the reference art and a washed-out
+                            // version of the same geometry.
+                            float grey = dot(colour, float3(0.2126, 0.7152, 0.0722));
+                            colour = max(lerp(grey.xxx, colour, _Saturation), 0.0);
 
                             float absorbed = exp(-density * _Extinction * stepSize);
                             // Emission integrated over the step rather than point-sampled, so the result does

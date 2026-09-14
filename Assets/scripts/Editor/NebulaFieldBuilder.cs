@@ -33,6 +33,7 @@ namespace CosmicSimulation.EditorTools
         private const string Folder = "Assets/data/nebula_fields";
         private const int Size = 64;
         private const string NodeName = "nebula_field";
+        private const string StarNodeName = "nebula_star";
 
         /// <summary>
         /// The two-colour palette each nebula is lit with, plus the three structure knobs that decide how much
@@ -55,13 +56,26 @@ namespace CosmicSimulation.EditorTools
             public readonly float Contrast;
             public readonly float Warp;
 
-            public Palette(Color core, Color shell, float floor, float contrast, float warp)
+            /// <summary>
+            /// The central star. Zero intensity means the object has no single dominant source worth drawing -
+            /// a star-forming region has a cluster rather than one star, and a fake one in the middle of it
+            /// would be an invention rather than a simplification.
+            /// </summary>
+            public readonly Color StarColour;
+            public readonly float StarIntensity;
+            public readonly float StarSize;
+
+            public Palette(Color core, Color shell, float floor, float contrast, float warp,
+                Color starColour, float starIntensity, float starSize)
             {
                 Core = core;
                 Shell = shell;
                 Floor = floor;
                 Contrast = contrast;
                 Warp = warp;
+                StarColour = starColour;
+                StarIntensity = starIntensity;
+                StarSize = starSize;
             }
         }
 
@@ -70,36 +84,45 @@ namespace CosmicSimulation.EditorTools
             // The Crab's interior is a blue synchrotron glow from the pulsar wind; its cage of filaments is
             // orange, from hydrogen and nitrogen. A high floor because those filaments are a cage with a great
             // deal of nothing between them, which is the whole look.
+            // The Crab has a pulsar at its centre, and it is the reason the whole object is lit: the blue
+            // interior is that pulsar's wind. Small and fiercely blue-white.
             ["crab"] = new Palette(new Color(0.45f, 0.70f, 1.70f), new Color(1.60f, 0.45f, 0.25f),
-                0.26f, 2.8f, 0.85f),
+                0.26f, 2.8f, 0.85f, new Color(0.80f, 0.90f, 1.00f), 11f, 1.6f),
 
-            // Blue-green oxygen in the middle, red hydrogen at the rim - the Helix's whole appearance.
+            // Blue-green oxygen in the middle, red hydrogen at the rim - the Helix's whole appearance. Its
+            // central white dwarf is the exposed core of the star that threw the shell off.
             ["helix"] = new Palette(new Color(0.30f, 1.20f, 1.10f), new Color(1.50f, 0.35f, 0.30f),
-                0.24f, 2.6f, 0.70f),
+                0.24f, 2.6f, 0.70f, new Color(0.85f, 0.93f, 1.00f), 10f, 2.0f),
 
             ["ngc1501"] = new Palette(new Color(0.50f, 0.95f, 1.40f), new Color(1.10f, 0.55f, 0.35f),
-                0.22f, 2.4f, 0.70f),
+                0.22f, 2.4f, 0.70f, new Color(0.90f, 0.95f, 1.00f), 9f, 1.8f),
 
-            // Dust-reddened lobes rather than an ionised shell, so both ends of the ramp are warm.
+            // Dust-reddened lobes rather than an ionised shell, so both ends of the ramp are warm. Eta
+            // Carinae itself is enormously luminous and heavily reddened by the dust it threw out.
             ["homunculus"] = new Palette(new Color(1.30f, 1.00f, 0.70f), new Color(1.50f, 0.45f, 0.30f),
-                0.20f, 2.2f, 0.65f),
+                0.20f, 2.2f, 0.65f, new Color(1.00f, 0.82f, 0.60f), 14f, 2.4f),
 
             // Star-forming clouds: a hot blue core around the Trapezium, red hydrogen everywhere else, and a
             // lower floor because these are genuinely filled with gas rather than being hollow shells.
+            //
+            // No central star on any of these three. They are lit by clusters, not by one source, and putting
+            // a single invented star in the middle of the Orion Nebula would be a worse lie than leaving it
+            // out - the Trapezium is four stars and the eye knows the difference.
             ["orion"] = new Palette(new Color(0.70f, 0.95f, 1.50f), new Color(1.45f, 0.40f, 0.35f),
-                0.18f, 2.2f, 0.90f),
+                0.18f, 2.2f, 0.90f, Color.white, 0f, 0f),
 
             ["pillars"] = new Palette(new Color(0.85f, 0.95f, 1.20f), new Color(1.30f, 0.65f, 0.35f),
-                0.18f, 2.3f, 0.95f),
+                0.18f, 2.3f, 0.95f, Color.white, 0f, 0f),
 
             ["trumpler14"] = new Palette(new Color(0.75f, 0.95f, 1.60f), new Color(1.35f, 0.50f, 0.35f),
-                0.18f, 2.2f, 0.90f),
+                0.18f, 2.2f, 0.90f, Color.white, 0f, 0f),
         };
 
         private static Palette PaletteFor(string id) =>
             Palettes.TryGetValue(id, out var palette)
                 ? palette
-                : new Palette(new Color(0.6f, 0.8f, 1.5f), new Color(1.4f, 0.5f, 0.3f), 0.22f, 2.4f, 0.75f);
+                : new Palette(new Color(0.6f, 0.8f, 1.5f), new Color(1.4f, 0.5f, 0.3f), 0.22f, 2.4f, 0.75f,
+                    Color.white, 0f, 0f);
 
         [MenuItem("Cosmic Simulation/Build Nebula Fields")]
         public static void BuildAll()
@@ -217,6 +240,35 @@ namespace CosmicSimulation.EditorTools
                     node.AddComponent<CentreOnViewer>();
                 }
 
+                // The central star, where the object has one. Same inactive-while-assembling dance, same
+                // reason: ExecuteAlways components raise OnEnable the instant AddComponent runs.
+                var starNode = root.transform.Find(StarNodeName);
+                if (starNode != null)
+                {
+                    Object.DestroyImmediate(starNode.gameObject);
+                }
+
+                var star = "no central star";
+                if (palette.StarIntensity > 0f)
+                {
+                    var starObject = new GameObject(StarNodeName);
+                    starObject.transform.SetParent(root.transform, false);
+                    starObject.SetActive(false);
+
+                    var component = starObject.AddComponent<NebulaStar>();
+                    component.Configure(palette.StarColour, palette.StarIntensity, palette.StarSize);
+
+                    // The star belongs at the middle of the gas, and the gas centres itself on the player.
+                    if (starObject.GetComponent<CentreOnViewer>() == null)
+                    {
+                        starObject.AddComponent<CentreOnViewer>();
+                    }
+
+                    component.enabled = true;
+                    starObject.SetActive(true);
+                    star = $"central star at {palette.StarIntensity:0} intensity";
+                }
+
                 // Assembled. Now it may wake up, and OnEnable will find its volume where it expects it.
                 field.enabled = true;
                 node.SetActive(true);
@@ -238,7 +290,7 @@ namespace CosmicSimulation.EditorTools
                 }
 
                 PrefabUtility.SaveAsPrefabAsset(root, path);
-                return $"field attached at {spec.RadiusMetres:0.0} m, {silenced} point gas layer(s) switched off";
+                return $"field at {spec.RadiusMetres:0.0} m, {star}, {silenced} point gas layer(s) off";
             }
             finally
             {
