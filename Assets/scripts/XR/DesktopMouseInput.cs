@@ -37,7 +37,7 @@ namespace GalaxyExplorer.XR
 
         [SerializeField] private float orbitDegreesPerScreen = 200f;
         [SerializeField] private float panMetersPerScreen = 1.5f;
-        [SerializeField] private float zoomMetersPerNotch = 0.1f;
+        [SerializeField] private float zoomMetersPerNotch = 0.25f;
         [SerializeField] private float planetSpinDegreesPerScreen = 360f;
         [SerializeField] private float planetScalePerNotch = 1.1f;
         [Tooltip("Wheel scale limits, relative to the size a planet grows to when pulled.")]
@@ -739,40 +739,116 @@ namespace GalaxyExplorer.XR
             return true;
         }
 
+        // ---------- the desktop view: the camera rig moves (CS-172)
+        //
+        // These used to turn and slide the old touch pivot (Loader/TouchController/Pivot), which is what the
+        // original app's camera hung off. Nothing hangs off it any more - the camera is the XR rig's, the
+        // content sits under the Loader beside it - so every drag and every wheel notch moved a transform with
+        // one child, BoundingBox, and the view never changed. It read as "the inputs stop working when you
+        // travel", because the first place the player tried to fly through was a nebula. The standalone nebula
+        // scenes have FreeLook on their camera and fly fine; the app gets the same feel here, on the same
+        // buttons: left drag looks / orbits, right drag pans, wheel dollies, Home puts the camera back.
+        //
+        // Only the rig moves, never the content, so nothing an experience owns is touched and a headset
+        // session - where the player is the camera - is left alone.
+
+        private Transform _rig;
+        private Pose _rigHome;
+        private bool _rigHomeStored;
+        private float _orbitPitch;
+
+        [SerializeField]
+        [Tooltip("How far the view may pitch up or down from its home, in degrees, so a drag cannot roll the " +
+                 "camera over the top.")]
+        private float maxPitchDegrees = 85f;
+
+        /// <summary>The transform the desktop view moves: the camera's rig root. Null in a headset.</summary>
+        private Transform Rig()
+        {
+            if (UnityEngine.XR.XRSettings.isDeviceActive || _camera == null)
+            {
+                return null;
+            }
+
+            if (_rig == null)
+            {
+                _rig = _camera.transform.root;
+            }
+
+            if (!_rigHomeStored)
+            {
+                _rigHome = new Pose(_rig.position, _rig.rotation);
+                _rigHomeStored = true;
+                _orbitPitch = 0f;
+            }
+
+            return _rig;
+        }
+
+        /// <summary>
+        /// What a left drag turns about: the open content's own centre. For a place the player is standing
+        /// inside - a nebula centred on the viewer - that point is the camera itself, and the drag is a
+        /// look-around; for the galaxy or the solar system two metres away it is an orbit round them.
+        /// </summary>
+        private Vector3 OrbitPivot()
+        {
+            var director = CosmicSimulation.ExperienceDirector.Instance;
+            if (director != null && director.TryGetViewPivot(out var pivot))
+            {
+                return pivot;
+            }
+
+            return _camera.transform.position + _camera.transform.forward * 2f;
+        }
+
         private void Orbit(Vector2 delta)
         {
-            if (!TryGetViewTransforms(out var pivot, out _))
+            var rig = Rig();
+            if (rig == null)
             {
                 return;
             }
 
             var cameraTransform = _camera.transform;
+            var pivot = OrbitPivot();
+
+            // Drag right, look right; drag up, look up - FreeLook's convention, which the nebula scenes set.
             var yaw = delta.x / Screen.width * orbitDegreesPerScreen;
             var pitch = -delta.y / Screen.height * orbitDegreesPerScreen;
-            pivot.rotation = Quaternion.AngleAxis(yaw, cameraTransform.up) * Quaternion.AngleAxis(pitch, cameraTransform.right) * pivot.rotation;
+            var clamped = Mathf.Clamp(_orbitPitch + pitch, -maxPitchDegrees, maxPitchDegrees) - _orbitPitch;
+            _orbitPitch += clamped;
+
+            // Yaw about the world's up and pitch about the camera's own right, in that order: that pair never
+            // introduces roll, however far the view is turned.
+            rig.RotateAround(pivot, Vector3.up, yaw);
+            rig.RotateAround(pivot, cameraTransform.right, clamped);
         }
 
         private void Pan(Vector2 delta)
         {
-            if (!TryGetViewTransforms(out _, out var entity))
+            var rig = Rig();
+            if (rig == null)
             {
                 return;
             }
 
+            // The world follows the mouse: drag right, the camera slides left.
             var cameraTransform = _camera.transform;
             var move = (cameraTransform.right * delta.x + cameraTransform.up * delta.y) / Screen.height * panMetersPerScreen;
-            entity.position += move;
+            rig.position -= move;
         }
 
         private void Zoom(float notches)
         {
-            if (!TryGetViewTransforms(out _, out var entity))
+            var rig = Rig();
+            if (rig == null)
             {
                 return;
             }
 
-            // Move the content toward (wheel up) or away from the camera.
-            entity.position -= _camera.transform.forward * (notches * zoomMetersPerNotch);
+            // Wheel up flies forward along the view, wheel down backs off - into and out of a nebula, toward
+            // and away from a galaxy.
+            rig.position += _camera.transform.forward * (notches * zoomMetersPerNotch);
         }
 
         private void Spin(Transform planet, Vector2 delta)
@@ -792,6 +868,14 @@ namespace GalaxyExplorer.XR
             // change that. In the headset the world dock's Recenter button goes to DockController.Recenter,
             // which needs the same line.
             CosmicSimulation.FreePlacementAnchor.RestoreAll();
+
+            // The camera goes back to where the intro left it (CS-172).
+            var rig = Rig();
+            if (rig != null)
+            {
+                rig.SetPositionAndRotation(_rigHome.position, _rigHome.rotation);
+                _orbitPitch = 0f;
+            }
 
             if (!TryGetViewTransforms(out var pivot, out var entity))
             {

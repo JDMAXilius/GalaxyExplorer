@@ -431,6 +431,30 @@ namespace CosmicSimulation
             return null;
         }
 
+        /// <summary>
+        /// The point the desktop view turns about (CS-172): the open content's own centre - for a place that
+        /// centred itself on the player, that is the player, and a drag becomes a look-around - or the content
+        /// root for a scene-backed place. False before anything is open.
+        /// </summary>
+        public bool TryGetViewPivot(out Vector3 pivot)
+        {
+            if (_prefabContent != null)
+            {
+                var centred = _prefabContent.GetComponentInChildren<CentreOnViewer>(true);
+                pivot = centred != null ? centred.transform.position : _prefabContent.transform.position;
+                return true;
+            }
+
+            if (contentRoot != null)
+            {
+                pivot = contentRoot.position;
+                return true;
+            }
+
+            pivot = default;
+            return false;
+        }
+
         /// <summary>Goes to a place. Ignored if it is already open or a switch is running.</summary>
         public void Switch(ExperienceModule module)
         {

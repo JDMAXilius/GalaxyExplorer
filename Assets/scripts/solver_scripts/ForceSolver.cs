@@ -93,6 +93,13 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
         }
 
         ControllerTracker.AllTrackingLost += OnControllersLost;
+
+        // Every body answers a touch (CS-173). Added here rather than on each prefab so the planets, the Sun and
+        // every moon get it alike; a TouchNudge already on the prefab keeps its own tuning.
+        if (GetComponent<CosmicSimulation.TouchNudge>() == null)
+        {
+            gameObject.AddComponent<CosmicSimulation.TouchNudge>();
+        }
     }
 
     private void Start()

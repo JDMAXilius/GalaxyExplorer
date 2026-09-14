@@ -102,6 +102,7 @@ Each experience is specified by: what you see, placement and scale, objects, int
 - **Release**: the body stays exactly where it was let go, still rotating. Its panel and moons stay.
 - **Pinch a moon**: it lifts out; its label switches to the large style; its own short panel opens.
 - **Touch the Sun** (hand inside its surface): the surface brightens and a low rumble swells while the hand stays.
+- **Brush a body** (a fingertip, a hand ray or the mouse across it, without grabbing): it turns a little with the stroke — right to left turns it right to left — and springs back to where it was. Every planet, the Sun and every moon (CS-173).
 - **Pop-up (Solar Row / Relative Size)**: all bodies animate back into the chosen layout over 0.8 s; moons return to their planets; panels close.
 - **Recenter**: same as re-selecting the current layout.
 
@@ -144,7 +145,7 @@ Each experience is specified by: what you see, placement and scale, objects, int
 
 **Audio.** Galaxy ambience; tag hover tick; nebula grow-in whoosh; narration for the galaxy and each nebula.
 
-**Desktop.** Hover/click tags with the mouse; overlay closes with `Esc` or click outside.
+**Desktop.** Hover a marker for its card, click it to travel. Inside a nebula, left-drag looks around, the wheel flies forward and back, right-drag slides, Home returns to where you arrived (CS-172).
 
 **Acceptance.** Six tags, correct positions, hover and open behaviours; four nebula overlays open and close; galaxy manipulable.
 
@@ -227,6 +228,7 @@ Each experience is specified by: what you see, placement and scale, objects, int
 | Orbit view | Left drag on empty |
 | Pan view | Right drag on empty |
 | Zoom view | Wheel on empty |
+| Return the view | `Home` |
 | Pull Sun … Pluto | `1`–`9`, `0` |
 | Pull the Moon | `M` |
 | Show / hide name labels | `L` |
