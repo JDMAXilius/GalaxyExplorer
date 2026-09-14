@@ -649,15 +649,8 @@ namespace GalaxyExplorer.XR
 
         private static void RestoreBody(ForceSolver solver)
         {
-            var placement = solver.GetComponent<CosmicSimulation.FreePlacementSolver>();
-            if (placement != null && placement.isActiveAndEnabled)
-            {
-                placement.RestoreLayout();
-                return;
-            }
-
-            solver.ResetToRoot();
-            solver.EnableForce = true;
+            // The same path a tap on the body takes (CS-174), so a key and a click can never disagree.
+            solver.ReturnHome();
         }
 
         /// <summary>

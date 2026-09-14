@@ -100,6 +100,7 @@ Each experience is specified by: what you see, placement and scale, objects, int
 - **Hold and move**: the body follows the hand with light smoothing.
 - **Two hands**: scale between 5 cm and 3 m and rotate freely. Scaling Saturn past 1.5 m lets its rings surround the player.
 - **Release**: the body stays exactly where it was let go, still rotating. Its panel and moons stay.
+- **Tap a body that is already out** (pinch or click and let go without moving it): it goes back — a planet to its place in the row, its moons with it; a moon to its orbit round its planet, wherever the planet is (CS-174).
 - **Pinch a moon**: it lifts out; its label switches to the large style; its own short panel opens.
 - **Touch the Sun** (hand inside its surface): the surface brightens and a low rumble swells while the hand stays.
 - **Brush a body** (a fingertip, a hand ray or the mouse across it, without grabbing): it turns a little with the stroke — right to left turns it right to left — and springs back to where it was. Every planet, the Sun and every moon (CS-173).

@@ -71,6 +71,20 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
 
     public UnityForceSolverEvent SetToRoot, SetToDwell, DwellCanceled, SetToAttract, SetToManipulate, SetToFree;
 
+    [Header("Tap to return (CS-174)")]
+    [Tooltip("A press and release on a body that is out of its arrangement, shorter than this and without " +
+             "moving it, sends it home: a pulled planet back to the row, a pulled moon back into orbit round " +
+             "its planet wherever the planet is. A longer or moving press is a grab, as before.")]
+    public float TapSeconds = 0.4f;
+
+    [Tooltip("How far a body may drift during the press and still count as tapped rather than dragged, in metres.")]
+    public float TapMoveMetres = 0.03f;
+
+    private bool _tapArmed;
+    private GEPointer _tapPointer;
+    private float _tapStarted;
+    private Vector3 _tapStartPosition;
+
     protected override void Awake()
     {
         base.Awake();
@@ -590,6 +604,41 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
             default:
                 throw new ArgumentOutOfRangeException();
         }
+
+        // A tap on a body that was already out - pressed and let go quickly, without carrying it anywhere - is
+        // the player saying "put it back". Checked after the release above has ended the grab, so the body is
+        // Free again and the walk home starts from where it stands (CS-174).
+        if (_tapArmed)
+        {
+            _tapArmed = false;
+            var samePointer = _tapPointer == null || eventData == null || eventData.Pointer == _tapPointer;
+            var quick = Time.time - _tapStarted <= TapSeconds;
+            var still = (transform.position - _tapStartPosition).sqrMagnitude <= TapMoveMetres * TapMoveMetres;
+            if (samePointer && quick && still && ForceState == State.Free)
+            {
+                ReturnHome();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sends the body back to its arrangement: through its <c>FreePlacementSolver</c>, which walks it home over
+    /// the layout's own time and lands it in Root, or straight to Root for a body without one. A moon's home is
+    /// its orbit anchor under its planet, so a moon goes back to whichever place its planet is in now.
+    /// </summary>
+    public void ReturnHome()
+    {
+        _tapArmed = false;
+
+        var placement = GetComponent<CosmicSimulation.FreePlacementSolver>();
+        if (placement != null && placement.isActiveAndEnabled)
+        {
+            placement.RestoreLayout();
+            return;
+        }
+
+        ResetToRoot();
+        EnableForce = true;
     }
 
     // Desktop/mouse and UI entry point: pulls the object in front of the camera.
@@ -605,6 +654,11 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
         {
             planetController = FindObjectOfType<PlanetPreviewController>();
         }
+        if (ForceState != State.Free)
+        {
+            _tapArmed = false;
+        }
+
         switch (ForceState)
         {
             case State.Root:
@@ -645,6 +699,21 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
 
             case State.Attraction:
             case State.Free:
+                // Remember where and when this press began: if it ends quickly and the body has not moved, it
+                // was a tap and the body goes home (see OnPointerUp). Only from Free - a body still flying to
+                // the hand is not "out" yet.
+                if (ForceState == State.Free)
+                {
+                    _tapArmed = true;
+                    _tapPointer = eventData.Pointer;
+                    _tapStarted = Time.time;
+                    _tapStartPosition = transform.position;
+                }
+                else
+                {
+                    _tapArmed = false;
+                }
+
                 StartManipulation();
                 if (eventData.Pointer != null)
                 {
