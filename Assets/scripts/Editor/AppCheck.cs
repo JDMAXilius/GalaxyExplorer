@@ -263,7 +263,7 @@ namespace GalaxyExplorer.Editor
             AddWaitWhile(() => _director.IsSwitching || Name(_director.Current) != "milky_way", 20f);
             Add(2.0f, () =>
             {
-                Say($"open: {Name(_director.Current)}; POI markers in scene: {UnityEngine.Object.FindObjectsByType<GalaxyExplorer.PointOfInterest>(FindObjectsSortMode.None).Length}, DestinationTags: {UnityEngine.Object.FindObjectsByType<DestinationTags>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length}");
+                Say($"open: {Name(_director.Current)}; POI markers in scene: {UnityEngine.Object.FindObjectsByType<GalaxyExplorer.PointOfInterest>(FindObjectsSortMode.None).Length}");
                 tag = FindTag();
                 Check(tag != null, "a destination tag is on screen to click");
                 if (tag == null) return;
@@ -365,9 +365,9 @@ namespace GalaxyExplorer.Editor
 
         private static Transform FindTag()
         {
-            // The map's destinations are the original POI markers again (CS-170): a CardPOI's label collider
-            // on a nebula, a PlanetPOI's on the Solar System and the Galactic Center. Any on-screen, enabled
-            // collider under a live marker will do; the LabelButton tags are only looked at if none is.
+            // The map's destinations are the original POI markers (CS-170): a CardPOI's label collider on a
+            // nebula, a PlanetPOI's on the Solar System and the Galactic Center. Any on-screen, enabled
+            // collider under a live marker will do.
             foreach (var poi in UnityEngine.Object.FindObjectsByType<GalaxyExplorer.PointOfInterest>(FindObjectsSortMode.None))
             {
                 if (!poi.isActiveAndEnabled) continue;
@@ -376,14 +376,6 @@ namespace GalaxyExplorer.Editor
                     if (!collider.enabled || collider.bounds.size == Vector3.zero) continue;
                     if (OnScreen(collider.transform)) return collider.transform;
                 }
-            }
-
-            var tags = UnityEngine.Object.FindAnyObjectByType<DestinationTags>();
-            if (tags == null) return null;
-            foreach (var child in tags.GetComponentsInChildren<Transform>(false))
-            {
-                if (child == tags.transform || child.GetComponent<Collider>() == null) continue;
-                if (OnScreen(child)) return child;
             }
             return null;
         }

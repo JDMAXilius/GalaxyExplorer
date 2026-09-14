@@ -9,7 +9,7 @@ namespace CosmicSimulation
     /// <summary>
     /// The named galaxies standing in the Galaxies sphere, each where it really is in the sky, each a way in.
     ///
-    /// <para><b>Why this is not <see cref="DestinationTags"/>.</b> That one reads a module and decides what a
+    /// <para><b>Why this is not <c>DestinationTags</c> (gone since CS-170).</b> That one reads a module and decides what a
     /// pick means: a module with a <c>SceneName</c> is switched to, one with only a <c>ContentPrefab</c> is
     /// opened as an overlay <i>over</i> the map you are standing on. Every galaxy here has a content prefab
     /// and no scene name, so the same rule would open Andromeda as a poster hanging in front of the sphere.

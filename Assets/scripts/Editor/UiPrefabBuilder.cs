@@ -644,6 +644,12 @@ namespace CosmicSimulation.EditorTools
         /// A tag whose module has no second line hides the subtitle and centres the name on its own, which is
         /// what keeps this usable for the body labels in the orbit model as well as for the map.
         /// </summary>
+        /// <summary>Where the name sits, in canvas units above the label's centre.</summary>
+        private const float LabelNameYMm = 4.5f;
+
+        /// <summary>Where the second line sits, in canvas units below the label's centre.</summary>
+        private const float LabelSecondLineYMm = -5f;
+
         private static void BuildLabelButton()
         {
             const float w = 60f;
@@ -662,21 +668,20 @@ namespace CosmicSimulation.EditorTools
             // deliberate - the leader line leaves the card's bottom edge, and a subtitle sitting too close to
             // where the hairline starts reads as attached to it.
             //
-            // Both offsets come from DestinationTagBuilder rather than being typed here, because that builder
-            // rewrites the name's Y on every tag it fits; a literal in each file would let the two drift and
-            // nothing would catch it.
+            // The two offsets used to live in DestinationTagBuilder, which rewrote the name's Y on every Milky
+            // Way tag it fitted. That builder is gone (CS-170: the map is the original markers again), so the
+            // label prefab owns them now; GalaxyPins is the one remaining user of the label.
             var text = Label("name", grow, w - 10f, 8f, "Crab Nebula", 5f, Ink,
                              TextAlignmentOptions.Center, FontWeight.SemiBold);
-            text.rectTransform.anchoredPosition = new Vector2(0f, DestinationTagBuilder.NameYMm);
+            text.rectTransform.anchoredPosition = new Vector2(0f, LabelNameYMm);
 
             // Caps with a little tracking, which is what makes a subtitle read as a category rather than as a
             // second, quieter name. TMP takes character spacing in ems of the current size.
-            // 3.6 and not a hair smaller: DestinationTagBuilder.MinFontSizeMm calls 3.6 mm the point below
-            // which a tag 1.2 m away stops being readable, and a subtitle set under that number would
-            // contradict the same file's own floor.
+            // 3.6 and not a hair smaller: 3.6 mm is the point below which a label 1.2 m away stops being
+            // readable, and a subtitle set under that number would contradict the label's own floor.
             var second = Label("second", grow, w - 10f, 5f, "SUPERNOVA REMNANT", 3.6f, InkSecondary,
                                TextAlignmentOptions.Center, FontWeight.Medium);
-            second.rectTransform.anchoredPosition = new Vector2(0f, DestinationTagBuilder.SecondLineYMm);
+            second.rectTransform.anchoredPosition = new Vector2(0f, LabelSecondLineYMm);
             second.characterSpacing = 6f;
 
             var outline = Panel("selected_outline", grow, w + 4f, h + 4f, Load("ui_rounded_r32"), Cyan);

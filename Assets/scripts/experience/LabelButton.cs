@@ -16,7 +16,7 @@ namespace CosmicSimulation
     /// states — idle, hover (fifteen per cent larger and filled cyan, with the text going dark so it still
     /// reads), and selected (a cyan outline, kept while that destination is open). Pinch it, or click it on
     /// desktop, and it raises <see cref="OnPicked"/>. A label deliberately knows nothing about what it opens:
-    /// <see cref="DestinationTags"/> subscribes to that event and decides whether the module is a scene to
+    /// <c>DestinationTags</c> (gone since CS-170) subscribes to that event and decides whether the module is a scene to
     /// switch to or an overlay to spawn.
     ///
     /// Hover and click arrive through <see cref="GEInputEvents.ExecuteHierarchy{T}"/> from a
