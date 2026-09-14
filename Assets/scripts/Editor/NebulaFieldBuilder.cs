@@ -72,9 +72,20 @@ namespace CosmicSimulation.EditorTools
             /// </summary>
             public readonly int StarCount;
 
+            /// <summary>
+            /// How much of this object is lit from outside rather than glowing by itself. Zero for every
+            /// emission nebula here, because their gas is ionised and radiates on its own; above zero only
+            /// for opaque dust that is being lit, which on this list is the Pillars alone.
+            /// </summary>
+            public readonly float Lit;
+            public readonly Vector3 LightFrom;
+
             public Palette(Color core, Color shell, float floor, float contrast, float warp,
-                Color starColour, float starIntensity, float starSize, int starCount = 1)
+                Color starColour, float starIntensity, float starSize, int starCount = 1,
+                float lit = 0f, Vector3 lightFrom = default)
             {
+                Lit = lit;
+                LightFrom = lightFrom == default ? new Vector3(0f, 1f, 0.35f) : lightFrom;
                 StarCount = starCount;
                 Core = core;
                 Shell = shell;
@@ -136,7 +147,11 @@ namespace CosmicSimulation.EditorTools
             // above, and they exist BECAUSE that light is directional. A star in the middle of them would
             // contradict the only thing about them that makes physical sense.
             ["pillars"] = new Palette(new Color(1.38f, 1.06f, 0.52f), new Color(0.34f, 0.86f, 1.10f),
-                0.06f, 1.7f, 0.95f, Color.white, 0f, 0f, 0),
+                0.06f, 1.7f, 0.95f, Color.white, 0f, 0f, 0,
+                // Lit from above and slightly behind, by NGC 6611 off the top of the frame. This is the only
+                // object of the seven that is lit rather than glowing, and the only one whose shape depends
+                // on the light having a direction.
+                0.85f, new Vector3(0.12f, 1f, 0.30f)),
 
             // Trumpler 14 is a cluster first and a nebula second: half a million years old, one of the densest
             // concentrations of hot massive stars in the galaxy. Blue-white starlight over hard-ionised teal
@@ -259,7 +274,7 @@ namespace CosmicSimulation.EditorTools
                 var palette = PaletteFor(spec.Id);
                 var field = node.AddComponent<NebulaField>();
                 field.Configure(baked, spec.RadiusMetres, palette.Core, palette.Shell,
-                    palette.Floor, palette.Contrast, palette.Warp);
+                    palette.Floor, palette.Contrast, palette.Warp, palette.Lit, palette.LightFrom);
 
                 // The field has to sit where the gas sits, and the gas centres itself on the player when the
                 // place opens. Same component, same reason: otherwise the player stands beside the nebula.
@@ -432,7 +447,18 @@ namespace CosmicSimulation.EditorTools
                         // Structure between the plate's own pixels. Three octaves is enough at 64 cubed; more
                         // would be detail the texture cannot hold.
                         var detail = Fbm(new Vector3(u, v, w) * 3.1f, 3);
-                        var density = luminance * shape * Mathf.Lerp(0.45f, 1.35f, detail);
+
+                        // How much the plate's brightness decides the density.
+                        //
+                        // For a glowing object it decides all of it: a bright pixel is more gas, because the
+                        // gas is what is doing the glowing. For the Pillars it is close to backwards. They
+                        // are opaque dust seen against a bright background, so their darkest pixels are the
+                        // densest part of the object, and multiplying by luminance baked the columns away
+                        // almost entirely - they came out as thin wisps where the solid body should be.
+                        // There, the shape carries the density and the plate only modulates it.
+                        var density = spec.Model == NebulaVolumeBuilder.Model.Pillars
+                            ? shape * Mathf.Lerp(0.62f, 1f, luminance) * Mathf.Lerp(0.60f, 1.25f, detail)
+                            : luminance * shape * Mathf.Lerp(0.45f, 1.35f, detail);
 
                         densities[index] = density;
                         if (density > brightest) brightest = density;

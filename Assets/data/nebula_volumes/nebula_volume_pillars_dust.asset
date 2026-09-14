@@ -96015,5 +96015,5 @@ MonoBehaviour:
     random: 0.7653396
   destinationId: pillars
   plateAssetPath: Assets/Textures/pillars_texture.tga
-  Provenance: Depth is a declared convention, not a measurement. The object is an irregular cloud with no symmetry to deproject, so each point is placed about a surface undulating with a low-frequency noise field, spread wider where the plate is brighter. Only the colour and the two-dimensional structure come from the photograph.
+  Provenance: 'Depth is a declared convention constrained by the documented shape: three opaque dusty columns of known relative height and width, leaning apart and tapering towards the eroding tips. Solid rather than hollow, which no other model here is. Colour is the plate''s own.'
   radiusMetres: 9

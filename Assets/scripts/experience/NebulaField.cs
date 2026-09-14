@@ -43,6 +43,8 @@ namespace CosmicSimulation
         private static readonly int CoreColourId = Shader.PropertyToID("_CoreColour");
         private static readonly int ShellColourId = Shader.PropertyToID("_ShellColour");
         private static readonly int ColourMixId = Shader.PropertyToID("_ColourMix");
+        private static readonly int LightDirectionId = Shader.PropertyToID("_LightDirection");
+        private static readonly int LightStrengthId = Shader.PropertyToID("_LightStrength");
 
         [SerializeField]
         [Tooltip("The baked density volume, written by Cosmic Simulation > Build Nebula Fields.")]
@@ -116,6 +118,17 @@ namespace CosmicSimulation
         [Tooltip("How much the two-colour ramp overrides the plate's own colour. Low on purpose: the plate " +
                  "is a photograph of the real object and it should be what you mostly see.")]
         private float colourMix = 0.18f;
+
+        [Header("Lighting")]
+        [SerializeField]
+        [Tooltip("Direction the light comes from. Only used when lightStrength is above zero.")]
+        private Vector3 lightDirection = new Vector3(0f, 1f, 0.35f);
+
+        [SerializeField]
+        [Range(0f, 3f)]
+        [Tooltip("Zero for a nebula that glows by itself, which is most of them. Above zero for one that is " +
+                 "opaque dust lit from outside - the Pillars, whose shape IS a shadow.")]
+        private float lightStrength;
 
         private MeshRenderer _renderer;
         private MeshFilter _filter;
@@ -251,6 +264,8 @@ namespace CosmicSimulation
             _material.SetColor(CoreColourId, coreColour);
             _material.SetColor(ShellColourId, shellColour);
             _material.SetFloat(ColourMixId, colourMix);
+            _material.SetVector(LightDirectionId, lightDirection.normalized);
+            _material.SetFloat(LightStrengthId, lightStrength);
         }
 
         /// <summary>
@@ -258,8 +273,10 @@ namespace CosmicSimulation
         /// one table rather than clicked into seven prefabs.
         /// </summary>
         public void Configure(Texture3D bakedVolume, float radius, Color core, Color shell,
-            float floorValue, float contrastValue, float warp)
+            float floorValue, float contrastValue, float warp, float lit = 0f, Vector3? from = null)
         {
+            lightStrength = lit;
+            if (from.HasValue) lightDirection = from.Value;
             volume = bakedVolume;
             radiusMetres = radius;
             coreColour = core;

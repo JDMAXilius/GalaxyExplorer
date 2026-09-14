@@ -226,6 +226,20 @@ namespace CosmicSimulation.EditorTools
             /// <summary>Two lobes on an axis. Each lobe is a shell.</summary>
             Bipolar,
 
+            /// <summary>
+            /// A blister: an ionised cavity hollowed out of the near face of an opaque molecular cloud, open
+            /// towards the viewer and walled behind. What the Orion Nebula actually is, and not a shell -
+            /// M42 is not a bubble you are inside, it is a bay you are looking into.
+            /// </summary>
+            Blister,
+
+            /// <summary>
+            /// Solid, opaque columns of dusty gas standing in a much larger cavity, pointing back at the
+            /// stars eroding them. The Pillars of Creation. The one shape here that is not hollow at all:
+            /// you stand beside these, never inside them.
+            /// </summary>
+            Pillars,
+
             /// <summary>An irregular cloud. Depth is a declared convention, not a derivation.</summary>
             Cloud,
         }
@@ -282,8 +296,8 @@ namespace CosmicSimulation.EditorTools
             new Spec("homunculus", "Assets/Textures/nebulae/homunculus_texture.jpg", Model.Bipolar, 9.00f, 0.34f),
 
             // Irregular clouds. Depth is convention here, and says so.
-            new Spec("orion", "Assets/Textures/nebulae/orion_texture.jpg", Model.Cloud, 9.00f, 0.45f),
-            new Spec("pillars", "Assets/Textures/pillars_texture.tga", Model.Cloud, 9.00f, 0.40f),
+            new Spec("orion", "Assets/Textures/nebulae/orion_texture.jpg", Model.Blister, 9.00f, 0.40f),
+            new Spec("pillars", "Assets/Textures/pillars_texture.tga", Model.Pillars, 9.00f, 0.40f),
             new Spec("trumpler14", "Assets/Textures/trumpler_texture.jpg", Model.Cloud, 9.00f, 0.45f),
         };
 
@@ -297,6 +311,16 @@ namespace CosmicSimulation.EditorTools
             [Model.Bipolar] =
                 "Depth derived from the documented shape: two lobes of ejecta on an axis, each treated as a " +
                 "shell as above. Colour is the plate's own.",
+
+            [Model.Blister] =
+                "Depth derived from the documented geometry: the object is not a shell but a cavity eaten out " +
+                "of the near face of an opaque molecular cloud, so the far side is a thick curved wall and " +
+                "the near side is open. Colour is the plate's own.",
+
+            [Model.Pillars] =
+                "Depth is a declared convention constrained by the documented shape: three opaque dusty " +
+                "columns of known relative height and width, leaning apart and tapering towards the eroding " +
+                "tips. Solid rather than hollow, which no other model here is. Colour is the plate's own.",
 
             [Model.Cloud] =
                 "Depth is a declared convention, not a measurement. The object is an irregular cloud with no " +
@@ -335,6 +359,78 @@ namespace CosmicSimulation.EditorTools
                         var dv = v - side * (1f - lobe);
                         var r = Mathf.Sqrt(u * u + dv * dv + w * w) / lobe;
                         best = Mathf.Max(best, Mathf.Clamp01(1f - Mathf.Abs(r - 0.75f) / 0.75f));
+                    }
+
+                    return best;
+                }
+
+                case Model.Blister:
+                {
+                    // A bay, not a bubble. Orion is a hollow scooped out of the near face of a molecular
+                    // cloud that is still there behind it: the far side is a wall of gas, the near side is
+                    // open, and the sides curve round. Treating it as a shell put a wall in front of the
+                    // viewer that should not exist, and treating it as a slab gave it no back at all.
+                    //
+                    // Near hemisphere (w towards the viewer) is empty; the far hemisphere carries a thick
+                    // curved wall, thinning towards the mouth of the cavity.
+                    var radial = Mathf.Sqrt(u * u + v * v);
+                    var r = Mathf.Sqrt(u * u + v * v + w * w);
+                    if (r > 1f) return 0f;
+
+                    // The wall sits at radius 1 on the far side and falls away as the cavity opens forwards.
+                    var wallThickness = Mathf.Max(spec.Thickness, 1e-3f);
+                    var wall = Mathf.Clamp01(1f - Mathf.Abs(r - 1f) / wallThickness);
+
+                    // How much of the wall survives at this depth: all of it at the back, none at the mouth.
+                    var behind = Mathf.Clamp01((-w + 0.35f) / 1.1f);
+
+                    // Some gas fills the cavity itself - it is ionised, not evacuated - but far less, and
+                    // thinning towards the middle where the cluster has cleared it.
+                    var fill = Mathf.Clamp01(1f - r) * 0.45f * Mathf.Clamp01(0.3f + radial);
+
+                    return Mathf.Clamp01(wall * behind + fill);
+                }
+
+                case Model.Pillars:
+                {
+                    // Three opaque columns rising towards the ionising cluster, which is off the top. Solid:
+                    // the density is highest on the axis of a column and falls to nothing outside it, which
+                    // is the opposite of every other model here.
+                    //
+                    // The columns lean slightly apart and taper, because a pillar is the shadow of a dense
+                    // head being eroded from above - it is widest at the base and narrowest where it is
+                    // being eaten.
+                    var best = 0f;
+                    var columns = new[]
+                    {
+                        new Vector3(-0.34f, 0f, 0.05f),
+                        new Vector3(0.06f, 0f, -0.10f),
+                        new Vector3(0.40f, 0f, 0.12f),
+                    };
+                    var leans = new[] { -0.16f, 0.03f, 0.20f };
+                    var heights = new[] { 0.92f, 0.72f, 0.58f };
+                    var widths = new[] { 0.34f, 0.27f, 0.23f };
+
+                    for (var i = 0; i < columns.Length; i++)
+                    {
+                        // Height along the column, 0 at the base and 1 at the tip.
+                        var top = heights[i];
+                        var t = Mathf.InverseLerp(-1f, top, v);
+                        if (t <= 0f || t >= 1f) continue;
+
+                        // Leaning and tapering with height.
+                        var axis = columns[i] + new Vector3(leans[i], 0f, 0f) * t;
+                        var width = widths[i] * Mathf.Lerp(1f, 0.45f, t * t);
+
+                        var dx = u - axis.x;
+                        var dz = w - axis.z;
+                        var across = Mathf.Sqrt(dx * dx + dz * dz) / Mathf.Max(width, 1e-3f);
+
+                        // Solid core, soft rim: the rim is where the column is being photoevaporated.
+                        var column = Mathf.Clamp01(1f - across);
+                        column *= Mathf.Clamp01((1f - t) * 3f);      // fades out at the very tip
+
+                        best = Mathf.Max(best, column);
                     }
 
                     return best;

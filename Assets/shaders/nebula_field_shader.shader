@@ -62,6 +62,17 @@ Shader "CosmicSimulation/NebulaField"
         _ColourScale ("Size of the colour regions", Range(0.2, 6)) = 0.85
         _Saturation ("Colour saturation", Range(0, 3)) = 1.55
 
+        [Header(Lighting)]
+        // Off by default (_LightStrength 0), because most of these objects are self-luminous: an emission
+        // nebula glows because its own gas is ionised, and lighting it from a direction would be a lie.
+        // The Pillars are the exception and the reason this exists - they are opaque dust lit from outside
+        // by a cluster off the top of frame, and they only make sense with a direction.
+        _LightDirection ("Direction the light comes from", Vector) = (0, 1, 0.35, 0)
+        [HDR] _LightColour ("Light colour", Color) = (1.4, 1.15, 0.85, 1)
+        _LightStrength ("How much of the gas is lit rather than glowing", Range(0, 3)) = 0
+        _ShadowSteps ("Shadow march steps", Range(0, 12)) = 5
+        _ShadowDensity ("How hard the shadows are", Range(0, 8)) = 2.2
+
         [Header(Flow)]
         _Streak ("How far the gas streaks outward", Range(0, 0.9)) = 0.44
 
@@ -117,6 +128,12 @@ Shader "CosmicSimulation/NebulaField"
             float _ColourScale;
             float _Saturation;
             float _Streak;
+
+            float4 _LightDirection;
+            float4 _LightColour;
+            float _LightStrength;
+            float _ShadowSteps;
+            float _ShadowDensity;
 
             float _Dither;
             float _StepJitterSpeed;
@@ -221,6 +238,36 @@ Shader "CosmicSimulation/NebulaField"
                 near = max(max(lo.x, lo.y), lo.z);
                 far = min(min(hi.x, hi.y), hi.z);
                 return far > max(near, 0);
+            }
+
+            // How much of the light from _LightDirection survives to this point.
+            //
+            // A short march towards the source, accumulating the baked density on the way. Five steps is
+            // enough for dust: what matters is whether there is a column in the way, not the exact optical
+            // depth of it. This is what makes the Pillars read as pillars - their whole shape is the shadow
+            // of a dense head, and without it they are three lumps of fog that happen to be column shaped.
+            float LightReaching(float3 position, float radius)
+            {
+                int steps = (int)_ShadowSteps;
+                if (steps <= 0 || _LightStrength <= 0.001) return 1.0;
+
+                float3 toLight = normalize(_LightDirection.xyz + 1e-5);
+                float stepSize = (radius * 2.0) / max(steps, 1);
+                float blocked = 0;
+
+                [loop]
+                for (int s = 1; s <= steps; s++)
+                {
+                    float3 at = position + toLight * (stepSize * s);
+                    float3 uvw = at / (radius * 2.0) + 0.5;
+
+                    // Outside the box there is nothing left to block the light.
+                    if (any(uvw < 0.0) || any(uvw > 1.0)) break;
+
+                    blocked += UNITY_SAMPLE_TEX3D(_Volume, uvw).a * stepSize;
+                }
+
+                return exp(-blocked * _ShadowDensity);
             }
 
             fixed4 frag(v2f i) : SV_Target
@@ -345,6 +392,16 @@ Shader "CosmicSimulation/NebulaField"
                             // version of the same geometry.
                             float grey = dot(colour, float3(0.2126, 0.7152, 0.0722));
                             colour = max(lerp(grey.xxx, colour, _Saturation), 0.0);
+
+                            // Lit rather than glowing, where the object calls for it. Mixed in rather than
+                            // replacing the emission, because even the Pillars have ionised rims that do
+                            // genuinely emit - it is the opaque body of the column that is only ever lit.
+                            if (_LightStrength > 0.001)
+                            {
+                                float lit = LightReaching(position, _Radius);
+                                float3 direct = colour * _LightColour.rgb * lit;
+                                colour = lerp(colour, direct, saturate(_LightStrength));
+                            }
 
                             float absorbed = exp(-density * _Extinction * stepSize);
                             // Emission integrated over the step rather than point-sampled, so the result does
