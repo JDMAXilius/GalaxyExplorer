@@ -104,6 +104,11 @@ Shader "CosmicSimulation/NebulaField"
             #pragma target 3.5
             #pragma multi_compile_instancing
 
+            // The detail and the warp are the expensive half of this shader - six noise evaluations per
+            // step, eight hashes each - and they are the half a mobile GPU cannot afford. Compiled out
+            // rather than multiplied by zero, because a zero strength still pays for the evaluation.
+            #pragma multi_compile _ NEBULA_CHEAP
+
             #include "UnityCG.cginc"
 
             UNITY_DECLARE_TEX3D(_Volume);
@@ -328,6 +333,13 @@ Shader "CosmicSimulation/NebulaField"
                             Fbm2(q * _WarpScale + float3(31.7, 17.3, 2.9) - drift),
                             Fbm2(q * _WarpScale + float3(57.3, 41.9, 23.1) + drift * 0.5)) * 2.0 - 1.0;
 
+#ifdef NEBULA_CHEAP
+                        // Cheap path: the baked field only, no warp and no procedural detail. It loses the
+                        // filaments and keeps the shape, which is the right thing to lose first - a smooth
+                        // cloud still reads as a nebula, and an empty frame does not.
+                        float density = baked.a;
+                        float detail = 0.5;
+#else
                         // Streak the sampling space outward from the centre.
                         //
                         // Isotropic noise gives isotropic gas - clouds that are the same in every direction,
@@ -345,6 +357,7 @@ Shader "CosmicSimulation/NebulaField"
                         // The detail multiplies rather than adds, so it can empty a region completely -
                         // adding would only ever brighten, and the voids are the point.
                         float density = baked.a * lerp(1.0 - _DetailStrength, 1.0 + _DetailStrength, detail);
+#endif
 
                         // Cut the bottom off and bend what is left. Without this every voxel has a little gas
                         // in it, every ray accumulates something, and the result is grey mist in every
@@ -374,7 +387,11 @@ Shader "CosmicSimulation/NebulaField"
                             // orange side, metres apart, because excitation follows where the hot stars are
                             // and not where every wisp happens to be. The term is centred on zero so it can
                             // push the blend both ways; added, it only ever drove towards the rim colour.
+#ifdef NEBULA_CHEAP
+                            float region = 0.5;
+#else
                             float region = Fbm2(q * _ColourScale + float3(5.1, 9.7, 2.3));
+#endif
                             float mixT = smoothstep(_RampStart, _RampEnd,
                                 radial * 0.46 + (region - 0.48) * 1.35);
                             float3 ramp = lerp(_CoreColour.rgb, _ShellColour.rgb, mixT);
