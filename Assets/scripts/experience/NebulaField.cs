@@ -63,7 +63,7 @@ namespace CosmicSimulation
 
         [SerializeField]
         [Range(0f, 8f)]
-        private float emission = 4.3f;
+        private float emission = 7.4f;
 
         [SerializeField]
         [Range(0f, 8f)]
@@ -113,8 +113,9 @@ namespace CosmicSimulation
 
         [SerializeField]
         [Range(0f, 1f)]
-        [Tooltip("How much the two-colour ramp overrides the plate's own colour.")]
-        private float colourMix = 0.85f;
+        [Tooltip("How much the two-colour ramp overrides the plate's own colour. Low on purpose: the plate " +
+                 "is a photograph of the real object and it should be what you mostly see.")]
+        private float colourMix = 0.18f;
 
         private MeshRenderer _renderer;
         private MeshFilter _filter;

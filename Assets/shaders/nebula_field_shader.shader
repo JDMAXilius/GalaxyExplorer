@@ -41,7 +41,7 @@ Shader "CosmicSimulation/NebulaField"
         _Volume ("Density volume (RGB colour, A density)", 3D) = "" {}
         _Steps ("March steps", Range(8, 64)) = 48
         _Density ("Density multiplier", Range(0, 8)) = 2.8
-        _Emission ("Emission multiplier", Range(0, 8)) = 4.3
+        _Emission ("Emission multiplier", Range(0, 8)) = 7.4
         _Extinction ("How much the gas blocks", Range(0, 8)) = 1.6
 
         [Header(Structure)]
@@ -56,7 +56,7 @@ Shader "CosmicSimulation/NebulaField"
         [Header(Colour)]
         [HDR] _CoreColour ("Colour at the centre", Color) = (0.55, 0.75, 1.6, 1)
         [HDR] _ShellColour ("Colour at the rim", Color) = (1.5, 0.42, 0.28, 1)
-        _ColourMix ("How much the ramp overrides the plate", Range(0, 1)) = 0.85
+        _ColourMix ("How much the ramp overrides the plate", Range(0, 1)) = 0.18
         _RampStart ("Where the rim colour starts", Range(0, 1)) = 0.10
         _RampEnd ("Where the rim colour wins", Range(0, 1)) = 0.90
         _ColourScale ("Size of the colour regions", Range(0.2, 6)) = 0.85

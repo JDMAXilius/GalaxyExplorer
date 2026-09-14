@@ -78,7 +78,7 @@ namespace CosmicSimulation.EditorTools
 
             // Carina, right in the plane. One of the richest skies there is: the Carina arm seen lengthways,
             // crowded with hot stars and cut by the dust lanes that make the Coalsack-like gaps.
-            ["homunculus"] = new Sky(27000, 0.92f, 12f, new Color(0.055f, 0.045f, 0.038f), 51,
+            ["homunculus"] = new Sky(27000, 0.48f, 12f, new Color(0.040f, 0.033f, 0.028f), 51,
                 "Carina, b = -1: in the plane, very rich, strong warm band with dust lanes"),
 
             // Orion, nineteen degrees below the plane. Moderate star field, but the whole region is full of
@@ -88,12 +88,12 @@ namespace CosmicSimulation.EditorTools
 
             // Serpens, on the plane and looking towards the inner galaxy. Very crowded, and the Great Rift
             // runs through it - the dark lanes are as much of the look as the stars.
-            ["pillars"] = new Sky(31000, 1.00f, 28f, new Color(0.062f, 0.044f, 0.038f), 83,
+            ["pillars"] = new Sky(31000, 0.55f, 28f, new Color(0.044f, 0.032f, 0.028f), 83,
                 "Serpens, b = +1, l = 17: 17 degrees from the galactic centre. The richest sky of the seven - "
                 + "Scutum and Sagittarius star clouds, and the Great Rift cutting through them"),
 
             // Carina again, a few arcminutes from the Homunculus, so the same sky with its own seed.
-            ["trumpler14"] = new Sky(26000, 0.90f, 14f, new Color(0.052f, 0.046f, 0.042f), 97,
+            ["trumpler14"] = new Sky(26000, 0.46f, 14f, new Color(0.038f, 0.034f, 0.031f), 97,
                 "Carina, b = -1: in the plane, very rich, strong warm band"),
         };
 

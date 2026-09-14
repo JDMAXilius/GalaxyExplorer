@@ -128,9 +128,17 @@ namespace CosmicSimulation.EditorTools
             camera.farClipPlane = 200f;
             camera.fieldOfView = 60f;
 
-            // Starts at the middle, which is where the player arrives and the only view that matters for
-            // judging the look. The nebula fills the sky from here.
-            holder.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            // Starts OUTSIDE, looking at the object.
+            //
+            // This was at the origin, on the grounds that the middle is where the player arrives. That is
+            // true of the app and it is the wrong place to open a scene you are judging against a
+            // photograph, because every photograph of a nebula is taken from outside it: from the centre
+            // you cannot see the object's shape at all, only gas in every direction, so nothing rendered
+            // from there can ever match the reference no matter how good it is. Flying in is one scroll of
+            // the wheel away - FreeLook is on this camera - so this costs nothing and fixes the comparison.
+            var back = spec.RadiusMetres * 2.7f;
+            holder.transform.position = new Vector3(0f, spec.RadiusMetres * 0.18f, -back);
+            holder.transform.LookAt(Vector3.zero);
 
             holder.AddComponent<AudioListener>();
             holder.AddComponent<FreeLook>();

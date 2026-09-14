@@ -117,14 +117,14 @@ namespace CosmicSimulation.EditorTools
             // tan lobes rather than ionised colours, with genuine red [N II] only in the outer ejecta. The
             // star is around five million solar luminosities and utterly dominates its own nebula.
             ["homunculus"] = new Palette(new Color(1.25f, 1.02f, 0.86f), new Color(1.55f, 0.42f, 0.30f),
-                0.11f, 1.9f, 0.65f, new Color(1.00f, 0.90f, 0.96f), 7.5f, 1.15f),
+                0.06f, 1.7f, 0.65f, new Color(1.00f, 0.90f, 0.96f), 7.5f, 1.15f),
 
             // Orion is a blister on the near face of a molecular cloud rather than a shell, and its core is
             // whitish teal-green - [O III] and H-beta and continuum together, bright enough that the eye
             // actually sees colour in it. The wings are pink rather than red, because Ha is mixed with blue
             // H-beta. Lit by the Trapezium: four hot stars, not one, so four is what gets built.
             ["orion"] = new Palette(new Color(0.88f, 1.08f, 0.96f), new Color(1.42f, 0.64f, 0.70f),
-                0.29f, 2.9f, 0.90f, new Color(0.78f, 0.86f, 1.00f), 4.5f, 0.75f, 4),
+                0.15f, 2.3f, 0.90f, new Color(0.78f, 0.86f, 1.00f), 4.5f, 0.75f, 4),
 
             // The Pillars are the one object where truth and expectation actively conflict. The image everyone
             // knows is the Hubble palette - [S II] to red, Ha to green, [O III] to blue - which makes gold
@@ -143,7 +143,7 @@ namespace CosmicSimulation.EditorTools
             // gas inside, red-pink Ha further out. Eight stars rather than one, because no single member
             // dominates the way Eta Carinae does.
             ["trumpler14"] = new Palette(new Color(0.58f, 1.02f, 1.32f), new Color(1.42f, 0.56f, 0.52f),
-                0.22f, 2.5f, 0.90f, new Color(0.74f, 0.84f, 1.00f), 5f, 0.62f, 8),
+                0.30f, 2.8f, 0.90f, new Color(0.74f, 0.84f, 1.00f), 5f, 0.62f, 8),
         };
 
         private static Palette PaletteFor(string id) =>
