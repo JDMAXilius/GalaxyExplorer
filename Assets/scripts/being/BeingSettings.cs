@@ -16,9 +16,9 @@ namespace CosmicSimulation.Being
         public float MaxUtteranceSeconds = 20f;
 
         [Header("Placement, from the head")]
-        public float DistanceMetres = 0.8f;
-        public float SideMetres = 0.35f;
-        public float DropMetres = -0.08f;
+        public float DistanceMetres = 1.4f;
+        public float SideMetres = 0.32f;
+        public float DropMetres = -0.1f;
         public float FollowSeconds = 0.4f;
     }
 }

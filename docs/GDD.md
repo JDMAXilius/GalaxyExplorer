@@ -204,7 +204,7 @@ Each experience is specified by: what you see, placement and scale, objects, int
 
 ### 4.8 The Cosmic Being (voice guide)
 
-**What you see.** A 14 cm sphere of blue points of light, the intro Earth's hologram without the Earth, floating at the left of your view about 0.8 m away and following you gently. Summoned and dismissed from the dock (the small being button; `C` on desktop).
+**What you see.** A 14 cm sphere of blue points of light, the intro Earth's hologram without the Earth, floating about 1.4 m away, a third of the way from the centre of your view to its left edge (about 13 degrees left, a little below eye level), whole and unclipped on a desktop camera, and following you gently. Grab it to carry it anywhere; brush across it and it turns and springs back like a planet. Summoned and dismissed from the dock (the small being button; `C` on desktop).
 
 **Interactions.** Tap it (pinch, poke or click) and it brightens and listens; stop talking and it thinks, then speaks, pulsing to its own voice. Tap while it speaks to interrupt. It answers questions about space and about what is in front of you, and on request travels to a place or pulls a body out of the row.
 

@@ -17,7 +17,7 @@ MonoBehaviour:
   SilenceSeconds: 1.2
   ListenTimeoutSeconds: 4
   MaxUtteranceSeconds: 20
-  DistanceMetres: 0.8
-  SideMetres: 0.35
-  DropMetres: -0.08
+  DistanceMetres: 1.4
+  SideMetres: 0.32
+  DropMetres: -0.1
   FollowSeconds: 0.4
