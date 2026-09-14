@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d77ec8dfbd464fcfae422a84b808a301, type: 3}
+  m_Name: cosmic_being_settings
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.Being.BeingSettings
+  RelayUrl: ws://127.0.0.1:8787/being
+  SpeechThreshold: 0.015
+  SilenceSeconds: 1.2
+  ListenTimeoutSeconds: 4
+  MaxUtteranceSeconds: 20
+  DistanceMetres: 0.8
+  SideMetres: 0.35
+  DropMetres: -0.08
+  FollowSeconds: 0.4

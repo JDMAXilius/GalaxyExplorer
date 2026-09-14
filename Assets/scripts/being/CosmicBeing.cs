@@ -14,12 +14,21 @@ namespace CosmicSimulation.Being
         [SerializeField] private BeingSettings settings;
         [SerializeField] private BeingVisual visual;
 
+        /// <summary>A press and release closer together than this, and barely moved, is a tap. Matches ForceSolver.</summary>
+        private const float TapSeconds = 0.4f;
+        private const float TapMoveMetres = 0.03f;
+
         public Phase Current { get; private set; }
 
         private BeingLink _link;
         private BeingMic _mic;
         private BeingSpeaker _speaker;
         private bool _answerDone;
+
+        private bool _tapArmed;
+        private GEPointer _tapPointer;
+        private float _tapStarted;
+        private Vector3 _tapStartPosition;
 
         public static void Toggle(CosmicBeing prefab)
         {
@@ -61,11 +70,41 @@ namespace CosmicSimulation.Being
             }
         }
 
-        public void OnPointerClicked(GEPointerEventData eventData) => Tap();
+        /// <summary>
+        /// Handled on press and release rather than here. A click event cannot tell a tap from a carry, and the
+        /// being can be carried: <see cref="OnPointerUp"/> runs the same quick-and-still test the bodies use
+        /// for "put it back" (CS-174), so dragging it across the room never starts a conversation.
+        /// </summary>
+        public void OnPointerClicked(GEPointerEventData eventData) { }
 
-        public void OnPointerDown(GEPointerEventData eventData) { }
+        public void OnPointerDown(GEPointerEventData eventData)
+        {
+            _tapArmed = true;
+            _tapPointer = eventData?.Pointer;
+            _tapStarted = Time.time;
+            _tapStartPosition = transform.position;
 
-        public void OnPointerUp(GEPointerEventData eventData) { }
+            // The press is answered whatever it turns out to be. A carry that begins with a pop reads as the
+            // being noticing the hand, which is true - it is only the talking that waits to see if this was a tap.
+            visual.Press();
+        }
+
+        public void OnPointerUp(GEPointerEventData eventData)
+        {
+            if (!_tapArmed)
+            {
+                return;
+            }
+
+            _tapArmed = false;
+            var samePointer = _tapPointer == null || eventData == null || eventData.Pointer == _tapPointer;
+            var quick = Time.time - _tapStarted <= TapSeconds;
+            var still = (transform.position - _tapStartPosition).sqrMagnitude <= TapMoveMetres * TapMoveMetres;
+            if (samePointer && quick && still)
+            {
+                Tap();
+            }
+        }
 
         public void Tap()
         {

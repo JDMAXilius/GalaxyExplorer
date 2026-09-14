@@ -67,6 +67,17 @@ namespace CosmicSimulation.EditorTools
         [MenuItem("Cosmic Simulation/Build Desktop Dock")]
         public static void BuildAll()
         {
+            // Building in play mode half-finishes and says almost nothing about it. TMP's outline setter
+            // reaches through a CanvasRenderer that Awake has not wired on a freshly created object, the
+            // NullReferenceException aborts the run partway down, and every prefab it had not reached yet is
+            // left silently at its old contents. Refuse instead.
+            if (EditorApplication.isPlaying)
+            {
+                Debug.LogError("DesktopDockBuilder: refusing to build in play mode - it aborts partway and leaves "
+                               + "stale prefabs behind. Leave play mode and run this again.");
+                return;
+            }
+
             Directory.CreateDirectory(OutputFolder);
             AssetDatabase.Refresh();
 

@@ -18,21 +18,55 @@ namespace CosmicSimulation.Being.EditorTools
         private const string DesktopDockPath = "Assets/prefabs/ui/desktop_dock_prefab.prefab";
         private const float Diameter = 0.14f;
 
+        /// <summary>The point size the intro placement object uses. Read off its material, kept in step by hand.</summary>
+        private const float IntroPointSize = 0.07f;
+
         [MenuItem("Cosmic Simulation/Build Cosmic Being")]
         public static void Build()
         {
+            // Building in play mode half-finishes and says almost nothing about it. TMP's outline setter
+            // reaches through a CanvasRenderer that Awake has not wired on a freshly created object, the
+            // NullReferenceException aborts the run partway down, and every prefab it had not reached yet is
+            // left silently at its old contents. Refuse instead.
+            if (EditorApplication.isPlaying)
+            {
+                Debug.LogError("BeingBuilder: refusing to build in play mode - it aborts partway and leaves "
+                               + "stale prefabs behind. Leave play mode and run this again.");
+                return;
+            }
+
             Folder("Assets/prefabs/being");
             Folder("Assets/materials/being");
             Folder("Assets/data/being");
 
             var settings = Asset<BeingSettings>(SettingsPath);
-            var hologram = Material(HologramPath, IntroHologram, m => m.SetFloat("_Size", 0.03f));
+
+            // The intro's own point size, not a smaller one. _Size is a point sprite's size in object space, so
+            // its ratio to the sphere is the same at any scale: 0.07 on a 14 cm being looks exactly like 0.07 on
+            // the intro object the player already placed on their floor, which is the look this is meant to be.
+            var hologram = Material(HologramPath, IntroHologram, m => m.SetFloat("_Size", IntroPointSize));
             var rimMaterial = Material(RimPath, IntroRim, m => m.SetFloat("_Multiplier", 0.15f));
             var sphere = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
 
             var root = new GameObject("cosmic_being_prefab");
             root.AddComponent<SphereCollider>().radius = Diameter * 0.5f;
             root.AddComponent<GEInteractable>();
+
+            // The being answers a hand the way a planet does: carry it with one or two hands, and brush it
+            // without grabbing to turn it a little and have it spring back. Both are the components the bodies
+            // already use, so hand, ray and mouse all reach it through the one input path.
+            var hands = root.AddComponent<ManipulationHandler>();
+            hands.HostTransform = root.transform;
+            hands.ManipulationType = ManipulationHandler.HandMovementType.OneAndTwoHanded;
+
+            // Grab sounds on: that field is left off for bodies because their ForceSolver already plays them as
+            // it enters and leaves Manipulation, and the being has no solver, so nothing else would make a sound.
+            var handsObject = new SerializedObject(hands);
+            handsObject.FindProperty("playGrabSounds").boolValue = true;
+            handsObject.ApplyModifiedPropertiesWithoutUndo();
+
+            root.AddComponent<CosmicSimulation.TouchNudge>();
+
             var anchor = root.AddComponent<BeingAnchor>();
             root.AddComponent<BeingLink>();
             root.AddComponent<BeingMic>();
@@ -77,9 +111,14 @@ namespace CosmicSimulation.Being.EditorTools
 
         private static Material Material(string path, string sourcePath, System.Action<Material> tune)
         {
+            // Tuned every run, not only on the first. The builder is the single source of truth for these two
+            // materials, so changing a number here has to reach a project that already has them - otherwise the
+            // constant in this file and the asset on disk quietly disagree for the rest of the project's life.
             var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (existing != null)
             {
+                tune(existing);
+                EditorUtility.SetDirty(existing);
                 return existing;
             }
 
