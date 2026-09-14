@@ -115,14 +115,7 @@ namespace CosmicSimulation.Being
                     break;
                 case "done":
                     _answerDone = true;
-                    if (_speaker.IsPlaying)
-                    {
-                        _speaker.Finish();
-                    }
-                    else
-                    {
-                        Set(Phase.Idle);
-                    }
+                    _speaker.Finish();
                     break;
                 case "error":
                     SwitchNotice.Instance?.Show(message.text);

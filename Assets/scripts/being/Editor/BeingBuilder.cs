@@ -34,12 +34,13 @@ namespace CosmicSimulation.Being.EditorTools
             root.AddComponent<SphereCollider>().radius = Diameter * 0.5f;
             root.AddComponent<GEInteractable>();
             var anchor = root.AddComponent<BeingAnchor>();
-            var link = root.AddComponent<BeingLink>();
+            root.AddComponent<BeingLink>();
             root.AddComponent<BeingMic>();
             var source = root.AddComponent<AudioSource>();
             source.playOnAwake = false;
             source.spatialBlend = 1f;
-            source.outputAudioMixerGroup = AssetDatabase.LoadAssetAtPath<AudioMixer>(VoiceMixer)?.FindMatchingGroups("Master")[0];
+            var groups = AssetDatabase.LoadAssetAtPath<AudioMixer>(VoiceMixer)?.FindMatchingGroups("Master");
+            source.outputAudioMixerGroup = groups != null && groups.Length > 0 ? groups[0] : null;
             root.AddComponent<BeingSpeaker>();
 
             var points = Child(root.transform, "hologram", sphere, hologram, Diameter);
@@ -54,7 +55,6 @@ namespace CosmicSimulation.Being.EditorTools
             var being = root.AddComponent<CosmicBeing>();
             Set(being, "settings", settings, "visual", visual);
             Set(anchor, "settings", settings);
-            _ = link;
 
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             Object.DestroyImmediate(root);

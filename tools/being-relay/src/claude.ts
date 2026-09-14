@@ -17,7 +17,7 @@ export const tools: Anthropic.Tool[] = [
   {
     name: "restore",
     description: "Put every body back in its arrangement.",
-    input_schema: { type: "object", properties: {}, additionalProperties: false },
+    input_schema: { type: "object", properties: {}, required: [], additionalProperties: false },
     strict: true,
   },
 ];
@@ -37,7 +37,9 @@ export async function answer(
 ): Promise<void> {
   const situated = [...history];
   const last = situated[situated.length - 1];
-  situated[situated.length - 1] = { role: "user", content: `${describe(context)}\n\n${last.content as string}` };
+  if (typeof last.content === "string") {
+    situated[situated.length - 1] = { role: "user", content: `${describe(context)}\n\n${last.content}` };
+  }
 
   const stream = client.messages.stream(
     {

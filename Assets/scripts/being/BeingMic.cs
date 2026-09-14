@@ -33,8 +33,11 @@ namespace CosmicSimulation.Being
                 UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Microphone);
                 yield return new WaitForSeconds(0.5f);
             }
+            var allowed = UnityEngine.Android.Permission.HasUserAuthorizedPermission(UnityEngine.Android.Permission.Microphone);
+#else
+            var allowed = true;
 #endif
-            if (Microphone.devices.Length == 0)
+            if (!allowed || Microphone.devices.Length == 0)
             {
                 IsRecording = false;
                 done(null);

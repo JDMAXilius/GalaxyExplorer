@@ -82,13 +82,13 @@ namespace CosmicSimulation.Being
             _source.mute = !VOManager.NarrationEnabled;
             Loudness = Mathf.Lerp(Loudness, _level, 20f * Time.deltaTime);
 
-            if (!IsPlaying && _buffered > Rate / 5)
+            if (!IsPlaying && (_buffered > Rate / 5 || (_finishing && _buffered > 0)))
             {
                 _source.Play();
                 IsPlaying = true;
                 Started?.Invoke();
             }
-            else if (IsPlaying && _finishing && _buffered == 0)
+            else if (_finishing && _buffered == 0)
             {
                 Clear();
                 Drained?.Invoke();
