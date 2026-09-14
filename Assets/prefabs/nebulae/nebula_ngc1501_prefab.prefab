@@ -109,6 +109,79 @@ MonoBehaviour:
   forceFullBlack: 1
   hideInPassthrough: 1
   rendererLayer: 0
+--- !u!1 &5248411438329437511
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8097960609128675990}
+  - component: {fileID: 1208460888500479164}
+  - component: {fileID: 9041023961898353303}
+  m_Layer: 0
+  m_Name: nebula_field
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8097960609128675990
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5248411438329437511}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7491504695560804734}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1208460888500479164
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5248411438329437511}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 859c7b0685b070840a9ef868e5f25845, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.NebulaField
+  volume: {fileID: 11700000, guid: fdff475ac15b64444ba952fe52590ca4, type: 2}
+  radiusMetres: 9
+  steps: 28
+  density: 2.5
+  emission: 2.4
+  extinction: 1.6
+  densityFloor: 0.22
+  contrast: 2.4
+  detailScale: 6.5
+  detailStrength: 0.85
+  warpScale: 1.9
+  warpStrength: 0.7
+  coreColour: {r: 0.5, g: 0.95, b: 1.4, a: 1}
+  shellColour: {r: 1.1, g: 0.55, b: 0.35, a: 1}
+  colourMix: 0.65
+--- !u!114 &9041023961898353303
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5248411438329437511}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6495f3c2fa3b8e4ebd3d468b375d7cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.CentreOnViewer
+  aheadMetres: 0
 --- !u!1 &6191817347711511868
 GameObject:
   m_ObjectHideFlags: 0
@@ -125,7 +198,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &8228861503301903103
 Transform:
   m_ObjectHideFlags: 0
@@ -174,7 +247,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &3378556936849724031
 Transform:
   m_ObjectHideFlags: 0
@@ -292,6 +365,7 @@ Transform:
   m_Children:
   - {fileID: 3848780316273710430}
   - {fileID: 5512577958444535899}
+  - {fileID: 8097960609128675990}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!135 &6477009653063179997

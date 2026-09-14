@@ -1248,6 +1248,9 @@ namespace CosmicSimulation.EditorTools
             return material;
         }
 
+        /// <summary>The destination modules by id, for anything else that has to reach the same prefabs.</summary>
+        internal static Dictionary<string, ExperienceModule> Destinations() => LoadDestinations();
+
         private static Dictionary<string, ExperienceModule> LoadDestinations()
         {
             var byId = new Dictionary<string, ExperienceModule>();

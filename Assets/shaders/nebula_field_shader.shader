@@ -8,6 +8,20 @@
 // Each step reads density and colour from the 3D texture, adds that step's emission and multiplies what is
 // behind it by its extinction: the gas glows AND occludes, which additive sprites can never do at any count.
 //
+// <b>Why there is noise in here as well as a baked texture.</b> A 64 cubed field holds the shape of a cloud
+// and nothing finer - marched on its own it is beautifully lit fog, smooth everywhere, which is exactly the
+// soup the point version produced for the opposite reason. Real nebulae are fibrous: ribbons and sheets with
+// genuine black between them. That structure is produced here rather than baked, by domain warping - running
+// the sample position through a noise field before sampling a second one - which is the standard way to turn
+// round blobs into filaments and costs texture memory nothing. The base field says where the object is; the
+// warp says what its gas is doing.
+//
+// <b>And why the contrast curve matters more than anything else.</b> Density straight out of the texture
+// fills the volume: every voxel has some gas in it, so every ray accumulates something and the frame has no
+// black anywhere. _Floor cuts the bottom off and _Contrast bends what is left, so most of the volume is
+// genuinely empty and the gas that remains is somewhere. Without this the march is grey mist however good the
+// noise is.
+//
 // Two production details are lifted straight from SpaceEngine's own account, and without them this looks
 // like a cheap volumetric: the ray start is dithered per pixel, which trades hard banding for grain the eye
 // forgives, and the dither is animated so the grain does not sit still and read as a texture.
@@ -15,16 +29,38 @@
 // Stereo: the eye index is set up after the vertex stage and _WorldSpaceCameraPos is read per pixel, because
 // under single-pass instanced that uniform is per-eye and a march from the wrong eye's origin is a subtly
 // wrong image in one eye only - invisible on Link, obvious on the device.
+//
+// Cost, honestly: this is the expensive path. Every step evaluates the warp and the detail, and from inside
+// the box the box is the whole screen. It is fine on a desktop GPU and it is the thing to measure first on a
+// Quest - see _Steps and _DetailOctaves, which are the two knobs that buy frames.
 
 Shader "CosmicSimulation/NebulaField"
 {
     Properties
     {
         _Volume ("Density volume (RGB colour, A density)", 3D) = "" {}
-        _Steps ("March steps", Range(8, 64)) = 28
-        _Density ("Density multiplier", Range(0, 8)) = 1.6
-        _Emission ("Emission multiplier", Range(0, 8)) = 1.5
-        _Extinction ("How much the gas blocks", Range(0, 8)) = 1.0
+        _Steps ("March steps", Range(8, 64)) = 32
+        _Density ("Density multiplier", Range(0, 8)) = 2.2
+        _Emission ("Emission multiplier", Range(0, 8)) = 2.4
+        _Extinction ("How much the gas blocks", Range(0, 8)) = 1.6
+
+        [Header(Structure)]
+        _Floor ("Density floor (cuts the mist)", Range(0, 1)) = 0.22
+        _Contrast ("Density contrast", Range(0.5, 6)) = 2.4
+        _DetailScale ("Detail frequency", Range(0.5, 24)) = 6.5
+        _DetailStrength ("How much detail bites", Range(0, 1)) = 0.85
+        _WarpScale ("Warp frequency", Range(0.2, 8)) = 1.9
+        _WarpStrength ("Warp strength (filaments)", Range(0, 2)) = 0.75
+        _Drift ("How fast the gas turns over", Range(0, 1)) = 0.02
+
+        [Header(Colour)]
+        [HDR] _CoreColour ("Colour at the centre", Color) = (0.55, 0.75, 1.6, 1)
+        [HDR] _ShellColour ("Colour at the rim", Color) = (1.5, 0.42, 0.28, 1)
+        _ColourMix ("How much the ramp overrides the plate", Range(0, 1)) = 0.85
+        _RampStart ("Where the rim colour starts", Range(0, 1)) = 0.10
+        _RampEnd ("Where the rim colour wins", Range(0, 1)) = 0.90
+
+        [Header(Ray)]
         _Dither ("Ray start dither", Range(0, 2)) = 1
         _StepJitterSpeed ("Dither animation speed", Range(0, 8)) = 1.7
         _Radius ("Volume half-size in local units", Float) = 0.5
@@ -59,6 +95,21 @@ Shader "CosmicSimulation/NebulaField"
             float _Density;
             float _Emission;
             float _Extinction;
+
+            float _Floor;
+            float _Contrast;
+            float _DetailScale;
+            float _DetailStrength;
+            float _WarpScale;
+            float _WarpStrength;
+            float _Drift;
+
+            float4 _CoreColour;
+            float4 _ShellColour;
+            float _ColourMix;
+            float _RampStart;
+            float _RampEnd;
+
             float _Dither;
             float _StepJitterSpeed;
             float _Radius;
@@ -87,6 +138,60 @@ Shader "CosmicSimulation/NebulaField"
                 o.localPos = v.vertex.xyz;
                 o.screenPos = ComputeScreenPos(o.pos);
                 return o;
+            }
+
+            // ---------------------------------------------------------------- noise
+            //
+            // Value noise rather than gradient noise: one hash per corner instead of a dot product per corner,
+            // and at the frequencies used here the difference is not visible through gas. Everything below
+            // runs 28-odd times per pixel, so the cheap version is the right version.
+
+            float Hash(float3 p)
+            {
+                p = frac(p * 0.3183099 + float3(0.71, 0.113, 0.419));
+                p *= 17.0;
+                return frac(p.x * p.y * p.z * (p.x + p.y + p.z));
+            }
+
+            float ValueNoise(float3 p)
+            {
+                float3 i = floor(p);
+                float3 f = frac(p);
+                f = f * f * (3.0 - 2.0 * f);    // smoothstep, so there are no creases on the lattice
+
+                float n000 = Hash(i + float3(0, 0, 0));
+                float n100 = Hash(i + float3(1, 0, 0));
+                float n010 = Hash(i + float3(0, 1, 0));
+                float n110 = Hash(i + float3(1, 1, 0));
+                float n001 = Hash(i + float3(0, 0, 1));
+                float n101 = Hash(i + float3(1, 0, 1));
+                float n011 = Hash(i + float3(0, 1, 1));
+                float n111 = Hash(i + float3(1, 1, 1));
+
+                float x00 = lerp(n000, n100, f.x);
+                float x10 = lerp(n010, n110, f.x);
+                float x01 = lerp(n001, n101, f.x);
+                float x11 = lerp(n011, n111, f.x);
+
+                return lerp(lerp(x00, x10, f.y), lerp(x01, x11, f.y), f.z);
+            }
+
+            float Fbm3(float3 p)
+            {
+                float sum = 0.5 * ValueNoise(p);
+                p *= 2.03;
+                sum += 0.25 * ValueNoise(p);
+                p *= 2.01;
+                sum += 0.125 * ValueNoise(p);
+                return sum / 0.875;
+            }
+
+            float Fbm2(float3 p)
+            {
+                float sum = 0.5 * ValueNoise(p);
+                p *= 2.03;
+                sum += 0.25 * ValueNoise(p);
+                return sum / 0.75;
             }
 
             // Cheap hash for the per-pixel ray offset. Interleaved gradient noise: one madd and a frac, and it
@@ -133,6 +238,9 @@ Shader "CosmicSimulation/NebulaField"
 
                 float3 position = originLocal + direction * (near + jitter * stepSize);
 
+                // Slow enough that it is never seen moving, fast enough that a long look is not a photograph.
+                float drift = _Time.y * _Drift;
+
                 float3 light = 0;
                 float transmittance = 1;
 
@@ -141,17 +249,65 @@ Shader "CosmicSimulation/NebulaField"
                 {
                     // Local space is -radius..radius; the volume is sampled in 0..1.
                     float3 uvw = position / (_Radius * 2.0) + 0.5;
-                    float4 sample = UNITY_SAMPLE_TEX3D(_Volume, uvw);
+                    float4 baked = UNITY_SAMPLE_TEX3D(_Volume, uvw);
 
-                    float density = sample.a * _Density;
-                    if (density > 0.001)
+                    if (baked.a > 0.002)
                     {
-                        float absorbed = exp(-density * _Extinction * stepSize);
-                        // Emission integrated over the step rather than point-sampled, so the result does not
-                        // change brightness when the step count does.
-                        light += transmittance * sample.rgb * density * _Emission * stepSize;
-                        transmittance *= absorbed;
-                        if (transmittance < 0.01) break;
+                        // Normalised position, so the noise does not change scale with the volume's radius.
+                        float3 q = position / max(_Radius, 1e-3);
+
+                        // Domain warp: sample one noise field to displace the point at which a second is
+                        // read. This is the step that turns round clumps into ribbons and sheets - the
+                        // structure a nebula actually has - and it is why there is black between the gas
+                        // instead of an even haze.
+                        float3 warp = float3(
+                            Fbm2(q * _WarpScale + float3(11.5, 3.1, 7.7) + drift),
+                            Fbm2(q * _WarpScale + float3(31.7, 17.3, 2.9) - drift),
+                            Fbm2(q * _WarpScale + float3(57.3, 41.9, 23.1) + drift * 0.5)) * 2.0 - 1.0;
+
+                        float detail = Fbm3((q + warp * _WarpStrength) * _DetailScale);
+
+                        // The detail multiplies rather than adds, so it can empty a region completely -
+                        // adding would only ever brighten, and the voids are the point.
+                        float density = baked.a * lerp(1.0 - _DetailStrength, 1.0 + _DetailStrength, detail);
+
+                        // Cut the bottom off and bend what is left. Without this every voxel has a little gas
+                        // in it, every ray accumulates something, and the result is grey mist in every
+                        // direction however good the noise above is.
+                        density = saturate((density - _Floor) / max(1.0 - _Floor, 1e-3));
+                        density = pow(density, _Contrast) * _Density;
+
+                        if (density > 0.001)
+                        {
+                            // Hot in the middle, cool at the rim - the two-colour structure every real
+                            // emission nebula has, because the ionising star is in the centre. The plate's
+                            // own colour is still there underneath; _ColourMix says how much the ramp wins.
+                            //
+                            // Two things decide which end of the ramp a piece of gas takes. Radius, because
+                            // the ionising stars are in the middle; and the detail noise, because a nebula is
+                            // not an onion - it is interleaved ribbons at different excitations, and blending
+                            // on radius alone from inside a hollow shell gives one colour in every direction,
+                            // which is what the first version of this did.
+                            float radial = saturate(length(q));
+                            // The noise term is centred on zero rather than added, so it pushes the mix both
+                            // ways. Added, it only ever drove the blend towards the rim colour and every
+                            // filament came out the same red however the palette was set.
+                            float mixT = smoothstep(_RampStart, _RampEnd, radial * 0.5 + (detail - 0.5) * 1.25);
+                            float3 ramp = lerp(_CoreColour.rgb, _ShellColour.rgb, mixT);
+
+                            // The ramp carries the hue and the plate carries the brightness. Multiplying the
+                            // plate by a red ramp - the obvious thing, and the wrong one - cannot ever produce
+                            // blue, so every nebula came out one colour however the palette was set.
+                            float lum = max(dot(baked.rgb, float3(0.2126, 0.7152, 0.0722)), 1e-4);
+                            float3 colour = lerp(baked.rgb, ramp * lum, _ColourMix);
+
+                            float absorbed = exp(-density * _Extinction * stepSize);
+                            // Emission integrated over the step rather than point-sampled, so the result does
+                            // not change brightness when the step count does.
+                            light += transmittance * colour * density * _Emission * stepSize;
+                            transmittance *= absorbed;
+                            if (transmittance < 0.01) break;
+                        }
                     }
 
                     position += direction * stepSize;

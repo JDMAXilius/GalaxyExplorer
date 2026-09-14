@@ -1,5 +1,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -31,6 +32,74 @@ namespace CosmicSimulation.EditorTools
     {
         private const string Folder = "Assets/data/nebula_fields";
         private const int Size = 64;
+        private const string NodeName = "nebula_field";
+
+        /// <summary>
+        /// The two-colour palette each nebula is lit with, plus the three structure knobs that decide how much
+        /// of its volume is empty.
+        ///
+        /// <para>Every emission nebula has this structure for the same physical reason: the ionising stars are
+        /// inside it, so the gas near them is hot and shows its high-excitation lines - blue and blue-green -
+        /// while the gas further out is cooler and recombining, which is red. Painting that ramp explicitly is
+        /// what makes a marched field read as a nebula rather than as coloured fog, and it is the single
+        /// biggest difference between this and the reference art.</para>
+        ///
+        /// <para>The plate's own colour is still underneath all of this; <c>colourMix</c> in the component
+        /// decides how much the ramp wins.</para>
+        /// </summary>
+        private readonly struct Palette
+        {
+            public readonly Color Core;
+            public readonly Color Shell;
+            public readonly float Floor;
+            public readonly float Contrast;
+            public readonly float Warp;
+
+            public Palette(Color core, Color shell, float floor, float contrast, float warp)
+            {
+                Core = core;
+                Shell = shell;
+                Floor = floor;
+                Contrast = contrast;
+                Warp = warp;
+            }
+        }
+
+        private static readonly Dictionary<string, Palette> Palettes = new Dictionary<string, Palette>
+        {
+            // The Crab's interior is a blue synchrotron glow from the pulsar wind; its cage of filaments is
+            // orange, from hydrogen and nitrogen. A high floor because those filaments are a cage with a great
+            // deal of nothing between them, which is the whole look.
+            ["crab"] = new Palette(new Color(0.45f, 0.70f, 1.70f), new Color(1.60f, 0.45f, 0.25f),
+                0.26f, 2.8f, 0.85f),
+
+            // Blue-green oxygen in the middle, red hydrogen at the rim - the Helix's whole appearance.
+            ["helix"] = new Palette(new Color(0.30f, 1.20f, 1.10f), new Color(1.50f, 0.35f, 0.30f),
+                0.24f, 2.6f, 0.70f),
+
+            ["ngc1501"] = new Palette(new Color(0.50f, 0.95f, 1.40f), new Color(1.10f, 0.55f, 0.35f),
+                0.22f, 2.4f, 0.70f),
+
+            // Dust-reddened lobes rather than an ionised shell, so both ends of the ramp are warm.
+            ["homunculus"] = new Palette(new Color(1.30f, 1.00f, 0.70f), new Color(1.50f, 0.45f, 0.30f),
+                0.20f, 2.2f, 0.65f),
+
+            // Star-forming clouds: a hot blue core around the Trapezium, red hydrogen everywhere else, and a
+            // lower floor because these are genuinely filled with gas rather than being hollow shells.
+            ["orion"] = new Palette(new Color(0.70f, 0.95f, 1.50f), new Color(1.45f, 0.40f, 0.35f),
+                0.18f, 2.2f, 0.90f),
+
+            ["pillars"] = new Palette(new Color(0.85f, 0.95f, 1.20f), new Color(1.30f, 0.65f, 0.35f),
+                0.18f, 2.3f, 0.95f),
+
+            ["trumpler14"] = new Palette(new Color(0.75f, 0.95f, 1.60f), new Color(1.35f, 0.50f, 0.35f),
+                0.18f, 2.2f, 0.90f),
+        };
+
+        private static Palette PaletteFor(string id) =>
+            Palettes.TryGetValue(id, out var palette)
+                ? palette
+                : new Palette(new Color(0.6f, 0.8f, 1.5f), new Color(1.4f, 0.5f, 0.3f), 0.22f, 2.4f, 0.75f);
 
         [MenuItem("Cosmic Simulation/Build Nebula Fields")]
         public static void BuildAll()
@@ -65,7 +134,10 @@ namespace CosmicSimulation.EditorTools
                     }
 
                     built++;
-                    report.AppendLine($"  {spec.Id}: {Size}^3 field, {spec.Model} model -> {path}");
+
+                    var baked = AssetDatabase.LoadAssetAtPath<Texture3D>(path);
+                    var attached = Attach(spec, baked);
+                    report.AppendLine($"  {spec.Id}: {Size}^3 field, {spec.Model} model, {attached}");
                 }
                 finally
                 {
@@ -76,6 +148,102 @@ namespace CosmicSimulation.EditorTools
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log($"NebulaFieldBuilder: {built} field(s) baked at {Size} cubed, {Size * Size * Size * 4 / 1024 / 1024f:0.0} MB each.\n{report}");
+        }
+
+        /// <summary>
+        /// Puts the baked field on the nebula's prefab, and turns the point gas off where it does.
+        ///
+        /// <para><b>Why the point layers go.</b> They were three attempts at the same job - continuous gas -
+        /// and a sum of sprites cannot do it: however soft and dim the sprite, a few thousand of them read as
+        /// a sponge, which is what every look at this has said. The field does that job properly, because it
+        /// is continuous and it occludes. What the points are genuinely good at is the thing a field at 64
+        /// cubed cannot do at all - individual, resolvable pinpoints - so the stars layer stays and the gas
+        /// and dust layers are switched off rather than deleted, which keeps them one click away.</para>
+        /// </summary>
+        private static string Attach(NebulaVolumeBuilder.Spec spec, Texture3D baked)
+        {
+            if (baked == null)
+            {
+                return "not attached (the baked asset would not load)";
+            }
+
+            if (!NebulaVolumeBuilder.Destinations().TryGetValue(spec.Id, out var module) || module == null)
+            {
+                return "not attached (no destination module)";
+            }
+
+            if (module.ContentPrefab == null)
+            {
+                return "not attached (module has no ContentPrefab)";
+            }
+
+            var path = AssetDatabase.GetAssetPath(module.ContentPrefab);
+            if (string.IsNullOrEmpty(path))
+            {
+                return "not attached (ContentPrefab is not an asset)";
+            }
+
+            var root = PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                // Replace by name, so running this twice does not stack two fields on top of each other.
+                var existing = root.transform.Find(NodeName);
+                if (existing != null)
+                {
+                    Object.DestroyImmediate(existing.gameObject);
+                }
+
+                var node = new GameObject(NodeName);
+                node.transform.SetParent(root.transform, false);
+
+                // Inactive while it is being assembled, and only switched on once it has its volume.
+                //
+                // NebulaField is ExecuteAlways and its OnEnable disables the component when it has nothing to
+                // march - a reasonable guard that becomes a trap here, because AddComponent raises OnEnable
+                // immediately, before Configure has handed it the texture. The component switched itself off
+                // and that "off" was what SaveAsPrefabAsset then wrote into the prefab, so every field shipped
+                // disabled and the nebula rendered as an empty frame with the point gas already turned off.
+                node.SetActive(false);
+
+                var palette = PaletteFor(spec.Id);
+                var field = node.AddComponent<NebulaField>();
+                field.Configure(baked, spec.RadiusMetres, palette.Core, palette.Shell,
+                    palette.Floor, palette.Contrast, palette.Warp);
+
+                // The field has to sit where the gas sits, and the gas centres itself on the player when the
+                // place opens. Same component, same reason: otherwise the player stands beside the nebula.
+                if (node.GetComponent<CentreOnViewer>() == null)
+                {
+                    node.AddComponent<CentreOnViewer>();
+                }
+
+                // Assembled. Now it may wake up, and OnEnable will find its volume where it expects it.
+                field.enabled = true;
+                node.SetActive(true);
+
+                var silenced = 0;
+                foreach (var volume in root.GetComponentsInChildren<NebulaVolume>(true))
+                {
+                    var name = volume.gameObject.name.ToLowerInvariant();
+                    if (name.Contains("star"))
+                    {
+                        continue;
+                    }
+
+                    if (volume.gameObject.activeSelf)
+                    {
+                        volume.gameObject.SetActive(false);
+                        silenced++;
+                    }
+                }
+
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+                return $"field attached at {spec.RadiusMetres:0.0} m, {silenced} point gas layer(s) switched off";
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
         }
 
         private static Texture3D Bake(NebulaVolumeBuilder.Spec spec, Texture2D plate)
@@ -91,6 +259,18 @@ namespace CosmicSimulation.EditorTools
             };
 
             var voxels = new Color32[Size * Size * Size];
+
+            // Density is accumulated as floats first and normalised at the end.
+            //
+            // It has to be. Density here is a plate luminance times a shape weight times a noise, and all
+            // three are 0..1, so the product lands somewhere around a tenth however bright the object is.
+            // Written straight into a byte that is a field whose values are all near zero - and the shader's
+            // floor, which is what buys the black space, then subtracts more than the whole signal and the
+            // nebula disappears. Measured: the first build of this rendered at a mean of 0.3/255. Normalising
+            // makes the floor and contrast knobs mean the same thing for all seven objects, which is the only
+            // way one palette table can describe them.
+            var densities = new float[Size * Size * Size];
+            var brightest = 0f;
 
             for (var z = 0; z < Size; z++)
             {
@@ -124,15 +304,25 @@ namespace CosmicSimulation.EditorTools
                         // Structure between the plate's own pixels. Three octaves is enough at 64 cubed; more
                         // would be detail the texture cannot hold.
                         var detail = Fbm(new Vector3(u, v, w) * 3.1f, 3);
-                        var density = Mathf.Clamp01(luminance * shape * Mathf.Lerp(0.45f, 1.35f, detail));
+                        var density = luminance * shape * Mathf.Lerp(0.45f, 1.35f, detail);
+
+                        densities[index] = density;
+                        if (density > brightest) brightest = density;
 
                         voxels[index] = new Color32(
                             (byte)(Mathf.Clamp01(colour.r) * 255f),
                             (byte)(Mathf.Clamp01(colour.g) * 255f),
                             (byte)(Mathf.Clamp01(colour.b) * 255f),
-                            (byte)(density * 255f));
+                            0);
                     }
                 }
+            }
+
+            // Normalise against the densest voxel, so the field always uses the whole 0..1 range it is given.
+            var scale = brightest > 1e-5f ? 1f / brightest : 0f;
+            for (var i = 0; i < densities.Length; i++)
+            {
+                voxels[i].a = (byte)(Mathf.Clamp01(densities[i] * scale) * 255f);
             }
 
             texture.SetPixels32(voxels);
