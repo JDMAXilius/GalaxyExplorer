@@ -46,6 +46,14 @@ Shader "CosmicSimulation/NebulaVolume"
         _Shimmer ("Shimmer depth", Range(0, 1)) = 0.12
         _ShimmerSpeed ("Shimmer speed", Float) = 0.5
 
+        [Header(Splat shape)]
+        // These two were used by the shader below but never declared here, so they were not material
+        // properties at all: they defaulted to zero. _Aniso at zero multiplies the splat half-width by zero
+        // and every quad collapses to a zero-width sliver that rasterises to nothing, which is why the
+        // nebula rendered as an entirely black frame no matter how many points were baked into it.
+        _Aniso ("Splat stretch (1 is round)", Range(0.25, 6)) = 1.8
+        _Opacity ("How much a splat occludes", Range(0, 2)) = 0.9
+
         [Header(Near fade)]
         _NearFadeStart ("Near fade start (m)", Float) = 0.12
         _NearFadeRange ("Near fade range (m)", Float) = 0.30
@@ -155,7 +163,12 @@ Shader "CosmicSimulation/NebulaVolume"
                 float splatAngle = p.random * 6.2831853;
                 float2 dir = float2(cos(splatAngle), sin(splatAngle));
                 float2 unit = StarQuadOffsets[corner];
-                float2 stretched = float2(unit.x * _Aniso, unit.y / max(_Aniso, 1e-3));
+                // _Aniso is the aspect ratio of the splat, and the square root is what makes it mean that.
+                // Stretching by (a, 1/a) is area preserving but the aspect it produces is a*a, so 2.8 was an
+                // eight-to-one needle rather than an elongated blob - a field of dark splinters, which is
+                // exactly what it looked like. sqrt(a) either side keeps the area and makes the number honest.
+                float stretch = sqrt(max(_Aniso, 1e-3));
+                float2 stretched = float2(unit.x * stretch, unit.y / stretch);
                 float2 oriented = float2(stretched.x * dir.x - stretched.y * dir.y,
                                          stretched.x * dir.y + stretched.y * dir.x) * halfSize;
 

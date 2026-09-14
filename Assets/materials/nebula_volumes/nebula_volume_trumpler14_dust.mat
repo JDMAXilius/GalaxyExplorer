@@ -24,21 +24,23 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 4670e530052013f40b7fe77e31766889, type: 3}
+        m_Texture: {fileID: 2800000, guid: a5678dc2553b2134da14b3f49f296a04, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _Age: 0
+    - _Aniso: 2.2
     - _DepthDim: 0.55
     - _NearFadeRange: 0.3
     - _NearFadeStart: 0.12
+    - _Opacity: 0.6
     - _Shimmer: 0.12
     - _ShimmerSpeed: 0.5
     - _TransitionAlpha: 1
     - _WSScale: 0.012
     m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 0.45, g: 0.45, b: 0.45, a: 1}
     - _DepthTint: {r: 0.05, g: 0.06, b: 0.12, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

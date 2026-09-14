@@ -36,7 +36,7 @@ Material:
     - _BandWeight: 0
     - _EdgeFeather: 0.45
     - _Fade: 1
-    - _PlateGain: 0.55
+    - _PlateGain: 0.32
     - _PlateOpacity: 1
     - _PlatePitch: 0
     - _PlateYaw: 0

@@ -30,15 +30,17 @@ Material:
     m_Ints: []
     m_Floats:
     - _Age: 0
+    - _Aniso: 1
     - _DepthDim: 0.55
     - _NearFadeRange: 0.3
     - _NearFadeStart: 0.12
+    - _Opacity: 0.3
     - _Shimmer: 0.12
     - _ShimmerSpeed: 0.5
     - _TransitionAlpha: 1
     - _WSScale: 0.012
     m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 2.2, g: 2.2, b: 2.2, a: 1}
     - _DepthTint: {r: 0.05, g: 0.06, b: 0.12, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

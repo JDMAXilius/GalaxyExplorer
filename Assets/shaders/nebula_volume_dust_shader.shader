@@ -56,6 +56,12 @@ Shader "CosmicSimulation/NebulaVolumeDust"
         _Shimmer ("Shimmer depth", Range(0, 1)) = 0.12
         _ShimmerSpeed ("Shimmer speed", Float) = 0.5
 
+        [Header(Splat shape)]
+        // See the note in nebula_volume_shader: undeclared here, these defaulted to zero and collapsed every
+        // splat to nothing. Dust is stretched harder than gas because shape is the job of this layer.
+        _Aniso ("Splat stretch (1 is round)", Range(0.25, 6)) = 2.8
+        _Opacity ("How much a splat occludes", Range(0, 2)) = 1.0
+
         [Header(Near fade)]
         _NearFadeStart ("Near fade start (m)", Float) = 0.12
         _NearFadeRange ("Near fade range (m)", Float) = 0.30
@@ -161,7 +167,12 @@ Shader "CosmicSimulation/NebulaVolumeDust"
                 float splatAngle = p.random * 6.2831853;
                 float2 dir = float2(cos(splatAngle), sin(splatAngle));
                 float2 unit = StarQuadOffsets[corner];
-                float2 stretched = float2(unit.x * _Aniso, unit.y / max(_Aniso, 1e-3));
+                // _Aniso is the aspect ratio of the splat, and the square root is what makes it mean that.
+                // Stretching by (a, 1/a) is area preserving but the aspect it produces is a*a, so 2.8 was an
+                // eight-to-one needle rather than an elongated blob - a field of dark splinters, which is
+                // exactly what it looked like. sqrt(a) either side keeps the area and makes the number honest.
+                float stretch = sqrt(max(_Aniso, 1e-3));
+                float2 stretched = float2(unit.x * stretch, unit.y / stretch);
                 float2 oriented = float2(stretched.x * dir.x - stretched.y * dir.y,
                                          stretched.x * dir.y + stretched.y * dir.x) * halfSize;
 
@@ -193,8 +204,12 @@ Shader "CosmicSimulation/NebulaVolumeDust"
                 UNITY_SETUP_INSTANCE_ID(i);
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
-                float3 rgb = i.tint * tex2D(_MainTex, i.uv).a;
-                return fixed4(rgb, saturate(dot(rgb, 1.0)));
+                // Dust occludes by how much of the pixel it covers, not by how bright it is. That is the
+                // difference between dust and gas: a dark dust lane is still opaque, and tying its alpha to
+                // its own brightness would make the darkest dust - the part doing the most work - invisible.
+                float coverage = tex2D(_MainTex, i.uv).a;
+                float3 rgb = i.tint * coverage;
+                return fixed4(rgb, saturate(coverage * _Opacity));
             }
             ENDCG
         }

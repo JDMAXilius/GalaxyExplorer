@@ -1,5 +1,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections.Generic;
 using GalaxyExplorer;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -35,6 +36,7 @@ namespace CosmicSimulation
     /// into the shared asset and land in the next commit.</para>
     /// </summary>
     [DisallowMultipleComponent]
+    [ExecuteAlways]
     public class NebulaVolume : MonoBehaviour
     {
         private static readonly int StarsId = Shader.PropertyToID("_Stars");
@@ -64,9 +66,15 @@ namespace CosmicSimulation
         private float rotationDegreesPerMinute = 0.4f;
 
         private ComputeBuffer _buffer;
-        private CommandBuffer _commandBuffer;
-        private Camera _commandBufferCamera;
-        private CameraEvent _commandBufferEvent;
+
+        // One command buffer per camera that draws us, rather than one on Camera.main. A command buffer
+        // belongs to a single camera, and there is always more than one: the game camera, the scene view, and
+        // on a headset whatever the rig hands us. With it on Camera.main alone the cloud was invisible in the
+        // scene view, and - because Update does not tick on a plain MonoBehaviour outside play mode - invisible
+        // in edit mode entirely. Opening the scene showed empty black, which is no way to judge a nebula.
+        private readonly Dictionary<Camera, (CommandBuffer Buffer, CameraEvent When)> _buffers =
+            new Dictionary<Camera, (CommandBuffer Buffer, CameraEvent When)>();
+
         private Material _material;
         private int _visible;
         private float _age;
@@ -83,36 +91,48 @@ namespace CosmicSimulation
         {
             EnsureBuffer();
             EnsureMaterial();
+
+            // Removed first: OnEnable can run twice across a domain reload without OnDisable in between, and
+            // a delegate subscribed twice records the cloud twice, which shows up as gas at double brightness.
+            Camera.onPreRender -= OnCameraPreRender;
+            Camera.onPreRender += OnCameraPreRender;
         }
 
         private void OnDisable()
         {
-            // The command buffer goes but the compute buffer stays: a destination that is hidden and shown
+            // The command buffers go but the compute buffer stays: a destination that is hidden and shown
             // again should not pay to re-upload 28 000 points, and the data never changes at run time.
-            RemoveCommandBuffer();
+            Camera.onPreRender -= OnCameraPreRender;
+            RemoveCommandBuffers();
         }
 
         private void OnDestroy()
         {
-            RemoveCommandBuffer();
+            Camera.onPreRender -= OnCameraPreRender;
+            RemoveCommandBuffers();
             ReleaseBuffer();
 
             if (_material != null)
             {
-                Destroy(_material);
+                if (Application.isPlaying)
+                {
+                    Destroy(_material);
+                }
+                else
+                {
+                    DestroyImmediate(_material);
+                }
+
                 _material = null;
             }
         }
 
         private void Update()
         {
-            if (_visible <= 0)
-            {
-                return;
-            }
-
-            EnsureMaterial();
-            if (_material == null)
+            // Only the clock lives here now. The material values and the draw are per-camera, so they belong
+            // in the pre-render callback - and this component has to keep working when Update is not ticking
+            // at all, which is every frame the editor is not playing.
+            if (_visible <= 0 || !Application.isPlaying)
             {
                 return;
             }
@@ -121,17 +141,6 @@ namespace CosmicSimulation
             // long session would get there.
             _age = Mathf.Repeat(
                 _age + Time.deltaTime * rotationDegreesPerMinute * Mathf.Deg2Rad / 60f, Mathf.PI * 2f);
-
-            _material.SetFloat(AgeId, _age);
-            _material.SetFloat(TransitionAlphaId, TransitionAlpha);
-
-            // The quad is expanded in clip space, so the object matrix never reaches it; the world scale has to
-            // be applied to the sprite size by hand, exactly as DrawStars does for the galaxy. That is also
-            // what makes this behave under a two-handed scale: grow the cloud and its gas grains grow with it.
-            _material.SetFloat(WsScaleId, pointSizeMetres * transform.lossyScale.x);
-
-            EnsureCommandBuffer();
-            Record();
         }
 
         // ---------- the data
@@ -185,7 +194,13 @@ namespace CosmicSimulation
 
             // Instanced, because the per-frame age, scale and alpha would otherwise be written into the shared
             // asset and land in the next commit (see the working rules in CLAUDE.md).
-            _material = new Material(pointsMaterial) { name = pointsMaterial.name + " (volume instance)" };
+            // HideAndDontSave because this now also runs in edit mode, and an instanced material without it
+            // is a live object the scene can try to serialise.
+            _material = new Material(pointsMaterial)
+            {
+                name = pointsMaterial.name + " (volume instance)",
+                hideFlags = HideFlags.HideAndDontSave,
+            };
 
             if (_buffer != null)
             {
@@ -227,51 +242,118 @@ namespace CosmicSimulation
             return CameraEvent.BeforeForwardAlpha;
         }
 
-        private void EnsureCommandBuffer()
+        /// <summary>
+        /// Records the cloud for whichever camera is about to render it.
+        ///
+        /// <para>Built-in's <see cref="Camera.onPreRender"/> fires for every camera in the frame, the scene
+        /// view's included, which is the whole point: one buffer on <c>Camera.main</c> drew into the game view
+        /// and nowhere else, so the scene looked empty everywhere you would actually go to look at it.</para>
+        /// </summary>
+        private void OnCameraPreRender(Camera camera)
         {
-            var camera = Camera.main;
-            if (camera == null)
+            // Preview cameras render the little inspector thumbnails and reflection cameras render probes;
+            // neither wants 28 000 points, and a command buffer left on a preview camera outlives it.
+            if (camera == null || camera.cameraType == CameraType.Preview ||
+                camera.cameraType == CameraType.Reflection)
             {
-                RemoveCommandBuffer();
                 return;
             }
+
+            EnsureBuffer();
+            EnsureMaterial();
+
+            if (_material == null || _visible <= 0)
+            {
+                return;
+            }
+
+            _material.SetFloat(AgeId, _age);
+            _material.SetFloat(TransitionAlphaId, TransitionAlpha);
+
+            // The quad is expanded in clip space, so the object matrix never reaches it; the world scale has to
+            // be applied to the sprite size by hand, exactly as DrawStars does for the galaxy. That is also
+            // what makes this behave under a two-handed scale: grow the cloud and its gas grains grow with it.
+            _material.SetFloat(WsScaleId, pointSizeMetres * transform.lossyScale.x);
+
+            var buffer = EnsureCommandBuffer(camera);
+            if (buffer == null)
+            {
+                return;
+            }
+
+            buffer.Clear();
+            buffer.DrawProcedural(
+                transform.localToWorldMatrix, _material, 0, MeshTopology.Triangles, _visible * 6);
+        }
+
+        private CommandBuffer EnsureCommandBuffer(Camera camera)
+        {
+            if (_buffers.TryGetValue(camera, out var existing))
+            {
+                if (existing.Buffer != null)
+                {
+                    return existing.Buffer;
+                }
+
+                _buffers.Remove(camera);
+            }
+
+            PruneDeadCameras();
 
             var when = ResolveCameraEvent(camera);
-            if (_commandBuffer != null && camera == _commandBufferCamera && when == _commandBufferEvent)
+            var buffer = new CommandBuffer { name = "Nebula volume" };
+            camera.AddCommandBuffer(when, buffer);
+            _buffers[camera] = (buffer, when);
+            return buffer;
+        }
+
+        /// <summary>
+        /// Drops entries whose camera has gone. Scene view cameras come and go as tabs are opened and closed,
+        /// and a dictionary keyed on a destroyed Unity object holds the entry for ever otherwise.
+        /// </summary>
+        private void PruneDeadCameras()
+        {
+            List<Camera> dead = null;
+
+            foreach (var pair in _buffers)
+            {
+                if (pair.Key == null)
+                {
+                    dead ??= new List<Camera>();
+                    dead.Add(pair.Key);
+                }
+            }
+
+            if (dead == null)
             {
                 return;
             }
 
-            RemoveCommandBuffer();
-
-            _commandBuffer = new CommandBuffer { name = "Nebula volume" };
-            camera.AddCommandBuffer(when, _commandBuffer);
-            _commandBufferCamera = camera;
-            _commandBufferEvent = when;
+            foreach (var camera in dead)
+            {
+                if (_buffers.TryGetValue(camera, out var entry))
+                {
+                    entry.Buffer?.Release();
+                    _buffers.Remove(camera);
+                }
+            }
         }
 
-        private void RemoveCommandBuffer()
+        private void RemoveCommandBuffers()
         {
-            if (_commandBuffer != null && _commandBufferCamera != null)
+            foreach (var pair in _buffers)
             {
-                _commandBufferCamera.RemoveCommandBuffer(_commandBufferEvent, _commandBuffer);
+                // The event is stored rather than recomputed: ResolveCameraEvent reads the camera's clear
+                // flags, and a buffer removed with a different event than it was added with stays attached.
+                if (pair.Key != null && pair.Value.Buffer != null)
+                {
+                    pair.Key.RemoveCommandBuffer(pair.Value.When, pair.Value.Buffer);
+                }
+
+                pair.Value.Buffer?.Release();
             }
 
-            _commandBuffer?.Release();
-            _commandBuffer = null;
-            _commandBufferCamera = null;
-        }
-
-        private void Record()
-        {
-            if (_commandBuffer == null || _material == null || _visible <= 0)
-            {
-                return;
-            }
-
-            _commandBuffer.Clear();
-            _commandBuffer.DrawProcedural(
-                transform.localToWorldMatrix, _material, 0, MeshTopology.Triangles, _visible * 6);
+            _buffers.Clear();
         }
     }
 }
