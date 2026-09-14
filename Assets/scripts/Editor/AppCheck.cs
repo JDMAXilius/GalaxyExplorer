@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using CosmicSimulation;
+using CosmicSimulation.Being;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -144,7 +145,7 @@ namespace GalaxyExplorer.Editor
                     // A tile that offers a choice - the Solar System's layouts, the Galaxies tile's galaxies -
                     // answers with the panel instead of opening something. Asserting that it switched called
                     // correct behaviour a failure twice before this was written down.
-                    if (wanted.Module.HasLayoutChoice || wanted.Module.HasPlaceChoice)
+                    if (wanted.Module.HasLayoutChoice)
                     {
                         var panel = UnityEngine.Object.FindAnyObjectByType<DockPopup>();
                         Check(panel != null && panel.IsOpen,
@@ -161,40 +162,8 @@ namespace GalaxyExplorer.Editor
                 });
             }
 
-            // 3. The Galaxies tile offers the galaxies we know, and picking one opens it as its own place -
-            //    the same switch Andromeda's tile makes. Clicked, not called.
-            DockTile galaxiesTile = null;
-            foreach (var tile in _tiles)
-                if (tile != null && tile.Module != null && tile.Module.Id == "galaxies") galaxiesTile = tile;
-            Transform galaxyOption = null;
-            Add(0.3f, () =>
-            {
-                if (galaxiesTile == null) { Skip("the galaxy list: there is no Galaxies tile"); return; }
-                Check(galaxiesTile.Module.HasPlaceChoice,
-                    $"the Galaxies tile offers places ({(galaxiesTile.Module.Places == null ? 0 : galaxiesTile.Module.Places.Length)})");
-                if (!OnScreen(galaxiesTile.transform)) { Skip("the galaxy list: the Galaxies tile is not on screen"); return; }
-                _holding = () => Move(ScreenOf(galaxiesTile.transform));
-            });
-            Add(0.4f, () => { if (galaxiesTile != null) _holding = () => Press(ScreenOf(galaxiesTile.transform), true); });
-            Add(0.2f, () => { if (galaxiesTile != null) { _holding = null; Press(ScreenOf(galaxiesTile.transform), false); } });
-            Add(SettleSeconds, () =>
-            {
-                if (galaxiesTile == null) return;
-                var popup = UnityEngine.Object.FindAnyObjectByType<DockPopup>();
-                Check(popup != null && popup.IsOpen, "clicking the Galaxies tile opens the galaxy list");
-                galaxyOption = FindOption(popup, "Whirlpool");
-                if (galaxyOption == null) { Skip("the galaxy pick: no Whirlpool option is on screen"); return; }
-                _holding = () => Move(ScreenOf(galaxyOption));
-            });
-            Add(0.4f, () => { if (galaxyOption != null) _holding = () => Press(ScreenOf(galaxyOption), true); });
-            Add(0.2f, () => { if (galaxyOption != null) { _holding = null; Press(ScreenOf(galaxyOption), false); } });
-            AddWaitWhile(() => _director.IsSwitching, 8f);
-            Add(SettleSeconds, () =>
-            {
-                if (galaxyOption == null) return;
-                Check(Name(_director.Current) == "whirlpool",
-                    $"picking Whirlpool from the list opens it as its own place ({Name(_director.Current)})");
-            });
+            // 3. (Gone with CS-188: the Galaxies tile opens the sphere of galaxies, which step 2 already
+            //    proves the way it proves every other tile. It never listed places; the assertion did.)
 
             // 4. A destination tag on the Milky Way, clicked with the mouse. This is the one the owner asked
             //    about by name, and the one nothing had ever proven.
@@ -220,7 +189,108 @@ namespace GalaxyExplorer.Editor
             Add(0.1f, () => Tap(Key.Escape, false));
             Add(SettleSeconds, () => Check(!_director.HasOpenDestination, "Escape closes the destination"));
 
-            // 5. Restore, and the console.
+            // 5. The being, through the same pointer layer a player uses: summoned, standing at its offset,
+            //    facing the head as the camera turns, carried by a drag without listening, brushed and springing
+            //    back, tapped into listening and out of it, dismissed after its fade.
+            var beingSettings = AssetDatabase.LoadAssetAtPath<BeingSettings>("Assets/data/being/cosmic_being_settings.asset");
+            var dock = UnityEngine.Object.FindAnyObjectByType<DockController>();
+            CosmicBeing being = null;
+            Transform rig = null;
+            var dragged = Vector3.zero;
+            var brushed = 0f;
+            var beingUsable = false;
+            Add(0.3f, () =>
+            {
+                if (dock == null || beingSettings == null) { Skip("the being: no DockController or no cosmic_being_settings.asset"); return; }
+                if (CosmicBeing.Instance != null) { Skip("the being: one is already summoned"); return; }
+                rig = Camera.main.transform.root;
+                dock.ToggleBeing();
+            });
+            Add(1.2f, () =>
+            {
+                if (dock == null || beingSettings == null) return;
+                being = CosmicBeing.Instance;
+                Check(being != null, "the dock's being button summons the being");
+                if (being == null) return;
+                var off = Vector3.Distance(being.transform.position, BeingHome(beingSettings));
+                Check(off < 0.05f, $"it stands at the settings' offset from the head ({off:0.000} m off)");
+                Check(FacingError(being.transform) < 15f, $"it faces the head ({FacingError(being.transform):0} deg off)");
+                rig.Rotate(Vector3.up, 40f, Space.World);
+            });
+            Add(1.5f, () =>
+            {
+                if (being == null) return;
+                var off = Vector3.Distance(being.transform.position, BeingHome(beingSettings));
+                Check(off < 0.08f, $"with the camera turned 40 deg it has followed ({off:0.000} m off)");
+                Check(FacingError(being.transform) < 15f, $"and still faces the head ({FacingError(being.transform):0} deg off)");
+                rig.Rotate(Vector3.up, -40f, Space.World);
+            });
+            // A drag: press on it, carry the mouse 160 px right over 0.6 s, release.
+            var dragFrom = Vector2.zero;
+            var dragStart = 0.0;
+            var dragOrigin = Vector3.zero;
+            Add(1.2f, () =>
+            {
+                beingUsable = being != null && OnScreen(being.transform);
+                if (!beingUsable) { Skip("the being's drag, brush and tap: it is not on screen"); return; }
+                dragFrom = ScreenOf(being.transform);
+                dragOrigin = being.transform.position;
+                _holding = () => Move(dragFrom);
+            });
+            Add(0.3f, () => { if (beingUsable) { dragStart = EditorApplication.timeSinceStartup; _holding = () => Press(dragFrom + Vector2.right * (float)Mathf.Min(160f, 270f * (float)(EditorApplication.timeSinceStartup - dragStart)), true); } });
+            Add(0.7f, () => { if (beingUsable) { _holding = null; Press(dragFrom + Vector2.right * 160f, false); } });
+            Add(0.8f, () =>
+            {
+                if (!beingUsable) return;
+                dragged = being.transform.position - dragOrigin;
+                Check(dragged.magnitude > 0.03f, $"a press-drag-release carries the being ({dragged.magnitude:0.000} m)");
+                Check(being.Current == CosmicBeing.Phase.Idle, $"and does not start it listening ({being.Current})");
+            });
+            // A brush: the mouse crosses it without pressing, then leaves.
+            var brushFrom = Vector2.zero;
+            var brushStart = 0.0;
+            var nudge = being != null ? being.GetComponent<TouchNudge>() : null;
+            Add(0.5f, () =>
+            {
+                if (!beingUsable) return;
+                nudge = being.GetComponent<TouchNudge>();
+                brushFrom = ScreenOf(being.transform) - Vector2.right * 40f;
+                brushStart = EditorApplication.timeSinceStartup;
+                _holding = () =>
+                {
+                    Move(brushFrom + Vector2.right * (float)Mathf.Min(80f, 200f * (float)(EditorApplication.timeSinceStartup - brushStart)));
+                    if (nudge != null) brushed = Mathf.Max(brushed, Mathf.Abs(nudge.Angle));
+                };
+            });
+            Add(0.6f, () => { if (beingUsable) _holding = () => Move(ScreenOf(being.transform) + Vector2.up * 400f); });
+            Add(1.6f, () =>
+            {
+                if (!beingUsable) return;
+                _holding = null;
+                Check(nudge != null && brushed > 1f, $"a brush turns it ({brushed:0.0} deg at most)");
+                Check(nudge != null && Mathf.Abs(nudge.Angle) < 0.5f, $"and it springs back ({(nudge == null ? 0f : nudge.Angle):0.00} deg left)");
+            });
+            // A tap: press and release on one spot within the tap window.
+            Add(0.3f, () => { if (beingUsable) _holding = () => Move(ScreenOf(being.transform)); });
+            Add(0.3f, () => { if (beingUsable) _holding = () => Press(ScreenOf(being.transform), true); });
+            Add(0.15f, () =>
+            {
+                if (!beingUsable) return;
+                _holding = null;
+                Press(ScreenOf(being.transform), false);
+                if (Microphone.devices.Length == 0) Skip("the being's listening: this machine has no microphone, so a tap goes straight back to idle");
+                else Check(being.Current == CosmicBeing.Phase.Listening, $"a tap sets it listening ({being.Current})");
+            });
+            Add(beingSettings != null ? beingSettings.ListenTimeoutSeconds + 0.8f : 1f, () =>
+            {
+                if (!beingUsable) return;
+                Check(being.Current == CosmicBeing.Phase.Idle, $"and with nothing said it goes idle on the timeout ({being.Current})");
+                dock.ToggleBeing();
+            });
+            Add(0.3f, () => { if (being != null) Check(CosmicBeing.Instance != null, "the dock button starts the being's fade out"); });
+            Add(0.9f, () => { if (being != null) Check(CosmicBeing.Instance == null, "and after the fade the being is gone"); });
+
+            // 6. Restore, and the console.
             Add(0.2f, () => Tap(Key.R, true));
             Add(0.1f, () => Tap(Key.R, false));
             Add(SettleSeconds, () =>
@@ -351,18 +421,6 @@ namespace GalaxyExplorer.Editor
         }
 
         /// <summary>An option in the pop-up whose label says this, or null. Hidden options do not count.</summary>
-        private static Transform FindOption(DockPopup popup, string text)
-        {
-            if (popup == null) return null;
-            foreach (var label in popup.GetComponentsInChildren<TMPro.TMP_Text>(false))
-            {
-                if (label.text == null || label.text.IndexOf(text, StringComparison.OrdinalIgnoreCase) < 0) continue;
-                var option = label.transform.parent != null ? label.transform.parent : label.transform;
-                if (OnScreen(option)) return option;
-            }
-            return null;
-        }
-
         private static Transform FindTag()
         {
             // The map's destinations are the original POI markers (CS-170): a CardPOI's label collider on a
@@ -482,6 +540,22 @@ namespace GalaxyExplorer.Editor
         }
 
         private static string Name(ExperienceModule module) => module == null ? "nothing" : module.Id;
+
+        private static Vector3 BeingHome(BeingSettings settings)
+        {
+            var head = Camera.main.transform;
+            var forward = Vector3.ProjectOnPlane(head.forward, Vector3.up);
+            forward = forward.sqrMagnitude > 1e-4f ? forward.normalized : Vector3.forward;
+            var right = Vector3.Cross(Vector3.up, forward);
+            return head.position + forward * settings.DistanceMetres - right * settings.SideMetres + Vector3.up * settings.DropMetres;
+        }
+
+        private static float FacingError(Transform being)
+        {
+            var toHead = Camera.main.transform.position - being.position;
+            toHead.y = 0f;
+            return Vector3.Angle(being.forward, toHead);
+        }
 
         // The desktop dock is a screen-space canvas, and a screen-space canvas already holds its tiles at
         // pixel coordinates: tile_milky_way sits at (1533, 66, 0), which through Camera.WorldToScreenPoint

@@ -24,6 +24,8 @@ namespace GalaxyExplorer
         // Layers must execute in creation order (clouds -> shadow -> stars): the clouds layer clears the
         // downscaled target and the shadow layer's final copy overwrites the camera target.
         private static readonly List<DrawStars> Instances = new List<DrawStars>();
+        private Vector4 _ellipse = new Vector4(float.NaN, 0f, 0f, 0f);
+        private Vector4 _fuzzy;
 
         private ComputeBuffer starsData;
         private bool isFirst;
@@ -152,23 +154,29 @@ namespace GalaxyExplorer
 
             if (!_attachedCameras.Contains(cam))
             {
-                AttachAllInOrder(cam);
+                AttachInOrder(cam);
             }
         }
 
-        private static void AttachAllInOrder(Camera cam)
+        // Keeps the buffers on the camera in Instances order. Only the drawers that come after the newcomer
+        // are taken off and put back, so a galaxy appearing costs its own layers, not every galaxy's.
+        private void AttachInOrder(Camera cam)
         {
-            foreach (var drawer in Instances)
+            var mine = Instances.IndexOf(this);
+            for (var i = Instances.Count - 1; i > mine; i--)
             {
-                if (drawer._attachedCameras.Remove(cam))
+                var later = Instances[i];
+                if (later._attachedCameras.Remove(cam))
                 {
-                    cam.RemoveCommandBuffer(drawer.cameraEvent, drawer._cameraToCommandBuffer[cam]);
+                    cam.RemoveCommandBuffer(later.cameraEvent, later._cameraToCommandBuffer[cam]);
                 }
             }
 
-            foreach (var drawer in Instances)
+            for (var i = mine; i < Instances.Count; i++)
             {
-                if (drawer.isActiveAndEnabled && drawer._cameraToCommandBuffer.TryGetValue(cam, out var buffer))
+                var drawer = Instances[i];
+                if (drawer.isActiveAndEnabled && !drawer._attachedCameras.Contains(cam) &&
+                    drawer._cameraToCommandBuffer.TryGetValue(cam, out var buffer))
                 {
                     cam.AddCommandBuffer(drawer.cameraEvent, buffer);
                     drawer._attachedCameras.Add(cam);
@@ -237,16 +245,21 @@ namespace GalaxyExplorer
 
             starsMaterial.SetVector(LocalCamDir, camDir);
             starsMaterial.SetFloat(WsScale, wsScale);
-
             starsMaterial.SetVector(PColor, galaxy.tint * galaxy.tintMult * Mathf.Lerp(galaxy.verticalTintMultiplier.x, galaxy.verticalTintMultiplier.y, Mathf.Abs(camDir.y)));
-
-            starsMaterial.SetVector(EllipseSize, new Vector4(galaxy.XRadii, galaxy.ZRadii, galaxy.MinEllipseScale, galaxy.MaxEllipseScale));
-            starsMaterial.SetVector(FuzzySideScale, galaxy.FuzzySideScale);
             starsMaterial.SetVector(CamPos, mainCamTransform.position);
             starsMaterial.SetVector(CamForward, mainCamTransform.forward);
             starsMaterial.SetFloat(PAge, Age);
-
             starsMaterial.SetFloat(TransitionAlpha, galaxy.TransitionAlpha);
+
+            // The shape does not change between frames; write it when it does.
+            var ellipse = new Vector4(galaxy.XRadii, galaxy.ZRadii, galaxy.MinEllipseScale, galaxy.MaxEllipseScale);
+            if (ellipse != _ellipse || galaxy.FuzzySideScale != _fuzzy)
+            {
+                _ellipse = ellipse;
+                _fuzzy = galaxy.FuzzySideScale;
+                starsMaterial.SetVector(EllipseSize, ellipse);
+                starsMaterial.SetVector(FuzzySideScale, _fuzzy);
+            }
 
             UpdateCamera();
         }

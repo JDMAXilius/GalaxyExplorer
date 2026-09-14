@@ -11,6 +11,9 @@ Shader "GalaxyExplorer/Placement"
         _Blend("Reveal", Range(0,1)) = 1
         [Toggle]_Active("Active", Float) = 0
         [HideInInspector]_SelfTime("Time", Float) = 0.0
+        _Bands("Voice bands, low to high", Vector) = (0, 0, 0, 0)
+        _Articulate("Articulation", Float) = 0
+        _BandExtent("Half height of the source mesh", Float) = 0.5
         _ClipFadeDistance("Camera clip fade distance units", Float) = .1
         [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("Depth Test", Float) = 4                // "LessEqual"
     }
@@ -50,7 +53,10 @@ Shader "GalaxyExplorer/Placement"
             float _Blend;
             float _ClipFadeDistance;
             float _SelfTime;
-            
+            float4 _Bands;
+            float _Articulate;
+            float _BandExtent;
+
             float4 _ProximityLightData[2*6];
 
             struct appdata
@@ -110,6 +116,12 @@ Shader "GalaxyExplorer/Placement"
 //                axis.y = -abs(axis.y);
                 float3 axis = float3(0,-1,0);
                 float4 rotated = mul(rotationMatrix(axis, _SelfTime*v.randoms.x*_Speed), v.vertex);
+
+                // The voice, as shape: the sphere is four belts from bottom to top, bass to treble, and each
+                // belt swells with its own band, so a syllable moves a region rather than the whole ball.
+                float belt = saturate(v.vertex.y / max(_BandExtent, 1e-4) * 0.5 + 0.5);
+                float4 pick = float4(belt < .25, belt >= .25 && belt < .5, belt >= .5 && belt < .75, belt >= .75);
+                rotated.xyz *= 1 + _Articulate * dot(pick, _Bands);
                 float3 worldPos = mul(unity_ObjectToWorld, rotated);
                 
                 o.proximity_size.x = saturate(.2-min(distance(worldPos, _ProximityLightData[0]), distance(worldPos, _ProximityLightData[6])))*5;

@@ -95,6 +95,5 @@ namespace CosmicSimulation
         /// list of one is what a second galaxy being added looks like on the way - so unlike
         /// <see cref="HasLayoutChoice"/> this does not require two.
         /// </summary>
-        public bool HasPlaceChoice => Places != null && Places.Length > 0;
     }
 }

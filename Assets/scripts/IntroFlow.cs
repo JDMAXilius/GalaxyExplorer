@@ -73,8 +73,31 @@ namespace GalaxyExplorer
                 return false;
             }
 
+            // Skipping past placement used to leave the content root at the world origin, on top of the camera,
+            // with the whole Milky Way above the top of the screen. Anchor it where placement would have.
+            if (!_anchored)
+            {
+                AnchorAhead();
+            }
+
             flowManagerScript.JumpToStage((int)IntroFlowState.kGalaxyView);
             return true;
+        }
+
+        private bool _anchored;
+
+        /// <summary>Anchors the content where the intro would have: 2 m in front of the user, a bit lower on a headset.</summary>
+        private void AnchorAhead()
+        {
+            var head = Camera.main.transform;
+            var forward = Vector3.ProjectOnPlane(head.forward, Vector3.up).normalized;
+            var position = head.position + (forward == Vector3.zero ? Vector3.forward : forward) * 2f;
+            if (!GalaxyExplorerManager.IsDesktop)
+            {
+                position += Vector3.down * .5f;
+            }
+            FindObjectOfType<WorldAnchorHandler>().CreateWorldAnchor(position);
+            _anchored = true;
         }
 
         public void OnSceneIsLoaded()
@@ -88,6 +111,7 @@ namespace GalaxyExplorer
         {
             // Anchor the content in place
             FindObjectOfType<WorldAnchorHandler>().CreateWorldAnchor(position);
+            _anchored = true;
 
             // if its not Desktop platform then skip the next stage and go directly to solar system stage
             if (GalaxyExplorerManager.IsDesktop && flowManagerScript)
@@ -185,16 +209,7 @@ namespace GalaxyExplorer
                 return false;
             }
             UnityEditor.SessionState.EraseString(QuickStartViewKey);
-
-            // Anchor the content where the intro would have: 2 m in front of the user, a bit lower on a headset.
-            var head = Camera.main.transform;
-            var forward = Vector3.ProjectOnPlane(head.forward, Vector3.up).normalized;
-            var position = head.position + (forward == Vector3.zero ? Vector3.forward : forward) * 2f;
-            if (!GalaxyExplorerManager.IsDesktop)
-            {
-                position += Vector3.down * .5f;
-            }
-            FindObjectOfType<WorldAnchorHandler>().CreateWorldAnchor(position);
+            AnchorAhead();
 
             // The solar system and the galactic center are reached from the galaxy, so Back should lead there.
             if (view != GalaxyViewScene)

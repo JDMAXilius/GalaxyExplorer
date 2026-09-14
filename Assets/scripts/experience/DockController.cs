@@ -677,6 +677,13 @@ namespace CosmicSimulation
                 tileRow.gameObject.SetActive(visible);
             }
 
+            // The plate is the builder's child named "plate", found rather than wired so the prefab needs no rebuild.
+            var plate = transform.Find("plate");
+            if (plate != null)
+            {
+                plate.gameObject.SetActive(visible);
+            }
+
             if (dragBar != null)
             {
                 dragBar.gameObject.SetActive(visible);

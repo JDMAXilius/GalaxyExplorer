@@ -23,6 +23,7 @@ namespace CosmicSimulation.Being
         private BeingLink _link;
         private BeingMic _mic;
         private BeingSpeaker _speaker;
+        private ManipulationHandler _hands;
         private bool _answerDone;
 
         private bool _tapArmed;
@@ -48,6 +49,7 @@ namespace CosmicSimulation.Being
             _link = GetComponent<BeingLink>();
             _mic = GetComponent<BeingMic>();
             _speaker = GetComponent<BeingSpeaker>();
+            _hands = GetComponent<ManipulationHandler>();
             _link.Received += OnMessage;
             _link.Audio += _speaker.Enqueue;
             _speaker.Started += () => Set(Phase.Speaking);
@@ -60,7 +62,7 @@ namespace CosmicSimulation.Being
             _link.Connect(settings.RelayUrl, BeingContext.Capture());
         }
 
-        private void Update() => visual.Apply(Current, _speaker.Loudness);
+        private void Update() => visual.Apply(Current, _speaker.Loudness, _speaker.Bands);
 
         private void OnDestroy()
         {
@@ -86,11 +88,24 @@ namespace CosmicSimulation.Being
 
             // The press is answered whatever it turns out to be. A carry that begins with a pop reads as the
             // being noticing the hand, which is true - it is only the talking that waits to see if this was a tap.
-            visual.Press();
+            var attach = _tapPointer != null ? _tapPointer.AttachTransform : null;
+            visual.Press(attach != null ? attach.position : transform.position);
+
+            // The hands are told too, the way a body's ForceSolver tells its handler: ManipulationHandler is
+            // deliberately not a pointer handler, so without this a drag would never carry the being.
+            if (_hands != null && eventData?.Pointer != null)
+            {
+                _hands.OnPointerDown(eventData);
+            }
         }
 
         public void OnPointerUp(GEPointerEventData eventData)
         {
+            if (_hands != null && eventData?.Pointer != null)
+            {
+                _hands.OnPointerUp(eventData);
+            }
+
             if (!_tapArmed)
             {
                 return;

@@ -186,7 +186,11 @@ namespace GalaxyExplorer
                 starsContent = starsContent.Concat(GenerateEllipses(EllipseCount, secondArmStartOffsetDeg));
             }
 
-            var stars = starsContent;
+            // Shuffled, so that drawing only the first N points thins the whole galaxy evenly rather than
+            // deleting the outer ellipses and the second arm, which is what inner-to-outer, arm-after-arm
+            // order gave. Seeded, so a re-bake with the same parameters writes the same asset.
+            var shuffle = new System.Random(unchecked(EllipseCount * 397 + StarsPerEllipse));
+            var stars = starsContent.OrderBy(_ => shuffle.Next()).ToArray();
 
             var points = stars.Select((v, i) => new StarVertDescriptor()
             {

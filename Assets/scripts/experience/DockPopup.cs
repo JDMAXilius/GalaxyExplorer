@@ -38,7 +38,6 @@ namespace CosmicSimulation
         private RectTransform plate;
 
         private LayoutPreset[] _layouts = new LayoutPreset[0];
-        private ExperienceModule[] _places = new ExperienceModule[0];
         private int _chosen = -1;
         private bool _opening;
 
@@ -49,12 +48,6 @@ namespace CosmicSimulation
 
         /// <summary>Raised with the layout the player picked.</summary>
         public event System.Action<ExperienceModule, LayoutPreset> LayoutChosen;
-
-        /// <summary>
-        /// Raised with the place the player picked, for a tile that offers places rather than layouts - the
-        /// Galaxies tile listing the galaxies we know. The place opens as its own, exactly as Andromeda does.
-        /// </summary>
-        public event System.Action<ExperienceModule> PlaceChosen;
 
         private void Awake()
         {
@@ -93,21 +86,13 @@ namespace CosmicSimulation
             _opening = true;
             Owner = tile;
 
-            // Layouts win when a module has both: a layout rearranges what is already open, a place replaces
-            // it, and offering the two in one panel would put a rearrangement and a departure side by side.
-            var showingLayouts = tile.Module.HasLayoutChoice;
-            _layouts = showingLayouts ? tile.Module.Layouts : new LayoutPreset[0];
-            _places = showingLayouts ? new ExperienceModule[0] : tile.Module.Places;
-            var count = showingLayouts ? _layouts.Length : _places.Length;
+            // Layouts only. The Galaxies tile once listed places here; the owner dropped the list (the tile
+            // opens the sphere of galaxies, CS-169), and the branch that built it was unreachable after that.
+            _layouts = tile.Module.Layouts;
+            var count = _layouts.Length;
 
-            // A layout is a mode the place is in, so one of them is always current; a place is somewhere you
-            // are not, so nothing is marked until the player picks.
-            _chosen = showingLayouts && count > 0 ? 0 : -1;
-            if (!showingLayouts)
-            {
-                var open = ExperienceDirector.Instance != null ? ExperienceDirector.Instance.Current : null;
-                _chosen = System.Array.IndexOf(_places, open);
-            }
+            // A layout is a mode the place is in, so one of them is always current.
+            _chosen = count > 0 ? 0 : -1;
 
             for (var i = 0; i < optionButtons.Count; i++)
             {
@@ -119,7 +104,7 @@ namespace CosmicSimulation
 
                 if (used && i < optionLabels.Count && optionLabels[i] != null)
                 {
-                    optionLabels[i].text = showingLayouts ? _layouts[i].DisplayName : Title(_places[i]);
+                    optionLabels[i].text = _layouts[i].DisplayName;
                 }
             }
 
@@ -142,7 +127,6 @@ namespace CosmicSimulation
 
             Owner = null;
             _opening = false;
-            _places = new ExperienceModule[0];
             gameObject.SetActive(false);
 
             if (wasOpen)
@@ -181,21 +165,6 @@ namespace CosmicSimulation
                 return;
             }
 
-            if (_places.Length > 0)
-            {
-                if (index < 0 || index >= _places.Length)
-                {
-                    return;
-                }
-
-                _chosen = index;
-                var place = _places[index];
-                Repaint();
-                Close();
-                PlaceChosen?.Invoke(place);
-                return;
-            }
-
             if (index < 0 || index >= _layouts.Length)
             {
                 return;
@@ -212,7 +181,6 @@ namespace CosmicSimulation
         }
 
         /// <summary>A place's name, on two lines' worth of information in one: "Whirlpool Galaxy (M51)".</summary>
-        private static string Title(ExperienceModule place) => place == null ? string.Empty : place.DisplayName;
 
         /// <summary>
         /// Grows the plate to hold however many options there are. The options sit two to a row, so two of

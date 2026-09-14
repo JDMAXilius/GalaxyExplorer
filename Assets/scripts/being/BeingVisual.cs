@@ -33,17 +33,24 @@ namespace CosmicSimulation.Being
         [SerializeField] private float pressDecay = 4.5f;
 
         [Header("The talking pose")]
-        [Tooltip("How far the sphere swells at full voice, as a fraction of its size.")]
+        [Tooltip("How far the sphere swells at full voice, as a fraction of its size. Loudness is 0..1.")]
         [SerializeField] private float speakSwell = 0.30f;
 
-        [Tooltip("The loudness that counts as full voice. Below this the swell is proportional.")]
-        [SerializeField] private float speakFull = 0.20f;
+        [Tooltip("How far a belt of points pushes out at full band energy, as a fraction of the radius.")]
+        [SerializeField] private float articulate = 0.35f;
 
         [Tooltip("How quickly the sphere follows the voice. Too fast reads as jitter, too slow as lag.")]
         [SerializeField] private float speakFollow = 18f;
 
+        [Tooltip("How far the touch glow drifts off the surface as a press fades, in metres.")]
+        [SerializeField] private float touchDrift = 0.3f;
+
         private static readonly int Multiplier = Shader.PropertyToID("_Multiplier");
         private static readonly int Blend = Shader.PropertyToID("_Blend");
+        private static readonly int Active = Shader.PropertyToID("_Active");
+        private static readonly int BandsId = Shader.PropertyToID("_Bands");
+        private static readonly int Articulate = Shader.PropertyToID("_Articulate");
+        private static readonly int Proximity = Shader.PropertyToID("_ProximityLightData");
 
         private MaterialPropertyBlock _block;
         private Material _holo;
@@ -51,6 +58,8 @@ namespace CosmicSimulation.Being
 
         private Vector3 _hologramScale = Vector3.one;
         private Vector3 _rimScale = Vector3.one;
+        private readonly Vector4[] _lights = new Vector4[12];
+        private Vector3 _touch;
         private float _press;
         private float _voice;
 
@@ -58,6 +67,10 @@ namespace CosmicSimulation.Being
         {
             _block = new MaterialPropertyBlock();
             _holo = hologram.GetComponent<Renderer>().material;
+            for (var i = 0; i < _lights.Length; i++)
+            {
+                _lights[i] = Vector3.one * 1e6f;
+            }
 
             // Captured once: every swell below is a multiple of the size the builder gave them, so the sphere
             // always returns to exactly the 14 cm it is meant to be.
@@ -70,10 +83,14 @@ namespace CosmicSimulation.Being
             SetReveal(0f);
         }
 
-        /// <summary>A press landed. Pops the sphere once, as the visible "I felt that".</summary>
-        public void Press() => _press = 1f;
+        /// <summary>A press landed at a point. Pops the sphere and flashes the touch colour there.</summary>
+        public void Press(Vector3 at)
+        {
+            _press = 1f;
+            _touch = at;
+        }
 
-        public void Apply(CosmicBeing.Phase phase, float loudness)
+        public void Apply(CosmicBeing.Phase phase, float loudness, Vector4 bands)
         {
             var pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 6f);
             var level = phase switch
@@ -90,11 +107,30 @@ namespace CosmicSimulation.Being
                 CosmicBeing.Phase.Speaking => speakSpeed,
                 _ => idleSpeed,
             };
-            hologram.SetActive(phase == CosmicBeing.Phase.Listening || phase == CosmicBeing.Phase.Speaking);
+            var active = phase == CosmicBeing.Phase.Listening || phase == CosmicBeing.Phase.Speaking ? 1f : 0f;
+            _holo.SetFloat(Active, Mathf.Max(active, _press));
+            _holo.SetVector(BandsId, phase == CosmicBeing.Phase.Speaking ? bands : Vector4.zero);
+            _holo.SetFloat(Articulate, articulate);
             _block.SetFloat(Multiplier, level * _reveal);
             rim.SetPropertyBlock(_block);
 
             Breathe(phase, loudness);
+            Glow();
+        }
+
+        /// <summary>
+        /// The shader's own touch response: points near a proximity light brighten to _TouchColor and grow.
+        /// The light sits on the touched point and drifts outward as the press fades, so the glow blooms
+        /// where the finger landed and then leaves.
+        /// </summary>
+        private void Glow()
+        {
+            var outward = _touch - transform.position;
+            outward = outward.sqrMagnitude > 1e-6f ? outward.normalized : Vector3.up;
+            var light = _press > 0f ? _touch + outward * touchDrift * (1f - _press) : Vector3.one * 1e6f;
+            _lights[0] = light;
+            _lights[6] = light;
+            _holo.SetVectorArray(Proximity, _lights);
         }
 
         /// <summary>
@@ -105,9 +141,7 @@ namespace CosmicSimulation.Being
         {
             var dt = Time.deltaTime;
 
-            var wanted = phase == CosmicBeing.Phase.Speaking && speakFull > 0f
-                ? Mathf.Clamp01(loudness / speakFull)
-                : 0f;
+            var wanted = phase == CosmicBeing.Phase.Speaking ? Mathf.Clamp01(loudness) : 0f;
             _voice = Mathf.Lerp(_voice, wanted, Mathf.Clamp01(speakFollow * dt));
 
             // Eased to nothing, then snapped, so the pop actually ends instead of asymptoting.
