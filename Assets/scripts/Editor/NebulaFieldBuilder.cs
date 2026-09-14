@@ -143,7 +143,7 @@ namespace CosmicSimulation.EditorTools
             // gas inside, red-pink Ha further out. Eight stars rather than one, because no single member
             // dominates the way Eta Carinae does.
             ["trumpler14"] = new Palette(new Color(0.58f, 1.02f, 1.32f), new Color(1.42f, 0.56f, 0.52f),
-                0.30f, 2.8f, 0.90f, new Color(0.74f, 0.84f, 1.00f), 5f, 0.62f, 8),
+                0.16f, 2.2f, 0.90f, new Color(0.74f, 0.84f, 1.00f), 5f, 0.62f, 8),
         };
 
         private static Palette PaletteFor(string id) =>
