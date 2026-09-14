@@ -33,6 +33,9 @@ namespace GalaxyExplorer.Editor
     public static class AppCheck
     {
         private const string LogPath = "Logs/app_check.log";
+
+        /// <summary>Where the probe is pointing, captured once so the press and release land on one spot.</summary>
+        private static Vector2 _aim;
         private const float SettleSeconds = 1.6f;
 
         private struct Step
@@ -264,21 +267,28 @@ namespace GalaxyExplorer.Editor
                 tag = FindTag();
                 Check(tag != null, "a destination tag is on screen to click");
                 if (tag == null) return;
-                Say($"aiming at {tag.parent?.name ?? tag.name} at screen {ScreenOf(tag)}");
-                _holding = () => Move(ScreenOf(tag));
+                // Captured once, not recomputed every frame.
+                //
+                // The tag billboards and the map drifts, so re-aiming at ScreenOf(tag) on every tick moved
+                // the pointer a dozen pixels between the press and the release - past DragThresholdPixels,
+                // which is exactly how DesktopMouseInput decides a press is a drag. The probe was producing
+                // the orbit it then reported as a failure to click.
+                _aim = ScreenOf(tag);
+                Say($"aiming at {tag.parent?.name ?? tag.name} at screen {_aim}, held fixed from here");
+                _holding = () => Move(_aim);
             });
             Add(1.0f, () =>
             {
                 if (tag == null) return;
                 Say("with the mouse on it: " + Pointer());
-                _holding = () => Press(ScreenOf(tag), true);
+                _holding = () => Press(_aim, true);
             });
             Add(0.6f, () =>
             {
                 if (tag == null) return;
                 Say("with the button down: " + Pointer());
                 _holding = null;
-                Press(ScreenOf(tag), false);
+                Press(_aim, false);
             });
             Add(1.5f, () =>
             {

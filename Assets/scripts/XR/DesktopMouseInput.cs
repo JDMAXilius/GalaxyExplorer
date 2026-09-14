@@ -80,6 +80,12 @@ namespace GalaxyExplorer.XR
         private Vector2 _leftPressPosition, _rightPressPosition;
         private bool _orbiting, _panning;
 
+        /// <summary>
+        /// Whether the left button was down last frame, so a press can be recognised without relying on
+        /// wasPressedThisFrame. See the note in <see cref="HandleLeftButton"/>.
+        /// </summary>
+        private bool _leftWasDown;
+
         // Content pose at startup, restored by Home.
         private bool _viewDefaultsStored;
         private Pose _pivotDefault, _entityDefault;
@@ -203,7 +209,23 @@ namespace GalaxyExplorer.XR
         private void HandleLeftButton(Mouse mouse, Vector2 screenPosition, RaycastHit? hit, GEInteractable target)
         {
             var button = mouse.leftButton;
-            if (button.wasPressedThisFrame)
+
+            // A press is "down now, up last frame" as well as wasPressedThisFrame.
+            //
+            // wasPressedThisFrame is a single-frame edge, and anything that costs a frame can stand between
+            // the edge and this handler seeing it - a domain reload, a hitch, a scene opening, or synthetic
+            // input queued a frame out of step. Missing it used to be quietly catastrophic rather than merely
+            // a lost click, because _leftPressPosition is only written inside that branch: it kept whatever
+            // it held before, which on the first press of a session is (0,0). The next frame then measured
+            // the "drag" from (0,0) to wherever the pointer actually was, found it a thousand pixels, and
+            // started orbiting. Every subsequent press did the same. Symptom: clicking a destination tag on
+            // the Milky Way hovers it, never presses it, and spins the camera instead - which is exactly what
+            // the tag probe recorded, with the pointer held at one fixed pixel and a drag distance of zero.
+            var pressedNow = button.isPressed && !_leftWasDown;
+            var pressEdge = button.wasPressedThisFrame || pressedNow;
+            _leftWasDown = button.isPressed;
+
+            if (pressEdge)
             {
                 _leftPressPosition = screenPosition;
                 if (target != null)
@@ -221,7 +243,7 @@ namespace GalaxyExplorer.XR
             }
 
             if (button.isPressed && _pressed == null && !_orbiting && !IsOverUI() &&
-                (screenPosition - _leftPressPosition).magnitude > DragThresholdPixels && !button.wasPressedThisFrame)
+                (screenPosition - _leftPressPosition).magnitude > DragThresholdPixels && !pressEdge)
             {
                 _orbiting = true;
             }
