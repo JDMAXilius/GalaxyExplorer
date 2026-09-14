@@ -102,13 +102,16 @@ namespace CosmicSimulation.EditorTools
         private static readonly System.Collections.Generic.Dictionary<string, string> Skies =
             new System.Collections.Generic.Dictionary<string, string>
             {
-                { "helix", "sky_teal" },
-                { "ngc1501", "sky_teal" },
+                // One sky each, written by NebulaSkyBuilder from where in the galaxy the object sits.
+                // These used to be four generic tints shared between seven objects - the Helix and Trumpler 14
+                // had the same backdrop, which is wrong by a factor of six in star density.
+                { "helix", "sky_helix" },
+                { "ngc1501", "sky_ngc1501" },
                 { "crab", "sky_crab" },
-                { "homunculus", "sky_amber" },
-                { "pillars", "sky_starfield" },
-                { "trumpler14", "sky_starfield" },
-                { "orion", "sky_violet" },
+                { "homunculus", "sky_homunculus" },
+                { "pillars", "sky_pillars" },
+                { "trumpler14", "sky_trumpler14" },
+                { "orion", "sky_orion" },
             };
 
         /// <summary>Working resolution the plate is read at. 512 is ample: the cloud is sampled, not copied.</summary>

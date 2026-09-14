@@ -65,9 +65,17 @@ namespace CosmicSimulation.EditorTools
             public readonly float StarIntensity;
             public readonly float StarSize;
 
+            /// <summary>
+            /// How many stars light this object. One for a planetary nebula or a remnant, which has a single
+            /// exposed core; several for an H II region, which is lit by a cluster; none where the source is
+            /// outside the object altogether, as it is for the Pillars.
+            /// </summary>
+            public readonly int StarCount;
+
             public Palette(Color core, Color shell, float floor, float contrast, float warp,
-                Color starColour, float starIntensity, float starSize)
+                Color starColour, float starIntensity, float starSize, int starCount = 1)
             {
+                StarCount = starCount;
                 Core = core;
                 Shell = shell;
                 Floor = floor;
@@ -81,41 +89,61 @@ namespace CosmicSimulation.EditorTools
 
         private static readonly Dictionary<string, Palette> Palettes = new Dictionary<string, Palette>
         {
-            // The Crab's interior is a blue synchrotron glow from the pulsar wind; its cage of filaments is
-            // orange, from hydrogen and nitrogen. A high floor because those filaments are a cage with a great
-            // deal of nothing between them, which is the whole look.
-            // The Crab has a pulsar at its centre, and it is the reason the whole object is lit: the blue
-            // interior is that pulsar's wind. Small and fiercely blue-white.
-            ["crab"] = new Palette(new Color(0.45f, 0.70f, 1.70f), new Color(1.60f, 0.45f, 0.25f),
-                0.26f, 2.8f, 0.85f, new Color(0.80f, 0.90f, 1.00f), 11f, 1.6f),
-
-            // Blue-green oxygen in the middle, red hydrogen at the rim - the Helix's whole appearance. Its
-            // central white dwarf is the exposed core of the star that threw the shell off.
-            ["helix"] = new Palette(new Color(0.30f, 1.20f, 1.10f), new Color(1.50f, 0.35f, 0.30f),
-                0.24f, 2.6f, 0.70f, new Color(0.85f, 0.93f, 1.00f), 10f, 2.0f),
-
-            ["ngc1501"] = new Palette(new Color(0.50f, 0.95f, 1.40f), new Color(1.10f, 0.55f, 0.35f),
-                0.22f, 2.4f, 0.70f, new Color(0.90f, 0.95f, 1.00f), 9f, 1.8f),
-
-            // Dust-reddened lobes rather than an ionised shell, so both ends of the ramp are warm. Eta
-            // Carinae itself is enormously luminous and heavily reddened by the dust it threw out.
-            ["homunculus"] = new Palette(new Color(1.30f, 1.00f, 0.70f), new Color(1.50f, 0.45f, 0.30f),
-                0.20f, 2.2f, 0.65f, new Color(1.00f, 0.82f, 0.60f), 14f, 2.4f),
-
-            // Star-forming clouds: a hot blue core around the Trapezium, red hydrogen everywhere else, and a
-            // lower floor because these are genuinely filled with gas rather than being hollow shells.
+            // Crab. The interior is the one case on this list that is NOT line emission: it is synchrotron
+            // continuum from the pulsar wind, broadband and near-white with a lavender cast, which is why it
+            // has no particular colour of its own. The cage around it is Ha with [N II] sitting on top of it,
+            // which is the red-orange. Getting the interior wrong - making it a saturated blue like an [O III]
+            // nebula - is the difference between the Crab and a generic planetary.
             //
-            // No central star on any of these three. They are lit by clusters, not by one source, and putting
-            // a single invented star in the middle of the Orion Nebula would be a worse lie than leaving it
-            // out - the Trapezium is four stars and the eye knows the difference.
-            ["orion"] = new Palette(new Color(0.70f, 0.95f, 1.50f), new Color(1.45f, 0.40f, 0.35f),
-                0.18f, 2.2f, 0.90f, Color.white, 0f, 0f),
+            // The pulsar is magnitude 16.5 and visually insignificant. It is there because it is the reason
+            // the object glows, not because you would notice it; a beacon in the middle would be wrong.
+            ["crab"] = new Palette(new Color(0.78f, 0.82f, 1.05f), new Color(1.65f, 0.52f, 0.24f),
+                0.26f, 2.8f, 0.85f, new Color(0.82f, 0.88f, 1.00f), 2.5f, 0.7f),
 
-            ["pillars"] = new Palette(new Color(0.85f, 0.95f, 1.20f), new Color(1.30f, 0.65f, 0.35f),
-                0.18f, 2.3f, 0.95f, Color.white, 0f, 0f),
+            // Helix. Textbook ionisation stratification, and one of only two here whose famous images are
+            // close to true colour: [O III] teal in the cavity, Ha and [N II] red further out.
+            ["helix"] = new Palette(new Color(0.30f, 1.20f, 1.10f), new Color(1.55f, 0.32f, 0.28f),
+                0.24f, 2.6f, 0.70f, new Color(0.88f, 0.94f, 1.00f), 4.5f, 0.95f),
 
-            ["trumpler14"] = new Palette(new Color(0.75f, 0.95f, 1.60f), new Color(1.35f, 0.50f, 0.35f),
-                0.18f, 2.2f, 0.90f, Color.white, 0f, 0f),
+            // NGC 1501 is [O III] almost throughout, with barely any stratification - a turquoise blistered
+            // shell with only a faint warm rim. The famous Hubble image shows its central star as an orange
+            // pearl, which is a filter-mapping artefact: CH Cam is a Wolf-Rayet-type core and genuinely
+            // blue-white, so that is what it gets here.
+            ["ngc1501"] = new Palette(new Color(0.34f, 1.10f, 1.20f), new Color(1.00f, 0.78f, 0.66f),
+                0.22f, 2.4f, 0.70f, new Color(0.85f, 0.92f, 1.00f), 5f, 0.9f),
+
+            // The Homunculus is a reflection nebula, not an emission one: nearly all of its light is Eta
+            // Carinae's own, scattered off the dust it threw out in the 1840s and reddened by it. Hence warm
+            // tan lobes rather than ionised colours, with genuine red [N II] only in the outer ejecta. The
+            // star is around five million solar luminosities and utterly dominates its own nebula.
+            ["homunculus"] = new Palette(new Color(1.25f, 1.02f, 0.86f), new Color(1.55f, 0.42f, 0.30f),
+                0.11f, 1.9f, 0.65f, new Color(1.00f, 0.90f, 0.96f), 7.5f, 1.15f),
+
+            // Orion is a blister on the near face of a molecular cloud rather than a shell, and its core is
+            // whitish teal-green - [O III] and H-beta and continuum together, bright enough that the eye
+            // actually sees colour in it. The wings are pink rather than red, because Ha is mixed with blue
+            // H-beta. Lit by the Trapezium: four hot stars, not one, so four is what gets built.
+            ["orion"] = new Palette(new Color(0.88f, 1.08f, 0.96f), new Color(1.42f, 0.64f, 0.70f),
+                0.29f, 2.9f, 0.90f, new Color(0.78f, 0.86f, 1.00f), 4.5f, 0.75f, 4),
+
+            // The Pillars are the one object where truth and expectation actively conflict. The image everyone
+            // knows is the Hubble palette - [S II] to red, Ha to green, [O III] to blue - which makes gold
+            // pillars against a blue-teal ground. In true colour they are opaque brown dust columns against a
+            // flat red Ha field. Shipping the palette everyone recognises, because a physically honest version
+            // of this one reads as broken to almost every viewer.
+            //
+            // No central star, and that is not an omission: the Pillars are lit by NGC 6611 from off-frame
+            // above, and they exist BECAUSE that light is directional. A star in the middle of them would
+            // contradict the only thing about them that makes physical sense.
+            ["pillars"] = new Palette(new Color(1.38f, 1.06f, 0.52f), new Color(0.34f, 0.86f, 1.10f),
+                0.06f, 1.7f, 0.95f, Color.white, 0f, 0f, 0),
+
+            // Trumpler 14 is a cluster first and a nebula second: half a million years old, one of the densest
+            // concentrations of hot massive stars in the galaxy. Blue-white starlight over hard-ionised teal
+            // gas inside, red-pink Ha further out. Eight stars rather than one, because no single member
+            // dominates the way Eta Carinae does.
+            ["trumpler14"] = new Palette(new Color(0.58f, 1.02f, 1.32f), new Color(1.42f, 0.56f, 0.52f),
+                0.22f, 2.5f, 0.90f, new Color(0.74f, 0.84f, 1.00f), 5f, 0.62f, 8),
         };
 
         private static Palette PaletteFor(string id) =>
@@ -248,25 +276,73 @@ namespace CosmicSimulation.EditorTools
                     Object.DestroyImmediate(starNode.gameObject);
                 }
 
-                var star = "no central star";
-                if (palette.StarIntensity > 0f)
+                var star = "no star, lit from outside";
+                if (palette.StarIntensity > 0f && palette.StarCount > 0)
                 {
-                    var starObject = new GameObject(StarNodeName);
-                    starObject.transform.SetParent(root.transform, false);
-                    starObject.SetActive(false);
+                    // The whole cluster hangs off one node, so it centres on the player once rather than
+                    // each member doing it separately and drifting apart.
+                    var cluster = new GameObject(StarNodeName);
+                    cluster.transform.SetParent(root.transform, false);
+                    cluster.SetActive(false);
 
-                    var component = starObject.AddComponent<NebulaStar>();
-                    component.Configure(palette.StarColour, palette.StarIntensity, palette.StarSize);
+                    // Authored at the same offset CentreOnViewer will apply in play. CentreOnViewer is a
+                    // coroutine with no ExecuteAlways, so it does nothing in the editor - without this the
+                    // seven test scenes show the star sitting inside the camera while the built app shows it
+                    // correctly ahead, and the scenes are the thing anyone actually looks at.
+                    cluster.transform.localPosition = Vector3.forward * (spec.RadiusMetres * 0.55f);
 
-                    // The star belongs at the middle of the gas, and the gas centres itself on the player.
-                    if (starObject.GetComponent<CentreOnViewer>() == null)
+                    // Ahead of the player, not on top of them.
+                    //
+                    // The gas centres on the viewer so they are standing inside it, and for a while the star
+                    // did too - which put a flare drawn metres wide about a metre from the eye. Measured, that
+                    // was Orion at a mean of 159/255 with 91% of the frame near-white: not a nebula, a lamp
+                    // pressed against the face. The player is standing off-centre in the cloud, which is both
+                    // the sane composition and the only one where a central star is a thing you look AT.
+                    var centring = cluster.GetComponent<CentreOnViewer>();
+                    if (centring == null)
                     {
-                        starObject.AddComponent<CentreOnViewer>();
+                        centring = cluster.AddComponent<CentreOnViewer>();
                     }
 
-                    component.enabled = true;
-                    starObject.SetActive(true);
-                    star = $"central star at {palette.StarIntensity:0} intensity";
+                    var centringProperties = new SerializedObject(centring);
+                    centringProperties.FindProperty("aheadMetres").floatValue = spec.RadiusMetres * 0.55f;
+                    centringProperties.ApplyModifiedPropertiesWithoutUndo();
+
+                    // Seeded by the object's own id, so a rebuild puts the same stars in the same places.
+                    var random = new System.Random(spec.Id.GetHashCode());
+
+                    for (var i = 0; i < palette.StarCount; i++)
+                    {
+                        var member = new GameObject($"{StarNodeName}_{i}");
+                        member.transform.SetParent(cluster.transform, false);
+
+                        if (palette.StarCount > 1)
+                        {
+                            // A cluster is small compared with the nebula it has cleared - the Trapezium is
+                            // well under a light year across inside an object tens of light years wide - so
+                            // these sit in a tight knot near the middle rather than scattered through the gas.
+                            var spread = spec.RadiusMetres * 0.10f;
+                            member.transform.localPosition = new Vector3(
+                                (float)(random.NextDouble() * 2.0 - 1.0),
+                                (float)(random.NextDouble() * 2.0 - 1.0) * 0.6f,
+                                (float)(random.NextDouble() * 2.0 - 1.0)) * spread;
+                        }
+
+                        var component = member.AddComponent<NebulaStar>();
+
+                        // Members of a real cluster are not identical. Varying brightness and size a little
+                        // is what stops eight stars reading as one object drawn eight times.
+                        var vary = 0.65f + (float)random.NextDouble() * 0.7f;
+                        component.Configure(palette.StarColour,
+                            palette.StarIntensity * (palette.StarCount > 1 ? vary : 1f),
+                            palette.StarSize * (palette.StarCount > 1 ? vary : 1f));
+                        component.enabled = true;
+                    }
+
+                    cluster.SetActive(true);
+                    star = palette.StarCount == 1
+                        ? $"one star at {palette.StarIntensity:0} intensity"
+                        : $"{palette.StarCount} stars at ~{palette.StarIntensity:0} intensity";
                 }
 
                 // Assembled. Now it may wake up, and OnEnable will find its volume where it expects it.
