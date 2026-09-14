@@ -30,6 +30,8 @@ line in their row:
 | **CS-185** | The talking pose is one smoothed RMS, so the being breathes but never articulates. The owner's ask is that it reads as *actually talking*, by wavelength |
 | **CS-186** | `speakFull = 0.20` is a guess; `BeingSpeaker.Loudness` has never had its range measured, so the visual is coded against nothing |
 | **CS-187** | The terminal track cannot prove the being's *feel* without a headset, and there is no Quest Link right now. App Check needs a being walk driven through the real pointer layer |
+| **CS-188** | App Check's Galaxies assertions contradict the shipped design, and two things are dead: `HasPlaceChoice` is read only by the harness, and `DockPopup.Open`'s places branch is unreachable |
+| **CS-189** | App Check never places the content, so every on-screen step skips. Measured: all nine Milky Way markers above the top of the screen, four behind the camera |
 
 Still open from before and unaffected by any of this: **CS-167** (every moon registers one collider with two
 interactables, so one component is inert on all eleven), **CS-150** (P4 debt), **CS-166** (docs cutover, blocked
@@ -310,8 +312,10 @@ into the one scene, built here because Phase 2 is the first thing that needs the
 | CS-165 | TERM | Rework P7c: the APK — **Cosmic Simulation → Quest 3 → Configure Project** (keeps `Assets/build_scripts` as the one build tool; bundle id `com.jdmaxilius.cosmicsimulationxr`), **Build APK**, install, and the device pass: intro by hand, every place, stereo on both eyes for Points, Orbit, Planet and Sun, OVR Metrics under budget | CS-164, CS-149 | todo |
 | CS-166 | CC | Rework P7d: docs cutover — `docs/TECHNICAL_OVERVIEW.md` rewritten for the Cosmic tree (38 runtime scripts, 11 builders, 17 shaders, one scene), `CLAUDE.md`'s key-code section repointed, `tools/mcp/smoke_legacy.cs` removed, `RULES.md`'s table settled at the landed counts | CS-164 | todo |
 | CS-167 | CC | Every moon registers one `SphereCollider` with two interactables — `body_moon`, `body_phobos`, `body_deimos`, `body_ganymede`, `body_callisto`, `body_io`, `body_europa`, `body_titan`, `body_mimas`, `body_iapetus`, `body_enceladus` each warn twice on load ("a collider used by an Interactable object is already registered"); XRI keeps the first association and drops the second, so one of the two components is inert on every moon | CS-144 | todo |
-| CS-168 | TERM | Run **Cosmic Simulation → Verify → App Check** against `main_scene` and fix what it finds: every dock tile clicked, the room mode each asks for, a Milky Way destination tag clicked, Escape, restore, console clean | — | doing (written and compiled; not yet run) |
-| CS-169 | CC | The outside galaxies (M51, M101, M33) become places chosen from the Galaxies tile's panel, beside Andromeda, instead of pins on the Milky Way map | — | done (verified by App Check) |
+| CS-168 | TERM | Run **Cosmic Simulation → Verify → App Check** against `main_scene` and fix what it finds: every dock tile clicked, the room mode each asks for, a Milky Way destination tag clicked, Escape, restore, console clean | — | done (14 Sep, first real run: `[APP] DONE 20/22`, console clean; both failures are harness defects, see CS-188 and CS-189) |
+| CS-188 | CC | App Check's two Galaxies assertions contradict the shipped design and always fail. `DockController.Choose` deliberately opens the Galaxies *place* rather than a list — its own comment says so, and commit `8343a1b3` is titled "The Galaxies tile opens the sphere again, not a list" — but the harness branches on `HasLayoutChoice \|\| HasPlaceChoice` and then demands a `DockPopup`. Two dead things fall out of the same reading: **`ExperienceModule.HasPlaceChoice` is referenced only by the harness**, by nothing in the runtime, and **`DockPopup.Open`'s places branch is unreachable** — it early-returns unless `HasLayoutChoice`, so `showingLayouts` is always true and `_places` is always empty. Fix the harness to assert what ships, and either delete the dead branch or implement the list (owner's call — the code says the list was deliberately dropped). **Also correct CS-169's row**, which claims "done (verified by App Check)": App Check had never been run when that was written | CS-168 | todo |
+| CS-189 | CC | App Check never places the content, so nothing that has to be *on screen* can ever be tested — which is why the destination-tag step and the galaxy-option step both SKIP rather than run. The walk ends the intro by asking for a place (step 1), which skips the floor placement, so the content root stays at the origin — and so does the camera. Measured on the 14 Sep run: `Camera.main` at `(0,0,0)`, FOV 30, aspect 1.86; all nine Milky Way markers alive with live colliders, **every one of them at viewport y between 1.28 and 1.57** (above the top of the screen) and four of them behind the camera at `z<=0`. The walk must complete the intro placement, or place the content root itself, before any step that looks for something on screen; until it does, `FindTag` returning null is the harness's own doing and not a fact about the app. Worth checking at the same time whether a 30-degree desktop FOV can frame the Milky Way map at all, the way CS-171 had to do for the Solar Row | CS-168 | todo |
+| CS-169 | CC | The outside galaxies (M51, M101, M33) become places chosen from the Galaxies tile's panel, beside Andromeda, instead of pins on the Milky Way map | — | done (**not** "verified by App Check" — App Check had never been run when that was written; its first run was 14 Sep and its galaxies assertions fail against the shipped design. See CS-188) |
 | CS-170 | CC | The Milky Way map goes back to the original Galaxy Explorer markers (angled leader line, name label, picture card) for all nine destinations, with Helix and Orion added as markers; **hover opens the card, click travels** through `ExperienceDirector.Switch`; the `LabelButton` tag set, its builder and `DestinationTags` are removed (owner: "I prefer these ones") | CS-168 | done (by reading; needs the editor pass in its note) |
 | CS-171 | CC | Desktop: the whole Solar Row / Relative Size arrangement stays inside the camera's view — the director centres the target layout's box on the content root and pushes it back until every body fits (was cut off at Pluto and at the Sun) | CS-040 | done (by reading; needs the editor pass) |
 | CS-172 | CC | Desktop view controls move the camera rig: left drag looks / orbits about the open content, right drag pans, wheel flies forward and back, Home returns — the old pivot they drove has nothing under it, which is why "the inputs stop working" after travelling into a nebula | — | done (by reading; needs the editor pass) |
@@ -360,6 +364,30 @@ not to that one.
 
 *Blocked from here.* CS-178 and CS-179 need `OPENAI_API_KEY` in `tools/being-relay/.env` for speech in and out.
 `ANTHROPIC_API_KEY` is set. Without the OpenAI key the round trip can only be proved as far as text.
+
+**CS-168's first real run, 14 Sep 2026 — `[APP] DONE 20/22`, and both failures are the harness's.** App Check had
+been written, compiled and marked `doing` since 13 Sep without ever being run; CS-169's row claimed it had been
+"verified by App Check", which was not true of anything. It runs now, in play mode on `main_scene`, and the app
+comes out of it well: every dock tile opens its place, each place asks for the right room mode and gets it
+(`cosmic_web` and `sagittarius_a` FullBlack, `milky_way`, `andromeda` and `solar_system` Dimmed), a place asked for
+during the intro ends the intro and opens, `solar_system_planets` offers its two layouts instead of opening,
+Escape closes a destination, `R` restores without leaving the place, and the console stayed clean for the whole walk.
+
+*The two failures are both the Galaxies tile, and the harness is the one that is wrong.* `DockController.Choose`
+opens the Galaxies place rather than a list, deliberately and with a comment saying so, and the commit that did it
+is titled "The Galaxies tile opens the sphere again, not a list". The harness still branches on
+`HasLayoutChoice || HasPlaceChoice` and then demands a pop-up. Reading that through turned up two dead things
+neither track had noticed: `ExperienceModule.HasPlaceChoice` is referenced by the harness and by nothing else in the
+project, and `DockPopup.Open`'s places branch cannot execute, because the method early-returns unless
+`HasLayoutChoice` and so `showingLayouts` is always true. CS-188.
+
+*The two skips are the same defect, and it is a big one for this harness.* Neither the destination tag nor the
+galaxy option could be clicked because neither was on screen — and nothing is, because the walk ends the intro by
+asking for a place, which skips the floor placement and leaves the content root at the origin, where the camera
+also is. Measured: `Camera.main` at `(0,0,0)`, FOV 30, aspect 1.86, and all nine Milky Way markers alive with live
+colliders but sitting at viewport y between 1.28 and 1.57 — above the top of the screen — with four of them behind
+the camera. So `FindTag` returning null says nothing about the app; it is the harness standing in the middle of its
+own map. Until CS-189 is fixed, every on-screen assertion in this walk is untested rather than passing.
 
 **Terminal run, 13 Sep 2026 — CS-128, CS-129, CS-130, CS-156, CS-160 and CS-161 all pass, and four real
 defects had to be fixed to get there.** The editor was opened on this project for the first time in this
