@@ -957,7 +957,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2108324106934139499, guid: 56f0ab0a3b611ad4bb06db268ef63fb0, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2110033839855455799, guid: 56f0ab0a3b611ad4bb06db268ef63fb0, type: 3}
       propertyPath: m_RootOrder
@@ -1203,6 +1203,10 @@ PrefabInstance:
       propertyPath: m_Mesh
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 4708384791180121120, guid: 56f0ab0a3b611ad4bb06db268ef63fb0, type: 3}
+      propertyPath: destination
+      value: 
+      objectReference: {fileID: 11400000, guid: 1092667ba6ba60e41a6e726b34916def, type: 2}
     m_RemovedComponents:
     - {fileID: 3461754989641767730, guid: 56f0ab0a3b611ad4bb06db268ef63fb0, type: 3}
     - {fileID: 2134947502838219869, guid: 56f0ab0a3b611ad4bb06db268ef63fb0, type: 3}

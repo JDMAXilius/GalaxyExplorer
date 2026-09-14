@@ -131,7 +131,7 @@ Each experience is specified by: what you see, placement and scale, objects, int
 
 ### 4.3 Milky Way (destination map)
 
-**What you see.** A particle spiral galaxy 1.4 m across, tilted 55°, floating at 1.2 m height, 1.2 m in front, with a warm yellow core and blue-white arms. Six **destination tags** float above points on the disc with thin leader lines: **Helix Nebula**, **Crab Nebula**, **Solar System**, **Galactic Center – Sagittarius A\***, **Homunculus Nebula**, **Orion Nebula**. Three further tags from the original app — **Pillars of Creation**, **NGC 1501**, **Trumpler 14** — ship on as well (decision of 11 Sep 2026); nine destinations in total.
+**What you see.** A particle spiral galaxy 1.4 m across, tilted 55°, floating at 1.2 m height, 1.2 m in front, with a warm yellow core and blue-white arms. Nine **markers** stand on the disc in the original Galaxy Explorer form (decision of 14 Sep 2026, CS-170): an angled leader line from the point up to a name label — **SOLAR SYSTEM / OUR NEIGHBORHOOD**, **GALACTIC CENTER / BLACK HOLE**, **CRAB NEBULA**, **PILLARS OF CREATION**, **HOMUNCULUS NEBULA**, **NGC 1501**, **TRUMPLER 14**, **HELIX NEBULA**, **ORION NEBULA**. **Hovering** a nebula's label (hand ray or mouse) opens its picture card at the marker's base — photograph, distance from the Sun, size, age — and leaving closes it; **clicking** the label travels to that place. The two-line `LabelButton` tags of 11–12 Sep are kept in the prefab but switched off.
 
 **Interactions.**
 - Hover a tag (hand ray or near finger): it grows 15 % and turns cyan; a focus tick plays.
