@@ -16,6 +16,33 @@ Status values: `todo` · `doing` · `done` · `blocked-term` · `blocked-cc` · 
 
 ---
 
+## Hand-off to the cloud session (14 Sep 2026, from the terminal)
+
+The owner has split the tracks: the terminal session owns the live editor and files **[CC]** rows; the cloud
+session owns the framework and C# and files **[TERM]** rows. See CLAUDE.md, "Who does which half".
+
+**Pick these up, in this order.** They are all new out of today's editor run and all have a written acceptance
+line in their row:
+
+| Row | Why it is waiting on code |
+|---|---|
+| **CS-184** | The press feedback is a size pop only. `intro_placement_object_shader` already declares `_TouchColor`, `_ActiveColor` and a `proximity_size` term that brightens points under a finger — the colour flash the owner asked for is in the shader and unused |
+| **CS-185** | The talking pose is one smoothed RMS, so the being breathes but never articulates. The owner's ask is that it reads as *actually talking*, by wavelength |
+| **CS-186** | `speakFull = 0.20` is a guess; `BeingSpeaker.Loudness` has never had its range measured, so the visual is coded against nothing |
+| **CS-187** | The terminal track cannot prove the being's *feel* without a headset, and there is no Quest Link right now. App Check needs a being walk driven through the real pointer layer |
+
+Still open from before and unaffected by any of this: **CS-167** (every moon registers one collider with two
+interactables, so one component is inert on all eleven), **CS-150** (P4 debt), **CS-166** (docs cutover, blocked
+behind CS-164).
+
+**What the terminal track just landed, so nothing is rebuilt twice.** `cosmic_being_prefab`, its two materials and
+its settings asset are built and committed. `dock_prefab`, `desktop_dock_prefab`, `dock_popup_prefab`,
+`info_panel_prefab` and `utility_window_prefab` were rebuilt for the being button — content changed, so the fileID
+churn CS-150 warns about is expected here. `BeingAnchor`, `BeingVisual`, `CosmicBeing` and `BeingBuilder` were
+edited for CS-182 before the split was agreed; everything after this note is the cloud session's.
+
+---
+
 ## Session note (12 Sep 2026, reconciliation pass)
 
 This was a cloud session with no Unity editor and no MCP relay open. Its job was the
@@ -297,6 +324,7 @@ into the one scene, built here because Phase 2 is the first thing that needs the
 | CS-177 | TERM | Being, no network: press the dock button, the sphere fades in beside the player and follows the head; tap it, it pops and brightens (Listening) and goes idle after the 4 s timeout with nothing said; press the button again, it fades out; the desktop HUD button and `C` do the same. **Also CS-182's acceptance:** the point cloud reads like the intro object, it turns to face the head, a drag carries it and does *not* start listening, a brush turns it and it springs back, and a tap pops it | CS-176, CS-182 | doing (14 Sep play-mode run: the state machine passes, the feel is unproven — see the note below) |
 | CS-184 | CC | The press answer should use the placement shader's own `_TouchColor` (and the `_Active` term it already feeds), not size alone. The owner asked for "a happy feedback, something visual" on the click; today `BeingVisual.Press()` only pops the scale, and `intro_placement_object_shader` already carries `_TouchColor`, `_ActiveColor` and a `proximity_size` term that brightens points under a finger — the colour flash is there and unused | CS-182 | todo |
 | CS-185 | CC | The talking pose from the voice's shape, not one number. `BeingSpeaker.Loudness` is a single smoothed RMS, so the sphere breathes but never articulates; the owner's ask is that it "shows it's actually talking depending of the wavelength". Wants a small spectrum (a few bands off `GetSpectrumData`, or an envelope per band) driving per-point displacement in the placement shader, so syllables read as shape and not just size | CS-182 | todo |
+| CS-187 | CC | Give **Cosmic Simulation → Verify → App Check** a being walk, so the terminal track can prove the being without a headset: summon through `DockController.ToggleBeing`, assert it stands at the settings' offset and its facing error stays near zero as the host camera is turned, drive a *real* press-drag-release through the pointer layer (not `OnPointerDown` by hand) and assert it moved and did **not** enter Listening, drive a real brush and assert `TouchNudge.Angle` rises then returns to zero, tap and assert Listening then Idle after the timeout, dismiss and assert the instance is gone *after* the 0.6 s fade. The synthetic-input flush (`InputSystem.Update()` after `QueueStateEvent`) is required or nothing reaches the game — see the 13 Sep note | CS-182 | todo |
 | CS-186 | CC | `BeingVisual.speakFull = 0.20` is a guess at what counts as full voice, and `BeingSpeaker.Loudness`'s real range has never been measured — it is the mean of `Mathf.Abs` over a 24 kHz PCM16 buffer, lerped at 20/s, so its practical ceiling is unknown. Measure it against real TTS audio and set the constant, or normalise `Loudness` to 0..1 at source so the visual has a contract to code against | CS-182 | todo |
 | CS-178 | TERM | Relay round trip: `cp .env.example .env`, keys in, `npm run dev`; set `RelayUrl`; summon the being and hear the greeting; from the editor, `CosmicBeing.Instance.Ask("What am I looking at?")` and hear the answer with the sphere pulsing; tap mid-answer to interrupt; verify the OpenAI model and voice names in `.env.example` against OpenAI's docs (unverifiable from the cloud session) | CS-176 | todo |
 | CS-179 | TERM | Voice in: on desktop, tap and speak, silence ends the recording, the transcript logs on the relay and the answer plays; on the Quest, the microphone permission prompt appears once, then the same; confirm `ClientWebSocket` connects on the Quest build (IL2CPP) — if it does not, swap `BeingLink` to the NativeWebSocket package, same surface | CS-178 | todo |
