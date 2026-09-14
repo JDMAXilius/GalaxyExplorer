@@ -406,6 +406,52 @@ namespace CosmicSimulation
             return found;
         }
 
+        /// <summary>
+        /// The box an arrangement will fill once every body it names has arrived, in the rig's own space. Read
+        /// off the preset's slots rather than the anchors, so it is right at the start of a move as well as at the
+        /// end, and before <see cref="Start"/> has applied anything. Each body counts as its full span (rings
+        /// included) at the diameter the arrangement gives it. False when the preset names none of the bodies.
+        /// </summary>
+        public bool TryGetLayoutBounds(LayoutPreset layout, out Bounds local)
+        {
+            local = default;
+
+            if (layout == null || layout.Slots == null || bodies == null)
+            {
+                return false;
+            }
+
+            var found = false;
+            foreach (var slot in layout.Slots)
+            {
+                var body = Find(slot.BodyId);
+                if (body == null || !body.IsUsable)
+                {
+                    continue;
+                }
+
+                var width = Mathf.Max(0.0001f, slot.Scale) * Mathf.Max(1f, body.SpanRatio);
+                var box = new Bounds(slot.LocalPosition, Vector3.one * width);
+                if (found)
+                {
+                    local.Encapsulate(box);
+                }
+                else
+                {
+                    local = box;
+                    found = true;
+                }
+            }
+
+            return found;
+        }
+
+        /// <summary>
+        /// The arrangement this rig is in, or the one its <see cref="Start"/> is about to apply when nothing has
+        /// been applied yet. What a framing pass should measure, at any moment in the rig's life.
+        /// </summary>
+        public LayoutPreset PendingOrCurrent => Current != null ? Current : (startLayout != null ? startLayout : FirstLayout());
+
         private LayoutPreset FirstLayout()
         {
             return module != null && module.Layouts != null && module.Layouts.Length > 0 ? module.Layouts[0] : null;

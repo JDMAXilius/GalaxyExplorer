@@ -57,6 +57,14 @@ namespace CosmicSimulation
                  "is pushed out to clear wide content rather than landing inside it.")]
         private float panelClearanceMetres = 0.15f;
 
+        [Header("Desktop framing")]
+        [SerializeField]
+        [Tooltip("On a monitor the camera never turns, so an arrangement (Solar Row, Relative Size) is pushed " +
+                 "back until every body is inside the view. This is how much of the view's half-width and " +
+                 "half-height the arrangement may fill: 1 touches the edges, 0.85 leaves a border.")]
+        [Range(0.5f, 1f)]
+        private float desktopFitMargin = 0.85f;
+
         /// <summary>How long the intro's own last-stage load is given to appear before we stop waiting for one.</summary>
         private const float IntroSettleGrace = 0.5f;
 
@@ -82,6 +90,8 @@ namespace CosmicSimulation
 
         private bool _warnedNoPanelPrefab;
         private bool _ownsContentRoot;
+        private LayoutRig _framedRig;
+        private Coroutine _fitting;
         private Coroutine _switching;
         private bool _switchFinished;
         private IntroFlow _introFlow;
@@ -563,6 +573,8 @@ namespace CosmicSimulation
 
                     // Before home is captured, because framing is part of where this content belongs.
                     FrameContent(_prefabContent.transform);
+                    FitArrangement(_prefabContent.transform, 0f);
+                    BindRigFraming(_prefabContent);
 
                     // Where Restore will bring this back to, taken here because here is the only moment the
                     // pose is the intended one: before the grow-in below, which drives localScale from zero
@@ -769,6 +781,166 @@ namespace CosmicSimulation
             content.position += offset;
         }
 
+        // ---------- keeping a whole arrangement inside the desktop view (CS-171)
+
+        /// <summary>
+        /// Moves arrangeable content so that every body of its arrangement is inside the camera's view.
+        ///
+        /// <para>Only on a monitor. In a headset the player turns to look along the row, which is what GDD 4.1
+        /// designed the arc for; a desktop camera never turns and never moves — DesktopMouseInput's orbit, pan
+        /// and zoom drive the old touch pivot, which nothing hangs off any more — so the content has to come to
+        /// the view instead. Solar Row stands 1.9 m wide two metres from a 30-degree camera, whose view is 1.9 m
+        /// wide there, and the ends of the arc bow nearer still; Relative Size is five metres wide with a 3 m
+        /// Sun. Both were cut off at Pluto, and the Sun, on every monitor.</para>
+        ///
+        /// <para>The arrangement's box is read off the preset's slots (<see cref="LayoutRig.TryGetLayoutBounds"/>),
+        /// so it is the box the bodies are heading for, not the one they are leaving. The box is centred on the
+        /// content root, as <see cref="FrameContent"/> does for the first arrangement, and then pushed straight
+        /// away from the camera until its eight corners fit inside <see cref="desktopFitMargin"/> of the view.
+        /// Never pulled nearer: an arrangement that already fits stays where the room put it.</para>
+        ///
+        /// <para>A later arrangement (the dock's pop-up, R) moves the content over the preset's own transition
+        /// time with the same ease-out the bodies use, and re-captures the content's home afterwards, so a
+        /// Restore brings the content back to where it fits rather than to where the first arrangement was.</para>
+        /// </summary>
+        private void FitArrangement(Transform content, float seconds)
+        {
+            if (content == null || UnityEngine.XR.XRSettings.isDeviceActive)
+            {
+                return;
+            }
+
+            var rig = content.GetComponentInChildren<LayoutRig>(true);
+            if (rig == null || !rig.TryGetLayoutBounds(rig.PendingOrCurrent, out var local))
+            {
+                return;
+            }
+
+            var camera = Camera.main;
+            if (camera == null)
+            {
+                return;
+            }
+
+            // The box's corners in the world, however the room has turned the content. Bodies are being
+            // measured, so it does not matter that the rig may still be mid-move: slots are the destination.
+            var corners = new Vector3[8];
+            var min = local.min;
+            var max = local.max;
+            for (var i = 0; i < 8; i++)
+            {
+                corners[i] = rig.transform.TransformPoint(new Vector3(
+                    (i & 1) == 0 ? min.x : max.x,
+                    (i & 2) == 0 ? min.y : max.y,
+                    (i & 4) == 0 ? min.z : max.z));
+            }
+
+            // First the middle of the arrangement onto the content root, where the first arrangement was put.
+            var offset = ContentRoot().position - rig.transform.TransformPoint(local.center);
+
+            // Then away from the camera until every corner is inside the view. tan(half-angle) turns a
+            // distance along the view axis into the half-width visible there.
+            var view = camera.transform;
+            var tanVertical = Mathf.Tan(camera.fieldOfView * 0.5f * Mathf.Deg2Rad) * desktopFitMargin;
+            var tanHorizontal = tanVertical * Mathf.Max(0.1f, camera.aspect);
+            var push = 0f;
+            foreach (var corner in corners)
+            {
+                var p = view.InverseTransformPoint(corner + offset);
+                push = Mathf.Max(push, Mathf.Abs(p.x) / tanHorizontal - p.z, Mathf.Abs(p.y) / tanVertical - p.z);
+            }
+
+            offset += view.forward * push;
+
+            if (offset.sqrMagnitude < CentringDeadzone * CentringDeadzone)
+            {
+                return;
+            }
+
+            var target = content.parent != null
+                ? content.parent.InverseTransformPoint(content.position + offset)
+                : content.position + offset;
+
+            if (_fitting != null)
+            {
+                StopCoroutine(_fitting);
+                _fitting = null;
+            }
+
+            if (seconds <= 0f)
+            {
+                content.localPosition = target;
+                return;
+            }
+
+            _fitting = StartCoroutine(FitRoutine(content, target, seconds));
+        }
+
+        private IEnumerator FitRoutine(Transform content, Vector3 target, float seconds)
+        {
+            var from = content.localPosition;
+            var elapsed = 0f;
+            while (elapsed < seconds && content != null)
+            {
+                elapsed += Time.deltaTime;
+                var t = Mathf.Clamp01(elapsed / seconds);
+                var eased = 1f - Mathf.Pow(1f - t, 3f);
+                content.localPosition = Vector3.LerpUnclamped(from, target, eased);
+                yield return null;
+            }
+
+            _fitting = null;
+            if (content == null)
+            {
+                yield break;
+            }
+
+            content.localPosition = target;
+
+            // Home is where Restore brings the content back to. It was captured for the first arrangement;
+            // this one fits somewhere else, and a Restore that pulled it back to the old spot would cut the
+            // row off again.
+            FreePlacementAnchor.CaptureHome(content);
+        }
+
+        private void BindRigFraming(GameObject content)
+        {
+            UnbindRigFraming();
+
+            _framedRig = content != null ? content.GetComponentInChildren<LayoutRig>(true) : null;
+            if (_framedRig != null)
+            {
+                _framedRig.LayoutApplied += OnLayoutApplied;
+            }
+        }
+
+        private void UnbindRigFraming()
+        {
+            if (_framedRig != null)
+            {
+                _framedRig.LayoutApplied -= OnLayoutApplied;
+                _framedRig = null;
+            }
+
+            if (_fitting != null)
+            {
+                StopCoroutine(_fitting);
+                _fitting = null;
+            }
+        }
+
+        private void OnLayoutApplied(LayoutPreset layout)
+        {
+            // The rig's own Start applies its first arrangement while the switch is still growing the content
+            // in; that one was fitted at spawn, and GrowIn is driving the content's position for its duration.
+            if (IsSwitching || _prefabContent == null || layout == null)
+            {
+                return;
+            }
+
+            FitArrangement(_prefabContent.transform, Mathf.Max(0f, layout.TransitionSeconds));
+        }
+
         /// <summary>
         /// Where the content's middle is, in world space, and roughly how far it reaches. False when there is
         /// nothing honest to measure. Only the centre is relied on to be exact; the size is a clearance.
@@ -857,6 +1029,8 @@ namespace CosmicSimulation
 
         private void DestroyPrefabContent()
         {
+            UnbindRigFraming();
+
             if (_prefabContent != null)
             {
                 Destroy(_prefabContent);

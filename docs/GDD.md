@@ -109,7 +109,7 @@ Each experience is specified by: what you see, placement and scale, objects, int
 
 **Audio.** Grab, hold, release sounds; narration clip for the body starts on pull (replayable); the body's ambience loops quietly while it is out; the Sun's touch rumble.
 
-**Desktop.** Bodies in the row are clickable: click pulls in front of the camera; drag moves; right-drag spins; wheel scales; `1–9, 0` pull Sun→Pluto; `M` the Moon; `R` restores the layout; the HUD dock offers the two layouts.
+**Desktop.** Bodies in the row are clickable: click pulls in front of the camera; drag moves; right-drag spins; wheel scales; `1–9, 0` pull Sun→Pluto; `M` the Moon; `R` restores the layout; the HUD dock offers the two layouts. The whole arrangement is kept inside the view: the desktop camera never turns, so on a layout change the director pushes the content back until every body, Sun to Pluto, is on screen (CS-171).
 
 **Acceptance.** Ten bodies present and named; both layouts measurable to the numbers above; every body and listed moon can be pulled, moved, scaled, released and stays; panels show correct copy and numbers; layout restore returns everything.
 
