@@ -25,7 +25,10 @@ namespace GalaxyExplorer
         // downscaled target and the shadow layer's final copy overwrites the camera target.
         private static readonly List<DrawStars> Instances = new List<DrawStars>();
         private Vector4 _ellipse = new Vector4(float.NaN, 0f, 0f, 0f);
-        private Vector4 _fuzzy;
+        // Vector2, matching SpiralGalaxy.FuzzySideScale. As a Vector4 the `!=` against it below is ambiguous -
+        // both types convert to the other - and the file does not compile. SetVector widens it to (x, y, 0, 0),
+        // which is what the Vector4 held anyway.
+        private Vector2 _fuzzy;
 
         private ComputeBuffer starsData;
         private bool isFirst;
