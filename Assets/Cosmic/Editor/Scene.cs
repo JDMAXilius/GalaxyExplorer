@@ -164,6 +164,7 @@ namespace Cosmic.Editor
                 Wire(main, "about", about != null ? about.GetComponent<About>() : null);
                 Wire(main, "hotkeys", hotkeys);
                 Wire(main, "audio", audio);
+                Wire(main, "beingPrefab", Optional<GameObject>(BeingPrefab.PrefabPath)?.GetComponent<Being>());
                 var places = new List<Object>();
                 foreach (var id in DockOrder)
                 {

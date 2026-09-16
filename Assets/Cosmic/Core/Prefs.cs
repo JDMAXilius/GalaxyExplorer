@@ -12,6 +12,7 @@ namespace Cosmic
         const string TextScaleKey = "Cosmic.TextScale";
         const string HintsSeenKey = "Cosmic.HintsSeen";
         const string LabelsVisibleKey = "Cosmic.LabelsVisible";
+        const string MicrophoneKey = "Cosmic.Microphone";
 
         public static event Action Changed;
 
@@ -21,6 +22,7 @@ namespace Cosmic
         static float textScale = 1f;
         static bool hintsSeen;
         static bool labelsVisible = true;
+        static string microphone = string.Empty;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
@@ -92,6 +94,21 @@ namespace Cosmic
             }
         }
 
+        public static string Microphone
+        {
+            get { Load(); return microphone; }
+            set
+            {
+                Load();
+                value ??= string.Empty;
+                if (microphone == value) return;
+                microphone = value;
+                PlayerPrefs.SetString(MicrophoneKey, value);
+                PlayerPrefs.Save();
+                Changed?.Invoke();
+            }
+        }
+
         public static float NextTextScale()
         {
             Load();
@@ -110,6 +127,7 @@ namespace Cosmic
             textScale = Snap(PlayerPrefs.GetFloat(TextScaleKey, 1f));
             hintsSeen = PlayerPrefs.GetInt(HintsSeenKey, 0) == 1;
             labelsVisible = PlayerPrefs.GetInt(LabelsVisibleKey, 1) == 1;
+            microphone = PlayerPrefs.GetString(MicrophoneKey, string.Empty);
         }
 
         static void Write(string key, bool value)

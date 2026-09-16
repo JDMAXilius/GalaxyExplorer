@@ -16,9 +16,11 @@ namespace Cosmic
         [SerializeField] Audio audio;
         [SerializeField] Place start;
         [SerializeField] Place[] places;
+        [SerializeField] Being beingPrefab;
         [SerializeField] bool playIntro = true;
 
         public Director Director => director;
+        public Being Being { get; private set; }
         public bool Booted { get; private set; }
 
         void Awake()
@@ -40,6 +42,7 @@ namespace Cosmic
                 dock.HelpRequested += OnHelp;
                 dock.AboutRequested += OnAbout;
                 dock.Scaled += OnScaled;
+                dock.BeingRequested += ToggleBeing;
             }
             if (hotkeys != null)
             {
@@ -61,6 +64,7 @@ namespace Cosmic
                 dock.HelpRequested -= OnHelp;
                 dock.AboutRequested -= OnAbout;
                 dock.Scaled -= OnScaled;
+                dock.BeingRequested -= ToggleBeing;
             }
             if (hotkeys != null)
             {
@@ -70,6 +74,20 @@ namespace Cosmic
                 hotkeys.Close -= OnClose;
             }
             if (director != null) director.Changed -= OnChanged;
+        }
+
+        public Place Find(string id)
+        {
+            if (places != null)
+                foreach (var place in places)
+                    if (place != null && place.id == id) return place;
+            return null;
+        }
+
+        public void ToggleBeing()
+        {
+            if (Being != null) { Being.Dismiss(); Being = null; }
+            else if (beingPrefab != null) Being = Instantiate(beingPrefab);
         }
 
         void Start()

@@ -1215,6 +1215,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "Being",
+                    "type": "Button",
+                    "id": "ca617ba4-241b-409e-9787-a6be4805dd25",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -1534,6 +1543,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "TextScale",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "26dc715f-38eb-45ed-9fae-e94bba48f19e",
+                    "path": "<Keyboard>/c",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Being",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

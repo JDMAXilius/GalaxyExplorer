@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 706c5a34460b2be44ade974974e623fc, type: 3}
+  m_Name: being_settings
+  m_EditorClassIdentifier: Cosmic.Runtime::Cosmic.BeingSettings
+  relayUrl: ws://127.0.0.1:8787/being
+  greeting: {fileID: 8300000, guid: f99c1284ec2d83a4d8cd71704619150c, type: 3}
+  greetOnTap: 1
+  speechRms: 0.015
+  silenceSeconds: 1.2
+  listenTimeoutSeconds: 4
+  maxUtteranceSeconds: 20
+  distanceMetres: 1.4
+  sideMetres: 0.32
+  dropMetres: -0.1
+  followSeconds: 0.4
+  tapSeconds: 0.4
+  tapMoveMetres: 0.03

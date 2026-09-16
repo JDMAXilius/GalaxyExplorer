@@ -22,6 +22,7 @@ namespace Cosmic
         [SerializeField] Button recenter;
         [SerializeField] Button help;
         [SerializeField] Button settings;
+        [SerializeField] Button being;
         [SerializeField] Grabbable bar;
         [SerializeField] float aheadMetres = 0.75f;
         [SerializeField] float heightFraction = 0.55f;
@@ -37,7 +38,7 @@ namespace Cosmic
 
         public event Action<Place> Picked;
         public event Action<Place, Layout> LayoutPicked;
-        public event Action Recentered, HelpRequested, AboutRequested;
+        public event Action Recentered, HelpRequested, AboutRequested, BeingRequested;
         public event Action<float> Scaled;
 
         static readonly List<XRHandSubsystem> Subsystems = new List<XRHandSubsystem>();
@@ -92,8 +93,9 @@ namespace Cosmic
             if (recenter != null) recenter.onClick.AddListener(Recenter);
             if (help != null) help.onClick.AddListener(OnHelp);
             if (settings != null) settings.onClick.AddListener(OnSettings);
+            if (being != null) being.onClick.AddListener(OnBeing);
             if (bar != null) bar.Released += OnBarReleased;
-            if (hotkeys != null) { hotkeys.Dock += ToggleVisible; hotkeys.Utility += OnSettings; hotkeys.Help += OnHelp; hotkeys.Recenter += Recenter; hotkeys.Place += OnHotkeyPlace; hotkeys.Close += CloseAll; }
+            if (hotkeys != null) { hotkeys.Dock += ToggleVisible; hotkeys.Utility += OnSettings; hotkeys.Help += OnHelp; hotkeys.Recenter += Recenter; hotkeys.Place += OnHotkeyPlace; hotkeys.Close += CloseAll; hotkeys.Being += OnBeing; }
             Room.Changed += OnRoom;
             OnRoom(Room.Effective);
         }
@@ -107,8 +109,9 @@ namespace Cosmic
             if (recenter != null) recenter.onClick.RemoveListener(Recenter);
             if (help != null) help.onClick.RemoveListener(OnHelp);
             if (settings != null) settings.onClick.RemoveListener(OnSettings);
+            if (being != null) being.onClick.RemoveListener(OnBeing);
             if (bar != null) bar.Released -= OnBarReleased;
-            if (hotkeys != null) { hotkeys.Dock -= ToggleVisible; hotkeys.Utility -= OnSettings; hotkeys.Help -= OnHelp; hotkeys.Recenter -= Recenter; hotkeys.Place -= OnHotkeyPlace; hotkeys.Close -= CloseAll; }
+            if (hotkeys != null) { hotkeys.Dock -= ToggleVisible; hotkeys.Utility -= OnSettings; hotkeys.Help -= OnHelp; hotkeys.Recenter -= Recenter; hotkeys.Place -= OnHotkeyPlace; hotkeys.Close -= CloseAll; hotkeys.Being -= OnBeing; }
             Room.Changed -= OnRoom;
         }
 
@@ -185,6 +188,8 @@ namespace Cosmic
         void OnHelp() { if (Grabbable.Bus != null) Grabbable.Bus.Play(Sfx.Select, transform); HelpRequested?.Invoke(); }
 
         void OnSettings() { if (utility != null) utility.Toggle(); }
+
+        void OnBeing() { if (Grabbable.Bus != null) Grabbable.Bus.Play(Sfx.Select, transform); BeingRequested?.Invoke(); }
 
         void OnScaled(float value) => Scaled?.Invoke(value);
 

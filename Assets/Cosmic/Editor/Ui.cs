@@ -75,11 +75,12 @@ namespace Cosmic.Editor
             Content.Set(grab, "limits", Grabbable.Limits.Fixed);
             Content.Set(grab, "keepUpright", true);
             Content.SetArray(grab, "m_Colliders", new List<Object> { box });
-            var settings = Square("settings", under, 384f, Sprite("icon_mute"), theme);
+            var settings = Square("settings", under, 384f, Sprite("icon_settings"), theme);
             var recenter = Square("recenter", under, 396f, Sprite("icon_recenter"), theme);
             var help = Square("help", under, 408f, Sprite("icon_help"), theme);
+            var being = Square("being", under, 372f, Sprite("icon_being"), theme);
             var popup = MakePopup(rect, theme);
-            var utility = MakeUtility(rect, theme);
+            var utility = UtilityUi.Make(rect, theme, 482f, 36f);
             Content.SetArray(dock, "tiles", tiles);
             Content.Set(dock, "theme", theme);
             Content.Set(dock, "popup", popup);
@@ -89,6 +90,7 @@ namespace Cosmic.Editor
             Content.Set(dock, "recenter", recenter);
             Content.Set(dock, "help", help);
             Content.Set(dock, "settings", settings);
+            Content.Set(dock, "being", being);
             Content.Set(dock, "bar", grab);
             group.alpha = 1f;
         }
@@ -141,80 +143,6 @@ namespace Cosmic.Editor
             Content.SetArray(popup, "fills", fills);
             Content.SetArray(popup, "labels", labels);
             return popup;
-        }
-
-        static Utility MakeUtility(RectTransform parent, Theme theme)
-        {
-            var rect = Rect("utility", parent, 120f, 102f);
-            rect.anchoredPosition = new Vector2(482f, -15f);
-            rect.gameObject.AddComponent<CanvasGroup>();
-            Image("plate", rect, 120f, 102f, Sprite("ui_rounded_r32"), theme.tagDark).raycastTarget = false;
-            var utility = rect.gameObject.AddComponent<Utility>();
-            const float top = 51f;
-            Text("title", rect, 110f, 8f, "Settings", 5f, theme.ink, TextAlignmentOptions.Left).rectTransform.anchoredPosition = new Vector2(0f, top - 9f);
-            var close = Button("close", rect, 9f, 9f, Sprite("ui_rounded_r8"), theme.tagDark);
-            ((RectTransform)close.transform).anchoredPosition = new Vector2(50.5f, top - 9.5f);
-            Image("glyph", (RectTransform)close.transform, 5f, 5f, Sprite("icon_close"), theme.ink);
-            Text("scale_label", rect, 110f, 6f, "Scale", 4f, theme.inkSecondary, TextAlignmentOptions.Left).rectTransform.anchoredPosition = new Vector2(0f, top - 19f);
-            var scaleValue = Text("scale_value", rect, 110f, 6f, "x1.0", 4f, theme.ink, TextAlignmentOptions.Right);
-            scaleValue.rectTransform.anchoredPosition = new Vector2(0f, top - 19f);
-            var slider = MakeSlider(rect, theme, top - 26f);
-            var mute = MakeToggle("mute", rect, theme, "Mute", top - 39f);
-            var voice = MakeToggle("voice", rect, theme, "Narration only", top - 51f);
-            var text = Button("text_size", rect, 110f, 10f, Sprite("ui_rounded_r8"), new Color(1f, 1f, 1f, 0.12f));
-            ((RectTransform)text.transform).anchoredPosition = new Vector2(0f, top - 66f);
-            Text("label", (RectTransform)text.transform, 100f, 8f, "Text size", 4f, theme.ink, TextAlignmentOptions.Left);
-            var textValue = Text("value", (RectTransform)text.transform, 100f, 8f, "x1.00", 4f, theme.accentCyan, TextAlignmentOptions.Right);
-            var about = Button("about", rect, 110f, 10f, Sprite("ui_rounded_r8"), new Color(1f, 1f, 1f, 0.12f));
-            ((RectTransform)about.transform).anchoredPosition = new Vector2(0f, top - 80f);
-            Text("label", (RectTransform)about.transform, 100f, 8f, "About", 4f, theme.ink, TextAlignmentOptions.Left);
-            Content.Set(utility, "theme", theme);
-            Content.Set(utility, "scale", slider);
-            Content.Set(utility, "scaleValue", scaleValue);
-            Content.Set(utility, "mute", mute);
-            Content.Set(utility, "voice", voice);
-            Content.Set(utility, "textSize", text);
-            Content.Set(utility, "textSizeValue", textValue);
-            Content.Set(utility, "about", about);
-            Content.Set(utility, "close", close);
-            return utility;
-        }
-
-        static Slider MakeSlider(RectTransform parent, Theme theme, float y)
-        {
-            var rect = Rect("scale", parent, 110f, 12f);
-            rect.anchoredPosition = new Vector2(0f, y);
-            var track = Image("track", rect, 110f, 2f, Sprite("ui_rounded_r8"), new Color(1f, 1f, 1f, 0.25f));
-            var fillArea = Rect("fill_area", rect, 110f, 2f);
-            var fill = Image("fill", fillArea, 110f, 2f, Sprite("ui_rounded_r8"), theme.accentCyan);
-            fill.rectTransform.anchorMin = new Vector2(0f, 0.5f);
-            fill.rectTransform.anchorMax = new Vector2(0f, 0.5f);
-            fill.rectTransform.pivot = new Vector2(0f, 0.5f);
-            var handleArea = Rect("handle_area", rect, 102f, 12f);
-            var handle = Image("handle", handleArea, 8f, 8f, Sprite("ui_rounded_r8"), theme.ink);
-            var slider = rect.gameObject.AddComponent<Slider>();
-            slider.fillRect = fill.rectTransform;
-            slider.handleRect = handle.rectTransform;
-            slider.targetGraphic = handle;
-            slider.direction = UnityEngine.UI.Slider.Direction.LeftToRight;
-            track.raycastTarget = true;
-            return slider;
-        }
-
-        static Toggle MakeToggle(string name, RectTransform parent, Theme theme, string label, float y)
-        {
-            var rect = Rect(name, parent, 110f, 10f);
-            rect.anchoredPosition = new Vector2(0f, y);
-            var box = Image("box", rect, 8f, 8f, Sprite("ui_rounded_r8"), new Color(1f, 1f, 1f, 0.25f));
-            box.rectTransform.anchoredPosition = new Vector2(-51f, 0f);
-            var check = Image("check", rect, 8f, 8f, Sprite("ui_rounded_r8"), theme.accentCyan);
-            check.rectTransform.anchoredPosition = new Vector2(-51f, 0f);
-            Text("label", rect, 90f, 8f, label, 4f, theme.ink, TextAlignmentOptions.Left).rectTransform.anchoredPosition = new Vector2(8f, 0f);
-            var toggle = rect.gameObject.AddComponent<Toggle>();
-            toggle.targetGraphic = box;
-            toggle.graphic = check;
-            toggle.isOn = false;
-            return toggle;
         }
 
         static Button Square(string name, RectTransform parent, float x, Sprite glyph, Theme theme)

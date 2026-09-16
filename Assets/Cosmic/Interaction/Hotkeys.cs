@@ -9,7 +9,7 @@ namespace Cosmic
     {
         [SerializeField] InputActionAsset actions;
 
-        public event Action Restore, Recenter, Dock, Utility, Help, Close;
+        public event Action Restore, Recenter, Dock, Utility, Help, Close, Being;
         public event Action<int> Place, Body;
         public event Action Moon;
 
@@ -28,6 +28,7 @@ namespace Cosmic
             Bind("Help", () => Help?.Invoke());
             Bind("Close", () => Close?.Invoke());
             Bind("Moon", () => Moon?.Invoke());
+            Bind("Being", () => Being?.Invoke());
             Bind("Passthrough", Room.TogglePassthrough);
             Bind("Labels", () => Prefs.LabelsVisible = !Prefs.LabelsVisible);
             Bind("Mute", () => Prefs.Muted = !Prefs.Muted);
