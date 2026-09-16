@@ -1,4 +1,5 @@
 using System.Collections;
+using GalaxyExplorer;
 using GalaxyExplorer.XR;
 using UnityEngine;
 
@@ -20,11 +21,17 @@ namespace CosmicSimulation.Being
 
         public Phase Current { get; private set; }
 
+        /// <summary>True from a tap until the stored greeting has finished; <see cref="Current"/> is Idle until it starts.</summary>
+        public bool Greeting => _greeting;
+
         private BeingLink _link;
         private BeingMic _mic;
         private BeingSpeaker _speaker;
         private ManipulationHandler _hands;
         private bool _answerDone;
+
+        /// <summary>True from a tap until the stored greeting has finished playing. Nothing goes to the relay.</summary>
+        private bool _greeting;
 
         private bool _tapArmed;
         private GEPointer _tapPointer;
@@ -123,11 +130,25 @@ namespace CosmicSimulation.Being
 
         public void Tap()
         {
+            // The click is the tap's own sound. The press already answered visually; this confirms it was a tap
+            // and not the start of a carry.
+            AudioService.Instance?.PlayClip(AudioId.Select);
+
             switch (Current)
             {
+                case Phase.Idle when _greeting:
+                    // Tapped again in the frame or two before the greeting starts playing: cancel it.
+                    Interrupt();
+                    break;
+                case Phase.Idle when settings.GreetOnTap && settings.GreetingClip != null:
+                    _greeting = _speaker.Say(settings.GreetingClip);
+                    if (!_greeting)
+                    {
+                        Listen();
+                    }
+                    break;
                 case Phase.Idle:
-                    Set(Phase.Listening);
-                    _mic.Record(settings, OnUtterance);
+                    Listen();
                     break;
                 case Phase.Listening:
                     _mic.Stop();
@@ -136,6 +157,14 @@ namespace CosmicSimulation.Being
                     Interrupt();
                     break;
             }
+        }
+
+        // Listens with or without the relay. With none, what was heard is only logged - which is how the
+        // microphone is checked before the relay has keys.
+        private void Listen()
+        {
+            Set(Phase.Listening);
+            _mic.Record(settings, OnUtterance);
         }
 
         public void Ask(string text)
@@ -151,6 +180,9 @@ namespace CosmicSimulation.Being
         {
             if (pcm == null || !_link.IsOpen)
             {
+                Debug.Log(pcm == null
+                    ? $"CosmicBeing: heard nothing on '{_mic.DeviceLabel}'."
+                    : $"CosmicBeing: heard {pcm.Length / 2 / (float)BeingMic.Rate:0.0} s of speech on '{_mic.DeviceLabel}'; the relay is not connected, so nothing was sent.");
                 Set(Phase.Idle);
                 return;
             }
@@ -180,6 +212,13 @@ namespace CosmicSimulation.Being
 
         private void OnDrained()
         {
+            if (_greeting)
+            {
+                _greeting = false;
+                Listen();
+                return;
+            }
+
             if (_answerDone)
             {
                 Set(Phase.Idle);
@@ -192,10 +231,11 @@ namespace CosmicSimulation.Being
             {
                 _mic.Stop();
             }
-            if (Current == Phase.Thinking || Current == Phase.Speaking)
+            if (!_greeting && (Current == Phase.Thinking || Current == Phase.Speaking))
             {
                 _link.Send(new BeingMessage { type = "interrupt" });
             }
+            _greeting = false;
             _speaker.Clear();
             Set(Phase.Idle);
         }

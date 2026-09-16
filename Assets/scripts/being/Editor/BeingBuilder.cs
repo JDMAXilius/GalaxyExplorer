@@ -13,6 +13,7 @@ namespace CosmicSimulation.Being.EditorTools
         private const string RimPath = "Assets/materials/being/being_rim.mat";
         private const string IntroHologram = "Assets/materials/intro_materials/intro_placement_object_material.mat";
         private const string IntroRim = "Assets/materials/intro_materials/intro_placement_object_rim_material.mat";
+        private const string GreetingPath = "Assets/audio/being/being_greeting_audio_clip.wav";
         private const string VoiceMixer = "Assets/audio/audio_mixers/vo_audio_mixer.mixer";
         private const string DockPath = "Assets/prefabs/ui/dock_prefab.prefab";
         private const string DesktopDockPath = "Assets/prefabs/ui/desktop_dock_prefab.prefab";
@@ -40,6 +41,12 @@ namespace CosmicSimulation.Being.EditorTools
             Folder("Assets/data/being");
 
             var settings = Asset<BeingSettings>(SettingsPath);
+            var greeting = AssetDatabase.LoadAssetAtPath<AudioClip>(GreetingPath);
+            if (greeting != null && settings.GreetingClip != greeting)
+            {
+                settings.GreetingClip = greeting;
+                EditorUtility.SetDirty(settings);
+            }
 
             // The intro's own point size, not a smaller one. _Size is a point sprite's size in object space, so
             // its ratio to the sphere is the same at any scale: 0.07 on a 14 cm being looks exactly like 0.07 on

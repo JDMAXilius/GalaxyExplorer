@@ -106,3 +106,13 @@ cosmic_web, galaxies, helix, orion, whirlpool, pinwheel, triangulum, hd110067.
 so they play correctly, but a careful listener on good headphones may hear the difference between an
 inherited clip and a generated one. Regenerating at a higher sample rate, if the model supports it, is
 the fix.
+
+## Being greeting placeholder (16 Sep 2026)
+
+| | |
+|---|---|
+| File | `Assets/audio/being/being_greeting_audio_clip.wav` |
+| Tool | Windows Speech (`System.Speech`), voice Microsoft Zira Desktop - the same placeholder pattern as `moon_vo.ps1` |
+| Format | 44.1 kHz 16-bit mono WAV |
+| Line | "Hello, and welcome. What can I help you with?" |
+| Licence | Generated locally; placeholder for testing the being without the relay. Replace with the final being voice before release. |

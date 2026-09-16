@@ -29,8 +29,12 @@ namespace CosmicSimulation.Being
         [Tooltip("How far the sphere pops on a press, as a fraction of its size.")]
         [SerializeField] private float pressSwell = 0.14f;
 
-        [Tooltip("How quickly the press pop fades away. Higher is snappier.")]
-        [SerializeField] private float pressDecay = 4.5f;
+        [Tooltip("Seconds from a press to the sphere being back at its default size. The pop peaks early and " +
+                 "eases home over the rest, so every tap reads as one click rather than a lingering swell.")]
+        [SerializeField] private float pressSeconds = 1f;
+
+        [Tooltip("Fraction of pressSeconds spent growing. The rest is the ease back.")]
+        [SerializeField] private float pressRise = 0.12f;
 
         [Header("The talking pose")]
         [Tooltip("How far the sphere swells at full voice, as a fraction of its size. Loudness is 0..1.")]
@@ -61,6 +65,7 @@ namespace CosmicSimulation.Being
         private readonly Vector4[] _lights = new Vector4[12];
         private Vector3 _touch;
         private float _press;
+        private float _pressAge = float.MaxValue;
         private float _voice;
 
         private void Awake()
@@ -86,7 +91,7 @@ namespace CosmicSimulation.Being
         /// <summary>A press landed at a point. Pops the sphere and flashes the touch colour there.</summary>
         public void Press(Vector3 at)
         {
-            _press = 1f;
+            _pressAge = 0f;
             _touch = at;
         }
 
@@ -107,8 +112,10 @@ namespace CosmicSimulation.Being
                 CosmicBeing.Phase.Speaking => speakSpeed,
                 _ => idleSpeed,
             };
-            var active = phase == CosmicBeing.Phase.Listening || phase == CosmicBeing.Phase.Speaking ? 1f : 0f;
-            _holo.SetFloat(Active, Mathf.Max(active, _press));
+            // The shader's _Active term grows the sphere and its points as well as tinting them, so it follows the
+            // press alone. Held on for a whole listen or answer it kept the being swollen for seconds after a tap;
+            // the phase already shows in the rim and the speed.
+            _holo.SetFloat(Active, _press);
             _holo.SetVector(BandsId, phase == CosmicBeing.Phase.Speaking ? bands : Vector4.zero);
             _holo.SetFloat(Articulate, articulate);
             _block.SetFloat(Multiplier, level * _reveal);
@@ -144,11 +151,22 @@ namespace CosmicSimulation.Being
             var wanted = phase == CosmicBeing.Phase.Speaking ? Mathf.Clamp01(loudness) : 0f;
             _voice = Mathf.Lerp(_voice, wanted, Mathf.Clamp01(speakFollow * dt));
 
-            // Eased to nothing, then snapped, so the pop actually ends instead of asymptoting.
-            _press = Mathf.Lerp(_press, 0f, Mathf.Clamp01(pressDecay * dt));
-            if (_press < 0.002f)
+            // A fixed-length click: up quickly, then eased back to exactly zero at pressSeconds. Timed rather
+            // than decayed, so it always ends at the default size and never asymptotes.
+            _pressAge += dt;
+            var rise = Mathf.Max(1e-3f, pressSeconds * pressRise);
+            if (_pressAge >= pressSeconds)
             {
                 _press = 0f;
+            }
+            else if (_pressAge < rise)
+            {
+                _press = Mathf.SmoothStep(0f, 1f, _pressAge / rise);
+            }
+            else
+            {
+                var back = (_pressAge - rise) / Mathf.Max(1e-3f, pressSeconds - rise);
+                _press = 1f - Mathf.SmoothStep(0f, 1f, back);
             }
 
             // Size only - the grow-in stays the shader's _Blend, the way the intro object does it.

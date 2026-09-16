@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: cosmic_being_settings
   m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.Being.BeingSettings
   RelayUrl: ws://127.0.0.1:8787/being
+  GreetingClip: {fileID: 8300000, guid: f99c1284ec2d83a4d8cd71704619150c, type: 3}
+  GreetOnTap: 1
   SpeechThreshold: 0.015
   SilenceSeconds: 1.2
   ListenTimeoutSeconds: 4

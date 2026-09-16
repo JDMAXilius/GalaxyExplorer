@@ -552,10 +552,12 @@ MonoBehaviour:
   rimListening: 0.55
   revealSeconds: 0.6
   pressSwell: 0.14
-  pressDecay: 4.5
+  pressSeconds: 1
+  pressRise: 0.12
   speakSwell: 0.3
-  speakFull: 0.2
+  articulate: 0.35
   speakFollow: 18
+  touchDrift: 0.3
 --- !u!114 &5667959857995942880
 MonoBehaviour:
   m_ObjectHideFlags: 0

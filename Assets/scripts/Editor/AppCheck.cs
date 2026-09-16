@@ -278,8 +278,19 @@ namespace GalaxyExplorer.Editor
                 if (!beingUsable) return;
                 _holding = null;
                 Press(ScreenOf(being.transform), false);
-                if (Microphone.devices.Length == 0) Skip("the being's listening: this machine has no microphone, so a tap goes straight back to idle");
+                if (being.Greeting || being.Current == CosmicBeing.Phase.Speaking)
+                    Check(true, $"a tap speaks the greeting ({being.Current})");
+                else if (Microphone.devices.Length == 0) Skip("the being's listening: this machine has no microphone, so a tap goes straight back to idle");
                 else Check(being.Current == CosmicBeing.Phase.Listening, $"a tap sets it listening ({being.Current})");
+            });
+            // With a greeting configured the being speaks it first and only then listens (CS-194).
+            var greeting = beingSettings != null && beingSettings.GreetOnTap && beingSettings.GreetingClip != null
+                ? beingSettings.GreetingClip.length : 0f;
+            Add(greeting > 0f ? greeting + 0.6f : 0f, () =>
+            {
+                if (!beingUsable || greeting <= 0f) return;
+                if (Microphone.devices.Length == 0) Skip("the being's listening after the greeting: this machine has no microphone");
+                else Check(being.Current == CosmicBeing.Phase.Listening, $"after the greeting it listens ({being.Current})");
             });
             Add(beingSettings != null ? beingSettings.ListenTimeoutSeconds + 0.8f : 1f, () =>
             {

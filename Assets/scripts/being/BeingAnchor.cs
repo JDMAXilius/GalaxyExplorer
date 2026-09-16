@@ -8,6 +8,11 @@ namespace CosmicSimulation.Being
     /// them - close enough to talk to, far enough off-axis not to stand in front of whatever they came to look
     /// at - and turns to face the head, so it is always looking at you however you turn.
     ///
+    /// <para><b>It follows the head both ways.</b> The station is kept in the head's yaw <i>and</i> pitch, so
+    /// looking up or down carries the being with the view the same way turning does, instead of leaving it at
+    /// eye level to drop out of frame (owner's direction, 16 Sep). Roll is ignored: tilting the head does not
+    /// swing it round the view.</para>
+    ///
     /// <para><b>It yields to a hand.</b> The being can be grabbed and carried like a planet. While a
     /// <c>ManipulationHandler</c> has it, this writes no position at all. On release it does not snap back:
     /// it re-reads its own offset from wherever it was put down and keeps station from there, so moving it
@@ -26,8 +31,11 @@ namespace CosmicSimulation.Being
         private bool _placed;
         private bool _wasHeld;
 
-        /// <summary>The station it keeps, in the head's own yaw frame: right, up, forward.</summary>
+        /// <summary>The station it keeps, in the head's yaw-and-pitch frame: right, up, forward.</summary>
         private Vector3 _offset;
+
+        /// <summary>The last usable level right-hand direction, for when the head looks straight up or down.</summary>
+        private Vector3 _right = Vector3.right;
 
         private void Awake()
         {
@@ -47,9 +55,18 @@ namespace CosmicSimulation.Being
             }
 
             var head = _camera.transform;
-            var forward = Vector3.ProjectOnPlane(head.forward, Vector3.up);
-            forward = forward.sqrMagnitude > 1e-4f ? forward.normalized : Vector3.forward;
-            var right = Vector3.Cross(Vector3.up, forward);
+
+            // Right stays level, which is what keeps roll out; forward is the full gaze, pitch included; up
+            // completes the frame. Looking straight up or down has no level right of its own, so the last one
+            // is kept rather than letting the frame spin.
+            var level = Vector3.ProjectOnPlane(head.forward, Vector3.up);
+            if (level.sqrMagnitude > 1e-4f)
+            {
+                _right = Vector3.Cross(Vector3.up, level.normalized);
+            }
+            var right = _right;
+            var forward = Vector3.ProjectOnPlane(head.forward, right).normalized;
+            var up = Vector3.Cross(forward, right);
 
             var held = _hands != null && _hands.IsManipulating;
             if (held)
@@ -65,13 +82,13 @@ namespace CosmicSimulation.Being
                     var local = transform.position - head.position;
                     _offset = new Vector3(
                         Vector3.Dot(local, right),
-                        Vector3.Dot(local, Vector3.up),
+                        Vector3.Dot(local, up),
                         Vector3.Dot(local, forward));
                     _wasHeld = false;
                     _velocity = Vector3.zero;
                 }
 
-                var target = head.position + right * _offset.x + Vector3.up * _offset.y + forward * _offset.z;
+                var target = head.position + right * _offset.x + up * _offset.y + forward * _offset.z;
                 transform.position = _placed
                     ? Vector3.SmoothDamp(transform.position, target, ref _velocity, settings.FollowSeconds)
                     : target;
@@ -83,19 +100,21 @@ namespace CosmicSimulation.Being
 
         /// <summary>
         /// Turns the being's front to the head. Turned rather than snapped, so a quick look away sweeps it round
-        /// instead of teleporting it, and only about the world's up - a being that pitched to follow a player
-        /// looking at their feet would read as falling over.
+        /// instead of teleporting it. It pitches too now that it rides above and below eye level with the view;
+        /// the world's up stays its up, so it never rolls.
         /// </summary>
         private void Face(Transform head)
         {
             var toHead = head.position - transform.position;
-            toHead.y = 0f;
             if (toHead.sqrMagnitude < 1e-6f)
             {
                 return;
             }
 
-            var wanted = Quaternion.LookRotation(toHead.normalized, Vector3.up);
+            toHead.Normalize();
+            var wanted = Mathf.Abs(Vector3.Dot(toHead, Vector3.up)) > 0.999f
+                ? Quaternion.LookRotation(toHead, head.up)
+                : Quaternion.LookRotation(toHead, Vector3.up);
             transform.rotation = Quaternion.RotateTowards(
                 transform.rotation, wanted, turnDegreesPerSecond * Time.deltaTime);
         }

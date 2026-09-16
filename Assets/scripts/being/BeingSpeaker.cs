@@ -49,6 +49,61 @@ namespace CosmicSimulation.Being
             }
         }
 
+        /// <summary>
+        /// Speaks a clip that ships with the app - the greeting - through the same ring the relay's voice uses,
+        /// so the talking pose, the narration mute and <see cref="Drained"/> all behave exactly as for an answer.
+        /// The clip is mixed to mono and resampled to the voice rate. It must be decompressed on load, which is
+        /// Unity's default for a short WAV; anything else cannot be read back and is skipped with a warning.
+        /// </summary>
+        public bool Say(AudioClip clip)
+        {
+            if (clip == null)
+            {
+                return false;
+            }
+
+            // A clip that is not preloaded is still unloaded in a player build, and GetData on it fails.
+            if (clip.loadState != AudioDataLoadState.Loaded)
+            {
+                clip.LoadAudioData();
+            }
+
+            var frames = clip.samples;
+            var channels = clip.channels;
+            var source = new float[frames * channels];
+            if (frames == 0 || !clip.GetData(source, 0))
+            {
+                Debug.LogWarning($"BeingSpeaker: could not read {clip.name}; set its Load Type to Decompress On Load.");
+                return false;
+            }
+
+            var step = (double)clip.frequency / Rate;
+            var count = (int)(frames / step);
+            lock (_lock)
+            {
+                for (var i = 0; i < count; i++)
+                {
+                    var at = i * step;
+                    var f = (int)at;
+                    var next = Mathf.Min(f + 1, frames - 1);
+                    var t = (float)(at - f);
+                    var a = 0f;
+                    var b = 0f;
+                    for (var c = 0; c < channels; c++)
+                    {
+                        a += source[f * channels + c];
+                        b += source[next * channels + c];
+                    }
+                    _ring[_write] = Mathf.Lerp(a, b, t) / channels;
+                    _write = (_write + 1) % Capacity;
+                    _buffered = Mathf.Min(_buffered + 1, Capacity);
+                }
+            }
+
+            Finish();
+            return true;
+        }
+
         public void Finish() => _finishing = true;
 
         public void Clear()
