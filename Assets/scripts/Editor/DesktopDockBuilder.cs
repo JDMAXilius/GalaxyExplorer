@@ -52,7 +52,7 @@ namespace CosmicSimulation.EditorTools
         private const float Pad = 16f;
         private const float ButtonSize = 28f;
         private const float ButtonGap = 8f;
-        private const int ButtonCount = 5;      // passthrough, recenter, mute, help, being
+        private const int ButtonCount = 5;      // passthrough, recenter, settings, help, being
         private const float ButtonsWidth = ButtonCount * ButtonSize + (ButtonCount - 1) * ButtonGap; // 136
 
         private const float PlateWidth = Pad + RowWidth + Pad + ButtonsWidth + Pad; // 936
@@ -330,8 +330,10 @@ namespace CosmicSimulation.EditorTools
             ((RectTransform)recenter.transform).anchoredPosition =
                 new Vector2(firstButtonX + (ButtonSize + ButtonGap), 0f);
 
-            var mute = IconButton("mute_button", plate.rectTransform, Load("icon_mute"), out var muteGlyph);
-            ((RectTransform)mute.transform).anchoredPosition =
+            // Mute lives in the settings window now (owner's direction, 16 Sep); this button opens it, and M
+            // still mutes from the keyboard.
+            var settings = IconButton("settings_button", plate.rectTransform, Load("icon_settings"), out _);
+            ((RectTransform)settings.transform).anchoredPosition =
                 new Vector2(firstButtonX + 2f * (ButtonSize + ButtonGap), 0f);
 
             var help = IconButton("help_button", plate.rectTransform, Load("icon_help"), out _);
@@ -354,11 +356,10 @@ namespace CosmicSimulation.EditorTools
             so.FindProperty("popup").objectReferenceValue = popup;
             so.FindProperty("passthroughButton").objectReferenceValue = passthrough;
             so.FindProperty("recenterButton").objectReferenceValue = recenter;
-            so.FindProperty("muteButton").objectReferenceValue = mute;
+            so.FindProperty("settingsButton").objectReferenceValue = settings;
             so.FindProperty("helpButton").objectReferenceValue = help;
             so.FindProperty("beingButton").objectReferenceValue = being;
             so.FindProperty("passthroughGlyph").objectReferenceValue = passthroughGlyph;
-            so.FindProperty("muteGlyph").objectReferenceValue = muteGlyph;
             so.FindProperty("tilePitch").floatValue = TilePitch;
             so.ApplyModifiedPropertiesWithoutUndo();
 

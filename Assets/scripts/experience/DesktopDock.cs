@@ -15,7 +15,7 @@ namespace CosmicSimulation
     /// The world dock parks 0.7 m in front of the player and 0.7 m below eye level, which is exactly right in a
     /// headset — you glance down and it is there. On a desktop the camera looks level and never tilts, so that
     /// same dock sits below the frustum and the player cannot reach it at all. This is the mirror GDD 8.5 asks
-    /// for: the seven tiles, the passthrough preview, and Recenter / Mute / Help, on a screen-space overlay.
+    /// for: the seven tiles, the passthrough preview, and Recenter / Settings / Help, on a screen-space overlay.
     ///
     /// It is a *mirror*, not a second dock. Everything that could drift — which modules get a tile and in what
     /// order, what a tile does when it is chosen, which one is underlined — comes from the shared helpers on
@@ -46,7 +46,10 @@ namespace CosmicSimulation
         [Header("Controls")]
         [SerializeField] private Button passthroughButton;
         [SerializeField] private Button recenterButton;
-        [SerializeField] private Button muteButton;
+        [SerializeField]
+        [Tooltip("Opens the world dock's settings window, which is where mute, narration, text size, the " +
+                 "microphone and Quit live.")]
+        private Button settingsButton;
         [SerializeField] private Button helpButton;
         [SerializeField] private Button beingButton;
 
@@ -54,9 +57,6 @@ namespace CosmicSimulation
         [Tooltip("Tinted with the accent while the room is forced visible.")]
         private Image passthroughGlyph;
 
-        [SerializeField]
-        [Tooltip("Tinted with the accent while the app is muted.")]
-        private Image muteGlyph;
 
         [Header("Layout")]
         [SerializeField]
@@ -199,9 +199,9 @@ namespace CosmicSimulation
                 recenterButton.onClick.AddListener(Recenter);
             }
 
-            if (muteButton != null)
+            if (settingsButton != null)
             {
-                muteButton.onClick.AddListener(ToggleMute);
+                settingsButton.onClick.AddListener(ToggleSettings);
             }
 
             if (helpButton != null)
@@ -253,9 +253,8 @@ namespace CosmicSimulation
                 Toggle();
             }
 
-            // The room state and the mute state both change from elsewhere — P, the world dock's own
-            // passthrough button, the utility window's mute — so the two toggles read them rather than
-            // remember them.
+            // The room state changes from elsewhere — P, the world dock's own passthrough button — so the
+            // toggle reads it rather than remembering it.
             PaintControls();
         }
 
@@ -305,6 +304,9 @@ namespace CosmicSimulation
             DockController.Instance?.Recenter();
             DesktopMouseInput.Instance?.ResetView();
         }
+
+        /// <summary>Opens or closes the settings window. On a monitor it places itself in front of the camera.</summary>
+        public void ToggleSettings() => DockController.Instance?.ToggleUtility();
 
         /// <summary>Silences everything, or brings it back.</summary>
         public void ToggleMute()
@@ -358,11 +360,6 @@ namespace CosmicSimulation
                 var forced = EnvironmentController.Instance != null &&
                              EnvironmentController.Instance.PassthroughForced;
                 passthroughGlyph.color = forced ? Accent : Color.white;
-            }
-
-            if (muteGlyph != null)
-            {
-                muteGlyph.color = AudioListener.volume <= MutedVolume ? Accent : Color.white;
             }
         }
 

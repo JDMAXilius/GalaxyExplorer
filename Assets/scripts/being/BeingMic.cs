@@ -58,6 +58,28 @@ namespace CosmicSimulation.Being
             }
         }
 
+        /// <summary>
+        /// True while any being is recording. The settings window's level meter reads this and lets go of the
+        /// device, because two readers of one microphone is not something every platform allows.
+        /// </summary>
+        public static bool InUse { get; private set; }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics() => InUse = false;
+
+        /// <summary>Whether the app may open a microphone at all. Always true off Android.</summary>
+        public static bool Permitted
+        {
+            get
+            {
+#if UNITY_ANDROID && !UNITY_EDITOR
+                return UnityEngine.Android.Permission.HasUserAuthorizedPermission(UnityEngine.Android.Permission.Microphone);
+#else
+                return true;
+#endif
+            }
+        }
+
         public bool IsRecording { get; private set; }
 
         /// <summary>What the last recording used, for logs.</summary>
@@ -86,12 +108,14 @@ namespace CosmicSimulation.Being
             {
                 Microphone.End(_open);
                 IsRecording = false;
+                InUse = false;
             }
         }
 
         private IEnumerator Run(BeingSettings settings, Action<byte[]> done)
         {
             IsRecording = true;
+            InUse = true;
             _stop = false;
 #if UNITY_ANDROID && !UNITY_EDITOR
             if (!UnityEngine.Android.Permission.HasUserAuthorizedPermission(UnityEngine.Android.Permission.Microphone))
@@ -117,7 +141,7 @@ namespace CosmicSimulation.Being
 #endif
             if (!allowed || Microphone.devices.Length == 0)
             {
-                IsRecording = false;
+                IsRecording = InUse = false;
                 DeviceLabel = allowed ? "no microphone" : "permission denied";
                 done(null);
                 yield break;
@@ -125,10 +149,16 @@ namespace CosmicSimulation.Being
 
             _open = ResolvedDevice;
             DeviceLabel = _open ?? "default";
+            // The settings meter may still hold this device for the frame before it sees InUse.
+            if (Microphone.IsRecording(_open))
+            {
+                Microphone.End(_open);
+            }
+
             var clip = Microphone.Start(_open, false, Mathf.CeilToInt(settings.MaxUtteranceSeconds), Rate);
             if (clip == null)
             {
-                IsRecording = false;
+                IsRecording = InUse = false;
                 done(null);
                 yield break;
             }

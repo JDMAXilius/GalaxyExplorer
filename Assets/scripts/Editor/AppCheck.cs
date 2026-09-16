@@ -278,6 +278,12 @@ namespace GalaxyExplorer.Editor
                 if (!beingUsable) return;
                 _holding = null;
                 Press(ScreenOf(being.transform), false);
+            });
+            // The release is queued above and the pointer layer handles it on its own update, so the answer is
+            // read a step later rather than in the frame the release was sent.
+            Add(0.1f, () =>
+            {
+                if (!beingUsable) return;
                 if (being.Greeting || being.Current == CosmicBeing.Phase.Speaking)
                     Check(true, $"a tap speaks the greeting ({being.Current})");
                 else if (Microphone.devices.Length == 0) Skip("the being's listening: this machine has no microphone, so a tap goes straight back to idle");

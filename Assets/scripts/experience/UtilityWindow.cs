@@ -11,7 +11,11 @@ namespace CosmicSimulation
 {
     /// <summary>
     /// The small window of settings that opens from the dock: a scale slider for the place the player is in,
-    /// mute, narration-only mute, and the panel text size (GDD 8.2 and 11, contract row F-03).
+    /// mute, narration-only mute, the panel text size (GDD 8.2 and 11, contract row F-03), and - owner's
+    /// direction, 16 Sep - the microphone the being listens on (<see cref="MicrophoneRow"/>) and Quit.
+    ///
+    /// <para><b>Quit takes two taps.</b> The first arms it and the label says so; it disarms itself after
+    /// <c>quitArmSeconds</c>. A stray pinch passing over the window cannot close the app.</para>
     ///
     /// <para><b>Why these four are one window.</b> GDD 8.1 says "Mute lives in the utility window", and 11 asks
     /// for narration-only mute and a text-size setting in the same place. None of them had anywhere to live: the
@@ -45,6 +49,7 @@ namespace CosmicSimulation
         private static readonly Color Accent = new Color(0.424f, 0.812f, 0.867f);
         private static readonly Color Plate = new Color(0.055f, 0.078f, 0.094f, 0.8f);
         private static readonly Color OnAccent = new Color(0.055f, 0.078f, 0.094f);
+        private static readonly Color InkSecondary = new Color(0.62f, 0.722f, 0.769f);
 
         [Header("Scale")]
         [SerializeField]
@@ -86,6 +91,15 @@ namespace CosmicSimulation
         [Tooltip("The multipliers the three buttons stand for. GDD 11 asks for x1.0, x1.25 and x1.5.")]
         private float[] textSizes = { 1f, 1.25f, 1.5f };
 
+        [Header("Quit")]
+        [SerializeField] private GEButton quitButton;
+        [SerializeField] private Image quitFill;
+        [SerializeField] private TMP_Text quitLabel;
+
+        [SerializeField]
+        [Tooltip("Seconds the first tap on Quit stays armed.")]
+        private float quitArmSeconds = 3f;
+
         [Header("Close")]
         [SerializeField] private GEButton closeButton;
 
@@ -120,6 +134,9 @@ namespace CosmicSimulation
 
         private bool _wired;
         private bool _closeRequested;
+        private bool _quitRequested;
+        private float _quitArmedUntil;
+        private bool _paintedArmed;
         private bool _warnedNoContent;
 
         // What Repaint last wrote, so mute changed from anywhere else (P, the legacy HUD, the desktop dock)
@@ -195,6 +212,11 @@ namespace CosmicSimulation
                 closeButton.OnClick.AddListener(RequestClose);
             }
 
+            if (quitButton != null)
+            {
+                quitButton.OnClick.AddListener(PressQuit);
+            }
+
             for (var i = 0; i < textSizeButtons.Length; i++)
             {
                 var index = i;
@@ -264,6 +286,7 @@ namespace CosmicSimulation
             }
 
             _dragPointer = null;
+            _quitArmedUntil = 0f;
             gameObject.SetActive(false);
 
             // No target: a pooled source parented to this object would be cut off by the SetActive above.
@@ -289,8 +312,43 @@ namespace CosmicSimulation
         /// </summary>
         public void RequestClose() => _closeRequested = true;
 
+        /// <summary>True between the first tap on Quit and either the second tap or the timeout.</summary>
+        public bool QuitArmed => Time.unscaledTime < _quitArmedUntil;
+
+        /// <summary>The Quit button: arms on the first tap, quits on a second tap while armed.</summary>
+        public void PressQuit()
+        {
+            EnsureInit();
+            if (!QuitArmed)
+            {
+                _quitArmedUntil = Time.unscaledTime + quitArmSeconds;
+                Repaint();
+                return;
+            }
+
+            // Next frame, for the same reason as RequestClose: GEButton starts a coroutine after its listeners.
+            _quitArmedUntil = 0f;
+            _quitRequested = true;
+        }
+
+        private static void Quit()
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
+        }
+
         private void Update()
         {
+            if (_quitRequested)
+            {
+                _quitRequested = false;
+                Quit();
+                return;
+            }
+
             if (_closeRequested)
             {
                 _closeRequested = false;
@@ -313,7 +371,8 @@ namespace CosmicSimulation
 
             if (_paintedMuted != Muted ||
                 _paintedNarration != VOManager.NarrationEnabled ||
-                !Mathf.Approximately(_paintedTextScale, InfoPanel.TextScale))
+                !Mathf.Approximately(_paintedTextScale, InfoPanel.TextScale) ||
+                _paintedArmed != QuitArmed)
             {
                 Repaint();
             }
@@ -524,6 +583,7 @@ namespace CosmicSimulation
             _paintedMuted = Muted;
             _paintedNarration = VOManager.NarrationEnabled;
             _paintedTextScale = InfoPanel.TextScale;
+            _paintedArmed = QuitArmed;
 
             // Cyan means "this is switched off", which is how the desktop dock already tints its mute glyph.
             // The state is written in words as well, so nothing here depends on reading a colour (GDD 11).
@@ -536,6 +596,18 @@ namespace CosmicSimulation
             {
                 var label = i < textSizeLabels.Length ? textSizeLabels[i] : null;
                 Paint(textSizeFills[i], label, i == chosen, null);
+            }
+
+            // Armed reads as a warning in the one way this palette allows: the plate goes white.
+            if (quitFill != null)
+            {
+                quitFill.color = _paintedArmed ? Color.white : Plate;
+            }
+
+            if (quitLabel != null)
+            {
+                quitLabel.text = _paintedArmed ? "Tap again to quit" : "Quit Cosmic Simulation";
+                quitLabel.color = _paintedArmed ? OnAccent : InkSecondary;
             }
 
             PaintScale();

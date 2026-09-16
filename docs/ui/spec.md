@@ -107,14 +107,14 @@ Reference: board **B - Panels, tags, hints**.
 | Tag, hover | grows 15%, fills `accent/cyan`, text goes to `#0E1418` |
 | Tag, selected | `surface/plate` with a 0.5 mm `accent/cyan` outline |
 | Hint card | 110 × 60 mm | radius 8 mm, a 14 mm cyan ring, title, one line of body |
-| Utility window | 120 × 102 mm | `surface/plate`, radius 6 mm. 5 mm padding, so 110 mm of content. Title row, a 110 × 2 mm rail with an 8 mm knob (hit area 12 mm tall), two 110 × 12 mm toggles, three 34 × 14 mm text-size buttons 3 mm apart. Not exported from Figma — built from the tokens above |
+| Utility window | 120 × 130 mm | `surface/plate`, radius 6 mm. 5 mm padding, so 110 mm of content. Title row, a 110 × 2 mm rail with an 8 mm knob (hit area 12 mm tall), Sound and Narration as two 53.5 × 12 mm toggles 3 mm apart, three 34 × 14 mm text-size buttons 3 mm apart, a microphone row (12 mm ‹, 82 mm device name, 12 mm ›), a 110 × 2 mm level bar with a 3.6 mm hint under it, and a 110 × 12 mm Quit that turns white while armed. Not exported from Figma — built from the tokens above (CS-196) |
 
 A hairline leader runs from a tag to its point on the galaxy. Hint cards appear twice, once, after the intro
 places the Earth pin; each clears when the player does the thing, or after six seconds.
 
 ## 7. Exported sprites
 
-`Assets/ui/figma/` — twelve files, about 21 KB in total. Import settings are applied automatically by
+`Assets/ui/figma/` — thirteen files. `icon_settings.png` (a gear, 16 Sep) was drawn in code to match the others rather than exported, and has no SVG source yet. Import settings are applied automatically by
 `Assets/scripts/Editor/UiSpriteImporter.cs`; the editable SVG sources are in `Assets/_sources/figma_svg/`.
 
 Authored at **8 px per millimetre**, imported at **8000 pixels per unit**, so a sprite pixel is a millimetre and

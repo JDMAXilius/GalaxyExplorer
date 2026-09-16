@@ -383,14 +383,14 @@ namespace CosmicSimulation.EditorTools
         //
         // GDD 8.2 sizes this at 120 x 50 mm for a scale slider and a close box. GDD 11 then asks for mute,
         // narration-only mute and a text size in the same window, which does not fit in 50 mm of height, so it
-        // is 120 x 102 — the width the design gives it, and as much height as four controls need on the 2 mm
-        // grid with the 5 mm padding from docs/ui/spec.md §3. Every number below is a millimetre, because the
-        // canvas Root() builds is scaled 0.001.
+        // was 120 x 102. The owner then added the microphone and Quit (16 Sep, mockup CS-196), so it is
+        // 120 x 130: mute and narration share a row to make room, and the microphone row and Quit sit below the
+        // text size. Every number below is a millimetre, because the canvas Root() builds is scaled 0.001.
 
         private static GameObject BuildUtilityWindow()
         {
             const float width = 120f;
-            const float height = 102f;
+            const float height = 130f;
             const float row = 110f; // content width: the plate less 5 mm of padding on each side
             const float top = height * 0.5f;
 
@@ -440,17 +440,19 @@ namespace CosmicSimulation.EditorTools
 
             var soundLabel = Label("sound_label", rt, row, 6f, "SOUND", 4.55f, InkSecondary, TextAlignmentOptions.Left, FontWeight.SemiBold);
             soundLabel.characterSpacing = 8f;
-            soundLabel.rectTransform.anchoredPosition = new Vector2(0f, top - 39f);
+            soundLabel.rectTransform.anchoredPosition = new Vector2(0f, top - 37f);
 
-            var mute = PlateRow("mute_button", rt, row, 12f, 0f, top - 50f, "Sound on", out var muteFill, out var muteLabel);
-            var narration = PlateRow("narration_button", rt, row, 12f, 0f, top - 64f, "Narration on",
+            const float half = (row - 3f) * 0.5f;
+            var mute = PlateRow("mute_button", rt, half, 12f, -(half + 3f) * 0.5f, top - 47f, "Sound on",
+                out var muteFill, out var muteLabel);
+            var narration = PlateRow("narration_button", rt, half, 12f, (half + 3f) * 0.5f, top - 47f, "Narration on",
                 out var narrationFill, out var narrationLabel);
 
             // --- text size
 
             var textLabel = Label("text_size_label", rt, row, 6f, "TEXT SIZE", 4.55f, InkSecondary, TextAlignmentOptions.Left, FontWeight.SemiBold);
             textLabel.characterSpacing = 8f;
-            textLabel.rectTransform.anchoredPosition = new Vector2(0f, top - 77f);
+            textLabel.rectTransform.anchoredPosition = new Vector2(0f, top - 59f);
 
             var window = root.AddComponent<UtilityWindow>();
             var so = new SerializedObject(window);
@@ -464,7 +466,7 @@ namespace CosmicSimulation.EditorTools
             var captions = new[] { "1.0x", "1.25x", "1.5x" };
             for (var i = 0; i < 3; i++)
             {
-                var button = PlateRow($"text_size_{i}", rt, 34f, 14f, (i - 1) * 37f, top - 89f, captions[i],
+                var button = PlateRow($"text_size_{i}", rt, 34f, 14f, (i - 1) * 37f, top - 70f, captions[i],
                     out var sizeFill, out var sizeLabel);
 
                 sizeButtons.GetArrayElementAtIndex(i).objectReferenceValue = button;
@@ -483,6 +485,56 @@ namespace CosmicSimulation.EditorTools
             so.FindProperty("narrationFill").objectReferenceValue = narrationFill;
             so.FindProperty("narrationLabel").objectReferenceValue = narrationLabel;
             so.FindProperty("closeButton").objectReferenceValue = close;
+
+            // --- microphone
+
+            var micLabel = Label("mic_label", rt, row, 6f, "MICROPHONE", 4.55f, InkSecondary, TextAlignmentOptions.Left, FontWeight.SemiBold);
+            micLabel.characterSpacing = 8f;
+            micLabel.rectTransform.anchoredPosition = new Vector2(0f, top - 82f);
+
+            var previous = PlateRow("mic_previous", rt, 12f, 12f, -(row - 12f) * 0.5f, top - 92f, "<", out _, out _);
+            var next = PlateRow("mic_next", rt, 12f, 12f, (row - 12f) * 0.5f, top - 92f, ">", out _, out _);
+
+            const float nameWidth = row - 28f;
+            var nameField = Panel("mic_name", rt, nameWidth, 12f, Load("ui_rounded_r32"), new Color(1f, 1f, 1f, 0.04f));
+            nameField.raycastTarget = false;
+            nameField.rectTransform.anchoredPosition = new Vector2(0f, top - 92f);
+            var deviceName = Label("label", nameField.rectTransform, nameWidth - 4f, 10f, "System default", 3.8f, Ink,
+                TextAlignmentOptions.Center, FontWeight.Regular);
+            deviceName.overflowMode = TextOverflowModes.Ellipsis;
+            deviceName.rectTransform.anchoredPosition = Vector2.zero;
+
+            var levelTrack = Panel("mic_track", rt, row, 2f, Load("ui_rounded_r8"), new Color(1f, 1f, 1f, 0.12f));
+            levelTrack.raycastTarget = false;
+            levelTrack.rectTransform.anchoredPosition = new Vector2(0f, top - 101f);
+            var level = Panel("mic_level", levelTrack.rectTransform, 0f, 2f, Load("ui_rounded_r8"), Cyan);
+            level.raycastTarget = false;
+            level.rectTransform.anchorMin = new Vector2(0f, 0.5f);
+            level.rectTransform.anchorMax = new Vector2(0f, 0.5f);
+            level.rectTransform.pivot = new Vector2(0f, 0.5f);
+            level.rectTransform.anchoredPosition = Vector2.zero;
+
+            var hint = Label("mic_hint", rt, row, 5f, "Speak to check it. The bar moves when the mic hears you.", 3.6f,
+                InkSecondary, TextAlignmentOptions.Left, FontWeight.Regular);
+            hint.rectTransform.anchoredPosition = new Vector2(0f, top - 106f);
+
+            var microphone = root.AddComponent<MicrophoneRow>();
+            var mic = new SerializedObject(microphone);
+            mic.FindProperty("previousButton").objectReferenceValue = previous;
+            mic.FindProperty("nextButton").objectReferenceValue = next;
+            mic.FindProperty("deviceLabel").objectReferenceValue = deviceName;
+            mic.FindProperty("levelFill").objectReferenceValue = level.rectTransform;
+            mic.FindProperty("hintLabel").objectReferenceValue = hint;
+            mic.FindProperty("levelWidthMm").floatValue = row;
+            mic.ApplyModifiedPropertiesWithoutUndo();
+
+            // --- quit
+
+            var quit = PlateRow("quit_button", rt, row, 12f, 0f, top - 119f, "Quit Cosmic Simulation",
+                out var quitFill, out var quitLabel);
+            so.FindProperty("quitButton").objectReferenceValue = quit;
+            so.FindProperty("quitFill").objectReferenceValue = quitFill;
+            so.FindProperty("quitLabel").objectReferenceValue = quitLabel;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             return Save(root, "utility_window_prefab");

@@ -116,3 +116,11 @@ the fix.
 | Format | 44.1 kHz 16-bit mono WAV |
 | Line | "Hello, and welcome. What can I help you with?" |
 | Licence | Generated locally; placeholder for testing the being without the relay. Replace with the final being voice before release. |
+
+## Settings gear icon (16 Sep 2026)
+
+| | |
+|---|---|
+| File | `Assets/ui/figma/icon_settings.png` |
+| Tool | Drawn in code (Python, Pillow): an eight-tooth white gear on transparent, 128 × 128, supersampled 4× |
+| Licence | Original to this project. No SVG source yet; add one to `Assets/_sources/figma_svg/` when the Figma file gets the icon. |

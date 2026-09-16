@@ -251,7 +251,7 @@ Each experience is specified by: what you see, placement and scale, objects, int
 | Passthrough toggle (preview) | `P` |
 | Dock show/hide | `Tab` |
 | Help overlay | `H` / `F1` |
-| Utility window (scale, mute, narration, text size) | `U` |
+| Utility window (scale, mute, narration, text size, microphone, Quit) | `U` |
 | Close panel / overlay | `Esc` |
 | Switch experience | HUD dock click or `F2`–`F8` |
 
@@ -336,7 +336,7 @@ All UI is designed in Figma (file *Cosmic Simulation XR — UI*) and exported; s
 
 ### 8.2 Pop-ups
 - Appear 40 mm above the tile that owns them, 240 × 90 mm, two equal buttons with icon + label: **Schematic / Realistic** (Solar System), **Solar Row / Relative Size** (Planets). The active option is filled cyan.
-- A small **utility window** (120 × 102 mm) sits beside the dock and holds four controls and an × to close: a **scale slider** for the current experience, **Mute**, **narration-only mute**, and the **text size** (×1.0 / ×1.25 / ×1.5, §11). It opens from the settings button under the dock, or with `U` on the desktop, and closes with the dock. *(It was drawn at 120 × 50 mm for the slider alone; §11's three further controls do not fit in 50 mm of height, and the slider must reach every place, not only the three that offer a layout pop-up — so it is taller and belongs to the dock rather than to the pop-up.)*
+- A small **utility window** (120 × 130 mm) sits beside the dock and holds the app's settings and an × to close: a **scale slider** for the current experience, **Mute** and **narration-only mute** side by side, the **text size** (×1.0 / ×1.25 / ×1.5, §11), the **microphone** the guide listens on (‹ device ›, cycling through System default and every plugged-in device, remembered between sessions, with a live level bar so the player can see it hears them), and **Quit**, which takes two taps — the first arms it for three seconds. The desktop dock's Mute button is now a **Settings** button that opens this window; `M` still mutes. It opens from the settings button under the dock, or with `U` on the desktop, and closes with the dock. *(It was drawn at 120 × 50 mm for the slider alone; §11's three further controls do not fit in 50 mm of height, and the slider must reach every place, not only the three that offer a layout pop-up — so it is taller and belongs to the dock rather than to the pop-up.)*
 
 ### 8.3 Info panels
 - **Body variant:** width 161 mm (230 units × 0.7 mm). Title 17 mm cap-height equivalent (24 units), subtitle small caps (8 units, cyan), paragraph 9.5 units, divider, 2 × 2 stat grid: label 6.5 units caps, value 12 units, unit suffix small. Mass renders as `5.97 × 10²⁴ kg` with a true superscript.
