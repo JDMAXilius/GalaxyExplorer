@@ -28,7 +28,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.1484, y: 0.1484, z: 0.1484}
+  m_LocalScale: {x: 0.105999984, y: 0.105999984, z: 0.105999984}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 645940030206818433}
@@ -119,7 +119,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.14, y: 0.14, z: 0.14}
+  m_LocalScale: {x: 20.068954, y: 20.068954, z: 20.068954}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 645940030206818433}
@@ -131,7 +131,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3982708955888994054}
-  m_Mesh: {fileID: 10200, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 4300000, guid: 0ca03ca35bb3965499ba0f6279a15f02, type: 3}
 --- !u!23 &3143089709364881128
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -194,7 +194,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlacementObject
   _targetMesh: {fileID: 0}
-  SourceMesh: {fileID: 10200, guid: 0000000000000000e000000000000000, type: 0}
+  SourceMesh: {fileID: 4300000, guid: 0ca03ca35bb3965499ba0f6279a15f02, type: 3}
   Seed: 0
   Speed: 2
 --- !u!1 &5714508771077583895
@@ -260,7 +260,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.07
+  m_Radius: 0.1
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &6762355180692928447
 MonoBehaviour:
@@ -554,8 +554,12 @@ MonoBehaviour:
   pressSwell: 0.14
   pressSeconds: 1
   pressRise: 0.12
-  speakSwell: 0.3
-  articulate: 0.35
+  speakSwell: 0
+  articulate: 0
+  restDensity: 0.08
+  speakInward: 0.35
+  voiceInward: 0.45
+  speakFade: 4
   speakFollow: 18
   touchDrift: 0.3
 --- !u!114 &5667959857995942880

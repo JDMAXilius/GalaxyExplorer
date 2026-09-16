@@ -10,9 +10,12 @@ namespace CosmicSimulation.Being
     ///
     /// <para>Three things move: the rim's brightness, the speed the points turn at, and the sphere's size. The
     /// size is what makes it read as alive. A press pops it briefly, which is the "I felt that" the player gets
-    /// back from a tap, and while it answers the sphere swells with the voice, so a loud syllable is a bigger
-    /// sphere and silence between words lets it settle. That is the talking pose: no mouth, just a thing
-    /// breathing in time with what you hear.</para>
+    /// back from a tap.</para>
+    ///
+    /// <para><b>The talking pose</b> (owner's direction, 16 Sep) goes inward, not outward. The being is built on
+    /// the intro ball's own dense mesh but shows only a sparse share of its points at rest. While it speaks the
+    /// rest fade in and every point falls into the sphere to its own depth, harder where its belt of the voice
+    /// is loud, so the shell fills in and it reads like the intro's ball.</para>
     /// </summary>
     public class BeingVisual : MonoBehaviour
     {
@@ -37,11 +40,23 @@ namespace CosmicSimulation.Being
         [SerializeField] private float pressRise = 0.12f;
 
         [Header("The talking pose")]
-        [Tooltip("How far the sphere swells at full voice, as a fraction of its size. Loudness is 0..1.")]
-        [SerializeField] private float speakSwell = 0.30f;
+        [Tooltip("How far the sphere swells at full voice, as a fraction of its size. 0: the pose goes inward now.")]
+        [SerializeField] private float speakSwell;
 
-        [Tooltip("How far a belt of points pushes out at full band energy, as a fraction of the radius.")]
-        [SerializeField] private float articulate = 0.35f;
+        [Tooltip("How far a belt of points pushes out at full band energy, as a fraction of the radius. 0: inward now.")]
+        [SerializeField] private float articulate;
+
+        [Tooltip("Share of the mesh's points shown at rest. The intro mesh is dense; this keeps the resting look sparse.")]
+        [SerializeField] private float restDensity = 0.08f;
+
+        [Tooltip("How far points fall into the sphere while speaking, before the voice adds to it. 0..1 of the radius.")]
+        [SerializeField] private float speakInward = 0.35f;
+
+        [Tooltip("How much a loud syllable adds to the inward pull.")]
+        [SerializeField] private float voiceInward = 0.45f;
+
+        [Tooltip("How quickly the speaking pose comes and goes, per second.")]
+        [SerializeField] private float speakFade = 4f;
 
         [Tooltip("How quickly the sphere follows the voice. Too fast reads as jitter, too slow as lag.")]
         [SerializeField] private float speakFollow = 18f;
@@ -55,6 +70,8 @@ namespace CosmicSimulation.Being
         private static readonly int BandsId = Shader.PropertyToID("_Bands");
         private static readonly int Articulate = Shader.PropertyToID("_Articulate");
         private static readonly int Proximity = Shader.PropertyToID("_ProximityLightData");
+        private static readonly int Density = Shader.PropertyToID("_Density");
+        private static readonly int Inward = Shader.PropertyToID("_Inward");
 
         private MaterialPropertyBlock _block;
         private Material _holo;
@@ -67,6 +84,7 @@ namespace CosmicSimulation.Being
         private float _press;
         private float _pressAge = float.MaxValue;
         private float _voice;
+        private float _speaking;
 
         private void Awake()
         {
@@ -78,7 +96,7 @@ namespace CosmicSimulation.Being
             }
 
             // Captured once: every swell below is a multiple of the size the builder gave them, so the sphere
-            // always returns to exactly the 14 cm it is meant to be.
+            // always returns to exactly the size the builder made it (0.20 m).
             _hologramScale = hologram.transform.localScale;
             if (rim != null)
             {
@@ -118,6 +136,9 @@ namespace CosmicSimulation.Being
             _holo.SetFloat(Active, _press);
             _holo.SetVector(BandsId, phase == CosmicBeing.Phase.Speaking ? bands : Vector4.zero);
             _holo.SetFloat(Articulate, articulate);
+            _speaking = Mathf.MoveTowards(_speaking, phase == CosmicBeing.Phase.Speaking ? 1f : 0f, speakFade * Time.deltaTime);
+            _holo.SetFloat(Density, Mathf.Lerp(restDensity, 1f, _speaking));
+            _holo.SetFloat(Inward, Mathf.Clamp01(_speaking * (speakInward + voiceInward * Mathf.Clamp01(loudness))));
             _block.SetFloat(Multiplier, level * _reveal);
             rim.SetPropertyBlock(_block);
 

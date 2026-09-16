@@ -109,6 +109,8 @@ namespace CosmicSimulation
 
         private void OnDisable()
         {
+            // Asked at most once per opening of the window.
+            _asked = false;
             Release();
             Level = 0f;
             DrawLevel();
@@ -140,12 +142,7 @@ namespace CosmicSimulation
 
         private void Acquire()
         {
-            if (Microphone.devices.Length == 0)
-            {
-                Say("No microphone found.");
-                return;
-            }
-
+            // Permission first: Android may list no devices at all until it is granted.
             if (!BeingMic.Permitted)
             {
                 // Asked once per window, not every frame: the system dialog is the player's to answer.
@@ -157,6 +154,12 @@ namespace CosmicSimulation
 #endif
                 }
                 Say("Allow the microphone to check it.");
+                return;
+            }
+
+            if (Microphone.devices.Length == 0)
+            {
+                Say("No microphone found.");
                 return;
             }
 
@@ -197,7 +200,6 @@ namespace CosmicSimulation
             }
 
             _live = false;
-            _asked = false;
 
             // While the being records it owns the device, and ending it here would cut the being off.
             if (!BeingMic.InUse)

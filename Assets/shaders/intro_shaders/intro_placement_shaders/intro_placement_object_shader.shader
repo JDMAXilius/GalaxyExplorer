@@ -14,6 +14,8 @@ Shader "GalaxyExplorer/Placement"
         _Bands("Voice bands, low to high", Vector) = (0, 0, 0, 0)
         _Articulate("Articulation", Float) = 0
         _BandExtent("Half height of the source mesh", Float) = 0.5
+        _Density("Share of points shown", Range(0,1)) = 1
+        _Inward("Pull into the sphere", Range(0,1)) = 0
         _ClipFadeDistance("Camera clip fade distance units", Float) = .1
         [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("Depth Test", Float) = 4                // "LessEqual"
     }
@@ -56,6 +58,8 @@ Shader "GalaxyExplorer/Placement"
             float4 _Bands;
             float _Articulate;
             float _BandExtent;
+            float _Density;
+            float _Inward;
 
             float4 _ProximityLightData[2*6];
 
@@ -79,6 +83,7 @@ Shader "GalaxyExplorer/Placement"
                 float2 uv : TEXCOORD1;
                 float4 color : COLOR;
                 float2 proximity_size : TEXCOORD2;
+                float shown : TEXCOORD3;
 //                float3 normal : NORMAL;
 //                float3 randBlend :TEXCOORD0;
 //                float clip : TEXCOORD1;
@@ -122,6 +127,13 @@ Shader "GalaxyExplorer/Placement"
                 float belt = saturate(v.vertex.y / max(_BandExtent, 1e-4) * 0.5 + 0.5);
                 float4 pick = float4(belt < .25, belt >= .25 && belt < .5, belt >= .5 && belt < .75, belt >= .75);
                 rotated.xyz *= 1 + _Articulate * dot(pick, _Bands);
+
+                // The being's speaking pose (owner's direction, 16 Sep): points fall into the sphere rather than
+                // pushing out of it, each to its own depth, harder where its belt is loud, so the shell fills in
+                // like the intro's ball. The intro leaves _Inward at 0 and _Density at 1 and is unchanged.
+                float depth = _Inward * frac(v.randoms.w * 7.31 + v.randoms.x) * (0.55 + 0.45 * dot(pick, _Bands));
+                rotated.xyz *= 1 - saturate(depth);
+                o.shown = saturate((_Density - v.randoms.w) * 25 + 1);
                 float3 worldPos = mul(unity_ObjectToWorld, rotated);
                 
                 o.proximity_size.x = saturate(.2-min(distance(worldPos, _ProximityLightData[0]), distance(worldPos, _ProximityLightData[6])))*5;
@@ -179,7 +191,7 @@ Shader "GalaxyExplorer/Placement"
 //                float a = saturate(1-l);
 //                a *= a;
 //                return fixed4(i.color.rgb, tex2D(_MainTex, i.uv).a);
-                return fixed4(i.color.rgb, a*_Blend);
+                return fixed4(i.color.rgb, a*_Blend*i.shown);
 //                return fixed4(i.uv, 0, 1);
             }
             ENDCG

@@ -17,7 +17,7 @@ namespace CosmicSimulation
     /// <para><b>Quit takes two taps.</b> The first arms it and the label says so; it disarms itself after
     /// <c>quitArmSeconds</c>. A stray pinch passing over the window cannot close the app.</para>
     ///
-    /// <para><b>Why these four are one window.</b> GDD 8.1 says "Mute lives in the utility window", and 11 asks
+    /// <para><b>Why these are one window.</b> GDD 8.1 says "Mute lives in the utility window", and 11 asks
     /// for narration-only mute and a text-size setting in the same place. None of them had anywhere to live: the
     /// world dock carries Recenter and Help and nothing else. So this is the app's settings surface, and the
     /// only one — nothing here invents a second mechanism for something that already works. Mute goes through
@@ -287,6 +287,9 @@ namespace CosmicSimulation
 
             _dragPointer = null;
             _quitArmedUntil = 0f;
+
+            // A confirmed Quit that had not run yet must not fire the next time the window opens.
+            _quitRequested = false;
             gameObject.SetActive(false);
 
             // No target: a pooled source parented to this object would be cut off by the SetActive above.
@@ -585,7 +588,7 @@ namespace CosmicSimulation
             _paintedTextScale = InfoPanel.TextScale;
             _paintedArmed = QuitArmed;
 
-            // Cyan means "this is switched off", which is how the desktop dock already tints its mute glyph.
+            // Cyan means "this is switched off".
             // The state is written in words as well, so nothing here depends on reading a colour (GDD 11).
             Paint(muteFill, muteLabel, _paintedMuted, _paintedMuted ? "Sound off" : "Sound on");
             Paint(narrationFill, narrationLabel, !_paintedNarration,

@@ -112,10 +112,11 @@ the fix.
 | | |
 |---|---|
 | File | `Assets/audio/being/being_greeting_audio_clip.wav` |
-| Tool | Windows Speech (`System.Speech`), voice Microsoft Zira Desktop - the same placeholder pattern as `moon_vo.ps1` |
-| Format | 44.1 kHz 16-bit mono WAV |
+| Tool | Higgsfield, model `seed_audio`, preset voice "Holden" (`3c9d6053-6334-592c-8997-4e325286af3f`) - the voice already chosen for the new narration clips above. Replaced the first Windows Speech (Zira) placeholder on the same day at the owner's request. |
+| Format | 24 kHz 16-bit stereo WAV, trimmed to the speech (1.25-4.75 s of the 6.5 s render) with 20 ms fades |
 | Line | "Hello, and welcome. What can I help you with?" |
-| Licence | Generated locally; placeholder for testing the being without the relay. Replace with the final being voice before release. |
+| Cost | 0.3 credits (job `cbbbe690-dec8-49ab-99a3-293daecd7f09`) |
+| Note | The owner asked for a one-to-one match of the intro narrator. That voice is a real person's recording, so it was **not** cloned - see the note on the narration clips above. Holden is the near match in register the owner already chose. |
 
 ## Settings gear icon (16 Sep 2026)
 

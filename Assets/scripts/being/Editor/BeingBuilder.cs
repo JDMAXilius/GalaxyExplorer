@@ -17,7 +17,15 @@ namespace CosmicSimulation.Being.EditorTools
         private const string VoiceMixer = "Assets/audio/audio_mixers/vo_audio_mixer.mixer";
         private const string DockPath = "Assets/prefabs/ui/dock_prefab.prefab";
         private const string DesktopDockPath = "Assets/prefabs/ui/desktop_dock_prefab.prefab";
-        private const float Diameter = 0.14f;
+        private const string IntroMesh = "Assets/models/intro_models/intro_placement_models/placement_object_model.fbx";
+        private const string IntroMeshName = "placement_object_scatter_mesh";
+
+        /// <summary>
+        /// The being's width in metres, owner's direction 16 Sep: about 0.7 of what it used to show, which was 0.28 m
+        /// rather than the 0.14 m this constant claimed, because the built-in sphere is two units across.
+        /// Every child is now scaled from its mesh's real bounds, so this number is the width you see.
+        /// </summary>
+        private const float Diameter = 0.20f;
 
         /// <summary>The point size the intro placement object uses. Read off its material, kept in step by hand.</summary>
         private const float IntroPointSize = 0.07f;
@@ -48,12 +56,34 @@ namespace CosmicSimulation.Being.EditorTools
                 EditorUtility.SetDirty(settings);
             }
 
-            // The intro's own point size, not a smaller one. _Size is a point sprite's size in object space, so
-            // its ratio to the sphere is the same at any scale: 0.07 on a 14 cm being looks exactly like 0.07 on
-            // the intro object the player already placed on their floor, which is the look this is meant to be.
-            var hologram = Material(HologramPath, IntroHologram, m => m.SetFloat("_Size", IntroPointSize));
-            var rimMaterial = Material(RimPath, IntroRim, m => m.SetFloat("_Multiplier", 0.15f));
             var sphere = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
+
+            // The intro ball's own point mesh, so the being is made of the same thing; BeingVisual shows a sparse
+            // share of it at rest and all of it while speaking. The built-in sphere is the fallback.
+            // By name: the model also carries a 40-vertex halo, and a plain load returns that one first.
+            Mesh points = null;
+            foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(IntroMesh))
+            {
+                if (asset is Mesh mesh && mesh.name == IntroMeshName)
+                {
+                    points = mesh;
+                }
+            }
+
+            if (points == null)
+            {
+                Debug.LogWarning($"BeingBuilder: {IntroMesh} is missing, so the being falls back to the built-in sphere.");
+                points = sphere;
+            }
+
+            // The intro's own point size. The shader squares _Size and uses it in view space, so it is an absolute
+            // size (about 5 mm at 0.07) whatever the sphere's scale.
+            var hologram = Material(HologramPath, IntroHologram, m =>
+            {
+                m.SetFloat("_Size", IntroPointSize);
+                m.SetFloat("_BandExtent", points.bounds.extents.y);
+            });
+            var rimMaterial = Material(RimPath, IntroRim, m => m.SetFloat("_Multiplier", 0.15f));
 
             var root = new GameObject("cosmic_being_prefab");
             root.AddComponent<SphereCollider>().radius = Diameter * 0.5f;
@@ -84,12 +114,12 @@ namespace CosmicSimulation.Being.EditorTools
             source.outputAudioMixerGroup = groups != null && groups.Length > 0 ? groups[0] : null;
             root.AddComponent<BeingSpeaker>();
 
-            var points = Child(root.transform, "hologram", sphere, hologram, Diameter);
-            var placement = points.AddComponent<PlacementObject>();
-            placement.SourceMesh = sphere;
+            var cloud = Child(root.transform, "hologram", points, hologram, Diameter / points.bounds.size.x);
+            var placement = cloud.AddComponent<PlacementObject>();
+            placement.SourceMesh = points;
             placement.Speed = 2f;
 
-            var rim = Child(root.transform, "rim", sphere, rimMaterial, Diameter * 1.06f);
+            var rim = Child(root.transform, "rim", sphere, rimMaterial, Diameter * 1.06f / sphere.bounds.size.x);
             var visual = root.AddComponent<BeingVisual>();
             Set(visual, "hologram", placement, "rim", rim.GetComponent<Renderer>());
 
