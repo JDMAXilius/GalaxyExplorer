@@ -177,6 +177,15 @@ namespace CosmicSimulation
         /// <summary>How many distinct cutouts the field is drawing from.</summary>
         public int CutoutCount => cutouts == null ? 0 : cutouts.Length;
 
+        /// <summary>
+        /// True when the shell is put around the player's head. The director reads this to leave such content
+        /// where it put itself, and to keep the place's panel inside the shell rather than beyond it.
+        /// </summary>
+        public bool CentresOnViewer => centreOnViewer;
+
+        /// <summary>Where the middle of the shell is in the world: the player's head when the place opened.</summary>
+        public Vector3 ShellCentre => _shell != null ? _shell.position : transform.position;
+
         /// <summary>Half-width of the field in metres at local scale 1, for anything that has to size itself to it.</summary>
         public float ShellRadiusMetres => shellOuterRadius;
 
@@ -193,13 +202,14 @@ namespace CosmicSimulation
         /// <summary>
         /// Moves the shell so its centre sits on the main camera again. Not called on its own: the field is
         /// placed once when it opens, because a shell that chased the head would turn walking into sliding.
-        /// Here for Recenter, and for anything that later wants it.
+        /// Nothing calls it yet; Recenter does not, so in a headset the shell stays where it was first placed.
         /// </summary>
         public void RecentreOnViewer()
         {
             if (_shell != null)
             {
                 _shell.localPosition = ViewerOffset();
+                FollowShell();
             }
         }
 
@@ -278,6 +288,7 @@ namespace CosmicSimulation
             shell.transform.SetParent(transform, false);
             shell.transform.localPosition = ViewerOffset();
             _shell = shell.transform;
+            FollowShell();
 
             var placed = Place();
             SpriteCount = placed.Count;
@@ -365,6 +376,22 @@ namespace CosmicSimulation
             else
             {
                 DestroyImmediate(target);
+            }
+        }
+
+        /// <summary>
+        /// The named-galaxy pins are built around their node's origin at just inside the shell's radius, so the
+        /// node goes wherever the shell's centre goes. Without this, once the shell sits on the player's head
+        /// the pins would hang two metres off it (CS-199).
+        /// </summary>
+        private void FollowShell()
+        {
+            foreach (var pins in GetComponentsInChildren<GalaxyPins>(true))
+            {
+                if (pins.transform.parent == transform)
+                {
+                    pins.transform.localPosition = _shell.localPosition;
+                }
             }
         }
 

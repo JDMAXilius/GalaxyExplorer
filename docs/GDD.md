@@ -178,11 +178,11 @@ Each experience is specified by: what you see, placement and scale, objects, int
 
 ### 4.6 Galaxies (deep field)
 
-**What you see.** 300–500 small galaxy sprites (spirals, ellipticals, edge-on discs; 20+ unique images, random tint and rotation) filling a 6 m sphere around the player, sizes 3–25 cm, with a slow collective drift (1°/s). Default room state is full black; the passthrough toggle shows them in the room.
+**What you see.** 300–500 small galaxy sprites (spirals, ellipticals, edge-on discs; 20+ unique images, random tint and rotation) filling a 6 m sphere centred on the player's head when the place opens, so the player starts in the middle of it, sizes 3–25 cm, with a slow collective drift (1°/s). Default room state is full black; the passthrough toggle shows them in the room.
 
 **Interactions.** Look around; walk; passthrough toggle. Pinching a galaxy sprite gently pushes it (no grab).
 
-**Panel.** "Galaxies" — two paragraphs; anchored 1.2 m in front at eye height and follows the player's turn with lag.
+**Panel.** "Galaxies" — two paragraphs; inside the sphere, about 2 m ahead and a little right, exactly where the Cosmic Web's panel sits (owner's direction, 16 Sep). It is not pushed out past the shell the way a panel clears a model on a table.
 
 **Audio.** Airy ambience; narration.
 

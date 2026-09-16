@@ -441,7 +441,10 @@ namespace CosmicSimulation
             if (_prefabContent != null)
             {
                 var centred = _prefabContent.GetComponentInChildren<CentreOnViewer>(true);
-                pivot = centred != null ? centred.transform.position : _prefabContent.transform.position;
+                var field = _prefabContent.GetComponentInChildren<GalaxyField>(true);
+                pivot = centred != null ? centred.transform.position
+                    : field != null && field.CentresOnViewer ? field.ShellCentre
+                    : _prefabContent.transform.position;
                 return true;
             }
 
@@ -783,6 +786,17 @@ namespace CosmicSimulation
         {
             _contentSpanMetres = 0f;
 
+            // A place the player stands inside (the Galaxies shell) has already put its middle on their head
+            // when it was instantiated. Framing it would move that middle back out to the content root, two
+            // metres ahead, and measuring it would push the panel past a six-metre shell and off the screen.
+            // Left alone, the player starts in the middle and the panel stays at its authored offset inside the
+            // shell - the same thing the Cosmic Web gets, whose point cloud has no renderer to measure (owner's
+            // direction, 16 Sep).
+            if (SurroundsViewer(content))
+            {
+                return;
+            }
+
             if (content == null || !TryMeasureContent(content, out var measured))
             {
                 return;
@@ -803,6 +817,12 @@ namespace CosmicSimulation
             }
 
             content.position += offset;
+        }
+
+        private static bool SurroundsViewer(Transform content)
+        {
+            var field = content != null ? content.GetComponentInChildren<GalaxyField>(true) : null;
+            return field != null && field.CentresOnViewer;
         }
 
         // ---------- keeping a whole arrangement inside the desktop view (CS-171)
