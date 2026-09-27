@@ -1,5 +1,7 @@
 # Cosmic Simulation XR — Technical Overview
 
+> **27 Sep 2026:** for the app as it is actually built today, read `docs/SYSTEM_OVERVIEW.md` first. This document is kept as the design record and is partly out of date.
+
 *Version 1.0 — 11 September 2026. Companion to `docs/GDD.md` (what) and `docs/COSMIC_SIMULATION_XR_ROADMAP.md` (when). Written so a fresh Claude Code session can continue the work: read `CLAUDE.md` first, then this, then the GDD section for the feature at hand.*
 
 ---

@@ -1,5 +1,7 @@
 # Cosmic Simulation XR — Game Design Document
 
+> **27 Sep 2026:** for the app as it is actually built today, read `docs/SIMULATION_GUIDE.md` first. This document is kept as the design record and is partly out of date.
+
 *Version 1.1 — 12 September 2026. Companion documents: `docs/TECHNICAL_OVERVIEW.md` (how it is built) and `docs/COSMIC_SIMULATION_XR_ROADMAP.md` (when). This document is the contract for the experience: if a behaviour is not described here, it is not in scope.*
 
 > **Scope changed on 12 September 2026, by the owner, deliberately.** Version 1.0 of this document was a *one-to-one* contract with the COSMIC XR reference app, and that clause is now **lifted**. The app is no longer bounded by the reference's seven places. It is being extended with other galaxies and other real planetary systems as places the player can see and travel to — see **section 4.8** and `docs/decisions.md` **D-010**.
