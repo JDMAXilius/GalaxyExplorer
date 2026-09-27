@@ -155,4 +155,4 @@ The unimaged areas are shown as a flat tone because no spacecraft has photograph
 **The generated maps are not observations.** Voyager 2 imaged only the southern halves of the Uranian moons, a few
 frames of Proteus and a single dot for Nereid; New Horizons resolved Pluto's four small moons as a handful of
 pixels. The character of each map follows what is known (brightness, colour, cratering, the named features) but
-every crater and valley is placed at random. Pluto's small moons are irregular; they are shown as spheres.
+every crater and valley is placed at random. Pluto's small moons are irregular, and are shaped by `Assets/scripts/Editor/MoonShapes.cs` to their measured New Horizons axes (Nix 50 x 33 x 31 km, Hydra 51 x 36 x 31, Kerberos 19 x 10 x 9 as two lobes, Styx 16 x 9 x 8); the lumps on them are invented.

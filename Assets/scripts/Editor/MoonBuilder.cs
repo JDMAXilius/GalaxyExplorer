@@ -893,6 +893,8 @@ namespace CosmicSimulation.EditorTools
             Object.DestroyImmediate(mesh.GetComponent<Collider>());
             mesh.name = $"{spec.Id}_sphere";
             mesh.transform.SetParent(visual, false);
+            var shaped = MoonShapes.Get(spec.Id);
+            if (shaped != null) mesh.GetComponent<MeshFilter>().sharedMesh = shaped;
             mesh.GetComponent<MeshRenderer>().sharedMaterial = material;
             mesh.AddComponent<GalaxyExplorer.SunLightReceiver>();
             return spec.TexturePath;

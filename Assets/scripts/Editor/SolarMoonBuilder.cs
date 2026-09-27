@@ -169,6 +169,8 @@ namespace CosmicSimulation.EditorTools
             }
 
             var mesh = grab.GetComponentInChildren<MeshRenderer>(true);
+            var shaped = MoonShapes.Get(spec.Id);
+            if (shaped != null) mesh.GetComponent<MeshFilter>().sharedMesh = shaped;
             var collider = Ensure<SphereCollider>(mesh.gameObject);
             var bounds = mesh.GetComponent<MeshFilter>().sharedMesh.bounds;
             collider.center = bounds.center;
