@@ -185,41 +185,46 @@ if __name__ == "__main__":
 # and feathered in, so the moon reads as one body. What was photographed is left exactly as it was.
 REAL = {
     "charon": ("https://astrogeology.usgs.gov/ckan/dataset/93827f6c-8feb-42b6-98e6-b0ce57c7d2c8/resource/1abf318c-3290-4aa0-932e-a34f32d7f6ad/download/charon_newhorizons_global_mosaic_300m_jul2017_1024.jpg",
-               31, rubble(90, 0.05)),
+               31, rubble(90, 0.05), 0.7),
     "triton": ("https://astrogeology.usgs.gov/ckan/dataset/445b4c39-e87a-4e4d-88a8-e48d8e755c5c/resource/de0ba9f1-303e-4e5f-a99a-3201fba9a764/download/triton_voyager2_clrmosaic_1024.jpg",
-               32, rubble(8, 0.03)),
+               32, rubble(8, 0.03), 0.35),
 }
 
 
-def patch(name, url, seed, build):
+def patch(name, url, seed, build, contrast):
     import io
     import urllib.request
     from PIL import ImageFilter
     real = np.asarray(Image.open(io.BytesIO(urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=60).read())).convert("RGB").resize((W, H))).astype(np.float32)
-    hole = real.mean(axis=2) < 10
-    grown = np.asarray(Image.fromarray((hole * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(7))) > 0
+    mask = lambda m, f: np.asarray(Image.fromarray((m * 255).astype(np.uint8)).filter(f)) > 127
+    # Only the large unlit regions: a dark crater floor inside the photographed part is ground, not a gap.
+    hole = mask(mask(real.mean(axis=2) < 10, ImageFilter.MinFilter(25)), ImageFilter.MaxFilter(25))
+    grown = mask(hole, ImageFilter.MaxFilter(15))
     seen = ~grown
+    # The photographed strip just outside the hole: what the fill has to meet at the seam.
+    ring = mask(grown, ImageFilter.MaxFilter(41)) & seen
 
+    # Fine mottling and small craters, not the broad blotches the whole-moon maps above use: next to a real
+    # mosaic, large soft shapes read as cloud rather than ground.
     rng = np.random.default_rng(seed)
-    h = noise(rng) * 0.02
-    a = noise(rng, octaves=6, base=3) * 0.5 + noise(rng, octaves=3, base=48) * 0.12
+    h = noise(rng) * 0.01
+    a = noise(rng, octaves=3, base=6) * 0.25 + noise(rng, octaves=4, base=24) * 0.3 + noise(rng, octaves=3, base=64) * 0.15
     h, a = build(rng, h, a)
-    a = a + noise(rng, octaves=5, base=10) * 0.6
-    made = (1 + a) * (0.85 + 0.15 * shade(h))
+    made = (1 + a) * (0.8 + 0.2 * shade(h))
 
-    # Level the made surface to the photographed one, channel by channel, so the seam is a change of detail and
-    # not a change of colour.
+    # Levelled channel by channel to the strip along the seam, so the join is a change of detail and not of
+    # brightness or colour; a little flatter than the photographed side, which carries real relief.
     out = real.copy()
     for c in range(3):
-        target = real[..., c][seen]
-        levelled = (made - made[seen].mean()) / (made[seen].std() + 1e-6) * target.std() + target.mean()
-        out[..., c] = levelled
-    weight = np.asarray(Image.fromarray((grown * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(10))).astype(np.float32)[..., None] / 255
+        target = real[..., c][ring]
+        out[..., c] = (made - made[seen].mean()) / (made[seen].std() + 1e-6) * target.std() * contrast + target.mean()
+    weight = np.asarray(Image.fromarray((grown * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(24))).astype(np.float32)[..., None] / 255
+    weight = np.maximum(weight, grown[..., None].astype(np.float32))  # feathered outward only
     final = real * (1 - weight) + out * weight
     Image.fromarray(final.clip(0, 255).astype(np.uint8)).save(os.path.join(OUT, f"{name}_texture.jpg"), quality=92)
     print(f"{name}: {hole.mean() * 100:.1f}% unimaged, filled")
 
 
 if __name__ == "__main__":
-    for moon, (url, seed, build) in REAL.items():
-        patch(moon, url, seed, build)
+    for moon, (url, seed, build, contrast) in REAL.items():
+        patch(moon, url, seed, build, contrast)

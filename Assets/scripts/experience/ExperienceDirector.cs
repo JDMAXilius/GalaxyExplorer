@@ -80,6 +80,12 @@ namespace CosmicSimulation
         /// <summary>How long a view scene takes to settle into the fitted spot once its own zoom-in is over.</summary>
         private const float ViewSceneFitSeconds = 0.5f;
 
+        /// <summary>A panel whose anchor is nearer the screen's edge than this share of it is moved into view.</summary>
+        private const float PanelViewportMargin = 0.08f;
+
+        /// <summary>Where such a panel goes: centred, this far up the view.</summary>
+        private const float PanelAboveViewportY = 0.8f;
+
         private readonly List<GameObject> _destinationObjects = new List<GameObject>();
         private readonly HashSet<ExperienceModule> _warnedEmpty = new HashSet<ExperienceModule>();
         private GameObject _prefabContent;
@@ -1286,7 +1292,31 @@ namespace CosmicSimulation
             }
 
             _scenePanelAnchor.localPosition = offset;
+            KeepPanelInView(_scenePanelAnchor);
             return _scenePanelAnchor;
+        }
+
+        /// <summary>
+        /// On a monitor a place is fitted to fill the view, so the side the offset puts the panel on can be off the
+        /// screen - Solar Row runs edge to edge. Such a panel goes above the middle of the view instead, at the
+        /// depth it had, where a row leaves the most room (owner's direction, 27 Sep).
+        /// </summary>
+        private static void KeepPanelInView(Transform anchor)
+        {
+            var camera = Camera.main;
+            if (camera == null || UnityEngine.XR.XRSettings.isDeviceActive)
+            {
+                return;
+            }
+
+            var v = camera.WorldToViewportPoint(anchor.position);
+            if (v.z > 0f && v.x > PanelViewportMargin && v.x < 1f - PanelViewportMargin &&
+                v.y > PanelViewportMargin && v.y < 1f - PanelViewportMargin)
+            {
+                return;
+            }
+
+            anchor.position = camera.ViewportToWorldPoint(new Vector3(0.5f, PanelAboveViewportY, Mathf.Max(v.z, MinFitDistanceMetres)));
         }
 
         /// <summary>

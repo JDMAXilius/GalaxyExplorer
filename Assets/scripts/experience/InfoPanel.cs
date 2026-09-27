@@ -186,37 +186,35 @@ namespace CosmicSimulation
 
             if (variant == Variant.Moon)
             {
-                // A moon gets one line instead of a grid: who it orbits, then its numbers.
+                // A moon gets the same grid as a planet (owner's direction, 27 Sep: like the Moon's card). Who it
+                // orbits heads the subtitle, and whatever the grid has no cell for follows it there.
+                var stats = new System.Collections.Generic.List<Stat>();
+                foreach (var stat in info.Stats)
+                {
+                    if (stat.Label != "ORBITS")
+                    {
+                        stats.Add(stat);
+                    }
+                }
+
                 var parts = new System.Text.StringBuilder();
                 if (info.Orbits != null)
                 {
-                    parts.Append(info.Orbits.DisplayName.ToUpperInvariant());
+                    parts.Append("MOON OF ").Append(info.Orbits.DisplayName.ToUpperInvariant());
                 }
 
-                // One line: who it orbits, then its size and its year. The full list is on the Solar System card.
-                var shown = 0;
-                foreach (var stat in info.Stats)
+                for (var i = statLabels.Length; i < stats.Count; i++)
                 {
-                    if (stat.Label == "ORBITS" || shown++ >= 2)
-                    {
-                        continue;
-                    }
-
-                    if (parts.Length > 0)
-                    {
-                        parts.Append("   ");
-                    }
-
-                    parts.Append(stat.ToRichText());
+                    parts.Append(parts.Length > 0 ? "   " : "").Append(stats[i].Label.ToUpperInvariant()).Append(' ').Append(stats[i].ToRichText().ToUpperInvariant());
                 }
 
                 Set(subtitle, parts.ToString());
-                ShowStats(0, info);
+                ShowStats(stats);
             }
             else
             {
                 Set(subtitle, info.Subtitle != null ? info.Subtitle.ToUpperInvariant() : null);
-                ShowStats(info.Stats.Length, info);
+                ShowStats(info.Stats);
             }
 
             Set(instruction, null);
@@ -245,7 +243,7 @@ namespace CosmicSimulation
             Set(subtitle, null);
             Set(paragraph, prose);
             Set(instruction, copy.Instruction);
-            ShowStats(0, null);
+            ShowStats(null);
             Layout();
         }
 
@@ -301,8 +299,9 @@ namespace CosmicSimulation
             }
         }
 
-        private void ShowStats(int count, BodyInfo info)
+        private void ShowStats(System.Collections.Generic.IList<Stat> stats)
         {
+            var count = stats != null ? stats.Count : 0;
             if (statGrid != null)
             {
                 statGrid.gameObject.SetActive(count > 0);
@@ -327,7 +326,7 @@ namespace CosmicSimulation
                     continue;
                 }
 
-                var stat = info.Stats[i];
+                var stat = stats[i];
                 Set(statLabels[i], stat.Label != null ? stat.Label.ToUpperInvariant() : null);
                 if (i < statValues.Length)
                 {
