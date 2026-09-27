@@ -123,6 +123,11 @@ namespace CosmicSimulation.EditorTools
             /// <summary>The moon's own prefab, or null when it has to be lifted out of a body prefab.</summary>
             public string PrefabPath;
 
+            /// <summary>
+            /// A global map to wrap on a sphere, for a moon the inherited project never modelled (Triton, Charon).
+            /// Used when there is no prefab and no host node.
+            /// </summary>
+            public string TexturePath;
             /// <summary>Where to find it when it has no prefab of its own: a prefab and a node inside it.</summary>
             public string HostPrefabPath;
             public string HostNode;
@@ -219,6 +224,21 @@ namespace CosmicSimulation.EditorTools
                 Id = "enceladus", Parent = "saturn",
                 PrefabPath = "Assets/prefabs/enceladus_saturn_moon_prefab.prefab",
                 DiameterKm = 504f, PeriodDays = 1.4f, OrbitRadiusMetres = 0.32f, Ships = true,
+            },
+            // Owner's direction, 27 Sep: every planet with a moon worth pulling gets one. The inherited project
+            // modelled none beyond Saturn, so these two are the USGS global maps (Voyager 2, New Horizons) on a
+            // sphere. Triton's period is retrograde; the orbit still turns the ordinary way here.
+            new Spec
+            {
+                Id = "triton", Parent = "neptune",
+                TexturePath = "Assets/Textures/moons/triton_texture.jpg",
+                DiameterKm = 2707f, PeriodDays = 5.9f, OrbitRadiusMetres = 0.36f, Ships = true,
+            },
+            new Spec
+            {
+                Id = "charon", Parent = "pluto",
+                TexturePath = "Assets/Textures/moons/charon_texture.jpg",
+                DiameterKm = 1212f, PeriodDays = 6.4f, OrbitRadiusMetres = 0.30f, Ships = true,
             },
         };
 
@@ -723,6 +743,11 @@ namespace CosmicSimulation.EditorTools
                 return spec.PrefabPath;
             }
 
+            if (!string.IsNullOrEmpty(spec.TexturePath))
+            {
+                return Sphere(spec, visual);
+            }
+
             var host = AssetDatabase.LoadAssetAtPath<GameObject>(spec.HostPrefabPath);
             if (host == null)
             {
@@ -745,6 +770,46 @@ namespace CosmicSimulation.EditorTools
             node.SetParent(visual, false);
             Object.DestroyImmediate(instance);
             return $"{spec.HostPrefabPath} :: {spec.HostNode}";
+        }
+
+        private const string SphereMaterialTemplate = "Assets/materials/saturn_moons_material.mat";
+
+        /// <summary>
+        /// A moon made from its global map: the built-in sphere, whose UVs are longitude by latitude, and the
+        /// inherited moon material cloned with the map as its albedo, so it takes the Sun the same way the rest do.
+        /// The material is written once per moon and rewritten on every run.
+        /// </summary>
+        private static string Sphere(Spec spec, Transform visual)
+        {
+            var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(spec.TexturePath);
+            var template = AssetDatabase.LoadAssetAtPath<Material>(SphereMaterialTemplate);
+            if (texture == null || template == null)
+            {
+                Debug.LogError($"MoonBuilder: no {spec.TexturePath} or {SphereMaterialTemplate}; '{spec.Id}' skipped.");
+                return null;
+            }
+
+            var path = $"Assets/materials/{spec.Id}_moon_material.mat";
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                material = new Material(template);
+                AssetDatabase.CreateAsset(material, path);
+            }
+            else
+            {
+                material.CopyPropertiesFromMaterial(template);
+            }
+            material.mainTexture = texture;
+            EditorUtility.SetDirty(material);
+
+            var mesh = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            Object.DestroyImmediate(mesh.GetComponent<Collider>());
+            mesh.name = $"{spec.Id}_sphere";
+            mesh.transform.SetParent(visual, false);
+            mesh.GetComponent<MeshRenderer>().sharedMaterial = material;
+            mesh.AddComponent<GalaxyExplorer.SunLightReceiver>();
+            return spec.TexturePath;
         }
 
         private static InfoPanel BuildPanel(Spec spec, Transform panels, GameObject panelPrefab,

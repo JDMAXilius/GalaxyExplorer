@@ -91,7 +91,7 @@ Each experience is specified by: what you see, placement and scale, objects, int
 
 ### 4.1 Solar System Planets (Solar Row / Relative Size)
 
-**What you see.** Ten bodies in a gentle arc at chest height: Sun, Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto. In **Solar Row** every body is 15 cm in diameter, 25 cm apart centre-to-centre, 1.2 m above the floor, on an arc of radius 1.1 m centred on the player's start position. In **Relative Size** the bodies keep their order but take true proportions with the Sun at 3.0 m (Jupiter 30 cm, Saturn 25 cm, Uranus 11 cm, Neptune 10.6 cm, Earth 2.75 cm, Venus 2.6 cm, Mars 1.5 cm, Mercury 1.05 cm, Pluto 0.5 cm), spaced so no body overlaps; small bodies keep a 6 cm invisible grab sphere so they can still be pinched.
+**What you see.** Ten bodies in a straight line across the view at chest height: Sun, Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto. In **Solar Row** every body is 15 cm in diameter, 25 cm apart centre-to-centre, 1.2 m above the floor, in a straight line 1.1 m ahead of the player's start position, facing them (owner's direction, 27 Sep; it was an arc). In **Relative Size** the bodies keep their order but take true proportions with the Sun at 3.0 m (Jupiter 30 cm, Saturn 25 cm, Uranus 11 cm, Neptune 10.6 cm, Earth 2.75 cm, Venus 2.6 cm, Mars 1.5 cm, Mercury 1.05 cm, Pluto 0.5 cm), spaced so no body overlaps; small bodies keep a 6 cm invisible grab sphere so they can still be pinched.
 
 **Objects.** All ten bodies rotate slowly on their true axial tilt. Earth has a cloud layer and atmosphere rim; Saturn and Uranus have rings; the Sun has animated surface, rim flares and a glow. Moons are hidden until their planet is pulled out.
 

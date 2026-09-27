@@ -133,3 +133,13 @@ the fix.
 | Files | `Assets/Being/Audio/being_listen.wav`, `Assets/Being/Audio/being_close.wav` |
 | Tool | None. Written by `Assets/Being/Editor/BeingPrefab.cs` (`Cue`) on the first **Build Being**: a soft sine note with a second harmonic, 6 ms attack and a linear decay - E5 then A5 for the listening chime, one D6 blip for the closing tick. 24 kHz 16-bit mono WAV. |
 | Note | Regenerate by deleting the files and building again. No licence to carry. |
+
+## Triton and Charon (27 Sep 2026)
+
+| File | What | Source | Licence | Edits |
+|---|---|---|---|---|
+| `Assets/Textures/moons/triton_texture.jpg` | Triton global map, Neptune's moon | USGS Astrogeology, *Triton Voyager 2 Global Color Mosaic 600m* (NASA/JPL/USGS), 1024 px sample - https://astrogeology.usgs.gov/search/map/triton_voyager_2_global_color_mosaic_600m | Public domain (USGS asks that authors be cited) | The 38.5 % never imaged by Voyager 2 filled with the map's own mean surface colour, feathered at the edge |
+| `Assets/Textures/moons/charon_texture.jpg` | Charon global map, Pluto's moon | USGS Astrogeology, *Charon New Horizons LORRI MVIC Global Mosaic 300m* (NASA/JHUAPL/SwRI/USGS), 1024 px sample - https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_mosaic_300m | Public domain (cite authors) | The 34.9 % in polar night during the flyby filled with the map's mean grey, feathered |
+| `Assets/audio/vo_audio_clips/vo_destinations_audio_clips/vo_destination_triton_audio_clip.wav`, `..._charon_audio_clip.wav` | Narration for the two moons | Higgsfield `seed_audio`, preset voice Holden (as the other synthesised narration), script from `docs/copy/moons.md`; jobs `2198d6e5-0578-4f51-a6e6-69064c4c10c0`, `798e01af-3861-416a-9e89-b6e5f6867142` | Ours | 24 kHz mono, trimmed to the speech with 20 ms fades; about 1.8 credits |
+
+The unimaged areas are shown as a flat tone because no spacecraft has photographed them; they are not invented terrain.

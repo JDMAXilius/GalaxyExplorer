@@ -8,7 +8,7 @@ namespace CosmicSimulation.EditorTools
 {
     /// <summary>
     /// Import settings for the sourced astronomy plates in <c>Assets/Textures/nebulae/</c> and
-    /// <c>Assets/Textures/galaxies/</c>.
+    /// <c>Assets/Textures/galaxies/</c> and <c>Assets/Textures/moons/</c>.
     ///
     /// These are photographs, not UI: they are seen at arm's length filling a good part of the view, they are
     /// sampled at every angle as the player walks around an overlay, and there are enough of them that they
@@ -24,6 +24,7 @@ namespace CosmicSimulation.EditorTools
         {
             "Assets/Textures/nebulae/",
             "Assets/Textures/galaxies/",
+            "Assets/Textures/moons/",
         };
 
         /// <summary>

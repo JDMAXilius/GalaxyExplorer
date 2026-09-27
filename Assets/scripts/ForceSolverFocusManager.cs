@@ -30,7 +30,7 @@ public class ForceSolverFocusManager : MonoBehaviour
             return;
         }
 
-        if (_currentlyActiveSolver != null)
+        if (_currentlyActiveSolver != null && !SameFamily(_currentlyActiveSolver, solver))
         {
             _currentlyActiveSolver.ResetToRoot();
         }
@@ -38,7 +38,7 @@ public class ForceSolverFocusManager : MonoBehaviour
         _currentlyActiveSolver = solver;
         foreach (var planetForceSolver in _planetForceSolvers)
         {
-            if (solver == planetForceSolver)
+            if (solver == planetForceSolver || SameFamily(solver, planetForceSolver))
             {
                 continue;
             }
@@ -79,6 +79,17 @@ public class ForceSolverFocusManager : MonoBehaviour
             planetForceSolver.EnableForce = true;
         }
     }
+
+    // A planet and its moons are one thing to the player: pulling a moon out of its orbit keeps the planet out,
+    // and its sibling moons stay pullable. Anything else still goes home, one family out at a time (27 Sep).
+    private static bool SameFamily(ForceSolver a, ForceSolver b)
+    {
+        var pa = Parent(a);
+        var pb = Parent(b);
+        return pa == b || pb == a || (pa != null && pa == pb);
+    }
+
+    private static ForceSolver Parent(ForceSolver solver) => solver is MoonForceSolver moon ? moon.ParentPlanet : null;
 
     public void ResetAllForceSolvers()
     {

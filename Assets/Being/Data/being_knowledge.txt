@@ -190,6 +190,11 @@ JUPITER
 The most heavily cratered object we know of, its surface barely changed in four billion years.
 ORBITS: Jupiter; DIAMETER: 4,821 km; ONE ORBIT: 16.7 days
 
+## Charon (id: charon)
+PLUTO
+Half Pluto's size, Charon is locked face to face with it, the two circling a point in the empty space between them.
+ORBITS: Pluto; DIAMETER: 1,212 km; ONE ORBIT: 6.4 days
+
 ## Deimos (id: deimos)
 MARS
 The smaller Martian moon is so distant and faint that from the surface it looks like a bright star.
@@ -239,3 +244,8 @@ ORBITS: Mars; DIAMETER: 22.5 km; ONE ORBIT: 0.3 days
 SATURN
 The only moon with a thick atmosphere, and the only place besides Earth with liquid on its surface: rivers and lakes of methane.
 ORBITS: Saturn; DIAMETER: 5,150 km; ONE ORBIT: 15.9 days
+
+## Triton (id: triton)
+NEPTUNE
+Triton circles Neptune backwards, a sign it was captured, and geysers of nitrogen shoot eight kilometres up from its frozen surface.
+ORBITS: Neptune; DIAMETER: 2,707 km; ONE ORBIT: 5.9 days

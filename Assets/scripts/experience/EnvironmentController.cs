@@ -41,6 +41,11 @@ namespace CosmicSimulation
         [Tooltip("Flat tinted transparent shader. Looked up by name when left empty.")]
         private Shader tintShader;
 
+        [SerializeField]
+        [Tooltip("Start with the dock's passthrough button on, so the room is not dimmed and the bodies read brighter " +
+                 "from the first moment (owner's direction, 27 Sep). The player can still turn it off.")]
+        private bool passthroughOnStart = true;
+
         private Camera _camera;
         private Renderer _dimQuad;
         private Material _dimMaterial;
@@ -82,6 +87,7 @@ namespace CosmicSimulation
         {
             Instance = this;
             _camera = Camera.main;
+            PassthroughForced = passthroughOnStart;
             BuildDimQuad();
         }
 

@@ -17,6 +17,8 @@ the rest are wired only if time allows. ASCII only.
 | enceladus | Enceladus | Saturn | 504 km | 1.4 days | optional |
 | phobos | Phobos | Mars | 22.5 km | 0.3 days | optional |
 | deimos | Deimos | Mars | 12.4 km | 1.3 days | optional |
+| triton | Triton | Neptune | 2,707 km | 5.9 days | ship |
+| charon | Charon | Pluto | 1,212 km | 6.4 days | ship |
 
 ---
 
@@ -52,3 +54,9 @@ within about fifty million years.
 
 **deimos** — The smaller Martian moon is so distant and faint that from the
 surface it looks like a bright star.
+
+**triton** — Triton circles Neptune backwards, a sign it was captured, and
+geysers of nitrogen shoot eight kilometres up from its frozen surface.
+
+**charon** — Half Pluto's size, Charon is locked face to face with it, the two
+circling a point in the empty space between them.

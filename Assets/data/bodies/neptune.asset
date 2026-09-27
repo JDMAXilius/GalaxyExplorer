@@ -33,7 +33,8 @@ MonoBehaviour:
     Value: 16.1
     Unit: hours
     Exponent: 0
-  Moons: []
+  Moons:
+  - {fileID: 11400000, guid: e71b563ea88694f489be3420a6eb2416, type: 2}
   Orbits: {fileID: 0}
   Narration: {fileID: 8300000, guid: 2cc93884fafecbd49bf1332def5684ca, type: 3}
   Ambience: {fileID: 0}

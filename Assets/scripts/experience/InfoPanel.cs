@@ -1,6 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Collections.Generic;
+using GalaxyExplorer;
 using GalaxyExplorer.XR;
 using TMPro;
 using UnityEngine;
@@ -95,6 +96,7 @@ namespace CosmicSimulation
         private bool _sounded;
         private float _side = 1f;
         private List<(RectTransform rect, float y, float height)> _rows;
+        private AudioClip _narration;
         private const float RowGapUnits = 3f;
         private const float SideSwitchDistance = 0.12f;
 
@@ -177,6 +179,7 @@ namespace CosmicSimulation
             }
 
             variant = info.IsMoon ? Variant.Moon : Variant.Body;
+            _narration = info.IsMoon ? info.Narration : null;
 
             Set(title, info.DisplayName);
             Set(paragraph, info.Paragraph);
@@ -384,6 +387,13 @@ namespace CosmicSimulation
             {
                 _sounded = want;
                 AudioService.Instance?.PlayClip(want ? AudioId.CardSelect : AudioId.CardDeselect);
+
+                // A planet narrates from its own solver when it is pulled; a moon's solver is the plain one, so
+                // its card speaks for it (owner's direction, 27 Sep: every moon says something when chosen).
+                if (want && _narration != null && GalaxyExplorerManager.IsInitialized)
+                {
+                    GalaxyExplorerManager.Instance.VoManager.PlayClip(_narration, allowReplay: true, replaceQueue: true);
+                }
             }
 
             var wanted = want ? 1f : 0f;

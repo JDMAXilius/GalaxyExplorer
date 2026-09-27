@@ -305,6 +305,14 @@ namespace CosmicSimulation
                 yield return null;
             }
 
+            // The player may already have picked a place in the seconds this waited. Adopting what the intro left
+            // on screen now would land on top of that switch halfway through and leave them in the Solar System
+            // instead of where they asked to go (27 Sep). Their choice wins; a queued one waits its turn.
+            while (IsSwitching)
+            {
+                yield return null;
+            }
+
             if (_queuedFromIntro != null)
             {
                 var wanted = _queuedFromIntro;

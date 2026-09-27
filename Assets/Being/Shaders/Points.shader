@@ -12,7 +12,7 @@ Shader "Companion/Points"
         _Active ("Active", Range(0, 1)) = 0
         [HideInInspector] _SelfTime ("Spin time", Float) = 0
         _Bands ("Voice bands, low to high", Vector) = (0, 0, 0, 0)
-        _Articulate ("Belt push at full band", Float) = 0.35
+        _Articulate ("Extra inward fall at full band", Float) = 0.35
         _Density ("Share of points shown", Range(0, 1)) = 1
         _Inward ("Fall inward", Range(0, 1)) = 0
         _BandExtent ("Half height of the source mesh", Float) = 0.5
@@ -72,13 +72,14 @@ Shader "Companion/Points"
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
                 float3 p = SpinY(v.vertex.xyz, _SelfTime * v.randoms.x * _Speed);
-                p *= 1 - _Inward * frac(v.randoms.w * 7.31);
+                // Speech only ever pulls points into the ball: each falls to its own depth, further where its belt of
+                // the voice is loud. Nothing here may push a point past the surface.
                 float belt = saturate(v.vertex.y / max(_BandExtent, 1e-4) * 0.5 + 0.5);
                 float4 pick = float4(belt < 0.25, belt >= 0.25 && belt < 0.5, belt >= 0.5 && belt < 0.75, belt >= 0.75);
-                p *= 1 + _Articulate * dot(pick, _Bands);
+                p *= 1 - saturate(_Inward * frac(v.randoms.w * 7.31) * (1 + _Articulate * dot(pick, _Bands)));
                 float3 world = mul(unity_ObjectToWorld, float4(p, 1)).xyz;
                 float touch = saturate(0.2 - distance(world, _TouchPoint.xyz)) * 5;
-                p *= 1 + 0.2 * touch + 0.05 * _Active;
+                p *= 1 + 0.2 * touch;
                 o.color = lerp(lerp(lerp(_BaseColor, _VariantColor, v.randoms.z), _ActiveColor, _Active), _TouchColor, touch);
                 float size = _Size * clamp(v.randoms.y, 0.2, 1) * (1 + 0.2 * touch + 0.2 * _Active) * step(v.randoms.w, _Density);
                 size *= size;

@@ -11,6 +11,8 @@ public class MoonForceSolver : PlanetForceSolver
     [Tooltip("The planet this moon orbits. Its controller tracker is shared when none is assigned here.")]
     private ForceSolver parentPlanet = null;
 
+    public ForceSolver ParentPlanet => parentPlanet;
+
     [SerializeField]
     [Tooltip("The orbit animation (on the planet) that shows and hides this moon while it is in its orbit.")]
     private Moon orbit = null;
@@ -27,7 +29,28 @@ public class MoonForceSolver : PlanetForceSolver
         }
 
         base.Awake();
+        FitHeldSize();
     }
+
+    // The pulled size assumes a model one centimetre across under its scale controller, as every planet and the
+    // Earth's Moon are. Phobos and Deimos were modelled a metre across, so pulled out they grew to twenty metres.
+    private void FitHeldSize()
+    {
+        var controller = GetComponentInChildren<PlanetOffsetScaleController>(true);
+        var mesh = controller != null ? controller.GetComponentInChildren<MeshFilter>(true) : null;
+        if (mesh == null || mesh.sharedMesh == null)
+        {
+            return;
+        }
+
+        var diameter = mesh.sharedMesh.bounds.size.x * mesh.transform.lossyScale.x / controller.transform.lossyScale.x;
+        if (diameter > 1e-6f)
+        {
+            _editScaleTarget *= ModelDiameter / diameter;
+        }
+    }
+
+    private const float ModelDiameter = 0.01f;
 
     protected override void OnEnable()
     {

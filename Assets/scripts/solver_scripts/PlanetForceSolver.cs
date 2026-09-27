@@ -8,7 +8,7 @@ using UnityEngine;
 public class PlanetForceSolver : ForceSolver
 {
     private PlanetOffsetScaleController _scaleController;
-    private Vector3 _editScaleTarget = Vector3.one;
+    protected Vector3 _editScaleTarget = Vector3.one;
     private float _oldBlend;
     private PlanetHighlighter _planetHighlighter;
     private IAudioService _audioService;
@@ -86,7 +86,7 @@ public class PlanetForceSolver : ForceSolver
     protected override void OnStartRoot()
     {
         base.OnStartRoot();
-        _planetHighlighter.gameObject.SetActive(true);
+        if (_planetHighlighter != null) _planetHighlighter.gameObject.SetActive(true);
         StopAudio();
         HideMoons();
     }
@@ -94,7 +94,7 @@ public class PlanetForceSolver : ForceSolver
     protected override void OnStartAttraction()
     {
         base.OnStartAttraction();
-        _planetHighlighter.gameObject.SetActive(false);
+        if (_planetHighlighter != null) _planetHighlighter.gameObject.SetActive(false);
         StartAudio();
         HideMoons();
     }
@@ -155,12 +155,12 @@ public class PlanetForceSolver : ForceSolver
     public override void OnFocusExit(GEFocusEventData eventData)
     {
         base.OnFocusExit(eventData);
-        _planetHighlighter.SetFocused(false);
+        if (_planetHighlighter != null) _planetHighlighter.SetFocused(false);
     }
 
     public override void OnFocusEnter(GEFocusEventData eventData)
     {
         base.OnFocusEnter(eventData);
-        _planetHighlighter.SetFocused(true);
+        if (_planetHighlighter != null) _planetHighlighter.SetFocused(true);
     }
 }
