@@ -143,3 +143,16 @@ the fix.
 | `Assets/audio/vo_audio_clips/vo_destinations_audio_clips/vo_destination_triton_audio_clip.wav`, `..._charon_audio_clip.wav` | Narration for the two moons | Higgsfield `seed_audio`, preset voice Holden (as the other synthesised narration), script from `docs/copy/moons.md`; jobs `2198d6e5-0578-4f51-a6e6-69064c4c10c0`, `798e01af-3861-416a-9e89-b6e5f6867142` | Ours | 24 kHz mono, trimmed to the speech with 20 ms fades; about 1.8 credits |
 
 The unimaged areas are shown as a flat tone because no spacecraft has photographed them; they are not invented terrain.
+
+## The rest of the moons (27 Sep 2026)
+
+| Files | What | Source | Licence |
+|---|---|---|---|
+| `Assets/Textures/moons/{rhea,dione,tethys}_texture.jpg` | Rhea, Dione, Tethys global maps | USGS Astrogeology: *Rhea Cassini-Voyager Global Mosaic 417m*, *Dione Cassini-Voyager Global Mosaic 154m*, *Tethys Cassini Global Mosaic 293m* (NASA/JPL/Space Science Institute/USGS), full-map previews at 1024 x 512 | Public domain (cite authors) |
+| `Assets/Textures/moons/{miranda,ariel,umbriel,titania,oberon,proteus,nereid,styx,nix,kerberos,hydra}_texture.jpg` | **Generated** surfaces for moons no spacecraft has mapped whole | `tools/moons/make_moon_maps.py`: a height field built on the sphere (craters, rift valleys, Miranda's coronae, Umbriel's Wunda ring), shaded like a mosaic, coloured with each moon's measured albedo and tint | Ours |
+| `Assets/audio/vo_audio_clips/vo_destinations_audio_clips/vo_destination_<id>_audio_clip.wav` for the fourteen | Narration | Higgsfield `seed_audio`, preset Holden, script from `docs/copy/moons.md`; about 12.6 credits | Ours |
+
+**The generated maps are not observations.** Voyager 2 imaged only the southern halves of the Uranian moons, a few
+frames of Proteus and a single dot for Nereid; New Horizons resolved Pluto's four small moons as a handful of
+pixels. The character of each map follows what is known (brightness, colour, cratering, the named features) but
+every crater and valley is placed at random. Pluto's small moons are irregular; they are shown as spheres.

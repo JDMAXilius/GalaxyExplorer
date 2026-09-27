@@ -240,6 +240,92 @@ namespace CosmicSimulation.EditorTools
                 TexturePath = "Assets/Textures/moons/charon_texture.jpg",
                 DiameterKm = 1212f, PeriodDays = 6.4f, OrbitRadiusMetres = 0.30f, Ships = true,
             },
+            // The rest of the moons large enough to name, owner's direction 27 Sep. Rhea, Dione and Tethys are Cassini
+            // maps; the others have no whole map and use the generated ones from tools/moons/make_moon_maps.py.
+            new Spec
+            {
+                Id = "rhea", Parent = "saturn",
+                TexturePath = "Assets/Textures/moons/rhea_texture.jpg",
+                DiameterKm = 1527f, PeriodDays = 4.5f, OrbitRadiusMetres = 0.43f, Ships = true,
+            },
+            new Spec
+            {
+                Id = "dione", Parent = "saturn",
+                TexturePath = "Assets/Textures/moons/dione_texture.jpg",
+                DiameterKm = 1123f, PeriodDays = 2.7f, OrbitRadiusMetres = 0.39f, Ships = true,
+            },
+            new Spec
+            {
+                Id = "tethys", Parent = "saturn",
+                TexturePath = "Assets/Textures/moons/tethys_texture.jpg",
+                DiameterKm = 1062f, PeriodDays = 1.9f, OrbitRadiusMetres = 0.35f, Ships = true,
+            },
+            new Spec
+            {
+                Id = "miranda", Parent = "uranus",
+                TexturePath = "Assets/Textures/moons/miranda_texture.jpg",
+                DiameterKm = 472f, PeriodDays = 1.4f, OrbitRadiusMetres = 0.24f, Ships = true,
+            },
+            new Spec
+            {
+                Id = "ariel", Parent = "uranus",
+                TexturePath = "Assets/Textures/moons/ariel_texture.jpg",
+                DiameterKm = 1158f, PeriodDays = 2.5f, OrbitRadiusMetres = 0.29f, Ships = true,
+            },
+            new Spec
+            {
+                Id = "umbriel", Parent = "uranus",
+                TexturePath = "Assets/Textures/moons/umbriel_texture.jpg",
+                DiameterKm = 1169f, PeriodDays = 4.1f, OrbitRadiusMetres = 0.34f, Ships = true,
+            },
+            new Spec
+            {
+                Id = "titania", Parent = "uranus",
+                TexturePath = "Assets/Textures/moons/titania_texture.jpg",
+                DiameterKm = 1577f, PeriodDays = 8.7f, OrbitRadiusMetres = 0.42f, Ships = true,
+            },
+            new Spec
+            {
+                Id = "oberon", Parent = "uranus",
+                TexturePath = "Assets/Textures/moons/oberon_texture.jpg",
+                DiameterKm = 1523f, PeriodDays = 13.5f, OrbitRadiusMetres = 0.5f, Ships = true,
+            },
+            new Spec
+            {
+                Id = "proteus", Parent = "neptune",
+                TexturePath = "Assets/Textures/moons/proteus_texture.jpg",
+                DiameterKm = 420f, PeriodDays = 1.1f, OrbitRadiusMetres = 0.27f, Ships = true,
+            },
+            new Spec
+            {
+                Id = "nereid", Parent = "neptune",
+                TexturePath = "Assets/Textures/moons/nereid_texture.jpg",
+                DiameterKm = 357f, PeriodDays = 360f, OrbitRadiusMetres = 0.6f, Ships = true,
+            },
+            new Spec
+            {
+                Id = "styx", Parent = "pluto",
+                TexturePath = "Assets/Textures/moons/styx_texture.jpg",
+                DiameterKm = 16f, PeriodDays = 20.2f, OrbitRadiusMetres = 0.38f, Ships = true,
+            },
+            new Spec
+            {
+                Id = "nix", Parent = "pluto",
+                TexturePath = "Assets/Textures/moons/nix_texture.jpg",
+                DiameterKm = 50f, PeriodDays = 24.9f, OrbitRadiusMetres = 0.44f, Ships = true,
+            },
+            new Spec
+            {
+                Id = "kerberos", Parent = "pluto",
+                TexturePath = "Assets/Textures/moons/kerberos_texture.jpg",
+                DiameterKm = 19f, PeriodDays = 32.2f, OrbitRadiusMetres = 0.5f, Ships = true,
+            },
+            new Spec
+            {
+                Id = "hydra", Parent = "pluto",
+                TexturePath = "Assets/Textures/moons/hydra_texture.jpg",
+                DiameterKm = 51f, PeriodDays = 38.2f, OrbitRadiusMetres = 0.56f, Ships = true,
+            },
         };
 
         /// <summary>

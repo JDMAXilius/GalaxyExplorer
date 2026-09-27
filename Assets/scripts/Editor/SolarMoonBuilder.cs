@@ -40,6 +40,8 @@ namespace CosmicSimulation.EditorTools
             public float Km;
             public float Days;
             public float OrbitPlanetRadii;
+            public float OrbitRadius;       // in the planet grab root's space; wins over OrbitPlanetRadii
+            public float TiltDegrees;       // the planet's obliquity, so the moons orbit its equator
         }
 
         private static readonly Spec[] Moons =
@@ -56,6 +58,20 @@ namespace CosmicSimulation.EditorTools
             new Spec { Planet = "saturn", Id = "iapetus", Rig = "iapetus" },
             new Spec { Planet = "neptune", Id = "triton", Km = 2707f, Days = 5.9f, OrbitPlanetRadii = 2.2f },
             new Spec { Planet = "pluto", Id = "charon", Km = 1212f, Days = 6.4f, OrbitPlanetRadii = 2.6f },
+            new Spec { Planet = "saturn", Id = "rhea", Km = 1527f, Days = 4.5f, OrbitRadius = 0.76f, TiltDegrees = 26.7f },
+            new Spec { Planet = "saturn", Id = "dione", Km = 1123f, Days = 2.7f, OrbitRadius = 0.68f, TiltDegrees = 26.7f },
+            new Spec { Planet = "saturn", Id = "tethys", Km = 1062f, Days = 1.9f, OrbitRadius = 0.6f, TiltDegrees = 26.7f },
+            new Spec { Planet = "uranus", Id = "miranda", Km = 472f, Days = 1.4f, OrbitRadius = 0.07f, TiltDegrees = 98f },
+            new Spec { Planet = "uranus", Id = "ariel", Km = 1158f, Days = 2.5f, OrbitRadius = 0.09f, TiltDegrees = 98f },
+            new Spec { Planet = "uranus", Id = "umbriel", Km = 1169f, Days = 4.1f, OrbitRadius = 0.11f, TiltDegrees = 98f },
+            new Spec { Planet = "uranus", Id = "titania", Km = 1577f, Days = 8.7f, OrbitRadius = 0.14f, TiltDegrees = 98f },
+            new Spec { Planet = "uranus", Id = "oberon", Km = 1523f, Days = 13.5f, OrbitRadius = 0.17f, TiltDegrees = 98f },
+            new Spec { Planet = "neptune", Id = "proteus", Km = 420f, Days = 1.1f, OrbitRadius = 0.045f, TiltDegrees = 28f },
+            new Spec { Planet = "neptune", Id = "nereid", Km = 357f, Days = 360f, OrbitRadius = 0.16f, TiltDegrees = 28f },
+            new Spec { Planet = "pluto", Id = "styx", Km = 16f, Days = 20.2f, OrbitRadius = 0.04f, TiltDegrees = 120f },
+            new Spec { Planet = "pluto", Id = "nix", Km = 50f, Days = 24.9f, OrbitRadius = 0.046f, TiltDegrees = 120f },
+            new Spec { Planet = "pluto", Id = "kerberos", Km = 19f, Days = 32.2f, OrbitRadius = 0.052f, TiltDegrees = 120f },
+            new Spec { Planet = "pluto", Id = "hydra", Km = 51f, Days = 38.2f, OrbitRadius = 0.058f, TiltDegrees = 120f },
         };
 
         [MenuItem("Cosmic Simulation/Build Solar System Moons")]
@@ -121,6 +137,12 @@ namespace CosmicSimulation.EditorTools
             var rig = spec.Rig ?? spec.Id;
             var tilt = Find(planetRoot, $"{rig}_axis_tilt") ?? NewOrbit(planetRoot, spec, reference);
             var offsetter = Find(tilt, $"{rig}_orbit_offsetter");
+            if (spec.Rig == null)
+            {
+                // Orbits this builder made are re-laid on every run, so tuning a distance or a tilt needs no cleanup.
+                tilt.localEulerAngles = new Vector3(spec.TiltDegrees, 0f, 0f);
+                if (spec.OrbitRadius > 0f) offsetter.localPosition = new Vector3(spec.OrbitRadius, 0f, 0f);
+            }
             var anchor = offsetter.Find($"{rig}_anchor");
             var grab = prefab.Find($"{spec.Id}_force_grab_root");
 
@@ -196,13 +218,14 @@ namespace CosmicSimulation.EditorTools
             group.SetParent(planetRoot, false);
             var tilt = new GameObject($"{spec.Id}_axis_tilt").transform;
             tilt.SetParent(group, false);
+            tilt.localEulerAngles = new Vector3(spec.TiltDegrees, 0f, 0f);
             var rotator = new GameObject($"{spec.Id}_orbit_rotator").transform;
             rotator.SetParent(tilt, false);
             var rotate = rotator.gameObject.AddComponent<MoonOrbitRotator>();
-            rotate.OrbitalPeriodMultiplicator = spec.Days;
+            rotate.OrbitalPeriodMultiplicator = Mathf.Min(spec.Days, 40f);
             var offsetter = new GameObject($"{spec.Id}_orbit_offsetter").transform;
             offsetter.SetParent(rotator, false);
-            offsetter.localPosition = new Vector3(planetRadius * spec.OrbitPlanetRadii, 0f, 0f);
+            offsetter.localPosition = new Vector3(spec.OrbitRadius > 0f ? spec.OrbitRadius : planetRadius * spec.OrbitPlanetRadii, 0f, 0f);
 
             var scale = new GameObject($"{spec.Id}_scale_controller");
             scale.transform.SetParent(offsetter, false);

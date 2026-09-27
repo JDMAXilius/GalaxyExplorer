@@ -19,6 +19,20 @@ the rest are wired only if time allows. ASCII only.
 | deimos | Deimos | Mars | 12.4 km | 1.3 days | optional |
 | triton | Triton | Neptune | 2,707 km | 5.9 days | ship |
 | charon | Charon | Pluto | 1,212 km | 6.4 days | ship |
+| rhea | Rhea | Saturn | 1,527 km | 4.5 days | ship |
+| dione | Dione | Saturn | 1,123 km | 2.7 days | ship |
+| tethys | Tethys | Saturn | 1,062 km | 1.9 days | ship |
+| miranda | Miranda | Uranus | 472 km | 1.4 days | ship |
+| ariel | Ariel | Uranus | 1,158 km | 2.5 days | ship |
+| umbriel | Umbriel | Uranus | 1,169 km | 4.1 days | ship |
+| titania | Titania | Uranus | 1,577 km | 8.7 days | ship |
+| oberon | Oberon | Uranus | 1,523 km | 13.5 days | ship |
+| proteus | Proteus | Neptune | 420 km | 1.1 days | ship |
+| nereid | Nereid | Neptune | 357 km | 360 days | ship |
+| styx | Styx | Pluto | 16 km | 20.2 days | ship |
+| nix | Nix | Pluto | 50 km | 24.9 days | ship |
+| kerberos | Kerberos | Pluto | 19 km | 32.2 days | ship |
+| hydra | Hydra | Pluto | 51 km | 38.2 days | ship |
 
 ---
 
@@ -60,3 +74,31 @@ geysers of nitrogen shoot eight kilometres up from its frozen surface.
 
 **charon** — Half Pluto's size, Charon is locked face to face with it, the two
 circling a point in the empty space between them.
+
+**rhea** — Saturn's second-largest moon is an ancient ball of ice, cratered almost everywhere and barely changed in billions of years.
+
+**dione** — Bright ice cliffs hundreds of metres high streak Dione's trailing side, and an ocean may lie deep beneath its crust.
+
+**tethys** — Tethys is almost pure water ice, scarred by Ithaca Chasma, a canyon running three-quarters of the way around it.
+
+**miranda** — Miranda looks stitched together from different worlds, and one of its cliffs may be ten kilometres high, among the tallest in the solar system.
+
+**ariel** — The brightest of Uranus's moons, Ariel has the youngest surface, cut through by long rift valleys.
+
+**umbriel** — The darkest of the large Uranian moons, Umbriel has an old, cratered face broken by one bright ring, the crater Wunda.
+
+**titania** — Uranus's largest moon, Titania, is split by canyons up to 1,500 kilometres long, cracks from when its interior froze.
+
+**oberon** — The outermost of Uranus's large moons, Oberon is old and heavily cratered, and many crater floors are filled with dark material.
+
+**proteus** — Neptune's second-largest moon is one of the darkest objects in the solar system, and about as big as a moon can be without pulling itself round.
+
+**nereid** — Nereid swings around Neptune on one of the most stretched orbits of any moon, taking almost a year for each lap.
+
+**styx** — The smallest and innermost of Pluto's little moons, Styx was only discovered in 2012, by the Hubble Space Telescope.
+
+**nix** — Nix tumbles rather than spinning steadily, pulled back and forth by Pluto and Charon as they whirl around each other.
+
+**kerberos** — Kerberos is two small lumps stuck together, a double-lobed moon only about nineteen kilometres long.
+
+**hydra** — Hydra's surface is almost pure water ice, and it spins remarkably fast, once every ten hours.

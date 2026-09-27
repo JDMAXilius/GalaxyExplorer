@@ -185,6 +185,11 @@ EARTH'S SCORCHING TWIN
 Almost Earth's twin in size, wrapped in thick carbon dioxide clouds that trap heat so effectively the surface sits near 465 degrees Celsius, hotter than Mercury. It turns backwards compared with most planets, and so slowly that its day outlasts its year.
 Diameter: 12,104 km; Mass: 4.87 x 10^24 kg; Orbital Period: 225 days; Day Length: 243 days
 
+## Ariel (id: ariel)
+URANUS
+The brightest of Uranus's moons, Ariel has the youngest surface, cut through by long rift valleys.
+ORBITS: Uranus; DIAMETER: 1,158 km; ONE ORBIT: 2.5 days
+
 ## Callisto (id: callisto)
 JUPITER
 The most heavily cratered object we know of, its surface barely changed in four billion years.
@@ -199,6 +204,11 @@ ORBITS: Pluto; DIAMETER: 1,212 km; ONE ORBIT: 6.4 days
 MARS
 The smaller Martian moon is so distant and faint that from the surface it looks like a bright star.
 ORBITS: Mars; DIAMETER: 12.4 km; ONE ORBIT: 1.3 days
+
+## Dione (id: dione)
+SATURN
+Bright ice cliffs hundreds of metres high streak Dione's trailing side, and an ocean may lie deep beneath its crust.
+ORBITS: Saturn; DIAMETER: 1,123 km; ONE ORBIT: 2.7 days
 
 ## Enceladus (id: enceladus)
 SATURN
@@ -215,6 +225,11 @@ JUPITER
 The largest moon in the solar system, wider than Mercury, and the only one known to make its own magnetic field.
 ORBITS: Jupiter; DIAMETER: 5,268 km; ONE ORBIT: 7.2 days
 
+## Hydra (id: hydra)
+PLUTO
+Hydra's surface is almost pure water ice, and it spins remarkably fast, once every ten hours.
+ORBITS: Pluto; DIAMETER: 51 km; ONE ORBIT: 38.2 days
+
 ## Iapetus (id: iapetus)
 SATURN
 One hemisphere is as dark as coal and the other as bright as snow, a contrast still not fully explained.
@@ -225,27 +240,82 @@ JUPITER
 Squeezed and stretched by Jupiter's gravity, Io is the most volcanically active body in the solar system.
 ORBITS: Jupiter; DIAMETER: 3,643 km; ONE ORBIT: 1.8 days
 
+## Kerberos (id: kerberos)
+PLUTO
+Kerberos is two small lumps stuck together, a double-lobed moon only about nineteen kilometres long.
+ORBITS: Pluto; DIAMETER: 19 km; ONE ORBIT: 32.2 days
+
 ## Mimas (id: mimas)
 SATURN
 One impact crater a third as wide as the moon itself gives Mimas its unmistakable profile.
 ORBITS: Saturn; DIAMETER: 396 km; ONE ORBIT: 0.9 days
+
+## Miranda (id: miranda)
+URANUS
+Miranda looks stitched together from different worlds, and one of its cliffs may be ten kilometres high, among the tallest in the solar system.
+ORBITS: Uranus; DIAMETER: 472 km; ONE ORBIT: 1.4 days
 
 ## Moon (id: moon)
 EARTH
 Always turning the same face toward us, the Moon raises our tides and was the first world beyond Earth that people walked on.
 ORBITS: Earth; DIAMETER: 3,474 km; ONE ORBIT: 27.3 days
 
+## Nereid (id: nereid)
+NEPTUNE
+Nereid swings around Neptune on one of the most stretched orbits of any moon, taking almost a year for each lap.
+ORBITS: Neptune; DIAMETER: 357 km; ONE ORBIT: 360 days
+
+## Nix (id: nix)
+PLUTO
+Nix tumbles rather than spinning steadily, pulled back and forth by Pluto and Charon as they whirl around each other.
+ORBITS: Pluto; DIAMETER: 50 km; ONE ORBIT: 24.9 days
+
+## Oberon (id: oberon)
+URANUS
+The outermost of Uranus's large moons, Oberon is old and heavily cratered, and many crater floors are filled with dark material.
+ORBITS: Uranus; DIAMETER: 1,523 km; ONE ORBIT: 13.5 days
+
 ## Phobos (id: phobos)
 MARS
 Spiralling slowly inward, Phobos will break apart or strike Mars within about fifty million years.
 ORBITS: Mars; DIAMETER: 22.5 km; ONE ORBIT: 0.3 days
+
+## Proteus (id: proteus)
+NEPTUNE
+Neptune's second-largest moon is one of the darkest objects in the solar system, and about as big as a moon can be without pulling itself round.
+ORBITS: Neptune; DIAMETER: 420 km; ONE ORBIT: 1.1 days
+
+## Rhea (id: rhea)
+SATURN
+Saturn's second-largest moon is an ancient ball of ice, cratered almost everywhere and barely changed in billions of years.
+ORBITS: Saturn; DIAMETER: 1,527 km; ONE ORBIT: 4.5 days
+
+## Styx (id: styx)
+PLUTO
+The smallest and innermost of Pluto's little moons, Styx was only discovered in 2012, by the Hubble Space Telescope.
+ORBITS: Pluto; DIAMETER: 16 km; ONE ORBIT: 20.2 days
+
+## Tethys (id: tethys)
+SATURN
+Tethys is almost pure water ice, scarred by Ithaca Chasma, a canyon running three-quarters of the way around it.
+ORBITS: Saturn; DIAMETER: 1,062 km; ONE ORBIT: 1.9 days
 
 ## Titan (id: titan)
 SATURN
 The only moon with a thick atmosphere, and the only place besides Earth with liquid on its surface: rivers and lakes of methane.
 ORBITS: Saturn; DIAMETER: 5,150 km; ONE ORBIT: 15.9 days
 
+## Titania (id: titania)
+URANUS
+Uranus's largest moon, Titania, is split by canyons up to 1,500 kilometres long, cracks from when its interior froze.
+ORBITS: Uranus; DIAMETER: 1,577 km; ONE ORBIT: 8.7 days
+
 ## Triton (id: triton)
 NEPTUNE
 Triton circles Neptune backwards, a sign it was captured, and geysers of nitrogen shoot eight kilometres up from its frozen surface.
 ORBITS: Neptune; DIAMETER: 2,707 km; ONE ORBIT: 5.9 days
+
+## Umbriel (id: umbriel)
+URANUS
+The darkest of the large Uranian moons, Umbriel has an old, cratered face broken by one bright ring, the crater Wunda.
+ORBITS: Uranus; DIAMETER: 1,169 km; ONE ORBIT: 4.1 days
