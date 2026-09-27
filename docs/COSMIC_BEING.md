@@ -1,87 +1,82 @@
 # The Cosmic Being
 
-A small blue sphere of light, the same point-cloud hologram the intro's Earth wears, that keeps station beside the
-player and answers spoken questions about the universe. Claude is its mind; OpenAI is its ears and voice; a small
-relay holds both keys so the app never does.
-
-It is the intro object, not something like it: `being_hologram.mat` carries the intro material's own `_Size` of 0.07,
-so the point cloud reads at 14 cm exactly as the player already met it at floor-placement size. `_Size` is a point
-sprite's size in object space, so the ratio of point to sphere is the same whatever the sphere is scaled to.
+A small blue sphere of light, made of the intro ball's own point cloud, that keeps station beside the player and
+answers spoken questions about the universe. One module, `Assets/Being/`, in its own assembly `Cosmic.Companion`,
+talks to OpenAI's Realtime API over a single WebSocket: the microphone goes up, the transcript, the answer, the
+voice and the tool calls come back down. There is no relay, no second service and no other model.
 
 ## Flow
 
-1. The dock's being button (Quest: the small button under the dock; desktop: the last button on the HUD dock, or `C`)
-   summons the sphere. It fades in beside the player, connects to the relay, and the relay speaks a greeting.
-2. Tap the sphere (pinch, poke or click). It pops once to say it felt that, brightens and listens. Speak. When you
-   stop, it goes quiet on its own after 1.2 s of silence and thinks.
-3. The recording goes to the relay in one piece. Whisper transcribes it, Claude answers, each finished sentence is
-   turned into speech and streamed back, and the sphere swells with the voice - the talking pose.
-4. Tap while it is speaking to interrupt. Press the dock button again to dismiss it.
+1. The dock's being button (Quest: the small button under the dock; desktop: the last button on the HUD dock, or
+   `C`) summons the sphere. It fades in beside the player, opens the socket, and greets on its own - spoken by the
+   model, or from the stored clip when there is no key or no network.
+2. It then listens for `listenWindowSeconds` (6 s). A chime marks the window opening. While it listens the sphere
+   breathes, and your own voice pulls its points inward, so "it hears me" is something you can see.
+3. Speech ends by the server's own voice detection; the sphere spins fast while it thinks and fills in as it talks.
+   After an answer it listens again. With nothing said the window closes with a soft tick and it goes idle.
+4. Tap the sphere (pinch, poke or click) while idle: it listens, silently. Tap while it is talking: it stops and
+   listens. Press the dock button again to dismiss it.
 
-The Claude API is text only: no speech in or out, and streaming is server-sent events over HTTP. That is why the
-voice comes from OpenAI and why there is a relay. The relay is also the only place an API key lives; a key inside an
-APK or a desktop build can be read out.
+`alwaysListening` on the settings asset keeps the microphone open between answers instead of closing the window;
+it is still closed while the being speaks, so it never hears itself.
 
-## It behaves like a body
+## Sound
 
-The being takes the same inputs a planet does, through the same components, so a hand, a hand ray and the mouse all
-reach it by one path:
-
-- **Carry it.** A `ManipulationHandler` on the root, one- or two-handed, far interaction on. Grab sounds are on here
-  and off on the bodies, because a body's `ForceSolver` already plays them and the being has no solver.
-- **Brush it.** A `TouchNudge`, the same component `ForceSolver` adds to every planet and moon (CS-173): stroke it
-  without grabbing and the sphere turns a little with the stroke and springs back. Its target is the `hologram` child,
-  so the nudge composes with the point cloud's own spin and leaves the root to the anchor.
-- **Tap it.** A press and release inside 0.4 s that moved less than 30 mm. The same quick-and-still test the bodies
-  use for "put it back" (CS-174), for the same reason: a click event cannot tell a tap from a carry, and carrying the
-  being across the room must not start a conversation.
-- **It faces you.** `BeingAnchor` turns the being's front toward the head at 540 deg/s, about the world's up only -
-  a being that pitched to follow a player looking at their feet would read as falling over.
-- **It yields, then keeps station from where you left it.** While a hand has it the anchor writes no position at all.
-  On release it re-reads its own offset from wherever it was put down and follows from there, so moving it is a
-  decision made once rather than a tug of war.
+The being is the one voice in the room while it is awake: music and ambience drop to 55 % and the narrator stops
+(`IHost.Duck`). Its own voice plays through a 3D source that is at full volume within 1.5 m (`fullVolumeMetres`),
+60 % spatialised, at `voiceGain` 1.4. The music beds sit at 70 % and narration at 80 % of their old levels.
 
 ## Pieces
 
-| Where | What |
+| File | What |
 |---|---|
-| `Assets/scripts/being/CosmicBeing.cs` | Phases Idle, Listening, Thinking, Speaking; the tap; summon and dismiss |
-| `BeingAnchor.cs` | Keeps station beside the head and turns to face it; yields to a hand and re-reads its offset on release |
-| `BeingVisual.cs` | Phase and loudness into the hologram's `_Active`, `_Blend`, rotation speed and the rim's `_Multiplier`; the press pop and the talking swell, both as size |
-| `BeingMic.cs` | Record at 16 kHz until silence, PCM16 out; asks for the microphone on Android |
-| `BeingSpeaker.cs` | 24 kHz PCM16 chunks into a streaming clip on the voice mixer; loudness out; honours narration mute |
-| `BeingLink.cs` | One `ClientWebSocket` to the relay; text frames are JSON, binary frames are audio |
-| `BeingContext.cs` | Snapshot sent with each turn: place, layout, pulled bodies, platform |
-| `BeingActions.cs` | The relay's tool calls: open a place, pull a body, restore |
-| `BeingSettings.cs` | Relay address, silence tuning, placement |
-| `Editor/BeingBuilder.cs` | **Cosmic Simulation → Build Cosmic Being**: materials, settings, prefab, wired into both docks |
-| `tools/being-relay/` | Node + TypeScript: `server.ts` (WebSocket), `session.ts` (history, interrupt, cost cap), `claude.ts` (streaming, cached system prompt, tools, sentence split), `stt.ts`, `tts.ts`, `knowledge.ts` (reads `Assets/data` at start), `prompt/system.md` |
+| `Being.cs` | Phases Idle, Listening, Thinking, Speaking; the tap; the listen window; summon and dismiss |
+| `Session.cs` | The Realtime protocol: `session.update` (instructions, voice, PCM formats, server VAD, tools), audio append and clear, `response.create` and `response.cancel`, events out as C# events |
+| `Realtime.cs` | One `ClientWebSocket`: connect with the bearer key, serialised sends, a receive loop, main-thread inbox |
+| `Mic.cs` | Armed while the being is out so listening starts on the next frame; 24 kHz PCM16 in 50 ms frames; level; the Android permission |
+| `Voice.cs` | 24 kHz PCM16 into a streamed clip through a ring buffer; a quarter second of start buffer; the odd byte of a split sample carried, never dropped; loudness and four bands for the look |
+| `Look.cs` | Phase, loudness, bands and the player's own mic level into the points' `_Density`, `_Inward`, `_Bands`, `_Active`, spin, and the rim's glow; the press pop; the reveal |
+| `Follow.cs` | Keeps station in the head's yaw-and-pitch frame, faces the head, yields to a hand and re-reads its offset on release |
+| `IHost.cs` | What the app provides: the situation (place, layout, what is held), the three actions, ducking, the tap click, whether a hand holds it |
+| `BeingSettings.cs` | Every number, with its unit in its name |
+| `BeingKeys.cs` | The OpenAI key; blank reads `OPENAI_API_KEY`. The asset is gitignored |
+| `Editor/BeingPrefab.cs` | **Cosmic Simulation → Build Being**: knowledge, mesh, materials, cues, settings, prefab, wired into the old dock prefab |
+| `Editor/Knowledge.cs` | **Cosmic Simulation → Build Being Knowledge**: every place and body asset into `Data/being_knowledge.txt` |
+| `Data/being_prompt.txt` | The system instructions; the knowledge is appended at connect |
+| `Shaders/Points.shader`, `Rim.shader` | The point cloud and the rim, stereo macros on, target 3.5 |
+| `Assets/scripts/being/Host.cs`, `Assets/Cosmic/Being/Host.cs` | The two trees' halves: context, actions, ducking, grab. Each tree adds its own at summon; the being never references a tree |
 
 ## Protocol
 
-Unity → relay: `{"type":"hello","context":…}`; `{"type":"turn","text":"…","context":…}`; `{"type":"turn","audioBytes":N,"context":…}` followed by one binary frame of 16 kHz mono PCM16; `{"type":"interrupt"}`.
+Up: `session.update` once; `input_audio_buffer.append` (base64 PCM16 24 kHz) while listening; `input_audio_buffer.clear`
+when a window closes unused; a `conversation.item.create` user message carrying the situation line before each turn;
+`response.create` for typed questions and the greeting; `response.cancel` on interrupt; `function_call_output` after
+a tool.
 
-Relay → Unity: `{"type":"transcript","text"}`; `{"type":"text","text"}` per sentence; `{"type":"action","name","args"}`; binary frames of 24 kHz mono PCM16; `{"type":"done"}`; `{"type":"error","text"}`.
+Down: `session.updated`; `input_audio_buffer.speech_started` / `speech_stopped`; `conversation.item.input_audio_transcription.completed`;
+`response.output_audio.delta`; `response.output_audio_transcript.done`; `response.function_call_arguments.done`;
+`response.done`; `error`.
 
 ## Running it
 
-    cd tools/being-relay && cp .env.example .env   # add the two keys
-    npm install && npm run dev
-
-Set `RelayUrl` on `Assets/data/being/cosmic_being_settings.asset` to the machine's address (the Quest needs the LAN
-address, not localhost), build the being once from the menu, rebuild the UI prefabs and the desktop dock, and press
-the button.
+Paste the key into `Assets/Being/Data/being_keys.asset` (Inspector, *Open Ai Key*), or export `OPENAI_API_KEY`
+on a dev machine. Build the being once from the menu; the dock prefab is wired by that build, the Cosmic scene by
+**Cosmic → Build → Main Scene**. The APK needs the key in the asset; anyone with the APK can read it out, so a
+shipping build wants a short-lived client secret from a small endpoint instead - not done.
 
 ## Decisions
 
-- Tap-to-talk, not always listening: no echo of its own voice, no voice-activity service, no open microphone.
-- The talking pose is size, not a mouth. There is no face to animate, so the voice drives the sphere's scale through
-  a follow of 18/s: a loud syllable is a bigger sphere and the gaps between words let it settle. Rim brightness
-  tracks the same level, so it reads in peripheral vision as well as head-on.
-- The builders refuse to run in play mode. `Build UI Prefabs` in play mode threw inside TMP's outline setter - it
-  reaches through a `CanvasRenderer` that `Awake` has not wired on a freshly created object - which aborted the run
-  partway and left every prefab it had not reached at its old contents, with one exception line to show for it.
-- Claude Opus 5 at low effort with a cached system prompt, and the latency instruction in the prompt, because this is
-  a voice: the first sentence has to arrive fast. Raise `CLAUDE_EFFORT` in `.env` if answers feel thin.
-- Knowledge is parsed from the module and body assets at relay start, never copied, so it cannot drift from the app.
-- A session is capped at 40 turns (`MAX_TURNS`); the being says so and stops.
+- One socket for everything. Whisper, a chat model and a TTS voice in series made the tap-to-first-word wait the
+  sum of three services; the Realtime API overlaps them and speaks in its own voice.
+- The server decides when you stopped talking; the app decides only when the microphone is open.
+- The microphone stays armed while the being is out and closes with it, so opening a window costs nothing, and the
+  settings window's level meter yields to it.
+- The microphone opens `echoTailSeconds` (0.6 s) after the being stops talking, and after the chime. Opened any
+  sooner, speakers let it hear the end of its own sentence and answer itself - seen on the first online run.
+- A cancelled answer is dropped by its response id: audio already in flight when you tap keeps arriving, and
+  without that it resumed the interrupted answer.
+- English only (`language` on the transcription, and in the prompt): a room with other voices otherwise gets
+  answered in whatever language it hears.
+- Half-duplex: the microphone is never open while the being speaks, so there is no echo to cancel.
+- Tap is silent. The greeting happens once, on arrival.
+- The knowledge is generated from the assets, not copied, so it cannot drift from the app.

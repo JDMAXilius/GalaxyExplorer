@@ -8,7 +8,9 @@
         "Unity.InputSystem",
         "Unity.XR.CoreUtils",
         "Unity.XR.ARFoundation",
-        "UnityEngine.UI"
+        "UnityEngine.UI",
+        "Cosmic.Companion",
+        "Cosmic.Companion.Editor"
     ],
     "includePlatforms": [
         "Editor"

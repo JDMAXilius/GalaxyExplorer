@@ -61,6 +61,11 @@ namespace CosmicSimulation
         private float narrationDuck = 0.55f;
 
         [SerializeField]
+        [Range(0f, 1f)]
+        [Tooltip("Overall music level, on top of each track's own. The being's voice sits above the beds.")]
+        private float level = 0.7f;
+
+        [SerializeField]
         [Tooltip("Seconds the duck takes, going down and coming back.")]
         private float duckSeconds = 0.35f;
 
@@ -71,6 +76,10 @@ namespace CosmicSimulation
         private int _active;
         private float _fadeSpeed = 0.5f;
         private float _duck = 1f;
+        private float _external = 1f;
+
+        /// <summary>True while the being is awake: the beds drop the same way they do under narration.</summary>
+        public static bool Ducked { get; set; }
         private VOManager _vo;
 
         public static MusicController Instance { get; private set; }
@@ -120,6 +129,7 @@ namespace CosmicSimulation
 
             var wanted = NarrationPlaying() ? narrationDuck : 1f;
             _duck = Mathf.MoveTowards(_duck, wanted, Time.unscaledDeltaTime / Mathf.Max(0.01f, duckSeconds));
+            _external = Mathf.MoveTowards(_external, Ducked ? narrationDuck : 1f, Time.unscaledDeltaTime / Mathf.Max(0.01f, duckSeconds));
 
             for (var i = 0; i < 2; i++)
             {
@@ -145,7 +155,7 @@ namespace CosmicSimulation
                     continue;
                 }
 
-                source.volume = _level[i] * _duck;
+                source.volume = _level[i] * _duck * _external * level;
             }
         }
 

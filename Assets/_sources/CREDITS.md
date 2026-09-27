@@ -125,3 +125,11 @@ the fix.
 | File | `Assets/ui/figma/icon_settings.png` |
 | Tool | Drawn in code (Python, Pillow): an eight-tooth white gear on transparent, 128 × 128, supersampled 4× |
 | Licence | Original to this project. No SVG source yet; add one to `Assets/_sources/figma_svg/` when the Figma file gets the icon. |
+
+## Being cues (27 Sep 2026)
+
+| | |
+|---|---|
+| Files | `Assets/Being/Audio/being_listen.wav`, `Assets/Being/Audio/being_close.wav` |
+| Tool | None. Written by `Assets/Being/Editor/BeingPrefab.cs` (`Cue`) on the first **Build Being**: a soft sine note with a second harmonic, 6 ms attack and a linear decay - E5 then A5 for the listening chime, one D6 blip for the closing tick. 24 kHz 16-bit mono WAV. |
+| Note | Regenerate by deleting the files and building again. No licence to carry. |

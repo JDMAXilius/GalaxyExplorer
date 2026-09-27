@@ -371,17 +371,14 @@ namespace CosmicSimulation
         /// <summary>The module whose scene is already loaded, if any: the place the app is in fact showing.</summary>
         private ExperienceModule ModuleForOpenScene()
         {
-            // The last view anybody asked for is checked first. The intro passes through the solar system on its way
-            // to the galaxy and can leave both loaded for a moment, and the one it asked for last is where it is
-            // heading; walking the scene list alone would sometimes name the one it is leaving.
-            var current = ViewLoader.CurrentView;
-            if (IsSceneLoaded(current))
+            // The last view anybody asked for wins, loaded yet or not. The intro passes through the solar system on
+            // its way to the galaxy, and when it hands over the galaxy can still be loading while the solar system is
+            // still loaded: requiring the asked-for view to be loaded adopted the Solar System while the Milky Way
+            // was on screen, and the Solar System tile then did nothing because it was "already open" (27 Sep).
+            var asked = FindModuleByScene(ViewLoader.CurrentView);
+            if (asked != null)
             {
-                var asked = FindModuleByScene(current);
-                if (asked != null)
-                {
-                    return asked;
-                }
+                return asked;
             }
 
             for (var i = 0; i < SceneManager.sceneCount; i++)
@@ -400,17 +397,6 @@ namespace CosmicSimulation
             }
 
             return null;
-        }
-
-        private static bool IsSceneLoaded(string sceneName)
-        {
-            if (string.IsNullOrEmpty(sceneName))
-            {
-                return false;
-            }
-
-            var scene = SceneManager.GetSceneByName(sceneName);
-            return scene.IsValid() && scene.isLoaded;
         }
 
         private ExperienceModule FindModuleByScene(string sceneName)
@@ -461,7 +447,11 @@ namespace CosmicSimulation
         /// <summary>Goes to a place. Ignored if it is already open or a switch is running.</summary>
         public void Switch(ExperienceModule module)
         {
-            if (module == null || module == Current || IsSwitching)
+            // "Already open" means already on screen. The intro reports itself finished while the solar system it
+            // passes through is still the current view, and the galaxy it ends on only starts loading seconds later,
+            // so the director could record the Solar System with the Milky Way showing - and then refuse the Solar
+            // System tile as the place that was already open (27 Sep).
+            if (module == null || IsSwitching || (module == Current && IsShowing(module)))
             {
                 return;
             }
@@ -522,6 +512,9 @@ namespace CosmicSimulation
         }
 
         public void Switch(string id) => Switch(Find(id));
+
+        private static bool IsShowing(ExperienceModule module) =>
+            string.IsNullOrEmpty(module.SceneName) || module.SceneName == ViewLoader.CurrentView;
 
         private IEnumerator SwitchRoutine(ExperienceModule module)
         {

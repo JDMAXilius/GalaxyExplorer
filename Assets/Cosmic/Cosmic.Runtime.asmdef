@@ -10,7 +10,8 @@
         "Unity.XR.Management",
         "Unity.XR.OpenXR",
         "Unity.XR.ARFoundation",
-        "UnityEngine.UI"
+        "UnityEngine.UI",
+        "Cosmic.Companion"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

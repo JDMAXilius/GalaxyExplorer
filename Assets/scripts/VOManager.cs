@@ -99,6 +99,11 @@ namespace GalaxyExplorer
         private float nextClipDelay;
         private float defaultVolume;
 
+        [SerializeField]
+        [Range(0f, 1f)]
+        [Tooltip("Narration level. Under the being's voice on purpose.")]
+        private float level = 0.8f;
+
         private DateTime playStartTime;
         private float clipLength;
 
@@ -135,6 +140,10 @@ namespace GalaxyExplorer
                         audioSource.volume = defaultVolume;
                     }
                     audioService.PlayClip(nextClip, out audioSource);
+                    if (audioSource != null)
+                    {
+                        audioSource.volume *= level;
+                    }
                     nextClip = null;
                     
                 }

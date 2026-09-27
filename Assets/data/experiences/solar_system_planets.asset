@@ -31,3 +31,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 83fdc1f486c703147b508758964fccca, type: 2}
   Narration: {fileID: 0}
   Ambience: {fileID: 0}
+  Places: []

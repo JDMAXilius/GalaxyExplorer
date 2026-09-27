@@ -1,0 +1,241 @@
+# Places in the simulation
+
+## Andromeda (id: andromeda)
+M31
+The nearest large galaxy to our own is a spiral of about a trillion stars, 2.5 million light-years away. On a dark night it can be seen without a telescope, the most distant thing most people ever see with their own eyes.
+It is heading toward us at about 110 kilometres per second. In roughly four and a half billion years the two galaxies will merge.
+
+## Cosmic Web (id: cosmic_web)
+THE LARGEST SCALE
+The universe at its largest scale is not spread evenly. Matter gathers along filaments that run for hundreds of millions of light-years, meeting at dense knots where clusters of galaxies form, with near-empty voids in between.
+Most of this structure is dark matter, which no telescope can see directly. We map it by the galaxies strung along it, the way dew picks out a spider's web.
+
+## Galaxies (id: galaxies)
+A SKY FULL OF THEM
+Every smudge of light here is a galaxy, and each one holds billions of stars. Hubble and Webb found thousands of them in patches of sky no wider than a grain of sand held at arm's length.
+Their light has been travelling for billions of years, so looking out into a field like this is also looking a long way back in time.
+
+## HD 110067 (id: hd110067)
+SIX WORLDS IN STEP
+Six worlds around a star slightly cooler than the Sun, 105 light years away, moving in a rhythm that has held for billions of years. Each planet's year is a simple fraction of its neighbour's - three orbits to two, over and over, then four to three for the outer pair. Systems are born like this and almost always lose it; this one never did.
+All six are larger than Earth and far lighter than their size suggests, which means deep hydrogen atmospheres rather than ground. Nobody has photographed them and nobody has seen their surfaces, because they may not have any. What you are looking at is built from measured sizes and orbits - the appearance is our best reading of the physics, not a picture.
+The whole system would fit comfortably inside the orbit of Mercury.
+
+## Milky Way (id: milky_way)
+OUR GALAXY
+Our galaxy is a barred spiral roughly 100,000 light-years across, holding a few hundred billion stars. The Sun sits in a minor arm about 26,000 light-years out from the centre.
+One lap of the galaxy takes the Sun around 230 million years. The last time it was here, dinosaurs were new.
+
+## Pinwheel Galaxy (M101) (id: pinwheel)
+M101
+A face-on disc around 170,000 light years across - comfortably larger than our own galaxy - with many arms of uneven strength rather than a tidy pair, scattered with bright knots where new stars are forming.
+It sits about 21 million light years away in Ursa Major. The real galaxy is noticeably lopsided, brighter and more extended on one side; what you are holding is more even than that.
+
+## Galactic Center (id: sagittarius_a)
+SAGITTARIUS A*
+At the centre of the Milky Way is a black hole of about 4.3 million solar masses, 26,000 light-years from Earth. Its event horizon measures roughly 25 million kilometres across, some eighteen times the width of the Sun.
+The hole itself cannot be seen, only the superheated gas circling it. Light bends so sharply here that the far side of the disc appears above and below the shadow. The Event Horizon Telescope photographed it in 2022.
+
+## Solar System (id: solar_system)
+THE ORBITS
+Eight planets, several dwarf planets, and countless moons, asteroids and comets orbit one ordinary star. The Sun holds 99.8 per cent of all the mass; everything else is the remainder.
+Sizes and spacing here are simplified. At true scale the planets would be invisible specks and Neptune would sit far outside your room.
+
+## The Planets (id: solar_system_planets)
+SIDE BY SIDE
+Every world of the solar system, lined up within reach. In this view they share a size so you can compare their surfaces.
+Switch to relative size to see the truth of it: the Sun fills the room, Jupiter is a beach ball, and Earth sits in your palm.
+
+## Triangulum Galaxy (M33) (id: triangulum)
+M33
+Our third neighbour. After the Milky Way and Andromeda, this is the largest galaxy in the Local Group, and at about 2.7 million light years it is close enough that individual clouds of glowing gas can be picked out inside it.
+Its arms are flocculent - short, patchy fragments rather than long sweeping ones - and it has almost no central bulge. The version here is smoother and more organised than the real thing, which the generator cannot yet break up.
+
+## Whirlpool Galaxy (M51) (id: whirlpool)
+M51
+Two arms, wound tight and picked out in blue-white star clusters, with pink knots of glowing hydrogen strung along them like beads. This is the galaxy most people picture when they hear the word, and we see it almost perfectly face-on - which is the only reason it looks this way from here.
+It is about 23 million light years away, in Canes Venatici. A smaller galaxy, NGC 5195, is passing through its outskirts and pulling on the northern arm; that companion is not shown here yet.
+
+## Crab Nebula (id: crab)
+Supernova remnant - 6,500 light-years
+The wreckage of a star that exploded in 1054, bright enough that Chinese and Japanese astronomers recorded seeing it in daylight for more than three weeks.
+At its centre spins a neutron star the size of a city, turning thirty times a second. Its beam sweeps the whole cloud and keeps it glowing nearly a thousand years later.
+What surrounds you is an impression built from the photograph, projected around you so the filaments can be seen at size. In reality this is nine light-years of expanding debris viewed from four thousand light-years away, and no camera has ever been within it.
+
+## Helix Nebula (id: helix)
+Planetary nebula - 650 light-years
+A Sun-like star at the end of its life has shrugged off its outer layers, leaving a glowing shell of gas around the white dwarf that remains. We happen to see the shell close to face-on, which is why it looks like an eye.
+At 650 light-years it is one of the nearest planetary nebulae, and about two and a half light-years wide. Our own Sun will end much the same way.
+What surrounds you is an impression built from the Hubble photograph of the nebula, wrapped around you so you can see its colours at size. The real shell is two and a half light-years across and we see it from the outside, face-on; nobody has been inside it.
+
+## Homunculus Nebula (id: homunculus)
+Eruption cloud - 7,500 light-years
+Two lobes of gas thrown out by Eta Carinae, a colossal double star, during an eruption in the 1840s that briefly made it the second-brightest star in the sky.
+The star survived what should have killed it. It remains one of the most massive and unstable stars known, and is expected to end as a supernova.
+What surrounds you is an impression built from the photograph of the two lobes, opened out around you. The real Homunculus is a shell of ejecta about a light-year across wrapped close around Eta Carinae, and this is a way of showing it rather than a view from within.
+
+## NGC 1501 (id: ngc1501)
+Planetary nebula - 4,240 light-years
+A planetary nebula nicknamed the Oyster: a rippling bubble of gas blown off by a dying star, about a light-year across.
+The exposed stellar core at its centre pulses in brightness every half hour, which makes it one of the more closely watched objects of its kind.
+What surrounds you is an impression built from the photograph, opened out around you so its structure can be seen. The real nebula is about a third of a light-year across - a small, compact object seen from outside - so this is a way of looking closely, not a place.
+
+## Orion Nebula (id: orion)
+Star-forming region - 1,344 light-years
+The closest large nursery of new stars, visible without a telescope as the fuzzy middle point in the sword of Orion.
+A cluster of hot young stars lights the gas from inside, while hundreds of infant solar systems take shape in the shadows around them. This is roughly what our own system looked like four and a half billion years ago.
+What surrounds you is an impression built from the photograph, projected onto the sky around you. The nebula really is a cloud you could be inside - twenty-four light-years of it - but this is that photograph arranged around you, not a view recorded from in there.
+
+## Pillars of Creation (id: pillars)
+Star-forming region - 6,500 light-years
+Towers of cold gas and dust several light-years tall, standing in the Eagle Nebula and sculpted by radiation pouring off young stars nearby.
+New stars are condensing inside the columns while the same radiation eats them away from outside. Hubble's photograph of them in 1995 became one of the most recognised images in astronomy.
+What surrounds you is an impression built from the Hubble and Webb photographs, projected around you so the columns stand at size. They are four to five light-years tall and are genuinely something you could be among; no camera has been.
+
+## Trumpler 14 (id: trumpler14)
+Star cluster - 8,980 light-years
+One of the youngest and most crowded star clusters known, packed into the Carina Nebula about nine thousand light-years away.
+Its thousands of stars are only a few hundred thousand years old, and the brightest of them are among the most luminous in the galaxy. They will burn out quickly and explode.
+What surrounds you is an impression built from the photograph of the Carina Nebula that holds this cluster, wrapped around you. The cloud is a place you could be inside; the arrangement here, and the stars scattered through it, are ours rather than measured.
+
+# Bodies
+
+## Earth (id: earth)
+OUR HOME PLANET
+The only world known to carry life. Liquid water covers about seventy-one per cent of the surface, the atmosphere holds the temperature steady, and a magnetic field turns aside the solar wind. Its unusually large Moon steadies the tilt of its axis and keeps the seasons regular.
+Diameter: 12,742 km; Mass: 5.97 x 10^24 kg; Orbital Period: 365.25 days; Day Length: 24 hours
+
+## HD 110067 b (id: hd110067_b)
+FIRST IN THE CHAIN
+The innermost of six worlds locked into a rhythm: for every two orbits this planet makes, the next one out makes three, and that pattern continues all the way to the sixth. Its measured density is far too low for rock, so it almost certainly carries a deep hydrogen atmosphere with no surface to stand on.
+Diameter: 28,032 km; Mass: 3.40^25 kg; Orbital Period: 9.11 days; Orbital Distance: 0.0793 AU; Day Length: Not yet measured
+
+## HD 110067 c (id: hd110067_c)
+SECOND IN THE CHAIN
+Its size is measured, because it passes in front of its star and blocks a little light. Its mass is not - only an upper limit is known, so how heavy it is remains genuinely open.
+Diameter: 30,428 km; Mass: Not yet measured; Orbital Period: 13.67 days; Orbital Distance: 0.1039 AU; Day Length: Not yet measured
+
+## HD 110067 d (id: hd110067_d)
+THIRD IN THE CHAIN
+The largest of the six. Its density works out at about a third of Earth's, which is the signature of a small rocky core wrapped in an enormous envelope of hydrogen and helium.
+Diameter: 36,340 km; Mass: 5.09^25 kg; Orbital Period: 20.52 days; Orbital Distance: 0.1362 AU; Day Length: Not yet measured
+
+## HD 110067 e (id: hd110067_e)
+FOURTH IN THE CHAIN
+The smallest of the six, and the one the discovery team singled out as possibly different - it may be the only member of the family without a huge hydrogen envelope. Its mass has not been measured, so that remains a maybe.
+Diameter: 24,719 km; Mass: Not yet measured; Orbital Period: 30.79 days; Orbital Distance: 0.1785 AU; Day Length: Not yet measured
+
+## HD 110067 f (id: hd110067_f)
+FIFTH IN THE CHAIN
+Less dense than Neptune. Whatever this world is made of, most of its volume is atmosphere, and the solid part of it must be small.
+Diameter: 33,142 km; Mass: 3.01^25 kg; Orbital Period: 41.06 days; Orbital Distance: 0.2163 AU; Day Length: Not yet measured
+
+## HD 110067 g (id: hd110067_g)
+SIXTH IN THE CHAIN
+The outermost known planet, taking about 55 days to go round. Even out here it receives six times the sunlight Earth does - this system is packed far tighter than ours, and none of it is in the zone where liquid water could sit on a surface.
+Diameter: 33,218 km; Mass: Not yet measured; Orbital Period: 54.77 days; Orbital Distance: 0.2621 AU; Day Length: Not yet measured
+
+## HD 110067 (id: hd110067_star)
+THE HOST STAR
+A K-type dwarf a little cooler and smaller than the Sun, in Coma Berenices, about 105 light years away. It is bright enough to keep studying, and old - somewhere around seven to eight billion years. From any of its six planets it would look like a warm white disc several times wider than the Sun looks from Earth.
+Diameter: 1,097,448 km; Mass: 1.59^30 kg; Day Length: Not yet measured
+
+## Jupiter (id: jupiter)
+THE LARGEST PLANET
+A gas giant with more than twice the mass of every other planet combined. The Great Red Spot is a storm wider than Earth that has been turning for at least a century and a half. Ninety-five confirmed moons circle it, among them Europa, which hides an ocean under its ice.
+Diameter: 139,820 km; Mass: 1.90 x 10^27 kg; Orbital Period: 11.86 years; Day Length: 9.9 hours
+
+## Mars (id: mars)
+THE RED PLANET
+Iron oxide in the dust gives Mars its colour. It holds Olympus Mons, the largest volcano in the solar system, and a canyon system as long as the United States is wide. Dry riverbeds and buried ice show that water once ran here.
+Diameter: 6,792 km; Mass: 6.42 x 10^23 kg; Orbital Period: 687 days; Day Length: 24.6 hours
+
+## Mercury (id: mercury)
+THE SMALLEST PLANET
+The smallest planet and the closest to the Sun, cratered like the Moon and holding almost no atmosphere to spread its heat. Sunlit ground reaches 430 degrees Celsius while the night side falls to minus 180. One day there lasts longer than one of its years.
+Diameter: 4,879 km; Mass: 3.30 x 10^23 kg; Orbital Period: 88 days; Day Length: 58.6 days
+
+## Neptune (id: neptune)
+THE WINDIEST PLANET
+The outermost planet was found in 1846 by arithmetic before anyone saw it: astronomers predicted its position from wobbles in the orbit of Uranus and pointed a telescope where the numbers said. Its winds are the fastest measured anywhere in the solar system.
+Diameter: 49,244 km; Mass: 1.02 x 10^26 kg; Orbital Period: 164.8 years; Day Length: 16.1 hours
+
+## Pluto (id: pluto)
+A DWARF PLANET
+Counted as the ninth planet from 1930 until 2006, Pluto is now the best known of the dwarf planets. New Horizons flew past in 2015 and found mountains of water ice and a vast heart-shaped plain of frozen nitrogen that is still being resurfaced today.
+Diameter: 2,377 km; Mass: 1.31 x 10^22 kg; Orbital Period: 248 years; Day Length: 6.4 days
+
+## Saturn (id: saturn)
+THE RINGED PLANET
+The rings are billions of pieces of ice and rock, from dust grains to boulders, spread into a sheet only tens of metres thick. The planet itself is less dense than water. Its moon Titan has rivers and lakes of liquid methane under a thick nitrogen sky.
+Diameter: 116,460 km; Mass: 5.68 x 10^26 kg; Orbital Period: 29.4 years; Day Length: 10.7 hours
+
+## The Sun (id: sun)
+OUR STAR
+A middle-aged yellow dwarf star holding 99.8 per cent of the solar system's mass. In its core, hydrogen fuses into helium at fifteen million degrees. The light that leaves its surface takes eight minutes and twenty seconds to cross the distance to Earth.
+Diameter: 1,392,700 km; Mass: 1.989 x 10^30 kg; Orbit of the Galaxy: 230 million years; Day Length: 25.4 days
+
+## Uranus (id: uranus)
+THE SIDEWAYS ICE GIANT
+Uranus rolls around the Sun on its side, tipped by about ninety-eight degrees, most likely knocked over long ago by a collision. Each pole spends roughly forty-two years in sunlight and forty-two in darkness. Methane in its atmosphere absorbs red light and leaves it pale blue-green.
+Diameter: 50,724 km; Mass: 8.68 x 10^25 kg; Orbital Period: 84.0 years; Day Length: 17.2 hours
+
+## Venus (id: venus)
+EARTH'S SCORCHING TWIN
+Almost Earth's twin in size, wrapped in thick carbon dioxide clouds that trap heat so effectively the surface sits near 465 degrees Celsius, hotter than Mercury. It turns backwards compared with most planets, and so slowly that its day outlasts its year.
+Diameter: 12,104 km; Mass: 4.87 x 10^24 kg; Orbital Period: 225 days; Day Length: 243 days
+
+## Callisto (id: callisto)
+JUPITER
+The most heavily cratered object we know of, its surface barely changed in four billion years.
+ORBITS: Jupiter; DIAMETER: 4,821 km; ONE ORBIT: 16.7 days
+
+## Deimos (id: deimos)
+MARS
+The smaller Martian moon is so distant and faint that from the surface it looks like a bright star.
+ORBITS: Mars; DIAMETER: 12.4 km; ONE ORBIT: 1.3 days
+
+## Enceladus (id: enceladus)
+SATURN
+Geysers at its south pole spray water from a hidden ocean into space, feeding one of Saturn's rings.
+ORBITS: Saturn; DIAMETER: 504 km; ONE ORBIT: 1.4 days
+
+## Europa (id: europa)
+JUPITER
+A shell of cracked ice over a salt-water ocean that holds more water than every sea on Earth.
+ORBITS: Jupiter; DIAMETER: 3,122 km; ONE ORBIT: 3.6 days
+
+## Ganymede (id: ganymede)
+JUPITER
+The largest moon in the solar system, wider than Mercury, and the only one known to make its own magnetic field.
+ORBITS: Jupiter; DIAMETER: 5,268 km; ONE ORBIT: 7.2 days
+
+## Iapetus (id: iapetus)
+SATURN
+One hemisphere is as dark as coal and the other as bright as snow, a contrast still not fully explained.
+ORBITS: Saturn; DIAMETER: 1,469 km; ONE ORBIT: 79.3 days
+
+## Io (id: io)
+JUPITER
+Squeezed and stretched by Jupiter's gravity, Io is the most volcanically active body in the solar system.
+ORBITS: Jupiter; DIAMETER: 3,643 km; ONE ORBIT: 1.8 days
+
+## Mimas (id: mimas)
+SATURN
+One impact crater a third as wide as the moon itself gives Mimas its unmistakable profile.
+ORBITS: Saturn; DIAMETER: 396 km; ONE ORBIT: 0.9 days
+
+## Moon (id: moon)
+EARTH
+Always turning the same face toward us, the Moon raises our tides and was the first world beyond Earth that people walked on.
+ORBITS: Earth; DIAMETER: 3,474 km; ONE ORBIT: 27.3 days
+
+## Phobos (id: phobos)
+MARS
+Spiralling slowly inward, Phobos will break apart or strike Mars within about fifty million years.
+ORBITS: Mars; DIAMETER: 22.5 km; ONE ORBIT: 0.3 days
+
+## Titan (id: titan)
+SATURN
+The only moon with a thick atmosphere, and the only place besides Earth with liquid on its surface: rivers and lakes of methane.
+ORBITS: Saturn; DIAMETER: 5,150 km; ONE ORBIT: 15.9 days

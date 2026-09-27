@@ -10,7 +10,7 @@ namespace CosmicSimulation
     /// <summary>
     /// The microphone row of the settings window: ‹ device ›, a level bar and one line of help (owner's
     /// direction, 16 Sep). The arrows cycle through "System default" and every device Unity can see, and the
-    /// choice is <see cref="BeingMic.Device"/>, so the being records from exactly what is shown here.
+    /// choice is <see cref="Cosmic.Companion.Mic.Device"/>, so the being records from exactly what is shown here.
     ///
     /// <para><b>Why arrows and not a list.</b> A drop-down is a small target that opens more small targets, which
     /// is hard with a hand ray. Two 12 mm buttons are not, and most machines have two or three devices.</para>
@@ -18,7 +18,7 @@ namespace CosmicSimulation
     /// <para><b>The level bar.</b> While the window is open the chosen device is opened in a one-second loop and
     /// the bar shows how loud the last 50 ms were, so a player can see the right microphone is live before
     /// they ever talk to the being. The row lets go of the device whenever the being is recording
-    /// (<see cref="BeingMic.InUse"/>) and when the window closes, because two readers of one microphone is not
+    /// (<see cref="Cosmic.Companion.Mic.InUse"/>) and when the window closes, because two readers of one microphone is not
     /// something every platform allows.</para>
     /// </summary>
     public class MicrophoneRow : MonoBehaviour
@@ -67,7 +67,7 @@ namespace CosmicSimulation
             var index = -1;
             for (var i = 0; i < devices.Length; i++)
             {
-                if (devices[i] == BeingMic.Device)
+                if (devices[i] == Cosmic.Companion.Mic.Device)
                 {
                     index = i;
                 }
@@ -75,7 +75,7 @@ namespace CosmicSimulation
 
             var count = devices.Length + 1;
             var slot = ((index + 1 + direction) % count + count) % count;
-            BeingMic.Device = slot == 0 ? string.Empty : devices[slot - 1];
+            Cosmic.Companion.Mic.Device = slot == 0 ? string.Empty : devices[slot - 1];
             Release();
             ShowDevice();
         }
@@ -118,7 +118,7 @@ namespace CosmicSimulation
 
         private void Update()
         {
-            if (BeingMic.InUse)
+            if (Cosmic.Companion.Mic.InUse)
             {
                 Release();
                 Say("The guide is listening on this microphone.");
@@ -143,7 +143,7 @@ namespace CosmicSimulation
         private void Acquire()
         {
             // Permission first: Android may list no devices at all until it is granted.
-            if (!BeingMic.Permitted)
+            if (!Cosmic.Companion.Mic.Permitted)
             {
                 // Asked once per window, not every frame: the system dialog is the player's to answer.
                 if (!_asked)
@@ -163,7 +163,7 @@ namespace CosmicSimulation
                 return;
             }
 
-            _open = BeingMic.ResolvedDevice;
+            _open = Cosmic.Companion.Mic.Resolve();
             _clip = Microphone.Start(_open, true, 1, Rate);
             _live = _clip != null;
             Say(_live ? "Speak to check it. The bar moves when the mic hears you." : "This microphone could not be opened.");
@@ -202,7 +202,7 @@ namespace CosmicSimulation
             _live = false;
 
             // While the being records it owns the device, and ending it here would cut the being off.
-            if (!BeingMic.InUse)
+            if (!Cosmic.Companion.Mic.InUse)
             {
                 Microphone.End(_open);
             }
@@ -217,10 +217,10 @@ namespace CosmicSimulation
                 return;
             }
 
-            var chosen = BeingMic.ResolvedDevice;
-            deviceLabel.text = chosen ?? (string.IsNullOrEmpty(BeingMic.Device)
+            var chosen = Cosmic.Companion.Mic.Resolve();
+            deviceLabel.text = chosen ?? (string.IsNullOrEmpty(Cosmic.Companion.Mic.Device)
                 ? DefaultName
-                : $"{DefaultName} ({BeingMic.Device} is unplugged)");
+                : $"{DefaultName} ({Cosmic.Companion.Mic.Device} is unplugged)");
         }
 
         private void Say(string text)

@@ -80,6 +80,13 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
     [Tooltip("How far a body may drift during the press and still count as tapped rather than dragged, in metres.")]
     public float TapMoveMetres = 0.03f;
 
+    [Tooltip("Width kept free beside a pulled body for its info card, in metres at text scale 1.")]
+    public float CardRoomMetres = 0.2f;
+
+    // Every body in the scene, so a pull to the front of the camera can make room among the ones already out.
+    private static readonly List<ForceSolver> Bodies = new List<ForceSolver>();
+    private Vector3? _aside;
+
     private bool _tapArmed;
     private GEPointer _tapPointer;
     private float _tapStarted;
@@ -96,6 +103,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
         Debug.Assert(_manipulationHandler != null, "Force Solver failed to find a manipulation handler");
         _attractionCollider = AttractionCollider ? AttractionCollider : GetComponentInChildren<Collider>();
         Debug.Assert(_attractionCollider != null, "Force Solver failed to find a attraction collider");
+        Bodies.Add(this);
 
         _manipulationHandler.OnManipulationEnded.AddListener(OnManipulationEnd);
 
@@ -124,6 +132,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
 
     private void OnDestroy()
     {
+        Bodies.Remove(this);
         ControllerTracker.AllTrackingLost -= OnControllersLost;
     }
 
@@ -236,6 +245,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
             return;
         }
 
+        _aside = null;
         PreviousForceState = ForceState;
         ForceState = State.Root;
         _manipulationHandler.enabled = false;
@@ -370,6 +380,8 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
         ForceState = State.Attraction;
         if (forcePullToFrontOfCamera)
         {
+            var camera = _mainCamera.transform;
+            MakeRoom(camera.position + camera.forward * _offsetOnPullToCamera, camera.right, camera.forward, this);
             _forcePullToFrontOfCamera = true;
             SolverHandler.TransformTarget = _mainCamera.transform;
         }
@@ -390,6 +402,36 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
     {
     }
 
+    /// <summary>
+    /// A body pulled to the front of the camera lands where the last one did. Whatever free body is in that spot
+    /// steps one body-and-card to the left and a little back, and makes room there in turn, so pulled bodies and their cards line
+    /// up instead of stacking. Bodies the player has carried elsewhere, and any being held, are left alone.
+    /// </summary>
+    private static void MakeRoom(Vector3 spot, Vector3 right, Vector3 forward, ForceSolver arriving)
+    {
+        foreach (var other in Bodies)
+        {
+            if (other == arriving || other == null || other.ForceState != State.Free)
+            {
+                continue;
+            }
+
+            var at = other._aside ?? other.WorkingPosition;
+            var room = other.Radius() * 2f + other.CardRoomMetres * CosmicSimulation.InfoPanel.TextScale;
+            if (Vector3.Distance(at, spot) >= room)
+            {
+                continue;
+            }
+
+            // Back as well as across, so a narrow desktop view still holds the body that stepped aside.
+            var aside = spot - right * room + forward * room * 0.5f;
+            MakeRoom(aside, right, forward, other);
+            other._aside = aside;
+        }
+    }
+
+    private float Radius() => _attractionCollider != null ? _attractionCollider.bounds.extents.x : 0.1f;
+
     private void StartManipulation()
     {
         if (ForceState == State.Manipulation)
@@ -399,6 +441,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
 
         ReleaseAllTractorBeams();
 //        SetActivePointersFocusLocked(false);
+        _aside = null;
         PreviousForceState = ForceState;
         ForceState = State.Manipulation;
         SolverHandler.TransformTarget = ControllerTracker.transform;
@@ -501,7 +544,16 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
                 break;
 
             case State.Free:
-                // do nothing
+                // Stays where it was left, unless a newer pull asked it to step aside.
+                if (_aside.HasValue)
+                {
+                    GoalPosition = _aside.Value;
+                    UpdateWorkingPositionToGoal();
+                    if (Vector3.Distance(WorkingPosition, _aside.Value) <= 0.01f)
+                    {
+                        _aside = null;
+                    }
+                }
                 break;
 
             case State.Attraction:

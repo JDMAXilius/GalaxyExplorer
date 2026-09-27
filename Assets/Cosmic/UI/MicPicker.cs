@@ -47,10 +47,10 @@ namespace Cosmic
             var devices = Microphone.devices;
             var index = -1;
             for (var i = 0; i < devices.Length; i++)
-                if (devices[i] == Prefs.Microphone) index = i;
+                if (devices[i] == Companion.Mic.Device) index = i;
             var count = devices.Length + 1;
             var slot = ((index + 1 + direction) % count + count) % count;
-            Prefs.Microphone = slot == 0 ? string.Empty : devices[slot - 1];
+            Companion.Mic.Device = slot == 0 ? string.Empty : devices[slot - 1];
             if (Grabbable.Bus != null) Grabbable.Bus.Play(Sfx.Select, transform);
             Release();
             Show();
@@ -77,7 +77,7 @@ namespace Cosmic
         void Update()
         {
             if (!metering) return;
-            if (BeingMic.InUse) { Release(); Say("The guide is listening on this microphone."); }
+            if (Companion.Mic.InUse) { Release(); Say("The being is listening on this microphone."); }
             else if (!live && !asking) Acquire();
             if (live) Measure();
             Draw();
@@ -86,8 +86,8 @@ namespace Cosmic
         void Acquire()
         {
             if (Microphone.devices.Length == 0) { Say("No microphone found."); return; }
-            if (!BeingMic.Permitted()) { StartCoroutine(AskOnce()); return; }
-            open = BeingMic.Resolve();
+            if (!Companion.Mic.Permitted) { StartCoroutine(AskOnce()); return; }
+            open = Companion.Mic.Resolve();
             clip = Microphone.Start(open, true, 1, Rate);
             live = clip != null;
             Say(live ? "Speak to check it. The bar moves when the mic hears you." : "This microphone could not be opened.");
@@ -97,8 +97,8 @@ namespace Cosmic
         {
             asking = true;
             Say("Allow the microphone to check it.");
-            yield return BeingMic.Ask(() => !metering);
-            if (!BeingMic.Permitted()) Say("Microphone permission was not given.");
+            yield return Companion.Mic.Request();
+            if (!Companion.Mic.Permitted) Say("Microphone permission was not given.");
             else asking = false;
         }
 
@@ -108,7 +108,7 @@ namespace Cosmic
             var start = position - window.Length;
             if (start < 0) start += clip.samples;
             clip.GetData(window, start);
-            var target = Mathf.Clamp01(BeingMic.Rms(window) * meterGain);
+            var target = Mathf.Clamp01(Rms(window) * meterGain);
             level = target > level ? target : Mathf.MoveTowards(level, target, meterFallPerSecond * Time.unscaledDeltaTime);
         }
 
@@ -116,20 +116,27 @@ namespace Cosmic
         {
             if (!live) return;
             live = false;
-            if (!BeingMic.InUse) Microphone.End(open);
+            if (!Companion.Mic.InUse) Microphone.End(open);
             clip = null;
         }
 
         void Show()
         {
             if (deviceName == null) return;
-            var chosen = BeingMic.Resolve();
-            deviceName.text = chosen ?? (string.IsNullOrEmpty(Prefs.Microphone) ? Default : $"{Default} ({Prefs.Microphone} is unplugged)");
+            var chosen = Companion.Mic.Resolve();
+            deviceName.text = chosen ?? (string.IsNullOrEmpty(Companion.Mic.Device) ? Default : $"{Default} ({Companion.Mic.Device} is unplugged)");
         }
 
         void Say(string text)
         {
             if (hint != null && hint.text != text) hint.text = text;
+        }
+
+        static float Rms(float[] samples)
+        {
+            var sum = 0f;
+            foreach (var v in samples) sum += v * v;
+            return samples.Length > 0 ? Mathf.Sqrt(sum / samples.Length) : 0f;
         }
 
         void Draw()

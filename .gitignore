@@ -66,3 +66,9 @@ WSATestCertificate.pfx.meta
 # Python tooling under tools/
 __pycache__/
 *.pyc
+
+# Being: the OpenAI key never ships in git
+/Assets/Being/Data/being_keys.asset
+/Assets/Being/Data/being_keys.asset.meta
+/.env
+/tools/being-relay/

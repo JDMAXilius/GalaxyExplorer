@@ -1,5 +1,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections.Generic;
 using GalaxyExplorer.XR;
 using TMPro;
 using UnityEngine;
@@ -93,6 +94,8 @@ namespace CosmicSimulation
         // Last value LateUpdate sounded on, so the open/close clip fires on the change and not every frame.
         private bool _sounded;
         private float _side = 1f;
+        private List<(RectTransform rect, float y, float height)> _rows;
+        private const float RowGapUnits = 3f;
         private const float SideSwitchDistance = 0.12f;
 
         public Variant PanelVariant => variant;
@@ -207,6 +210,7 @@ namespace CosmicSimulation
             }
 
             Set(instruction, null);
+            Layout();
         }
 
         /// <summary>Fills a scene panel from an experience's copy.</summary>
@@ -232,40 +236,59 @@ namespace CosmicSimulation
             Set(paragraph, prose);
             Set(instruction, copy.Instruction);
             ShowStats(0, null);
-            ReflowScene(prose);
+            Layout();
         }
 
         /// <summary>
-        /// Moves the instruction under however much prose a place has.
-        ///
-        /// The prefab's rows are laid out for the body variant, whose paragraph is capped at 55 words and given
-        /// a fixed seven lines (<c>UiPrefabBuilder</c>). A scene panel's two or three paragraphs are as long as
-        /// the copy deck makes them, so a fixed row would either run the prose through the instruction or leave
-        /// a hole under it. Only the scene variant is reflowed: the body panels are already laid out and signed
-        /// off against the spec.
+        /// Stacks the rows from their measured heights. Each row keeps the place the prefab designed for it and is
+        /// only pushed down when the row above has grown into it - a two-line title, a long subtitle - so a card
+        /// whose copy fits looks exactly as signed off, and one whose copy does not never overlaps. A scene panel's
+        /// prose is as long as the copy deck makes it, so its instruction follows the prose directly.
         /// </summary>
-        private void ReflowScene(string prose)
+        private void Layout()
         {
-            if (paragraph == null || instruction == null)
+            if (_rows == null)
             {
-                return;
+                _rows = new List<(RectTransform rect, float y, float height)>();
+                foreach (var part in new Component[] { title, subtitle, paragraph, divider, statGrid, instruction })
+                {
+                    if (part != null)
+                    {
+                        var rect = (RectTransform)part.transform;
+                        _rows.Add((rect, rect.anchoredPosition.y, rect.sizeDelta.y));
+                    }
+                }
             }
 
-            var proseRect = paragraph.rectTransform;
+            var bottom = 0f;
+            var first = true;
+            foreach (var (rect, designedY, designedHeight) in _rows)
+            {
+                if (!rect.gameObject.activeSelf)
+                {
+                    continue;
+                }
 
-            // sizeDelta rather than rect.width when the layout has not been built yet: both rows are anchored to
-            // a point at the top-left, where the two are the same number.
-            var width = proseRect.rect.width > 1f ? proseRect.rect.width : proseRect.sizeDelta.x;
-            var height = string.IsNullOrEmpty(prose) ? 0f : paragraph.GetPreferredValues(prose, width, 0f).y;
+                var height = designedHeight;
+                var text = rect.GetComponent<TMP_Text>();
+                if (text != null)
+                {
+                    var width = rect.rect.width > 1f ? rect.rect.width : rect.sizeDelta.x;
+                    var preferred = text.GetPreferredValues(text.text, width, 0f).y;
+                    height = variant == Variant.Scene && text == paragraph ? preferred : Mathf.Max(preferred, designedHeight);
+                }
 
-            proseRect.sizeDelta = new Vector2(proseRect.sizeDelta.x, height);
+                var y = first ? designedY : Mathf.Min(designedY, bottom - RowGapUnits);
+                if (variant == Variant.Scene && text == instruction)
+                {
+                    y = bottom - sceneInstructionGapUnits;
+                }
 
-            // Top-left pivot, so y runs downwards as negatives and the instruction sits at the paragraph's
-            // top minus its height.
-            var instructionRect = instruction.rectTransform;
-            instructionRect.anchoredPosition = new Vector2(
-                instructionRect.anchoredPosition.x,
-                proseRect.anchoredPosition.y - height - sceneInstructionGapUnits);
+                rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, y);
+                rect.sizeDelta = new Vector2(rect.sizeDelta.x, height);
+                bottom = y - height;
+                first = false;
+            }
         }
 
         private void ShowStats(int count, BodyInfo info)

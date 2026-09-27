@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fc48b72192d4454fb16ca74293299e1, type: 3}
+  m_Name: being_settings
+  m_EditorClassIdentifier: Cosmic.Companion::Cosmic.Companion.BeingSettings
+  model: gpt-realtime
+  voice: marin
+  transcriptionModel: gpt-4o-transcribe
+  language: en
+  prompt: {fileID: 4900000, guid: 0d46bcc3043a18b4f8619354e8a1958f, type: 3}
+  knowledge: {fileID: 4900000, guid: f5a13db0fe6334a4f80783f1b3c09c1b, type: 3}
+  connectTimeoutSeconds: 6
+  alwaysListening: 0
+  listenWindowSeconds: 3
+  silenceMs: 600
+  vadThreshold: 0.65
+  echoTailSeconds: 0.6
+  voiceGain: 1.4
+  spatialBlend: 0.6
+  fullVolumeMetres: 1.5
+  startBufferSeconds: 0.4
+  greeting: {fileID: 8300000, guid: f99c1284ec2d83a4d8cd71704619150c, type: 3}
+  listenChime: {fileID: 8300000, guid: e46015e486a7533488d97b7711c927de, type: 3}
+  closeTick: {fileID: 8300000, guid: 5afce150e91ff274fba520e06b3bf453, type: 3}
+  cueVolume: 0.5
+  distanceMetres: 1.4
+  sideMetres: 0.32
+  dropMetres: -0.1
+  followSeconds: 0.4
+  tapSeconds: 0.4
+  tapMoveMetres: 0.03

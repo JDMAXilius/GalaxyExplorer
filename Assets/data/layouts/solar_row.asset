@@ -18,42 +18,42 @@ MonoBehaviour:
   TransitionSeconds: 0.8
   Slots:
   - BodyId: sun
-    LocalPosition: {x: -0.9401521, y: 1.2, z: 0.57106405}
-    LocalEuler: {x: 0, y: 121.27519, z: 0}
+    LocalPosition: {x: -1.125, y: 1.2, z: 1.1}
+    LocalEuler: {x: 0, y: 180, z: 0}
     Scale: 0.15
   - BodyId: mercury
-    LocalPosition: {x: -0.7869247, y: 1.2, z: 0.7686023}
-    LocalEuler: {x: 0, y: 134.32515, z: 0}
+    LocalPosition: {x: -0.875, y: 1.2, z: 1.1}
+    LocalEuler: {x: 0, y: 180, z: 0}
     Scale: 0.15
   - BodyId: venus
-    LocalPosition: {x: -0.5930505, y: 1.2, z: 0.92644006}
-    LocalEuler: {x: 0, y: 147.3751, z: 0}
+    LocalPosition: {x: -0.625, y: 1.2, z: 1.1}
+    LocalEuler: {x: 0, y: 180, z: 0}
     Scale: 0.15
   - BodyId: earth
-    LocalPosition: {x: -0.3685434, y: 1.2, z: 1.0364245}
-    LocalEuler: {x: 0, y: 160.42506, z: 0}
+    LocalPosition: {x: -0.375, y: 1.2, z: 1.1}
+    LocalEuler: {x: 0, y: 180, z: 0}
     Scale: 0.15
   - BodyId: mars
-    LocalPosition: {x: -0.125, y: 1.2, z: 1.0928746}
-    LocalEuler: {x: 0, y: 173.47502, z: 0}
+    LocalPosition: {x: -0.125, y: 1.2, z: 1.1}
+    LocalEuler: {x: 0, y: 180, z: 0}
     Scale: 0.15
   - BodyId: jupiter
-    LocalPosition: {x: 0.125, y: 1.2, z: 1.0928746}
-    LocalEuler: {x: 0, y: 186.52498, z: 0}
+    LocalPosition: {x: 0.125, y: 1.2, z: 1.1}
+    LocalEuler: {x: 0, y: 180, z: 0}
     Scale: 0.15
   - BodyId: saturn
-    LocalPosition: {x: 0.3685434, y: 1.2, z: 1.0364245}
-    LocalEuler: {x: 0, y: 199.57494, z: 0}
+    LocalPosition: {x: 0.375, y: 1.2, z: 1.1}
+    LocalEuler: {x: 0, y: 180, z: 0}
     Scale: 0.15
   - BodyId: uranus
-    LocalPosition: {x: 0.5930505, y: 1.2, z: 0.92644006}
-    LocalEuler: {x: 0, y: 212.6249, z: 0}
+    LocalPosition: {x: 0.625, y: 1.2, z: 1.1}
+    LocalEuler: {x: 0, y: 180, z: 0}
     Scale: 0.15
   - BodyId: neptune
-    LocalPosition: {x: 0.7869247, y: 1.2, z: 0.7686023}
-    LocalEuler: {x: 0, y: 225.67485, z: 0}
+    LocalPosition: {x: 0.875, y: 1.2, z: 1.1}
+    LocalEuler: {x: 0, y: 180, z: 0}
     Scale: 0.15
   - BodyId: pluto
-    LocalPosition: {x: 0.9401521, y: 1.2, z: 0.57106405}
-    LocalEuler: {x: 0, y: 238.72481, z: 0}
+    LocalPosition: {x: 1.125, y: 1.2, z: 1.1}
+    LocalEuler: {x: 0, y: 180, z: 0}
     Scale: 0.15

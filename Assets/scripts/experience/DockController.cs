@@ -37,7 +37,7 @@ namespace CosmicSimulation
         [SerializeField] private GEButton helpButton;
         [SerializeField] private GEButton utilityButton;
         [SerializeField] private GEButton beingButton;
-        [SerializeField] private Being.CosmicBeing beingPrefab;
+        [SerializeField] private Cosmic.Companion.Being beingPrefab;
         [SerializeField] private Transform dragBar;
 
         [Header("Utility window")]
@@ -243,7 +243,7 @@ namespace CosmicSimulation
         /// <summary>Opens or closes the settings window (GDD 8.2): scale, mute, narration, text size.</summary>
         public void ToggleUtility() => EnsureUtility()?.Toggle();
 
-        public void ToggleBeing() => Being.CosmicBeing.Toggle(beingPrefab);
+        public void ToggleBeing() => Being.Host.Toggle(beingPrefab);
 
         /// <summary>The settings window, made the first time anybody asks for it. Null if none was assigned.</summary>
         public UtilityWindow Utility => EnsureUtility();

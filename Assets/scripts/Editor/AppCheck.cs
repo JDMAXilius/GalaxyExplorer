@@ -189,27 +189,30 @@ namespace GalaxyExplorer.Editor
             Add(0.1f, () => Tap(Key.Escape, false));
             Add(SettleSeconds, () => Check(!_director.HasOpenDestination, "Escape closes the destination"));
 
-            // 5. The being, through the same pointer layer a player uses: summoned, standing at its offset,
-            //    facing the head as the camera turns, carried by a drag without listening, brushed and springing
-            //    back, tapped into listening and out of it, dismissed after its fade.
-            var beingSettings = AssetDatabase.LoadAssetAtPath<BeingSettings>("Assets/data/being/cosmic_being_settings.asset");
+            // 5. The being, through the same pointer layer a player uses: summoned, it greets and listens by
+            //    itself and goes idle with nothing said; it stands at its offset and faces the head as the camera
+            //    turns; a drag carries it without listening; a brush turns it and it springs back; a tap sets it
+            //    listening, silently, and the window closes on its own; the dock button fades it out.
+            var beingSettings = AssetDatabase.LoadAssetAtPath<Cosmic.Companion.BeingSettings>("Assets/Being/Data/being_settings.asset");
             var dock = UnityEngine.Object.FindAnyObjectByType<DockController>();
-            CosmicBeing being = null;
+            Cosmic.Companion.Being being = null;
             Transform rig = null;
             var dragged = Vector3.zero;
             var brushed = 0f;
             var beingUsable = false;
+            var greeting = beingSettings != null && beingSettings.greeting != null ? beingSettings.greeting.length : 0f;
+            var window = beingSettings != null ? beingSettings.listenWindowSeconds : 6f;
             Add(0.3f, () =>
             {
-                if (dock == null || beingSettings == null) { Skip("the being: no DockController or no cosmic_being_settings.asset"); return; }
-                if (CosmicBeing.Instance != null) { Skip("the being: one is already summoned"); return; }
+                if (dock == null || beingSettings == null) { Skip("the being: no DockController or no being_settings.asset"); return; }
+                if (CosmicSimulation.Being.Host.Current != null) { Skip("the being: one is already summoned"); return; }
                 rig = Camera.main.transform.root;
                 dock.ToggleBeing();
             });
             Add(1.2f, () =>
             {
                 if (dock == null || beingSettings == null) return;
-                being = CosmicBeing.Instance;
+                being = CosmicSimulation.Being.Host.Current;
                 Check(being != null, "the dock's being button summons the being");
                 if (being == null) return;
                 var off = Vector3.Distance(being.transform.position, BeingHome(beingSettings));
@@ -225,11 +228,24 @@ namespace GalaxyExplorer.Editor
                 Check(FacingError(being.transform) < 15f, $"and still faces the head ({FacingError(being.transform):0} deg off)");
                 rig.Rotate(Vector3.up, -40f, Space.World);
             });
+            // Offline it greets from the stored clip and then listens for the window; with a key the greeting is
+            // spoken by the model and the same shape holds, only longer.
+            Add(Mathf.Max(0f, greeting + 0.8f - 2.7f), () =>
+            {
+                if (being == null) return;
+                if (Microphone.devices.Length == 0) Skip("the being's listening: this machine has no microphone");
+                else Check(being.Current != Cosmic.Companion.Being.Phase.Idle, $"on arrival it greets and then listens ({being.Current})");
+            });
+            Add(window + 1.5f, () =>
+            {
+                if (being == null) return;
+                Check(being.Current == Cosmic.Companion.Being.Phase.Idle, $"and with nothing said it goes idle on the timeout ({being.Current})");
+            });
             // A drag: press on it, carry the mouse 160 px right over 0.6 s, release.
             var dragFrom = Vector2.zero;
             var dragStart = 0.0;
             var dragOrigin = Vector3.zero;
-            Add(1.2f, () =>
+            Add(0.5f, () =>
             {
                 beingUsable = being != null && OnScreen(being.transform);
                 if (!beingUsable) { Skip("the being's drag, brush and tap: it is not on screen"); return; }
@@ -244,7 +260,7 @@ namespace GalaxyExplorer.Editor
                 if (!beingUsable) return;
                 dragged = being.transform.position - dragOrigin;
                 Check(dragged.magnitude > 0.03f, $"a press-drag-release carries the being ({dragged.magnitude:0.000} m)");
-                Check(being.Current == CosmicBeing.Phase.Idle, $"and does not start it listening ({being.Current})");
+                Check(being.Current == Cosmic.Companion.Being.Phase.Idle, $"and does not start it listening ({being.Current})");
             });
             // A brush: the mouse crosses it without pressing, then leaves.
             var brushFrom = Vector2.zero;
@@ -270,7 +286,7 @@ namespace GalaxyExplorer.Editor
                 Check(nudge != null && brushed > 1f, $"a brush turns it ({brushed:0.0} deg at most)");
                 Check(nudge != null && Mathf.Abs(nudge.Angle) < 0.5f, $"and it springs back ({(nudge == null ? 0f : nudge.Angle):0.00} deg left)");
             });
-            // A tap: press and release on one spot within the tap window.
+            // A tap: press and release on one spot within the tap window. It listens, and says nothing.
             Add(0.3f, () => { if (beingUsable) _holding = () => Move(ScreenOf(being.transform)); });
             Add(0.3f, () => { if (beingUsable) _holding = () => Press(ScreenOf(being.transform), true); });
             Add(0.15f, () =>
@@ -284,28 +300,17 @@ namespace GalaxyExplorer.Editor
             Add(0.1f, () =>
             {
                 if (!beingUsable) return;
-                if (being.Greeting || being.Current == CosmicBeing.Phase.Speaking)
-                    Check(true, $"a tap speaks the greeting ({being.Current})");
-                else if (Microphone.devices.Length == 0) Skip("the being's listening: this machine has no microphone, so a tap goes straight back to idle");
-                else Check(being.Current == CosmicBeing.Phase.Listening, $"a tap sets it listening ({being.Current})");
+                if (Microphone.devices.Length == 0) Skip("the being's listening: this machine has no microphone, so a tap goes straight back to idle");
+                else Check(being.Current == Cosmic.Companion.Being.Phase.Listening && !being.Greeting, $"a tap sets it listening without speaking ({being.Current})");
             });
-            // With a greeting configured the being speaks it first and only then listens (CS-194).
-            var greeting = beingSettings != null && beingSettings.GreetOnTap && beingSettings.GreetingClip != null
-                ? beingSettings.GreetingClip.length : 0f;
-            Add(greeting > 0f ? greeting + 0.6f : 0f, () =>
-            {
-                if (!beingUsable || greeting <= 0f) return;
-                if (Microphone.devices.Length == 0) Skip("the being's listening after the greeting: this machine has no microphone");
-                else Check(being.Current == CosmicBeing.Phase.Listening, $"after the greeting it listens ({being.Current})");
-            });
-            Add(beingSettings != null ? beingSettings.ListenTimeoutSeconds + 0.8f : 1f, () =>
+            Add(window + 0.8f, () =>
             {
                 if (!beingUsable) return;
-                Check(being.Current == CosmicBeing.Phase.Idle, $"and with nothing said it goes idle on the timeout ({being.Current})");
+                Check(being.Current == Cosmic.Companion.Being.Phase.Idle, $"and with nothing said the tap's window closes on its own ({being.Current})");
                 dock.ToggleBeing();
             });
-            Add(0.3f, () => { if (being != null) Check(CosmicBeing.Instance != null, "the dock button starts the being's fade out"); });
-            Add(0.9f, () => { if (being != null) Check(CosmicBeing.Instance == null, "and after the fade the being is gone"); });
+            Add(0.3f, () => { if (being != null) Check(CosmicSimulation.Being.Host.Current != null, "the dock button starts the being's fade out"); });
+            Add(0.9f, () => { if (being != null) Check(CosmicSimulation.Being.Host.Current == null, "and after the fade the being is gone"); });
 
             // 6. Restore, and the console.
             Add(0.2f, () => Tap(Key.R, true));
@@ -558,13 +563,13 @@ namespace GalaxyExplorer.Editor
 
         private static string Name(ExperienceModule module) => module == null ? "nothing" : module.Id;
 
-        private static Vector3 BeingHome(BeingSettings settings)
+        private static Vector3 BeingHome(Cosmic.Companion.BeingSettings settings)
         {
             var head = Camera.main.transform;
             var forward = Vector3.ProjectOnPlane(head.forward, Vector3.up);
             forward = forward.sqrMagnitude > 1e-4f ? forward.normalized : Vector3.forward;
             var right = Vector3.Cross(Vector3.up, forward);
-            return head.position + forward * settings.DistanceMetres - right * settings.SideMetres + Vector3.up * settings.DropMetres;
+            return head.position + forward * settings.distanceMetres - right * settings.sideMetres + Vector3.up * settings.dropMetres;
         }
 
         private static float FacingError(Transform being)

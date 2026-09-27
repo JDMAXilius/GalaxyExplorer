@@ -16,6 +16,8 @@ namespace Cosmic
         public static Audio Bus;
 
         [SerializeField] Limits limits = Limits.Body;
+
+        public Limits Limit { get => limits; set { limits = value; ApplyClamp(); } }
         [SerializeField] float customMinMetres;
         [SerializeField] float customMaxMetres;
         [SerializeField] bool keepUpright;

@@ -412,6 +412,8 @@ namespace CosmicSimulation
         /// end, and before <see cref="Start"/> has applied anything. Each body counts as its full span (rings
         /// included) at the diameter the arrangement gives it. False when the preset names none of the bodies.
         /// </summary>
+        private const float FitSpanCapMetres = 0.5f;
+
         public bool TryGetLayoutBounds(LayoutPreset layout, out Bounds local)
         {
             local = default;
@@ -430,7 +432,9 @@ namespace CosmicSimulation
                     continue;
                 }
 
-                var width = Mathf.Max(0.0001f, slot.Scale) * Mathf.Max(1f, body.SpanRatio);
+                // Capped, so the view is fitted to where the bodies are rather than to the Sun's full 3 m disc: in
+                // Relative Size the Sun stands half out at the edge and the planets stay large enough to see.
+                var width = Mathf.Min(FitSpanCapMetres, Mathf.Max(0.0001f, slot.Scale) * Mathf.Max(1f, body.SpanRatio));
                 var box = new Bounds(slot.LocalPosition, Vector3.one * width);
                 if (found)
                 {

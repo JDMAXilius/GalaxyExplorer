@@ -356,7 +356,7 @@ namespace CosmicSimulation.EditorTools
             so.FindProperty("utilityButton").objectReferenceValue = utility;
             so.FindProperty("beingButton").objectReferenceValue = being;
             so.FindProperty("beingPrefab").objectReferenceValue =
-                AssetDatabase.LoadAssetAtPath<CosmicSimulation.Being.CosmicBeing>("Assets/prefabs/being/cosmic_being_prefab.prefab");
+                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Being/being.prefab")?.GetComponent<Cosmic.Companion.Being>();
             so.FindProperty("utilityWindowPrefab").objectReferenceValue =
                 utilityWindowPrefab != null ? utilityWindowPrefab.GetComponent<UtilityWindow>() : null;
             so.FindProperty("dragBar").objectReferenceValue = bar.transform;

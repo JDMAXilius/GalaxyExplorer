@@ -31,6 +31,7 @@ namespace Cosmic
         bool built;
 
         public bool Speaking => voiceSource != null && (voiceSource.isPlaying || voiceQueue.Count > 0);
+        public bool Ducked { get; set; }
 
         public void Play(Sfx id, Transform at = null, float volume = -1f)
         {
@@ -161,7 +162,7 @@ namespace Cosmic
                 voiceSource.Play();
             }
 
-            duck = Mathf.MoveTowards(duck, Speaking ? duckMultiplier : 1f, dt / Mathf.Max(0.01f, duckSeconds));
+            duck = Mathf.MoveTowards(duck, Speaking || Ducked ? duckMultiplier : 1f, dt / Mathf.Max(0.01f, duckSeconds));
 
             for (var i = 0; i < 2; i++)
             {

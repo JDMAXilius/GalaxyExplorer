@@ -36,6 +36,11 @@ namespace CosmicSimulation
         private float volume = 0.35f;
 
         [SerializeField]
+        [Range(0f, 1f)]
+        [Tooltip("Fraction of the level the bed drops to while the being is awake.")]
+        private float beingDuck = 0.55f;
+
+        [SerializeField]
         [Tooltip("Seconds a bed takes to fade in, and the same to fade out. Slower than the 0.6 s grow-in, so a " +
                  "place is already there before its sound has fully arrived.")]
         private float fadeSeconds = 1.5f;
@@ -49,6 +54,10 @@ namespace CosmicSimulation
         private AudioClip _pending;
         private float _level;
         private float _target;
+        private float _external = 1f;
+
+        /// <summary>True while the being is awake.</summary>
+        public static bool Ducked { get; set; }
 
         public static AmbienceController Instance { get; private set; }
 
@@ -186,6 +195,7 @@ namespace CosmicSimulation
             // Unscaled, like everything else in the switch sequence: a fade should not depend on a time scale
             // that a loading place may have left somewhere odd.
             _level = Mathf.MoveTowards(_level, _target, Time.unscaledDeltaTime / Mathf.Max(0.01f, fadeSeconds));
+            _external = Mathf.MoveTowards(_external, Ducked ? beingDuck : 1f, Time.unscaledDeltaTime / 0.35f);
 
             if (_pending != null && _level <= 0f)
             {
@@ -206,7 +216,7 @@ namespace CosmicSimulation
                 return;
             }
 
-            _source.volume = _level;
+            _source.volume = _level * _external;
         }
 
         private void ApplyPending()

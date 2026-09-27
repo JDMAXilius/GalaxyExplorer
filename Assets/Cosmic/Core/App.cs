@@ -16,11 +16,11 @@ namespace Cosmic
         [SerializeField] Audio audio;
         [SerializeField] Place start;
         [SerializeField] Place[] places;
-        [SerializeField] Being beingPrefab;
+        [SerializeField] Companion.Being beingPrefab;
         [SerializeField] bool playIntro = true;
 
         public Director Director => director;
-        public Being Being { get; private set; }
+        public Companion.Being Being { get; private set; }
         public bool Booted { get; private set; }
 
         void Awake()
@@ -87,7 +87,7 @@ namespace Cosmic
         public void ToggleBeing()
         {
             if (Being != null) { Being.Dismiss(); Being = null; }
-            else if (beingPrefab != null) Being = Instantiate(beingPrefab);
+            else if (beingPrefab != null) Being = Host.Summon(beingPrefab);
         }
 
         void Start()

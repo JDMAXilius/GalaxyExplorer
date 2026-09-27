@@ -1341,7 +1341,7 @@ MonoBehaviour:
   helpButton: {fileID: 8842127710400153393}
   utilityButton: {fileID: 4293202032608050882}
   beingButton: {fileID: 2452916376276371439}
-  beingPrefab: {fileID: 5667959857995942880, guid: 843deef4df4a69e47824bbb0734646f0, type: 3}
+  beingPrefab: {fileID: 491176204345644287, guid: a6beff6efdeb6a34ebdb283a52b1a2ed, type: 3}
   dragBar: {fileID: 4977014282212378471}
   utilityWindowPrefab: {fileID: 7575776504763607743, guid: 5aacb879c27b3014db4a2328291f76c9, type: 3}
   distanceMetres: 0.75

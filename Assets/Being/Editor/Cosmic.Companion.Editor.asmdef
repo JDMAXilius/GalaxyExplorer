@@ -1,0 +1,18 @@
+{
+    "name": "Cosmic.Companion.Editor",
+    "rootNamespace": "Cosmic.Companion.Editor",
+    "references": [
+        "Cosmic.Companion"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

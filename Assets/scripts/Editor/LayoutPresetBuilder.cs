@@ -137,14 +137,12 @@ namespace CosmicSimulation.EditorTools
         private static LayoutSlot[] SolarRow()
         {
             var count = Bodies.Length;
-            var step = ArcStep(RowSpacing, ArcRadius);
             var slots = new LayoutSlot[count];
             var spans = new float[count];
 
             for (var i = 0; i < count; i++)
             {
-                var angle = (i - (count - 1) * 0.5f) * step;
-                slots[i] = Slot(Bodies[i].Id, angle, ArcRadius, RowHeight, RowDiameter);
+                slots[i] = Slot(Bodies[i].Id, (i - (count - 1) * 0.5f) * RowSpacing, ArcRadius, RowHeight, RowDiameter);
                 spans[i] = Mathf.Max(RowDiameter, GrabSphere);
             }
 
@@ -185,26 +183,26 @@ namespace CosmicSimulation.EditorTools
             var largestRadius = Bodies.Max(b => b.Diameter) * 0.5f;
             var radius = Mathf.Max(ArcRadius, largestRadius + PlayerClearance);
 
-            var chords = new float[count - 1];
-            var totalAngle = 0f;
+            var gaps = new float[count - 1];
+            var total = 0f;
             for (var i = 0; i < count - 1; i++)
             {
                 var touching = (spans[i] + spans[i + 1]) * 0.5f;
-                chords[i] = touching * (1f + GapFraction) + MinGap;
-                totalAngle += ArcStep(chords[i], radius);
+                gaps[i] = touching * (1f + GapFraction) + MinGap;
+                total += gaps[i];
             }
 
             var slots = new LayoutSlot[count];
-            var angle = -totalAngle * 0.5f;
+            var x = -total * 0.5f;
             for (var i = 0; i < count; i++)
             {
                 if (i > 0)
                 {
-                    angle += ArcStep(chords[i - 1], radius);
+                    x += gaps[i - 1];
                 }
 
                 var height = Mathf.Max(RowHeight, Bodies[i].Diameter * 0.5f + FloorClearance);
-                slots[i] = Slot(Bodies[i].Id, angle, radius, height, Bodies[i].Diameter);
+                slots[i] = Slot(Bodies[i].Id, x, radius, height, Bodies[i].Diameter);
             }
 
             Report("Relative Size", slots, spans, radius);
@@ -213,24 +211,17 @@ namespace CosmicSimulation.EditorTools
 
         // ---------- geometry
 
-        /// <summary>The angle that subtends a straight-line <paramref name="chord"/> on a circle of this radius.</summary>
-        private static float ArcStep(float chord, float radius)
-        {
-            var ratio = Mathf.Clamp(chord / (2f * radius), -1f, 1f);
-            return 2f * Mathf.Asin(ratio);
-        }
-
         /// <summary>
-        /// A body on the arc at <paramref name="angle"/> from straight ahead, turned to face the arc's centre -
-        /// which is where the player is standing.
+        /// A body on the straight row, <paramref name="x"/> across and <paramref name="distance"/> ahead, turned to
+        /// face the player (owner's direction, 27 Sep: a line across the view, not an arc around the player).
         /// </summary>
-        private static LayoutSlot Slot(string bodyId, float angle, float radius, float height, float diameter)
+        private static LayoutSlot Slot(string bodyId, float x, float distance, float height, float diameter)
         {
             return new LayoutSlot
             {
                 BodyId = bodyId,
-                LocalPosition = new Vector3(radius * Mathf.Sin(angle), height, radius * Mathf.Cos(angle)),
-                LocalEuler = new Vector3(0f, angle * Mathf.Rad2Deg + 180f, 0f),
+                LocalPosition = new Vector3(x, height, distance),
+                LocalEuler = new Vector3(0f, 180f, 0f),
                 Scale = diameter,
             };
         }
