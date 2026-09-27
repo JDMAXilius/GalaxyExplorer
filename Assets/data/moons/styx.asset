@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: styx
   DisplayName: Styx
   Subtitle: PLUTO
-  Paragraph: The smallest and innermost of Pluto's little moons, Styx was only discovered in 2012, by the Hubble Space Telescope.
+  Paragraph: The smallest and innermost of Pluto's little moons, Styx was found in 2012 in images from the Hubble Space Telescope. It is only about sixteen kilometres long.
   Stats:
   - Label: ORBITS
     Value: Pluto
@@ -28,6 +28,18 @@ MonoBehaviour:
   - Label: ONE ORBIT
     Value: 20.2
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM PLUTO
+    Value: 42,656
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: Too weak to measure
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 2012, Hubble Space Telescope
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 0a2320c3588a253468914253eb626734, type: 2}

@@ -177,3 +177,49 @@ if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     for moon, spec in MOONS.items():
         make(moon, *spec)
+
+
+# ---- Real maps with holes -------------------------------------------------------------------------------
+# Charon's southern half was in polar night when New Horizons flew by, and Voyager 2 never saw much of Triton.
+# The holes are filled with the generated surface above, levelled to the real map's own brightness and colour
+# and feathered in, so the moon reads as one body. What was photographed is left exactly as it was.
+REAL = {
+    "charon": ("https://astrogeology.usgs.gov/ckan/dataset/93827f6c-8feb-42b6-98e6-b0ce57c7d2c8/resource/1abf318c-3290-4aa0-932e-a34f32d7f6ad/download/charon_newhorizons_global_mosaic_300m_jul2017_1024.jpg",
+               31, rubble(90, 0.05)),
+    "triton": ("https://astrogeology.usgs.gov/ckan/dataset/445b4c39-e87a-4e4d-88a8-e48d8e755c5c/resource/de0ba9f1-303e-4e5f-a99a-3201fba9a764/download/triton_voyager2_clrmosaic_1024.jpg",
+               32, rubble(8, 0.03)),
+}
+
+
+def patch(name, url, seed, build):
+    import io
+    import urllib.request
+    from PIL import ImageFilter
+    real = np.asarray(Image.open(io.BytesIO(urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=60).read())).convert("RGB").resize((W, H))).astype(np.float32)
+    hole = real.mean(axis=2) < 10
+    grown = np.asarray(Image.fromarray((hole * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(7))) > 0
+    seen = ~grown
+
+    rng = np.random.default_rng(seed)
+    h = noise(rng) * 0.02
+    a = noise(rng, octaves=6, base=3) * 0.5 + noise(rng, octaves=3, base=48) * 0.12
+    h, a = build(rng, h, a)
+    a = a + noise(rng, octaves=5, base=10) * 0.6
+    made = (1 + a) * (0.85 + 0.15 * shade(h))
+
+    # Level the made surface to the photographed one, channel by channel, so the seam is a change of detail and
+    # not a change of colour.
+    out = real.copy()
+    for c in range(3):
+        target = real[..., c][seen]
+        levelled = (made - made[seen].mean()) / (made[seen].std() + 1e-6) * target.std() + target.mean()
+        out[..., c] = levelled
+    weight = np.asarray(Image.fromarray((grown * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(10))).astype(np.float32)[..., None] / 255
+    final = real * (1 - weight) + out * weight
+    Image.fromarray(final.clip(0, 255).astype(np.uint8)).save(os.path.join(OUT, f"{name}_texture.jpg"), quality=92)
+    print(f"{name}: {hole.mean() * 100:.1f}% unimaged, filled")
+
+
+if __name__ == "__main__":
+    for moon, (url, seed, build) in REAL.items():
+        patch(moon, url, seed, build)

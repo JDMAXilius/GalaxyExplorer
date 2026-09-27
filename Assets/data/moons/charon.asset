@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: charon
   DisplayName: Charon
   Subtitle: PLUTO
-  Paragraph: Half Pluto's size, Charon is locked face to face with it, the two circling a point in the empty space between them.
+  Paragraph: Half Pluto's size, Charon is so large that the two orbit a point in the empty space between them, each keeping the same face to the other. A dark red cap covers its north pole.
   Stats:
   - Label: ORBITS
     Value: Pluto
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 6.4
+    Value: 6.39
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM PLUTO
+    Value: 19,591
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.029 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1978, James Christy
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 0a2320c3588a253468914253eb626734, type: 2}

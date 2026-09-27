@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: titan
   DisplayName: Titan
   Subtitle: SATURN
-  Paragraph: 'The only moon with a thick atmosphere, and the only place besides Earth with liquid on its surface: rivers and lakes of methane.'
+  Paragraph: 'Titan is the only moon with a thick atmosphere, and the only place besides Earth known to have liquid on its surface: lakes and seas of methane. In 2005 the Huygens probe landed there.'
   Stats:
   - Label: ORBITS
     Value: Saturn
@@ -28,6 +28,18 @@ MonoBehaviour:
   - Label: ONE ORBIT
     Value: 15.9
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM SATURN
+    Value: 1,221,870
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.14 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1655, Christiaan Huygens
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 9bf50b92ca7516e4cb139e406ff436f7, type: 2}

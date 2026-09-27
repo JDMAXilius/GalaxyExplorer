@@ -193,8 +193,15 @@ namespace CosmicSimulation
                     parts.Append(info.Orbits.DisplayName.ToUpperInvariant());
                 }
 
+                // One line: who it orbits, then its size and its year. The full list is on the Solar System card.
+                var shown = 0;
                 foreach (var stat in info.Stats)
                 {
+                    if (stat.Label == "ORBITS" || shown++ >= 2)
+                    {
+                        continue;
+                    }
+
                     if (parts.Length > 0)
                     {
                         parts.Append("   ");

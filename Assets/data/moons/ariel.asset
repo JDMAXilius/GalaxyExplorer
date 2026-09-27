@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: ariel
   DisplayName: Ariel
   Subtitle: URANUS
-  Paragraph: The brightest of Uranus's moons, Ariel has the youngest surface, cut through by long rift valleys.
+  Paragraph: The brightest of Uranus's large moons, Ariel has the youngest-looking surface, crossed by long rift valleys. Some of the valley floors appear to have been smoothed by icy flows.
   Stats:
   - Label: ORBITS
     Value: Uranus
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 2.5
+    Value: 2.52
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM URANUS
+    Value: 190,900
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.027 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1851, William Lassell
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 18c8b19d7afa82746a3bff61c3c1bd23, type: 2}

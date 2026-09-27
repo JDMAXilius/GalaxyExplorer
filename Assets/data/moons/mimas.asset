@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: mimas
   DisplayName: Mimas
   Subtitle: SATURN
-  Paragraph: One impact crater a third as wide as the moon itself gives Mimas its unmistakable profile.
+  Paragraph: Mimas is marked by Herschel, a crater about 130 kilometres wide, a third of the moon's own diameter. The impact that made it very nearly shattered the moon.
   Stats:
   - Label: ORBITS
     Value: Saturn
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 0.9
+    Value: 0.94
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM SATURN
+    Value: 185,539
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.007 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1789, William Herschel
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 9bf50b92ca7516e4cb139e406ff436f7, type: 2}

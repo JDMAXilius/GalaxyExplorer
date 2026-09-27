@@ -2071,10 +2071,16 @@ MonoBehaviour:
   subtitle: MOON OF JUPITER
   facts:
   - Label: DIAMETER
-    Value: 5,268 km
+    Value: 5,268 KM
   - Label: ONE ORBIT
-    Value: 7.2 days
-  description: The largest moon in the solar system, wider than Mercury, and the only one known to make its own magnetic field.
+    Value: 7.15 DAYS
+  - Label: DISTANCE FROM JUPITER
+    Value: 1,070,412 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.15 G
+  - Label: DISCOVERED
+    Value: 1610, GALILEO GALILEI
+  description: The largest moon in the solar system, Ganymede is wider than the planet Mercury. It is the only moon known to make its own magnetic field, and an ocean may lie deep beneath its ice.
 --- !u!222 &6420929473981644725
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -5868,10 +5874,16 @@ MonoBehaviour:
   subtitle: MOON OF JUPITER
   facts:
   - Label: DIAMETER
-    Value: 3,643 km
+    Value: 3,643 KM
   - Label: ONE ORBIT
-    Value: 1.8 days
-  description: Squeezed and stretched by Jupiter's gravity, Io is the most volcanically active body in the solar system.
+    Value: 1.77 DAYS
+  - Label: DISTANCE FROM JUPITER
+    Value: 421,700 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.18 G
+  - Label: DISCOVERED
+    Value: 1610, GALILEO GALILEI
+  description: Io is the most volcanically active world in the solar system, with hundreds of volcanoes, some throwing plumes hundreds of kilometres high. Jupiter's tides flex its interior and keep it molten.
 --- !u!222 &6955024331674428330
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -8768,10 +8780,16 @@ MonoBehaviour:
   subtitle: MOON OF JUPITER
   facts:
   - Label: DIAMETER
-    Value: 3,122 km
+    Value: 3,122 KM
   - Label: ONE ORBIT
-    Value: 3.6 days
-  description: A shell of cracked ice over a salt-water ocean that holds more water than every sea on Earth.
+    Value: 3.55 DAYS
+  - Label: DISTANCE FROM JUPITER
+    Value: 671,034 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.13 G
+  - Label: DISCOVERED
+    Value: 1610, GALILEO GALILEI
+  description: Europa's smooth, cracked shell of ice hides a salty ocean holding more water than all of Earth's oceans combined. It is one of the most promising places to search for life beyond Earth.
 --- !u!222 &5952830156868450486
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -15353,10 +15371,16 @@ MonoBehaviour:
   subtitle: MOON OF JUPITER
   facts:
   - Label: DIAMETER
-    Value: 4,821 km
+    Value: 4,821 KM
   - Label: ONE ORBIT
-    Value: 16.7 days
-  description: The most heavily cratered object we know of, its surface barely changed in four billion years.
+    Value: 16.7 DAYS
+  - Label: DISTANCE FROM JUPITER
+    Value: 1,882,709 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.13 G
+  - Label: DISCOVERED
+    Value: 1610, GALILEO GALILEI
+  description: Callisto's surface is the most heavily cratered in the solar system, barely changed in four billion years. It orbits outside Jupiter's fiercest radiation and may hide an ocean far beneath its crust.
 --- !u!222 &5143756700649972338
 CanvasRenderer:
   m_ObjectHideFlags: 0

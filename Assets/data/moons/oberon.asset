@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: oberon
   DisplayName: Oberon
   Subtitle: URANUS
-  Paragraph: The outermost of Uranus's large moons, Oberon is old and heavily cratered, and many crater floors are filled with dark material.
+  Paragraph: The outermost of Uranus's large moons, Oberon is old and heavily cratered. Many of its crater floors are filled with dark material, and at least one mountain rises several kilometres high.
   Stats:
   - Label: ORBITS
     Value: Uranus
@@ -28,6 +28,18 @@ MonoBehaviour:
   - Label: ONE ORBIT
     Value: 13.5
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM URANUS
+    Value: 583,520
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.035 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1787, William Herschel
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 18c8b19d7afa82746a3bff61c3c1bd23, type: 2}

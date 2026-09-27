@@ -25,7 +25,8 @@ namespace Cosmic.Companion
         readonly float[] bandPeak = { PeakFloor, PeakFloor, PeakFloor, PeakFloor };
         readonly object gate = new object();
         int read, write, buffered, pendingByte = -1, lastRead;
-        bool finishing, ready;
+        bool finishing, ready, starving;
+        const float RebufferSeconds = 0.3f;
         float level, peak = PeakFloor, gain = 1f, startSeconds = 0.25f, cueVolume = 0.5f, openedAt, tailLeft = -1f;
         AudioSource source;
 
@@ -103,7 +104,7 @@ namespace Cosmic.Companion
         public void Clear()
         {
             Init();
-            lock (gate) { read = write = buffered = 0; pendingByte = -1; }
+            lock (gate) { read = write = buffered = 0; pendingByte = -1; starving = false; }
             finishing = false;
             tailLeft = -1f;
             if (Playing) source.Stop();
@@ -126,6 +127,15 @@ namespace Cosmic.Companion
             var sum = 0f;
             lock (gate)
             {
+                // Ran dry mid-answer: hold silence until a proper cushion has arrived, rather than playing each late
+                // chunk the moment it lands - that is the word-gap-word stutter.
+                if (starving && !finishing && buffered < Rate * RebufferSeconds)
+                {
+                    Array.Clear(data, 0, data.Length);
+                    level = 0f;
+                    return;
+                }
+                starving = false;
                 var n = Math.Min(data.Length, buffered);
                 for (var i = 0; i < n; i++)
                 {
@@ -136,7 +146,11 @@ namespace Cosmic.Companion
                 for (var i = n; i < data.Length; i++) data[i] = 0f;
                 buffered -= n;
                 lastRead = data.Length;
-                if (n < data.Length && !finishing) ShortReads++;
+                if (n < data.Length && !finishing)
+                {
+                    ShortReads++;
+                    starving = true;
+                }
             }
             level = Mathf.Sqrt(sum / data.Length);
         }

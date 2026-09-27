@@ -27,7 +27,7 @@ MonoBehaviour:
   voiceGain: 1.4
   spatialBlend: 0.6
   fullVolumeMetres: 1.5
-  startBufferSeconds: 0.4
+  startBufferSeconds: 0.5
   greeting: {fileID: 8300000, guid: f99c1284ec2d83a4d8cd71704619150c, type: 3}
   listenChime: {fileID: 8300000, guid: e46015e486a7533488d97b7711c927de, type: 3}
   closeTick: {fileID: 8300000, guid: 5afce150e91ff274fba520e06b3bf453, type: 3}

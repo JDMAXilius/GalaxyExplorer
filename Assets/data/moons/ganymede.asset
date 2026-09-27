@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: ganymede
   DisplayName: Ganymede
   Subtitle: JUPITER
-  Paragraph: The largest moon in the solar system, wider than Mercury, and the only one known to make its own magnetic field.
+  Paragraph: The largest moon in the solar system, Ganymede is wider than the planet Mercury. It is the only moon known to make its own magnetic field, and an ocean may lie deep beneath its ice.
   Stats:
   - Label: ORBITS
     Value: Jupiter
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 7.2
+    Value: 7.15
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM JUPITER
+    Value: 1,070,412
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.15 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1610, Galileo Galilei
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: be9b1f8fd0603b947a7507c5500cffb0, type: 2}

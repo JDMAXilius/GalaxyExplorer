@@ -20,7 +20,7 @@ namespace Cosmic.Companion
         public float voiceGain = 1.4f;
         public float spatialBlend = 0.6f;
         public float fullVolumeMetres = 1.5f;
-        public float startBufferSeconds = 0.4f;
+        public float startBufferSeconds = 0.5f;
         public AudioClip greeting;
         public AudioClip listenChime;
         public AudioClip closeTick;

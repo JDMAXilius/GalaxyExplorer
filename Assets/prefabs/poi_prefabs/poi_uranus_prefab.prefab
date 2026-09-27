@@ -5705,10 +5705,16 @@ MonoBehaviour:
   subtitle: MOON OF URANUS
   facts:
   - Label: DIAMETER
-    Value: 1,577 km
+    Value: 1,577 KM
   - Label: ONE ORBIT
-    Value: 8.7 days
-  description: Uranus's largest moon, Titania, is split by canyons up to 1,500 kilometres long, cracks from when its interior froze.
+    Value: 8.71 DAYS
+  - Label: DISTANCE FROM URANUS
+    Value: 435,910 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.037 G
+  - Label: DISCOVERED
+    Value: 1787, WILLIAM HERSCHEL
+  description: Titania is the largest moon of Uranus, a mix of ice and rock. Canyons up to 1,500 kilometres long split its surface, cracks that formed as its interior froze and expanded.
 --- !u!222 &3491611764390678517
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -10594,10 +10600,16 @@ MonoBehaviour:
   subtitle: MOON OF URANUS
   facts:
   - Label: DIAMETER
-    Value: 472 km
+    Value: 472 KM
   - Label: ONE ORBIT
-    Value: 1.4 days
-  description: Miranda looks stitched together from different worlds, and one of its cliffs may be ten kilometres high, among the tallest in the solar system.
+    Value: 1.41 DAYS
+  - Label: DISTANCE FROM URANUS
+    Value: 129,390 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.008 G
+  - Label: DISCOVERED
+    Value: 1948, GERARD KUIPER
+  description: Miranda looks stitched together from different worlds, with grooved terrain beside old cratered plains. One of its cliffs, Verona Rupes, may be ten kilometres high, among the tallest in the solar system.
 --- !u!222 &2378429633033343729
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -12359,10 +12371,16 @@ MonoBehaviour:
   subtitle: MOON OF URANUS
   facts:
   - Label: DIAMETER
-    Value: 1,158 km
+    Value: 1,158 KM
   - Label: ONE ORBIT
-    Value: 2.5 days
-  description: The brightest of Uranus's moons, Ariel has the youngest surface, cut through by long rift valleys.
+    Value: 2.52 DAYS
+  - Label: DISTANCE FROM URANUS
+    Value: 190,900 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.027 G
+  - Label: DISCOVERED
+    Value: 1851, WILLIAM LASSELL
+  description: The brightest of Uranus's large moons, Ariel has the youngest-looking surface, crossed by long rift valleys. Some of the valley floors appear to have been smoothed by icy flows.
 --- !u!222 &4969489929158017667
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -15901,10 +15919,16 @@ MonoBehaviour:
   subtitle: MOON OF URANUS
   facts:
   - Label: DIAMETER
-    Value: 1,523 km
+    Value: 1,523 KM
   - Label: ONE ORBIT
-    Value: 13.5 days
-  description: The outermost of Uranus's large moons, Oberon is old and heavily cratered, and many crater floors are filled with dark material.
+    Value: 13.5 DAYS
+  - Label: DISTANCE FROM URANUS
+    Value: 583,520 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.035 G
+  - Label: DISCOVERED
+    Value: 1787, WILLIAM HERSCHEL
+  description: The outermost of Uranus's large moons, Oberon is old and heavily cratered. Many of its crater floors are filled with dark material, and at least one mountain rises several kilometres high.
 --- !u!222 &8202575009279573267
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -17043,10 +17067,16 @@ MonoBehaviour:
   subtitle: MOON OF URANUS
   facts:
   - Label: DIAMETER
-    Value: 1,169 km
+    Value: 1,169 KM
   - Label: ONE ORBIT
-    Value: 4.1 days
-  description: The darkest of the large Uranian moons, Umbriel has an old, cratered face broken by one bright ring, the crater Wunda.
+    Value: 4.14 DAYS
+  - Label: DISTANCE FROM URANUS
+    Value: 266,000 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.02 G
+  - Label: DISCOVERED
+    Value: 1851, WILLIAM LASSELL
+  description: Umbriel is the darkest of Uranus's large moons, its old surface covered in craters. Near its equator a single bright ring marks the crater Wunda, whose origin is still unexplained.
 --- !u!222 &3542621023329347053
 CanvasRenderer:
   m_ObjectHideFlags: 0

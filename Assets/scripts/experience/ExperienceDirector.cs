@@ -61,9 +61,9 @@ namespace CosmicSimulation
         [SerializeField]
         [Tooltip("On a monitor the camera never turns, so an arrangement (Solar Row, Relative Size) is pushed " +
                  "back until every body is inside the view. This is how much of the view's half-width and " +
-                 "half-height the arrangement may fill: 1 touches the edges, 0.85 leaves a border.")]
+                 "half-height a place may fill: 1 touches the edges, 0.95 leaves a sliver.")]
         [Range(0.5f, 1f)]
-        private float desktopFitMargin = 0.85f;
+        private float desktopFitMargin = 0.95f;
 
         /// <summary>How long the intro's own last-stage load is given to appear before we stop waiting for one.</summary>
         private const float IntroSettleGrace = 0.5f;
@@ -73,6 +73,12 @@ namespace CosmicSimulation
         /// framing below can never nudge an experience that was authored the way the content root expects.
         /// </summary>
         private const float CentringDeadzone = 0.02f;
+
+        /// <summary>Nothing is fitted nearer than this, however small it is: a moon a hand's length away is not a view.</summary>
+        private const float MinFitDistanceMetres = 0.6f;
+
+        /// <summary>How long a view scene takes to settle into the fitted spot once its own zoom-in is over.</summary>
+        private const float ViewSceneFitSeconds = 0.5f;
 
         private readonly List<GameObject> _destinationObjects = new List<GameObject>();
         private readonly HashSet<ExperienceModule> _warnedEmpty = new HashSet<ExperienceModule>();
@@ -613,6 +619,18 @@ namespace CosmicSimulation
                 yield return null; // let the new content's own Awake/Start run before we touch it
 
                 var content = ResolveContent(adopted);
+                // Found by the scene's own name rather than through ResolveContent, whose fallback is
+                // TransitionManager's CurrentActiveScene and can still be the place just left.
+                var scene = string.IsNullOrEmpty(module.SceneName) ? default : SceneManager.GetSceneByName(module.SceneName);
+                var sceneContent = scene.IsValid() && scene.isLoaded ? FindContent(scene) : null;
+                if (sceneContent != null)
+                {
+                    // A view scene is centred and sized to the view the same way, but only once the old zoom-in
+                    // has finished: TransitionManager scales it up from nothing and sizes it to its volume, and
+                    // until then there is nothing true to measure.
+                    StartCoroutine(FitViewScene(sceneContent.transform));
+                }
+
                 if (content != null && growInSeconds > 0f)
                 {
                     // Only our own instance may have been framed, and only a framed object needs its offset
@@ -850,52 +868,42 @@ namespace CosmicSimulation
         /// </summary>
         private void FitArrangement(Transform content, float seconds)
         {
-            if (content == null || UnityEngine.XR.XRSettings.isDeviceActive)
-            {
-                return;
-            }
-
-            var rig = content.GetComponentInChildren<LayoutRig>(true);
-            if (rig == null || !rig.TryGetLayoutBounds(rig.PendingOrCurrent, out var local))
+            // A place the player stands inside (Galaxies, Cosmic Web) is left exactly as it is (owner's direction).
+            if (content == null || UnityEngine.XR.XRSettings.isDeviceActive || SurroundsViewer(content))
             {
                 return;
             }
 
             var camera = Camera.main;
-            if (camera == null)
+            if (camera == null || !TryFrameCorners(content, out var corners))
             {
                 return;
             }
 
-            // The box's corners in the world, however the room has turned the content. Bodies are being
-            // measured, so it does not matter that the rig may still be mid-move: slots are the destination.
-            var corners = new Vector3[8];
-            var min = local.min;
-            var max = local.max;
-            for (var i = 0; i < 8; i++)
+            // In camera space, without the camera's scale. The box's middle goes onto the line of sight and then to
+            // the one distance at which its widest corner touches the margin - pulled nearer when it is small,
+            // pushed back when it is wide - so every place opens centred and filling the view, and Solar Row runs
+            // from one edge of the screen to the other (owner's direction, 27 Sep). tan(half-angle) turns a distance
+            // along the view axis into the half-width visible there.
+            var view = camera.transform;
+            var toView = Quaternion.Inverse(view.rotation);
+            var centre = Vector3.zero;
+            for (var i = 0; i < corners.Length; i++)
             {
-                corners[i] = rig.transform.TransformPoint(new Vector3(
-                    (i & 1) == 0 ? min.x : max.x,
-                    (i & 2) == 0 ? min.y : max.y,
-                    (i & 4) == 0 ? min.z : max.z));
+                corners[i] = toView * (corners[i] - view.position);
+                centre += corners[i] / corners.Length;
             }
 
-            // First the middle of the arrangement onto the content root, where the first arrangement was put.
-            var offset = ContentRoot().position - rig.transform.TransformPoint(local.center);
-
-            // Then away from the camera until every corner is inside the view. tan(half-angle) turns a
-            // distance along the view axis into the half-width visible there.
-            var view = camera.transform;
             var tanVertical = Mathf.Tan(camera.fieldOfView * 0.5f * Mathf.Deg2Rad) * desktopFitMargin;
             var tanHorizontal = tanVertical * Mathf.Max(0.1f, camera.aspect);
-            var push = 0f;
+            var distance = MinFitDistanceMetres;
             foreach (var corner in corners)
             {
-                var p = view.InverseTransformPoint(corner + offset);
-                push = Mathf.Max(push, Mathf.Abs(p.x) / tanHorizontal - p.z, Mathf.Abs(p.y) / tanVertical - p.z);
+                var r = corner - centre;
+                distance = Mathf.Max(distance, Mathf.Abs(r.x) / tanHorizontal - r.z, Mathf.Abs(r.y) / tanVertical - r.z);
             }
 
-            offset += view.forward * push;
+            var offset = view.rotation * (new Vector3(0f, 0f, distance) - centre);
 
             if (offset.sqrMagnitude < CentringDeadzone * CentringDeadzone)
             {
@@ -919,6 +927,58 @@ namespace CosmicSimulation
             }
 
             _fitting = StartCoroutine(FitRoutine(content, target, seconds));
+        }
+
+        /// <summary>
+        /// The eight corners of what a place shows, in the world. An arrangement states its own box from the
+        /// preset's slots, so it is the box the bodies are heading for, not the one they are leaving; anything else
+        /// is measured off its renderers.
+        /// </summary>
+        private static bool TryFrameCorners(Transform content, out Vector3[] corners)
+        {
+            corners = new Vector3[8];
+            var rig = content.GetComponentInChildren<LayoutRig>(true);
+            Bounds box;
+            Transform space = null;
+            if (rig != null && rig.TryGetLayoutBounds(rig.PendingOrCurrent, out box))
+            {
+                space = rig.transform;
+            }
+            else if (!TryMeasureRenderers(content, out box))
+            {
+                return false;
+            }
+
+            for (var i = 0; i < 8; i++)
+            {
+                var corner = new Vector3(
+                    (i & 1) == 0 ? box.min.x : box.max.x,
+                    (i & 2) == 0 ? box.min.y : box.max.y,
+                    (i & 4) == 0 ? box.min.z : box.max.z);
+                corners[i] = space != null ? space.TransformPoint(corner) : corner;
+            }
+
+            return true;
+        }
+
+        private IEnumerator FitViewScene(Transform content)
+        {
+            // The zoom-in, not the whole transition: TransitionManager stays in transition until the narration
+            // has finished, which would leave the place unframed for as long as the voice speaks.
+            var zoom = FindFirstObjectByType<ZoomInOut>();
+            var waited = 0f;
+            while (content != null && (IsSwitching || (zoom != null && !zoom.ZoomInIsDone)) && waited < loadTimeoutSeconds)
+            {
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            if (content != null && content.gameObject.activeInHierarchy)
+            {
+                // The scene's root is held where the room put it every frame (TransformHandler/LocationView), so
+                // it is the scene's own content under it that moves.
+                FitArrangement(content.childCount > 0 ? content.GetChild(0) : content, ViewSceneFitSeconds);
+            }
         }
 
         private IEnumerator FitRoutine(Transform content, Vector3 target, float seconds)

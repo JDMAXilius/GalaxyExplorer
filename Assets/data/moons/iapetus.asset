@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: iapetus
   DisplayName: Iapetus
   Subtitle: SATURN
-  Paragraph: One hemisphere is as dark as coal and the other as bright as snow, a contrast still not fully explained.
+  Paragraph: One side of Iapetus is as dark as coal and the other as bright as snow. A ridge more than ten kilometres high runs along its equator, giving it the shape of a walnut.
   Stats:
   - Label: ORBITS
     Value: Saturn
@@ -28,6 +28,18 @@ MonoBehaviour:
   - Label: ONE ORBIT
     Value: 79.3
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM SATURN
+    Value: 3,560,820
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.023 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1671, Giovanni Cassini
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 9bf50b92ca7516e4cb139e406ff436f7, type: 2}

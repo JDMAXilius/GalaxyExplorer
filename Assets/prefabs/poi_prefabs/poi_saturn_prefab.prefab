@@ -4885,10 +4885,16 @@ MonoBehaviour:
   subtitle: MOON OF SATURN
   facts:
   - Label: DIAMETER
-    Value: 1,469 km
+    Value: 1,469 KM
   - Label: ONE ORBIT
-    Value: 79.3 days
-  description: One hemisphere is as dark as coal and the other as bright as snow, a contrast still not fully explained.
+    Value: 79.3 DAYS
+  - Label: DISTANCE FROM SATURN
+    Value: 3,560,820 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.023 G
+  - Label: DISCOVERED
+    Value: 1671, GIOVANNI CASSINI
+  description: One side of Iapetus is as dark as coal and the other as bright as snow. A ridge more than ten kilometres high runs along its equator, giving it the shape of a walnut.
 --- !u!222 &199212318509728760
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -6733,10 +6739,16 @@ MonoBehaviour:
   subtitle: MOON OF SATURN
   facts:
   - Label: DIAMETER
-    Value: 1,527 km
+    Value: 1,527 KM
   - Label: ONE ORBIT
-    Value: 4.5 days
-  description: Saturn's second-largest moon is an ancient ball of ice, cratered almost everywhere and barely changed in billions of years.
+    Value: 4.52 DAYS
+  - Label: DISTANCE FROM SATURN
+    Value: 527,108 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.027 G
+  - Label: DISCOVERED
+    Value: 1672, GIOVANNI CASSINI
+  description: Saturn's second-largest moon is an ancient ball of ice and rock, cratered almost everywhere. Its surface is so cold and old that it has barely changed in billions of years.
 --- !u!222 &3880790462268425400
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -9269,10 +9281,16 @@ MonoBehaviour:
   subtitle: MOON OF SATURN
   facts:
   - Label: DIAMETER
-    Value: 396 km
+    Value: 396 KM
   - Label: ONE ORBIT
-    Value: 0.9 days
-  description: One impact crater a third as wide as the moon itself gives Mimas its unmistakable profile.
+    Value: 0.94 DAYS
+  - Label: DISTANCE FROM SATURN
+    Value: 185,539 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.007 G
+  - Label: DISCOVERED
+    Value: 1789, WILLIAM HERSCHEL
+  description: Mimas is marked by Herschel, a crater about 130 kilometres wide, a third of the moon's own diameter. The impact that made it very nearly shattered the moon.
 --- !u!222 &6280662023741173963
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -14448,10 +14466,16 @@ MonoBehaviour:
   subtitle: MOON OF SATURN
   facts:
   - Label: DIAMETER
-    Value: 504 km
+    Value: 504 KM
   - Label: ONE ORBIT
-    Value: 1.4 days
-  description: Geysers at its south pole spray water from a hidden ocean into space, feeding one of Saturn's rings.
+    Value: 1.37 DAYS
+  - Label: DISTANCE FROM SATURN
+    Value: 237,948 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.012 G
+  - Label: DISCOVERED
+    Value: 1789, WILLIAM HERSCHEL
+  description: Geysers at Enceladus's south pole spray water from an underground ocean into space, feeding Saturn's faint E ring. Its fresh ice makes it one of the brightest objects in the solar system.
 --- !u!222 &4208440003659345457
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -15100,10 +15124,16 @@ MonoBehaviour:
   subtitle: MOON OF SATURN
   facts:
   - Label: DIAMETER
-    Value: 5,150 km
+    Value: 5,150 KM
   - Label: ONE ORBIT
-    Value: 15.9 days
-  description: 'The only moon with a thick atmosphere, and the only place besides Earth with liquid on its surface: rivers and lakes of methane.'
+    Value: 15.9 DAYS
+  - Label: DISTANCE FROM SATURN
+    Value: 1,221,870 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.14 G
+  - Label: DISCOVERED
+    Value: 1655, CHRISTIAAN HUYGENS
+  description: 'Titan is the only moon with a thick atmosphere, and the only place besides Earth known to have liquid on its surface: lakes and seas of methane. In 2005 the Huygens probe landed there.'
 --- !u!222 &6532237300862239983
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -17364,10 +17394,16 @@ MonoBehaviour:
   subtitle: MOON OF SATURN
   facts:
   - Label: DIAMETER
-    Value: 1,062 km
+    Value: 1,062 KM
   - Label: ONE ORBIT
-    Value: 1.9 days
-  description: Tethys is almost pure water ice, scarred by Ithaca Chasma, a canyon running three-quarters of the way around it.
+    Value: 1.89 DAYS
+  - Label: DISTANCE FROM SATURN
+    Value: 294,619 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.015 G
+  - Label: DISCOVERED
+    Value: 1684, GIOVANNI CASSINI
+  description: Tethys is made almost entirely of water ice, which makes it one of the least dense moons known. Ithaca Chasma, a canyon up to 100 kilometres wide, runs three-quarters of the way around it.
 --- !u!222 &2433946556335562153
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -21165,10 +21201,16 @@ MonoBehaviour:
   subtitle: MOON OF SATURN
   facts:
   - Label: DIAMETER
-    Value: 1,123 km
+    Value: 1,123 KM
   - Label: ONE ORBIT
-    Value: 2.7 days
-  description: Bright ice cliffs hundreds of metres high streak Dione's trailing side, and an ocean may lie deep beneath its crust.
+    Value: 2.74 DAYS
+  - Label: DISTANCE FROM SATURN
+    Value: 377,396 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.024 G
+  - Label: DISCOVERED
+    Value: 1684, GIOVANNI CASSINI
+  description: Bright ice cliffs hundreds of metres high streak Dione's trailing side, once thought to be wisps of frost. Measurements by the Cassini spacecraft suggest an ocean lies deep beneath its crust.
 --- !u!222 &5806737733472141024
 CanvasRenderer:
   m_ObjectHideFlags: 0

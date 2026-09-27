@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: miranda
   DisplayName: Miranda
   Subtitle: URANUS
-  Paragraph: Miranda looks stitched together from different worlds, and one of its cliffs may be ten kilometres high, among the tallest in the solar system.
+  Paragraph: Miranda looks stitched together from different worlds, with grooved terrain beside old cratered plains. One of its cliffs, Verona Rupes, may be ten kilometres high, among the tallest in the solar system.
   Stats:
   - Label: ORBITS
     Value: Uranus
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 1.4
+    Value: 1.41
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM URANUS
+    Value: 129,390
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.008 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1948, Gerard Kuiper
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 18c8b19d7afa82746a3bff61c3c1bd23, type: 2}

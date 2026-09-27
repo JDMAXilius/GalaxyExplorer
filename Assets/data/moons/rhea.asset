@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: rhea
   DisplayName: Rhea
   Subtitle: SATURN
-  Paragraph: Saturn's second-largest moon is an ancient ball of ice, cratered almost everywhere and barely changed in billions of years.
+  Paragraph: Saturn's second-largest moon is an ancient ball of ice and rock, cratered almost everywhere. Its surface is so cold and old that it has barely changed in billions of years.
   Stats:
   - Label: ORBITS
     Value: Saturn
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 4.5
+    Value: 4.52
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM SATURN
+    Value: 527,108
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.027 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1672, Giovanni Cassini
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 9bf50b92ca7516e4cb139e406ff436f7, type: 2}

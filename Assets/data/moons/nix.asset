@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: nix
   DisplayName: Nix
   Subtitle: PLUTO
-  Paragraph: Nix tumbles rather than spinning steadily, pulled back and forth by Pluto and Charon as they whirl around each other.
+  Paragraph: Nix tumbles rather than spinning steadily, pulled back and forth by Pluto and Charon as they whirl around each other. New Horizons found a reddish patch on its icy surface.
   Stats:
   - Label: ORBITS
     Value: Pluto
@@ -28,6 +28,18 @@ MonoBehaviour:
   - Label: ONE ORBIT
     Value: 24.9
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM PLUTO
+    Value: 48,694
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: Too weak to measure
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 2005, Hubble Space Telescope
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 0a2320c3588a253468914253eb626734, type: 2}

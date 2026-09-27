@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: enceladus
   DisplayName: Enceladus
   Subtitle: SATURN
-  Paragraph: Geysers at its south pole spray water from a hidden ocean into space, feeding one of Saturn's rings.
+  Paragraph: Geysers at Enceladus's south pole spray water from an underground ocean into space, feeding Saturn's faint E ring. Its fresh ice makes it one of the brightest objects in the solar system.
   Stats:
   - Label: ORBITS
     Value: Saturn
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 1.4
+    Value: 1.37
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM SATURN
+    Value: 237,948
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.012 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1789, William Herschel
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 9bf50b92ca7516e4cb139e406ff436f7, type: 2}

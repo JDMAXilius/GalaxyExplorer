@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: proteus
   DisplayName: Proteus
   Subtitle: NEPTUNE
-  Paragraph: Neptune's second-largest moon is one of the darkest objects in the solar system, and about as big as a moon can be without pulling itself round.
+  Paragraph: Neptune's second-largest moon is one of the darkest objects in the solar system, reflecting only about a tenth of the light that reaches it. It is about as large as a moon can be without pulling itself round.
   Stats:
   - Label: ORBITS
     Value: Neptune
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 1.1
+    Value: 1.12
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM NEPTUNE
+    Value: 117,647
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.007 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1989, Voyager 2
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: f6fe938c46a77e74e85216731ff66e2e, type: 2}

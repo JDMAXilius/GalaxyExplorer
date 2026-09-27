@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: europa
   DisplayName: Europa
   Subtitle: JUPITER
-  Paragraph: A shell of cracked ice over a salt-water ocean that holds more water than every sea on Earth.
+  Paragraph: Europa's smooth, cracked shell of ice hides a salty ocean holding more water than all of Earth's oceans combined. It is one of the most promising places to search for life beyond Earth.
   Stats:
   - Label: ORBITS
     Value: Jupiter
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 3.6
+    Value: 3.55
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM JUPITER
+    Value: 671,034
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.13 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1610, Galileo Galilei
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: be9b1f8fd0603b947a7507c5500cffb0, type: 2}

@@ -4110,10 +4110,16 @@ MonoBehaviour:
   subtitle: MOON OF PLUTO
   facts:
   - Label: DIAMETER
-    Value: 50 km
+    Value: 50 KM
   - Label: ONE ORBIT
-    Value: 24.9 days
-  description: Nix tumbles rather than spinning steadily, pulled back and forth by Pluto and Charon as they whirl around each other.
+    Value: 24.9 DAYS
+  - Label: DISTANCE FROM PLUTO
+    Value: 48,694 KM
+  - Label: SURFACE GRAVITY
+    Value: TOO WEAK TO MEASURE
+  - Label: DISCOVERED
+    Value: 2005, HUBBLE SPACE TELESCOPE
+  description: Nix tumbles rather than spinning steadily, pulled back and forth by Pluto and Charon as they whirl around each other. New Horizons found a reddish patch on its icy surface.
 --- !u!222 &960787254666403072
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -6520,10 +6526,16 @@ MonoBehaviour:
   subtitle: MOON OF PLUTO
   facts:
   - Label: DIAMETER
-    Value: 51 km
+    Value: 51 KM
   - Label: ONE ORBIT
-    Value: 38.2 days
-  description: Hydra's surface is almost pure water ice, and it spins remarkably fast, once every ten hours.
+    Value: 38.2 DAYS
+  - Label: DISTANCE FROM PLUTO
+    Value: 64,738 KM
+  - Label: SURFACE GRAVITY
+    Value: TOO WEAK TO MEASURE
+  - Label: DISCOVERED
+    Value: 2005, HUBBLE SPACE TELESCOPE
+  description: Hydra's surface is almost pure water ice, making it one of the most reflective objects around Pluto. It spins remarkably fast, once every ten hours.
 --- !u!222 &4943033944451948362
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -7419,10 +7431,16 @@ MonoBehaviour:
   subtitle: MOON OF PLUTO
   facts:
   - Label: DIAMETER
-    Value: 1,212 km
+    Value: 1,212 KM
   - Label: ONE ORBIT
-    Value: 6.4 days
-  description: Half Pluto's size, Charon is locked face to face with it, the two circling a point in the empty space between them.
+    Value: 6.39 DAYS
+  - Label: DISTANCE FROM PLUTO
+    Value: 19,591 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.029 G
+  - Label: DISCOVERED
+    Value: 1978, JAMES CHRISTY
+  description: Half Pluto's size, Charon is so large that the two orbit a point in the empty space between them, each keeping the same face to the other. A dark red cap covers its north pole.
 --- !u!222 &1849354706065295637
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -12019,10 +12037,16 @@ MonoBehaviour:
   subtitle: MOON OF PLUTO
   facts:
   - Label: DIAMETER
-    Value: 16 km
+    Value: 16 KM
   - Label: ONE ORBIT
-    Value: 20.2 days
-  description: The smallest and innermost of Pluto's little moons, Styx was only discovered in 2012, by the Hubble Space Telescope.
+    Value: 20.2 DAYS
+  - Label: DISTANCE FROM PLUTO
+    Value: 42,656 KM
+  - Label: SURFACE GRAVITY
+    Value: TOO WEAK TO MEASURE
+  - Label: DISCOVERED
+    Value: 2012, HUBBLE SPACE TELESCOPE
+  description: The smallest and innermost of Pluto's little moons, Styx was found in 2012 in images from the Hubble Space Telescope. It is only about sixteen kilometres long.
 --- !u!222 &4367626016734891456
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -17548,10 +17572,16 @@ MonoBehaviour:
   subtitle: MOON OF PLUTO
   facts:
   - Label: DIAMETER
-    Value: 19 km
+    Value: 19 KM
   - Label: ONE ORBIT
-    Value: 32.2 days
-  description: Kerberos is two small lumps stuck together, a double-lobed moon only about nineteen kilometres long.
+    Value: 32.2 DAYS
+  - Label: DISTANCE FROM PLUTO
+    Value: 57,783 KM
+  - Label: SURFACE GRAVITY
+    Value: TOO WEAK TO MEASURE
+  - Label: DISCOVERED
+    Value: 2011, HUBBLE SPACE TELESCOPE
+  description: Kerberos is two small lumps stuck together, a double-lobed moon about nineteen kilometres long. Its surface is bright with water ice, not dark as astronomers had expected.
 --- !u!222 &5518634900085233995
 CanvasRenderer:
   m_ObjectHideFlags: 0

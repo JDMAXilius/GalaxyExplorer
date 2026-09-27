@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: triton
   DisplayName: Triton
   Subtitle: NEPTUNE
-  Paragraph: Triton circles Neptune backwards, a sign it was captured, and geysers of nitrogen shoot eight kilometres up from its frozen surface.
+  Paragraph: Triton circles Neptune backwards, a sign that it was captured from the Kuiper Belt. Voyager 2 saw geysers of nitrogen rising eight kilometres above its frozen, pinkish surface.
   Stats:
   - Label: ORBITS
     Value: Neptune
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 5.9
+    Value: 5.88
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM NEPTUNE
+    Value: 354,759
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.08 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1846, William Lassell
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: f6fe938c46a77e74e85216731ff66e2e, type: 2}

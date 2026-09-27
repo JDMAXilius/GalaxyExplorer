@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: dione
   DisplayName: Dione
   Subtitle: SATURN
-  Paragraph: Bright ice cliffs hundreds of metres high streak Dione's trailing side, and an ocean may lie deep beneath its crust.
+  Paragraph: Bright ice cliffs hundreds of metres high streak Dione's trailing side, once thought to be wisps of frost. Measurements by the Cassini spacecraft suggest an ocean lies deep beneath its crust.
   Stats:
   - Label: ORBITS
     Value: Saturn
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 2.7
+    Value: 2.74
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM SATURN
+    Value: 377,396
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.024 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1684, Giovanni Cassini
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 9bf50b92ca7516e4cb139e406ff436f7, type: 2}

@@ -285,7 +285,7 @@ namespace CosmicSimulation.EditorTools
             {
                 var fact = facts.GetArrayElementAtIndex(i);
                 fact.FindPropertyRelative("Label").stringValue = stats[i].Label;
-                fact.FindPropertyRelative("Value").stringValue = $"{stats[i].Value} {stats[i].Unit}".Trim();
+                fact.FindPropertyRelative("Value").stringValue = $"{stats[i].Value} {stats[i].Unit}".Trim().ToUpperInvariant();
             }
             so.ApplyModifiedPropertiesWithoutUndo();
         }

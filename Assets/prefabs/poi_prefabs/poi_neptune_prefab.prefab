@@ -2001,10 +2001,16 @@ MonoBehaviour:
   subtitle: MOON OF NEPTUNE
   facts:
   - Label: DIAMETER
-    Value: 420 km
+    Value: 420 KM
   - Label: ONE ORBIT
-    Value: 1.1 days
-  description: Neptune's second-largest moon is one of the darkest objects in the solar system, and about as big as a moon can be without pulling itself round.
+    Value: 1.12 DAYS
+  - Label: DISTANCE FROM NEPTUNE
+    Value: 117,647 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.007 G
+  - Label: DISCOVERED
+    Value: 1989, VOYAGER 2
+  description: Neptune's second-largest moon is one of the darkest objects in the solar system, reflecting only about a tenth of the light that reaches it. It is about as large as a moon can be without pulling itself round.
 --- !u!222 &9131982648555502054
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -3528,10 +3534,16 @@ MonoBehaviour:
   subtitle: MOON OF NEPTUNE
   facts:
   - Label: DIAMETER
-    Value: 2,707 km
+    Value: 2,707 KM
   - Label: ONE ORBIT
-    Value: 5.9 days
-  description: Triton circles Neptune backwards, a sign it was captured, and geysers of nitrogen shoot eight kilometres up from its frozen surface.
+    Value: 5.88 DAYS
+  - Label: DISTANCE FROM NEPTUNE
+    Value: 354,759 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.08 G
+  - Label: DISCOVERED
+    Value: 1846, WILLIAM LASSELL
+  description: Triton circles Neptune backwards, a sign that it was captured from the Kuiper Belt. Voyager 2 saw geysers of nitrogen rising eight kilometres above its frozen, pinkish surface.
 --- !u!222 &5755980901864856693
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -6095,10 +6107,16 @@ MonoBehaviour:
   subtitle: MOON OF NEPTUNE
   facts:
   - Label: DIAMETER
-    Value: 357 km
+    Value: 357 KM
   - Label: ONE ORBIT
-    Value: 360 days
-  description: Nereid swings around Neptune on one of the most stretched orbits of any moon, taking almost a year for each lap.
+    Value: 360 DAYS
+  - Label: DISTANCE FROM NEPTUNE
+    Value: 5,513,818 KM
+  - Label: SURFACE GRAVITY
+    Value: NOT MEASURED
+  - Label: DISCOVERED
+    Value: 1949, GERARD KUIPER
+  description: Nereid swings around Neptune on one of the most stretched orbits of any moon, coming seven times closer at one end than at the other. Each lap takes almost a full Earth year.
 --- !u!222 &2470393127091882559
 CanvasRenderer:
   m_ObjectHideFlags: 0

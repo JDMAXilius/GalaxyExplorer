@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: titania
   DisplayName: Titania
   Subtitle: URANUS
-  Paragraph: Uranus's largest moon, Titania, is split by canyons up to 1,500 kilometres long, cracks from when its interior froze.
+  Paragraph: Titania is the largest moon of Uranus, a mix of ice and rock. Canyons up to 1,500 kilometres long split its surface, cracks that formed as its interior froze and expanded.
   Stats:
   - Label: ORBITS
     Value: Uranus
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 8.7
+    Value: 8.71
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM URANUS
+    Value: 435,910
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.037 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1787, William Herschel
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 18c8b19d7afa82746a3bff61c3c1bd23, type: 2}

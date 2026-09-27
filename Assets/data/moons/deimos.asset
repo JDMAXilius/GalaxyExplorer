@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: deimos
   DisplayName: Deimos
   Subtitle: MARS
-  Paragraph: The smaller Martian moon is so distant and faint that from the surface it looks like a bright star.
+  Paragraph: The smaller and more distant of Mars's two moons, Deimos is a dark, lumpy body coated in fine dust. Seen from the Martian surface it would look like a bright star rather than a disc.
   Stats:
   - Label: ORBITS
     Value: Mars
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 1.3
+    Value: 1.26
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM MARS
+    Value: 23,463
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.0003 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1877, Asaph Hall
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 44bdfe792eff186438ec2c71d4faa3a5, type: 2}

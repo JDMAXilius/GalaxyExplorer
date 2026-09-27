@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: io
   DisplayName: Io
   Subtitle: JUPITER
-  Paragraph: Squeezed and stretched by Jupiter's gravity, Io is the most volcanically active body in the solar system.
+  Paragraph: Io is the most volcanically active world in the solar system, with hundreds of volcanoes, some throwing plumes hundreds of kilometres high. Jupiter's tides flex its interior and keep it molten.
   Stats:
   - Label: ORBITS
     Value: Jupiter
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 1.8
+    Value: 1.77
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM JUPITER
+    Value: 421,700
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.18 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1610, Galileo Galilei
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: be9b1f8fd0603b947a7507c5500cffb0, type: 2}

@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: phobos
   DisplayName: Phobos
   Subtitle: MARS
-  Paragraph: Spiralling slowly inward, Phobos will break apart or strike Mars within about fifty million years.
+  Paragraph: Phobos orbits closer to its planet than any other known moon, rising in the west and crossing the Martian sky twice a day. It is spiralling slowly inward and will break apart or strike Mars within about fifty million years.
   Stats:
   - Label: ORBITS
     Value: Mars
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 0.3
+    Value: 0.32
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM MARS
+    Value: 9,376
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.0006 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1877, Asaph Hall
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 44bdfe792eff186438ec2c71d4faa3a5, type: 2}

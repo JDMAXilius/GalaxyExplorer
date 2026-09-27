@@ -5357,10 +5357,16 @@ MonoBehaviour:
   subtitle: MOON OF MARS
   facts:
   - Label: DIAMETER
-    Value: 12.4 km
+    Value: 12.4 KM
   - Label: ONE ORBIT
-    Value: 1.3 days
-  description: The smaller Martian moon is so distant and faint that from the surface it looks like a bright star.
+    Value: 1.26 DAYS
+  - Label: DISTANCE FROM MARS
+    Value: 23,463 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.0003 G
+  - Label: DISCOVERED
+    Value: 1877, ASAPH HALL
+  description: The smaller and more distant of Mars's two moons, Deimos is a dark, lumpy body coated in fine dust. Seen from the Martian surface it would look like a bright star rather than a disc.
 --- !u!222 &3053252383123534612
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -7153,10 +7159,16 @@ MonoBehaviour:
   subtitle: MOON OF MARS
   facts:
   - Label: DIAMETER
-    Value: 22.5 km
+    Value: 22.5 KM
   - Label: ONE ORBIT
-    Value: 0.3 days
-  description: Spiralling slowly inward, Phobos will break apart or strike Mars within about fifty million years.
+    Value: 0.32 DAYS
+  - Label: DISTANCE FROM MARS
+    Value: 9,376 KM
+  - Label: SURFACE GRAVITY
+    Value: 0.0006 G
+  - Label: DISCOVERED
+    Value: 1877, ASAPH HALL
+  description: Phobos orbits closer to its planet than any other known moon, rising in the west and crossing the Martian sky twice a day. It is spiralling slowly inward and will break apart or strike Mars within about fifty million years.
 --- !u!222 &1979224722964990847
 CanvasRenderer:
   m_ObjectHideFlags: 0

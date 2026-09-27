@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: callisto
   DisplayName: Callisto
   Subtitle: JUPITER
-  Paragraph: The most heavily cratered object we know of, its surface barely changed in four billion years.
+  Paragraph: Callisto's surface is the most heavily cratered in the solar system, barely changed in four billion years. It orbits outside Jupiter's fiercest radiation and may hide an ocean far beneath its crust.
   Stats:
   - Label: ORBITS
     Value: Jupiter
@@ -28,6 +28,18 @@ MonoBehaviour:
   - Label: ONE ORBIT
     Value: 16.7
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM JUPITER
+    Value: 1,882,709
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.13 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1610, Galileo Galilei
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: be9b1f8fd0603b947a7507c5500cffb0, type: 2}

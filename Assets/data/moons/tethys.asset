@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: tethys
   DisplayName: Tethys
   Subtitle: SATURN
-  Paragraph: Tethys is almost pure water ice, scarred by Ithaca Chasma, a canyon running three-quarters of the way around it.
+  Paragraph: Tethys is made almost entirely of water ice, which makes it one of the least dense moons known. Ithaca Chasma, a canyon up to 100 kilometres wide, runs three-quarters of the way around it.
   Stats:
   - Label: ORBITS
     Value: Saturn
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 1.9
+    Value: 1.89
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM SATURN
+    Value: 294,619
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.015 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1684, Giovanni Cassini
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 9bf50b92ca7516e4cb139e406ff436f7, type: 2}

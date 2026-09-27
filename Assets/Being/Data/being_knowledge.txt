@@ -187,73 +187,73 @@ Diameter: 12,104 km; Mass: 4.87 x 10^24 kg; Orbital Period: 225 days; Day Length
 
 ## Ariel (id: ariel)
 URANUS
-The brightest of Uranus's moons, Ariel has the youngest surface, cut through by long rift valleys.
-ORBITS: Uranus; DIAMETER: 1,158 km; ONE ORBIT: 2.5 days
+The brightest of Uranus's large moons, Ariel has the youngest-looking surface, crossed by long rift valleys. Some of the valley floors appear to have been smoothed by icy flows.
+ORBITS: Uranus; DIAMETER: 1,158 km; ONE ORBIT: 2.52 days; DISTANCE FROM URANUS: 190,900 km; SURFACE GRAVITY: 0.027 G; DISCOVERED: 1851, William Lassell
 
 ## Callisto (id: callisto)
 JUPITER
-The most heavily cratered object we know of, its surface barely changed in four billion years.
-ORBITS: Jupiter; DIAMETER: 4,821 km; ONE ORBIT: 16.7 days
+Callisto's surface is the most heavily cratered in the solar system, barely changed in four billion years. It orbits outside Jupiter's fiercest radiation and may hide an ocean far beneath its crust.
+ORBITS: Jupiter; DIAMETER: 4,821 km; ONE ORBIT: 16.7 days; DISTANCE FROM JUPITER: 1,882,709 km; SURFACE GRAVITY: 0.13 G; DISCOVERED: 1610, Galileo Galilei
 
 ## Charon (id: charon)
 PLUTO
-Half Pluto's size, Charon is locked face to face with it, the two circling a point in the empty space between them.
-ORBITS: Pluto; DIAMETER: 1,212 km; ONE ORBIT: 6.4 days
+Half Pluto's size, Charon is so large that the two orbit a point in the empty space between them, each keeping the same face to the other. A dark red cap covers its north pole.
+ORBITS: Pluto; DIAMETER: 1,212 km; ONE ORBIT: 6.39 days; DISTANCE FROM PLUTO: 19,591 km; SURFACE GRAVITY: 0.029 G; DISCOVERED: 1978, James Christy
 
 ## Deimos (id: deimos)
 MARS
-The smaller Martian moon is so distant and faint that from the surface it looks like a bright star.
-ORBITS: Mars; DIAMETER: 12.4 km; ONE ORBIT: 1.3 days
+The smaller and more distant of Mars's two moons, Deimos is a dark, lumpy body coated in fine dust. Seen from the Martian surface it would look like a bright star rather than a disc.
+ORBITS: Mars; DIAMETER: 12.4 km; ONE ORBIT: 1.26 days; DISTANCE FROM MARS: 23,463 km; SURFACE GRAVITY: 0.0003 G; DISCOVERED: 1877, Asaph Hall
 
 ## Dione (id: dione)
 SATURN
-Bright ice cliffs hundreds of metres high streak Dione's trailing side, and an ocean may lie deep beneath its crust.
-ORBITS: Saturn; DIAMETER: 1,123 km; ONE ORBIT: 2.7 days
+Bright ice cliffs hundreds of metres high streak Dione's trailing side, once thought to be wisps of frost. Measurements by the Cassini spacecraft suggest an ocean lies deep beneath its crust.
+ORBITS: Saturn; DIAMETER: 1,123 km; ONE ORBIT: 2.74 days; DISTANCE FROM SATURN: 377,396 km; SURFACE GRAVITY: 0.024 G; DISCOVERED: 1684, Giovanni Cassini
 
 ## Enceladus (id: enceladus)
 SATURN
-Geysers at its south pole spray water from a hidden ocean into space, feeding one of Saturn's rings.
-ORBITS: Saturn; DIAMETER: 504 km; ONE ORBIT: 1.4 days
+Geysers at Enceladus's south pole spray water from an underground ocean into space, feeding Saturn's faint E ring. Its fresh ice makes it one of the brightest objects in the solar system.
+ORBITS: Saturn; DIAMETER: 504 km; ONE ORBIT: 1.37 days; DISTANCE FROM SATURN: 237,948 km; SURFACE GRAVITY: 0.012 G; DISCOVERED: 1789, William Herschel
 
 ## Europa (id: europa)
 JUPITER
-A shell of cracked ice over a salt-water ocean that holds more water than every sea on Earth.
-ORBITS: Jupiter; DIAMETER: 3,122 km; ONE ORBIT: 3.6 days
+Europa's smooth, cracked shell of ice hides a salty ocean holding more water than all of Earth's oceans combined. It is one of the most promising places to search for life beyond Earth.
+ORBITS: Jupiter; DIAMETER: 3,122 km; ONE ORBIT: 3.55 days; DISTANCE FROM JUPITER: 671,034 km; SURFACE GRAVITY: 0.13 G; DISCOVERED: 1610, Galileo Galilei
 
 ## Ganymede (id: ganymede)
 JUPITER
-The largest moon in the solar system, wider than Mercury, and the only one known to make its own magnetic field.
-ORBITS: Jupiter; DIAMETER: 5,268 km; ONE ORBIT: 7.2 days
+The largest moon in the solar system, Ganymede is wider than the planet Mercury. It is the only moon known to make its own magnetic field, and an ocean may lie deep beneath its ice.
+ORBITS: Jupiter; DIAMETER: 5,268 km; ONE ORBIT: 7.15 days; DISTANCE FROM JUPITER: 1,070,412 km; SURFACE GRAVITY: 0.15 G; DISCOVERED: 1610, Galileo Galilei
 
 ## Hydra (id: hydra)
 PLUTO
-Hydra's surface is almost pure water ice, and it spins remarkably fast, once every ten hours.
-ORBITS: Pluto; DIAMETER: 51 km; ONE ORBIT: 38.2 days
+Hydra's surface is almost pure water ice, making it one of the most reflective objects around Pluto. It spins remarkably fast, once every ten hours.
+ORBITS: Pluto; DIAMETER: 51 km; ONE ORBIT: 38.2 days; DISTANCE FROM PLUTO: 64,738 km; SURFACE GRAVITY: Too weak to measure; DISCOVERED: 2005, Hubble Space Telescope
 
 ## Iapetus (id: iapetus)
 SATURN
-One hemisphere is as dark as coal and the other as bright as snow, a contrast still not fully explained.
-ORBITS: Saturn; DIAMETER: 1,469 km; ONE ORBIT: 79.3 days
+One side of Iapetus is as dark as coal and the other as bright as snow. A ridge more than ten kilometres high runs along its equator, giving it the shape of a walnut.
+ORBITS: Saturn; DIAMETER: 1,469 km; ONE ORBIT: 79.3 days; DISTANCE FROM SATURN: 3,560,820 km; SURFACE GRAVITY: 0.023 G; DISCOVERED: 1671, Giovanni Cassini
 
 ## Io (id: io)
 JUPITER
-Squeezed and stretched by Jupiter's gravity, Io is the most volcanically active body in the solar system.
-ORBITS: Jupiter; DIAMETER: 3,643 km; ONE ORBIT: 1.8 days
+Io is the most volcanically active world in the solar system, with hundreds of volcanoes, some throwing plumes hundreds of kilometres high. Jupiter's tides flex its interior and keep it molten.
+ORBITS: Jupiter; DIAMETER: 3,643 km; ONE ORBIT: 1.77 days; DISTANCE FROM JUPITER: 421,700 km; SURFACE GRAVITY: 0.18 G; DISCOVERED: 1610, Galileo Galilei
 
 ## Kerberos (id: kerberos)
 PLUTO
-Kerberos is two small lumps stuck together, a double-lobed moon only about nineteen kilometres long.
-ORBITS: Pluto; DIAMETER: 19 km; ONE ORBIT: 32.2 days
+Kerberos is two small lumps stuck together, a double-lobed moon about nineteen kilometres long. Its surface is bright with water ice, not dark as astronomers had expected.
+ORBITS: Pluto; DIAMETER: 19 km; ONE ORBIT: 32.2 days; DISTANCE FROM PLUTO: 57,783 km; SURFACE GRAVITY: Too weak to measure; DISCOVERED: 2011, Hubble Space Telescope
 
 ## Mimas (id: mimas)
 SATURN
-One impact crater a third as wide as the moon itself gives Mimas its unmistakable profile.
-ORBITS: Saturn; DIAMETER: 396 km; ONE ORBIT: 0.9 days
+Mimas is marked by Herschel, a crater about 130 kilometres wide, a third of the moon's own diameter. The impact that made it very nearly shattered the moon.
+ORBITS: Saturn; DIAMETER: 396 km; ONE ORBIT: 0.94 days; DISTANCE FROM SATURN: 185,539 km; SURFACE GRAVITY: 0.007 G; DISCOVERED: 1789, William Herschel
 
 ## Miranda (id: miranda)
 URANUS
-Miranda looks stitched together from different worlds, and one of its cliffs may be ten kilometres high, among the tallest in the solar system.
-ORBITS: Uranus; DIAMETER: 472 km; ONE ORBIT: 1.4 days
+Miranda looks stitched together from different worlds, with grooved terrain beside old cratered plains. One of its cliffs, Verona Rupes, may be ten kilometres high, among the tallest in the solar system.
+ORBITS: Uranus; DIAMETER: 472 km; ONE ORBIT: 1.41 days; DISTANCE FROM URANUS: 129,390 km; SURFACE GRAVITY: 0.008 G; DISCOVERED: 1948, Gerard Kuiper
 
 ## Moon (id: moon)
 EARTH
@@ -262,60 +262,60 @@ ORBITS: Earth; DIAMETER: 3,474 km; ONE ORBIT: 27.3 days
 
 ## Nereid (id: nereid)
 NEPTUNE
-Nereid swings around Neptune on one of the most stretched orbits of any moon, taking almost a year for each lap.
-ORBITS: Neptune; DIAMETER: 357 km; ONE ORBIT: 360 days
+Nereid swings around Neptune on one of the most stretched orbits of any moon, coming seven times closer at one end than at the other. Each lap takes almost a full Earth year.
+ORBITS: Neptune; DIAMETER: 357 km; ONE ORBIT: 360 days; DISTANCE FROM NEPTUNE: 5,513,818 km; SURFACE GRAVITY: Not measured; DISCOVERED: 1949, Gerard Kuiper
 
 ## Nix (id: nix)
 PLUTO
-Nix tumbles rather than spinning steadily, pulled back and forth by Pluto and Charon as they whirl around each other.
-ORBITS: Pluto; DIAMETER: 50 km; ONE ORBIT: 24.9 days
+Nix tumbles rather than spinning steadily, pulled back and forth by Pluto and Charon as they whirl around each other. New Horizons found a reddish patch on its icy surface.
+ORBITS: Pluto; DIAMETER: 50 km; ONE ORBIT: 24.9 days; DISTANCE FROM PLUTO: 48,694 km; SURFACE GRAVITY: Too weak to measure; DISCOVERED: 2005, Hubble Space Telescope
 
 ## Oberon (id: oberon)
 URANUS
-The outermost of Uranus's large moons, Oberon is old and heavily cratered, and many crater floors are filled with dark material.
-ORBITS: Uranus; DIAMETER: 1,523 km; ONE ORBIT: 13.5 days
+The outermost of Uranus's large moons, Oberon is old and heavily cratered. Many of its crater floors are filled with dark material, and at least one mountain rises several kilometres high.
+ORBITS: Uranus; DIAMETER: 1,523 km; ONE ORBIT: 13.5 days; DISTANCE FROM URANUS: 583,520 km; SURFACE GRAVITY: 0.035 G; DISCOVERED: 1787, William Herschel
 
 ## Phobos (id: phobos)
 MARS
-Spiralling slowly inward, Phobos will break apart or strike Mars within about fifty million years.
-ORBITS: Mars; DIAMETER: 22.5 km; ONE ORBIT: 0.3 days
+Phobos orbits closer to its planet than any other known moon, rising in the west and crossing the Martian sky twice a day. It is spiralling slowly inward and will break apart or strike Mars within about fifty million years.
+ORBITS: Mars; DIAMETER: 22.5 km; ONE ORBIT: 0.32 days; DISTANCE FROM MARS: 9,376 km; SURFACE GRAVITY: 0.0006 G; DISCOVERED: 1877, Asaph Hall
 
 ## Proteus (id: proteus)
 NEPTUNE
-Neptune's second-largest moon is one of the darkest objects in the solar system, and about as big as a moon can be without pulling itself round.
-ORBITS: Neptune; DIAMETER: 420 km; ONE ORBIT: 1.1 days
+Neptune's second-largest moon is one of the darkest objects in the solar system, reflecting only about a tenth of the light that reaches it. It is about as large as a moon can be without pulling itself round.
+ORBITS: Neptune; DIAMETER: 420 km; ONE ORBIT: 1.12 days; DISTANCE FROM NEPTUNE: 117,647 km; SURFACE GRAVITY: 0.007 G; DISCOVERED: 1989, Voyager 2
 
 ## Rhea (id: rhea)
 SATURN
-Saturn's second-largest moon is an ancient ball of ice, cratered almost everywhere and barely changed in billions of years.
-ORBITS: Saturn; DIAMETER: 1,527 km; ONE ORBIT: 4.5 days
+Saturn's second-largest moon is an ancient ball of ice and rock, cratered almost everywhere. Its surface is so cold and old that it has barely changed in billions of years.
+ORBITS: Saturn; DIAMETER: 1,527 km; ONE ORBIT: 4.52 days; DISTANCE FROM SATURN: 527,108 km; SURFACE GRAVITY: 0.027 G; DISCOVERED: 1672, Giovanni Cassini
 
 ## Styx (id: styx)
 PLUTO
-The smallest and innermost of Pluto's little moons, Styx was only discovered in 2012, by the Hubble Space Telescope.
-ORBITS: Pluto; DIAMETER: 16 km; ONE ORBIT: 20.2 days
+The smallest and innermost of Pluto's little moons, Styx was found in 2012 in images from the Hubble Space Telescope. It is only about sixteen kilometres long.
+ORBITS: Pluto; DIAMETER: 16 km; ONE ORBIT: 20.2 days; DISTANCE FROM PLUTO: 42,656 km; SURFACE GRAVITY: Too weak to measure; DISCOVERED: 2012, Hubble Space Telescope
 
 ## Tethys (id: tethys)
 SATURN
-Tethys is almost pure water ice, scarred by Ithaca Chasma, a canyon running three-quarters of the way around it.
-ORBITS: Saturn; DIAMETER: 1,062 km; ONE ORBIT: 1.9 days
+Tethys is made almost entirely of water ice, which makes it one of the least dense moons known. Ithaca Chasma, a canyon up to 100 kilometres wide, runs three-quarters of the way around it.
+ORBITS: Saturn; DIAMETER: 1,062 km; ONE ORBIT: 1.89 days; DISTANCE FROM SATURN: 294,619 km; SURFACE GRAVITY: 0.015 G; DISCOVERED: 1684, Giovanni Cassini
 
 ## Titan (id: titan)
 SATURN
-The only moon with a thick atmosphere, and the only place besides Earth with liquid on its surface: rivers and lakes of methane.
-ORBITS: Saturn; DIAMETER: 5,150 km; ONE ORBIT: 15.9 days
+Titan is the only moon with a thick atmosphere, and the only place besides Earth known to have liquid on its surface: lakes and seas of methane. In 2005 the Huygens probe landed there.
+ORBITS: Saturn; DIAMETER: 5,150 km; ONE ORBIT: 15.9 days; DISTANCE FROM SATURN: 1,221,870 km; SURFACE GRAVITY: 0.14 G; DISCOVERED: 1655, Christiaan Huygens
 
 ## Titania (id: titania)
 URANUS
-Uranus's largest moon, Titania, is split by canyons up to 1,500 kilometres long, cracks from when its interior froze.
-ORBITS: Uranus; DIAMETER: 1,577 km; ONE ORBIT: 8.7 days
+Titania is the largest moon of Uranus, a mix of ice and rock. Canyons up to 1,500 kilometres long split its surface, cracks that formed as its interior froze and expanded.
+ORBITS: Uranus; DIAMETER: 1,577 km; ONE ORBIT: 8.71 days; DISTANCE FROM URANUS: 435,910 km; SURFACE GRAVITY: 0.037 G; DISCOVERED: 1787, William Herschel
 
 ## Triton (id: triton)
 NEPTUNE
-Triton circles Neptune backwards, a sign it was captured, and geysers of nitrogen shoot eight kilometres up from its frozen surface.
-ORBITS: Neptune; DIAMETER: 2,707 km; ONE ORBIT: 5.9 days
+Triton circles Neptune backwards, a sign that it was captured from the Kuiper Belt. Voyager 2 saw geysers of nitrogen rising eight kilometres above its frozen, pinkish surface.
+ORBITS: Neptune; DIAMETER: 2,707 km; ONE ORBIT: 5.88 days; DISTANCE FROM NEPTUNE: 354,759 km; SURFACE GRAVITY: 0.08 G; DISCOVERED: 1846, William Lassell
 
 ## Umbriel (id: umbriel)
 URANUS
-The darkest of the large Uranian moons, Umbriel has an old, cratered face broken by one bright ring, the crater Wunda.
-ORBITS: Uranus; DIAMETER: 1,169 km; ONE ORBIT: 4.1 days
+Umbriel is the darkest of Uranus's large moons, its old surface covered in craters. Near its equator a single bright ring marks the crater Wunda, whose origin is still unexplained.
+ORBITS: Uranus; DIAMETER: 1,169 km; ONE ORBIT: 4.14 days; DISTANCE FROM URANUS: 266,000 km; SURFACE GRAVITY: 0.02 G; DISCOVERED: 1851, William Lassell

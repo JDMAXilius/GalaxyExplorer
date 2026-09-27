@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: nereid
   DisplayName: Nereid
   Subtitle: NEPTUNE
-  Paragraph: Nereid swings around Neptune on one of the most stretched orbits of any moon, taking almost a year for each lap.
+  Paragraph: Nereid swings around Neptune on one of the most stretched orbits of any moon, coming seven times closer at one end than at the other. Each lap takes almost a full Earth year.
   Stats:
   - Label: ORBITS
     Value: Neptune
@@ -28,6 +28,18 @@ MonoBehaviour:
   - Label: ONE ORBIT
     Value: 360
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM NEPTUNE
+    Value: 5,513,818
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: Not measured
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1949, Gerard Kuiper
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: f6fe938c46a77e74e85216731ff66e2e, type: 2}

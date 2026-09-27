@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: umbriel
   DisplayName: Umbriel
   Subtitle: URANUS
-  Paragraph: The darkest of the large Uranian moons, Umbriel has an old, cratered face broken by one bright ring, the crater Wunda.
+  Paragraph: Umbriel is the darkest of Uranus's large moons, its old surface covered in craters. Near its equator a single bright ring marks the crater Wunda, whose origin is still unexplained.
   Stats:
   - Label: ORBITS
     Value: Uranus
@@ -26,8 +26,20 @@ MonoBehaviour:
     Unit: km
     Exponent: 0
   - Label: ONE ORBIT
-    Value: 4.1
+    Value: 4.14
     Unit: days
+    Exponent: 0
+  - Label: DISTANCE FROM URANUS
+    Value: 266,000
+    Unit: km
+    Exponent: 0
+  - Label: SURFACE GRAVITY
+    Value: 0.02 G
+    Unit: 
+    Exponent: 0
+  - Label: DISCOVERED
+    Value: 1851, William Lassell
+    Unit: 
     Exponent: 0
   Moons: []
   Orbits: {fileID: 11400000, guid: 18c8b19d7afa82746a3bff61c3c1bd23, type: 2}
