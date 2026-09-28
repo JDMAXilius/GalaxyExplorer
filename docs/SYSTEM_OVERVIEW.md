@@ -7,7 +7,7 @@
 ## 0. Read this first
 
 1. **The shipping app is the legacy tree.** That means `Assets/scripts/**` driven by `main_scene` + `core_systems_scene`. The owner decided this on 13 Sep (BACKLOG, around line 546). `Assets/Cosmic/**` is a parked from-scratch rework.
-2. **Build Settings still boots the rework.** `ProjectSettings/EditorBuildSettings.asset` lists `Assets/Cosmic/Scenes/main.unity` as scene 0. **Cosmic/Build/Main Scene** (`Assets/Cosmic/Editor/Scene.cs:226-229`) re-inserts it at index 0 each run. `Quest3Build` builds every enabled scene in order, so an APK built today boots the rework, which has none of the new moons. **Fix before shipping:** untick or remove it so `main_scene` is scene 0.
+2. **Build Settings: the rework scene is now disabled** (27 Sep), so `main_scene` is the first enabled scene and builds boot the shipping app. Beware: **Cosmic/Build/Main Scene** (`Assets/Cosmic/Editor/Scene.cs:226-229`) re-inserts and re-enables `Assets/Cosmic/Scenes/main.unity` at index 0; don't run it, or untick the scene again afterwards.
 3. **The OpenAI key would ship inside the APK.** `BeingKeys.openAiKey` is serialized into `Assets/Being/Data/being_keys.asset` (gitignored). It reaches the build through the Being prefab and is extractable. A short-lived client-secret endpoint is the proper fix and is not built.
 
 ---
@@ -87,7 +87,7 @@ Builds/Quest3/CosmicSimulationXR.apk  (gitignored)
 
 ## 3. Scenes and boot
 
-**Build Settings order:** `Assets/Cosmic/Scenes/main.unity` (see §0), then `main_scene`, `core_systems_scene`, `intro_earth_placement_scene`, `galaxy_view_scene`, `solar_system_view_scene`, `galactic_center_view_scene`.
+**Build Settings order:** `Assets/Cosmic/Scenes/main.unity` (disabled, see §0), then `main_scene`, `core_systems_scene`, `intro_earth_placement_scene`, `galaxy_view_scene`, `solar_system_view_scene`, `galactic_center_view_scene`.
 
 **Boot (shipping tree):**
 1. `main_scene` holds `GEManagers`: the `GalaxyExplorerManager` singleton, which picks Quest3 if `XRSettings.isDeviceActive`, else Desktop and adds `DesktopMouseInput`. It loads `core_systems_scene` additively. That scene holds:
@@ -309,7 +309,7 @@ The rework has its own **Cosmic/** menu (Build Rig, Main Scene, UI, Layouts, Bod
 
 | Area | Item |
 |---|---|
-| **Ship blockers** | Build Settings boots the rework (§0). The API key is inside the APK (§0). No Quest pass of anything since 27 Sep: performance, per-eye rendering, the Being's `ClientWebSocket` under IL2CPP. |
+| **Ship blockers** | The API key is inside the APK (§0). No Quest pass of anything since 27 Sep: performance, per-eye rendering, the Being's `ClientWebSocket` under IL2CPP. |
 | Being (CS-200) | One rebuffer mid-answer on long replies; a `ZoomInOut` MissingReferenceException on very quick consecutive switches; `COSMIC_BEING.md` says the listen window is 6 s (it is 3). |
 | Places | The Solar System and Galactic Center models can't be resized though their panels say so (CS-045). HD 110067 is reachable only by voice. The Galaxy bar is screen-space only. `NebulaOverlay`, `OpenDestination` and the BlackHalo mode are dead code. The orbit-scene POIs keep legacy `SceneToLoad` targets not in Build Settings. |
 | UX | Hint cards not shown on first run (CS-074). Controls overlay text out of date (CS-089). Hand menu still has Back (CS-111). About has no version text (CS-114). Passthrough starts forced on, hiding the dark places' own lighting. |

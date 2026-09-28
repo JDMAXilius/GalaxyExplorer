@@ -334,7 +334,7 @@ On desktop every place opens **centred and sized to the screen**: rows run edge 
 | Item | Status |
 |---|---|
 | **Quest testing** | Everything above is verified in the Unity editor on desktop. No full device pass yet (Quest build, performance, per-eye rendering, the Being's network on Android). |
-| **Build scene order** | The build lists the parked rework scene first; fix before shipping an APK (see `SYSTEM_OVERVIEW.md` §10). |
+| **API key in the build** | The Being's OpenAI key would be packed into the APK; needs a short-lived key service before a public release (see `SYSTEM_OVERVIEW.md` §0). |
 | **Hint cards on first run** | Only shown from Help; not yet shown automatically (CS-074). |
 | **Solar System and Galactic Center resizing** | Their instructions promise it; not wired (CS-045). |
 | **HD 110067** | Reachable only through the Being; no tile or marker. |
