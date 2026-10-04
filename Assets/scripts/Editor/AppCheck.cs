@@ -165,7 +165,7 @@ namespace GalaxyExplorer.Editor
             // 3. (Gone with CS-188: the Galaxies tile opens the sphere of galaxies, which step 2 already
             //    proves the way it proves every other tile. It never listed places; the assertion did.)
 
-            // 4. A destination tag on the Milky Way, clicked with the mouse. This is the one the owner asked
+            // 4. A destination marker on the Milky Way (CS-170), clicked with the mouse: it travels there. This is the one the owner asked
             //    about by name, and the one nothing had ever proven.
             Transform tag = null;
             Add(0.3f, () => _director.Switch("milky_way"));
@@ -178,16 +178,15 @@ namespace GalaxyExplorer.Editor
             });
             Add(0.5f, () => { if (tag != null) _holding = () => Press(ScreenOf(tag), true); });
             Add(0.2f, () => { if (tag != null) { _holding = null; Press(ScreenOf(tag), false); } });
+            AddWaitWhile(() => tag != null && _director.IsSwitching, 20f);
             Add(SettleSeconds * 2f, () =>
             {
                 if (tag == null) return;
-                Check(_director.HasOpenDestination,
-                    $"clicking a destination tag on the Milky Way opens it ({(_director.OpenDestinationModule == null ? "nothing" : _director.OpenDestinationModule.Id)})");
-                if (!_director.HasOpenDestination) Say($"the tag click met: {WhatIsUnder(ScreenOf(tag))}");
-                Tap(Key.Escape, true);
+                var travelled = Name(_director.Current) != "milky_way";
+                Check(travelled || _director.HasOpenDestination,
+                    $"clicking a marker on the Milky Way travels to it (now {Name(_director.Current)})");
+                if (!travelled && !_director.HasOpenDestination) Say($"the marker click met: {WhatIsUnder(ScreenOf(tag))}");
             });
-            Add(0.1f, () => Tap(Key.Escape, false));
-            Add(SettleSeconds, () => Check(!_director.HasOpenDestination, "Escape closes the destination"));
 
             // 5. The being, through the same pointer layer a player uses: summoned, it greets and listens by
             //    itself and goes idle with nothing said; it stands at its offset and faces the head as the camera
