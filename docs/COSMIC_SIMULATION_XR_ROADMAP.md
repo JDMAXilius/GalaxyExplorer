@@ -299,6 +299,8 @@ Effort sizes: **S** ≤ half a day, **M** 1–2 days, **L** 3–5 days of focuse
 | P7-T5 | Store readiness | Privacy policy URL, About links to our repo, screenshots, description |
 | P7-T6 | Regression | Desktop matrix + Quest matrix (see §8) |
 
+Phase 7 is broken out into three separate release roadmaps (4 Oct 2026): `docs/release/ROADMAP_QUEST_TESTING.md`, `docs/release/ROADMAP_META_HORIZON_STORE.md` and `docs/release/ROADMAP_STEAM.md`. Each keeps its own ticket range (CS-210+, CS-230+, CS-250+) until the owner approves it into the backlog.
+
 ---
 
 ## 6. Asset inventory: have vs. need
