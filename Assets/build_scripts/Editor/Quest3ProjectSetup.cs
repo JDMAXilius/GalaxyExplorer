@@ -68,6 +68,9 @@ namespace GalaxyExplorer.Build
             "UnityEngine.XR.Hands.OpenXR.MetaHandTrackingAim",
             "UnityEngine.XR.OpenXR.Features.Meta.ARSessionFeature",
             "UnityEngine.XR.OpenXR.Features.Meta.ARCameraFeature", // passthrough
+            // Required by the camera feature: passthrough is submitted as a composition layer, and only this
+            // feature creates the OpenXRLayerProvider that submits it. Without it the room renders black.
+            "UnityEngine.XR.OpenXR.Features.CompositionLayers.OpenXRCompositionLayersFeature",
         };
 
         private static readonly string[] AndroidOnlyFeatures =

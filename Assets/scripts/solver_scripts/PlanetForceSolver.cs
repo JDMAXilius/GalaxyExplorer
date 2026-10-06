@@ -123,6 +123,22 @@ public class PlanetForceSolver : ForceSolver
     /// <summary>Local scale this body grows to when pulled out of its orbit.</summary>
     public float EditScale => _editScaleTarget.x;
 
+    // Two hands may take a held body from a tenth of its pulled size to three times it: the same multiples the
+    // desktop wheel uses (DesktopMouseInput minPlanetScale / maxPlanetScale), so both inputs stop in one place.
+    private const float MinHeldScale = 0.1f, MaxHeldScale = 3f;
+
+    protected override Vector3 ClampHeldScale(Vector3 desiredLocalScale)
+    {
+        var wanted = desiredLocalScale.x;
+        if (wanted <= 0f || EditScale <= 0f)
+        {
+            return desiredLocalScale;
+        }
+
+        var clamped = Mathf.Clamp(wanted, MinHeldScale * EditScale, MaxHeldScale * EditScale);
+        return desiredLocalScale * (clamped / wanted);
+    }
+
     public override void SolverUpdate()
     {
         // Use the state from before the base update: a long frame can finish the attraction (and leave the state)

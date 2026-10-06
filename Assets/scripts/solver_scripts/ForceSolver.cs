@@ -107,6 +107,12 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
 
         _manipulationHandler.OnManipulationEnded.AddListener(OnManipulationEnd);
 
+        // Only when the handler scales this very transform: the limit below is in this transform's scale units.
+        if (_manipulationHandler.HostTransform == transform)
+        {
+            _manipulationHandler.FallbackScaleClamp = ClampHeldScale;
+        }
+
         if (ControllerTracker == null)
         {
             Debug.LogWarning(gameObject.name + " ForceSolver no controller tracker transform supplied will instantiate locally");
@@ -774,6 +780,18 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
                 break;
 
             case State.Manipulation:
+                // A second hand pinching a body that is already held. In the original app MRTK's
+                // ManipulationHandler was itself a pointer handler, sat on the collider and was enabled for
+                // exactly this state, so the second pinch went straight to it and never came through here -
+                // which is why this case was empty. Our handler is deliberately not a pointer handler (see
+                // ManipulationPointerRouter), so the solver is the only way in and has to pass it on, or two
+                // hands can never scale a body. The handler ignores a pointer it already holds.
+                if (eventData.Pointer != null)
+                {
+                    _manipulationHandler.OnPointerDown(eventData);
+                }
+                break;
+
             case State.None:
                 break;
 
@@ -781,6 +799,12 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
                 throw new ArgumentOutOfRangeException();
         }
     }
+
+    /// <summary>
+    /// Limits a two-handed scale of this body when its manipulation handler has no scale constraint of its own
+    /// (the row bodies carry a <c>ScaleLimits</c>; the orbit-model <c>poi_*</c> bodies do not).
+    /// </summary>
+    protected virtual Vector3 ClampHeldScale(Vector3 desiredLocalScale) => desiredLocalScale;
 
     public void OnPointerClicked(GEPointerEventData eventData)
     {

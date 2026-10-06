@@ -137,15 +137,12 @@ public class GlobalMenuManager : MonoBehaviour
                 break;
 
             case GalaxyExplorerManager.PlatformId.ArticulatedHandsPlatform:
-                // The hand menu follows the palm, or the controller when controllers are in use.
-                _handMenuManager.SetMenuAvailability(MenuIsAvailable, ResetButtonNeedsShowing, BackButtonNeedsShowing);
-                break;
-
             case GalaxyExplorerManager.PlatformId.Quest3:
-                // One menu (CS-277, D-H1): the dock carries Reset and About now, Back is its tiles and Mode is
-                // its passthrough button, so the palm menu is never made available here. Asked to hide rather
-                // than left alone, so a menu the prefab ships visible goes away too.
-                _handMenuManager.SetMenuAvailability(false, ResetButtonNeedsShowing, BackButtonNeedsShowing);
+                // The hand menu follows the palm, or the controller when controllers are in use. On Quest it
+                // was switched off for a day (CS-277) in favour of a dock gesture on the same pose; the owner
+                // asked for the original's palm menu back, so the pose has one meaning again and it is this.
+                // There its Back button is the Dock button and is shown whatever is passed here (HandMenu).
+                _handMenuManager.SetMenuAvailability(MenuIsAvailable, ResetButtonNeedsShowing, BackButtonNeedsShowing);
                 break;
 
             case GalaxyExplorerManager.PlatformId.Desktop:
@@ -160,7 +157,17 @@ public class GlobalMenuManager : MonoBehaviour
 
     public void OnAboutButtonPressed()
     {
-        _aboutSlate.ToggleAboutButton();
+        // The slate switches its own GameObject off to hide, so the reference taken from the active objects at
+        // Start is null whenever it happened to be hidden then.
+        if (_aboutSlate == null)
+        {
+            _aboutSlate = FindAnyObjectByType<AboutSlate>(FindObjectsInactive.Include);
+        }
+
+        if (_aboutSlate != null)
+        {
+            _aboutSlate.ToggleAboutButton();
+        }
     }
 
     public void OnResetButtonPressed()

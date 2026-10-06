@@ -116,6 +116,29 @@ Taken 6 Oct 2026: the owner asked for the recommended defaults and for the work 
 | D-H5 | Pose shortcuts in Phase 5 | Open palm held toward the content = pause/resume narration. Nothing else until players ask (CS-289) |
 | D-H6 | Add Meta's XR SDK for microgestures and controller + hand together | Not for 1.0: nothing in Phases 1–5 needs it, and it is a second input stack beside XRI (CS-292). Revisit if a timeline control arrives |
 
+**Revised the same evening, after the owner's first test of wave 1.** D-H1 and D-H2 are reversed: the owner
+wants the original Galaxy Explorer palm menu back. Palm toward the face shows the menu on that hand (the
+original's 130° test, now on a palm normal derived from wrist and knuckle joints, so no guessed axis); its
+buttons are Mode, Reset, About and Dock, where Dock calls `DockController.BringToPlayer()`. The competing
+dock-summon gesture is removed; no gesture shows, hides or moves the dock. CS-274's probe has no consumer left
+and comes out with the next rig edit.
+
+Wave 2 (6 Oct, built 18:31, on the headset, not yet seen by the owner):
+
+- **Passthrough was black because the OpenXR feature *Composition Layers Support* was off for Android.** In
+  `com.unity.xr.meta-openxr` 2.6.1 passthrough is submitted only as a composition layer
+  (`MetaOpenXRCameraSubsystem.cs:417-444`, `OpenXRCompositionLayersFeature.cs:31-49`); the Meta Quest feature
+  set lists it as required, and `Quest3ProjectSetup` enabled features one by one and missed it. Now on, added
+  to `Quest3ProjectSetup.CommonFeatures`, with a `[Passthrough]` log line in `ExperienceModeManager.Apply`.
+  §0's "two owners of passthrough" was real but was not why the room was black.
+- **The dock faced the floor.** A world-space canvas reads along +Z, so `Euler(-25,0,0)` turned the face about
+  58° away from the eyes. `FacingRotation` now measures pitch from the head-to-dock line (clamped −30°…+60°,
+  no roll) at park, during a drag and on release. Distance 0.75 → 0.80 m, the near edge of Meta's ray band.
+- **Bodies and moons scale with two hands.** `ForceSolver.OnPointerDown` dropped every press that arrived in
+  the Manipulation state, so the second hand never reached `ManipulationHandler`; upstream never needed that
+  route because MRTK's handler took pointers itself. The case now forwards. Held scale is clamped to
+  0.1×–3× of the pulled size, the desktop wheel's range.
+
 Wave 1 (6 Oct) implements CS-270, CS-271, CS-272, CS-275, CS-276, CS-277, CS-278, CS-279, CS-280, CS-281 and
 CS-283 in code, then CS-273, CS-274 and the [TERM] halves on the headset.
 

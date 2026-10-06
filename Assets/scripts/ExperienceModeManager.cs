@@ -1,8 +1,10 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using Unity.XR.CompositionLayers.Services;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
+using UnityEngine.XR.OpenXR.CompositionLayers;
 
 namespace GalaxyExplorer
 {
@@ -104,6 +106,20 @@ namespace GalaxyExplorer
             {
                 _cameraManager.enabled = passthrough;
             }
+
+            // One line that proves the whole chain on device. layerProvider=False means the OpenXR
+            // "Composition Layers Support" feature is off and no passthrough layer can be submitted.
+            var layers = CompositionLayerManager.Instance;
+            var subsystem = _cameraManager != null ? _cameraManager.subsystem : null;
+            Debug.Log($"[Passthrough] mode={CurrentMode} session={ARSession.state} " +
+                      $"sessionEnabled={(_arSession != null && _arSession.enabled)} " +
+                      $"cameraManager={(_cameraManager != null ? _cameraManager.enabled.ToString() : "missing")} " +
+                      $"cameraSubsystem={(subsystem != null ? (subsystem.running ? "running" : "stopped") : "null")} " +
+                      $"clear={(camera != null ? camera.clearFlags.ToString() : "no-camera")} " +
+                      $"alpha={(camera != null ? camera.backgroundColor.a : -1f)} " +
+                      $"layerProvider={(layers != null && layers.LayerProvider != null)} " +
+                      $"layerProviderStarted={OpenXRLayerProvider.isStarted} " +
+                      $"layers={(layers != null ? layers.CompositionLayers.Count : -1)}");
         }
     }
 }

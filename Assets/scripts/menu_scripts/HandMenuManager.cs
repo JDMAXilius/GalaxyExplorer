@@ -24,6 +24,9 @@ public class HandMenuManager : MonoBehaviour
         get { return _handMenuLeft.IsCurrentlyVisible || _handMenuRight.IsCurrentlyVisible; }
     }
 
+    /// <summary>Which hand a menu belongs to; the menus themselves are not told.</summary>
+    public bool IsLeftMenu(HandMenu menu) => menu == _handMenuLeft;
+
     public bool MenuIsIsAvailable { get; private set; } = false;
 
     public void SetMenuAvailability(bool setMenuAvailable, bool resetIsActive, bool backIsActive)

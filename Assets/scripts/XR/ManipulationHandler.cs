@@ -147,8 +147,22 @@ namespace GalaxyExplorer.XR
         /// Applies this object's scale constraint, if it has one, to a scale someone else worked out. Desktop
         /// mode scales with the wheel rather than with two hands, and must land inside the same limits.
         /// </summary>
-        public Vector3 ClampScale(Vector3 desiredLocalScale) =>
-            ScaleConstraint()?.ClampScale(desiredLocalScale) ?? desiredLocalScale;
+        public Vector3 ClampScale(Vector3 desiredLocalScale)
+        {
+            var constraint = ScaleConstraint();
+            if (constraint != null)
+            {
+                return constraint.ClampScale(desiredLocalScale);
+            }
+
+            return FallbackScaleClamp != null ? FallbackScaleClamp(desiredLocalScale) : desiredLocalScale;
+        }
+
+        /// <summary>
+        /// Used only when there is no <see cref="IManipulationScaleConstraint"/> on this GameObject. A force
+        /// solver sets it for bodies whose prefab carries no ScaleLimits, so they are not scaled without bound.
+        /// </summary>
+        public Func<Vector3, Vector3> FallbackScaleClamp { get; set; }
 
         public void OnPointerDown(GEPointerEventData eventData)
         {
@@ -291,7 +305,7 @@ namespace GalaxyExplorer.XR
                 if (scale && _twoHandStartVector.sqrMagnitude > 1e-6f)
                 {
                     targetScale = _hostStartScale * (handVector.magnitude / _twoHandStartVector.magnitude);
-                    targetScale = ScaleConstraint()?.ClampScale(targetScale) ?? targetScale;
+                    targetScale = ClampScale(targetScale);
                 }
             }
             else if (manipulationType != HandMovementType.TwoHandedOnly)

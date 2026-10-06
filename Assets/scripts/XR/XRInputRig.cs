@@ -183,6 +183,45 @@ namespace GalaxyExplorer.XR
             }
         }
 
+        /// <summary>
+        /// The direction the palm of a tracked hand faces, in world space, measured from where the joints are
+        /// rather than read off the palm joint's rotation: the normal of the triangle wrist, index knuckle,
+        /// little knuckle. Which of the palm joint's axes points out of the palm is a convention (in OpenXR +Y
+        /// is the back of the hand) and a wrong guess there turns a palm test inside out; three positions have
+        /// no convention to get wrong. The knuckles rather than the metacarpal bases, which sit within a couple
+        /// of centimetres of the wrist and make a triangle too small to be steady.
+        /// </summary>
+        public bool TryGetPalmNormal(bool leftHand, out Vector3 normal)
+        {
+            normal = default;
+            if (_handSubsystem == null || !(leftHand ? LeftHandTracked : RightHandTracked))
+            {
+                return false;
+            }
+
+            var hand = leftHand ? _handSubsystem.leftHand : _handSubsystem.rightHand;
+            if (!hand.GetJoint(XRHandJointID.Wrist).TryGetPose(out var wrist) ||
+                !hand.GetJoint(XRHandJointID.IndexProximal).TryGetPose(out var index) ||
+                !hand.GetJoint(XRHandJointID.LittleProximal).TryGetPose(out var little))
+            {
+                return false;
+            }
+
+            // The two hands are mirror images, so the winding that points out of one palm points out of the
+            // back of the other.
+            var toIndex = index.position - wrist.position;
+            var toLittle = little.position - wrist.position;
+            var cross = leftHand ? Vector3.Cross(toIndex, toLittle) : Vector3.Cross(toLittle, toIndex);
+            if (cross.sqrMagnitude < 1e-10f)
+            {
+                return false;
+            }
+
+            // Joint poses are relative to the tracking space, like the palm poses above.
+            normal = trackingSpace.TransformDirection(cross).normalized;
+            return true;
+        }
+
         private static bool UpdatePalm(XRHand? hand, Transform palm)
         {
             if (!hand.HasValue || !hand.Value.isTracked)
