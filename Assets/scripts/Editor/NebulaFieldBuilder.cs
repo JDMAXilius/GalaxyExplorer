@@ -35,6 +35,11 @@ namespace CosmicSimulation.EditorTools
         private const string NodeName = "nebula_field";
         private const string StarNodeName = "nebula_star";
 
+        // By path, not by Shader.Find, and handed to the components as a reference: a shader reached only by
+        // name is stripped from a player build, which is how the nebulae shipped without one (CS-272).
+        private const string FieldShaderPath = "Assets/shaders/nebula_field_shader.shader";
+        private const string StarShaderPath = "Assets/shaders/nebula_star_shader.shader";
+
         /// <summary>
         /// The two-colour palette each nebula is lit with, plus the three structure knobs that decide how much
         /// of its volume is empty.
@@ -249,6 +254,13 @@ namespace CosmicSimulation.EditorTools
                 return "not attached (ContentPrefab is not an asset)";
             }
 
+            var fieldShader = AssetDatabase.LoadAssetAtPath<Shader>(FieldShaderPath);
+            var starShader = AssetDatabase.LoadAssetAtPath<Shader>(StarShaderPath);
+            if (fieldShader == null || starShader == null)
+            {
+                return $"not attached ({FieldShaderPath} or {StarShaderPath} would not load)";
+            }
+
             var root = PrefabUtility.LoadPrefabContents(path);
             try
             {
@@ -273,7 +285,7 @@ namespace CosmicSimulation.EditorTools
 
                 var palette = PaletteFor(spec.Id);
                 var field = node.AddComponent<NebulaField>();
-                field.Configure(baked, spec.RadiusMetres, palette.Core, palette.Shell,
+                field.Configure(fieldShader, baked, spec.RadiusMetres, palette.Core, palette.Shell,
                     palette.Floor, palette.Contrast, palette.Warp, palette.Lit, palette.LightFrom);
 
                 // The field has to sit where the gas sits, and the gas centres itself on the player when the
@@ -348,7 +360,7 @@ namespace CosmicSimulation.EditorTools
                         // Members of a real cluster are not identical. Varying brightness and size a little
                         // is what stops eight stars reading as one object drawn eight times.
                         var vary = 0.65f + (float)random.NextDouble() * 0.7f;
-                        component.Configure(palette.StarColour,
+                        component.Configure(starShader, palette.StarColour,
                             palette.StarIntensity * (palette.StarCount > 1 ? vary : 1f),
                             palette.StarSize * (palette.StarCount > 1 ? vary : 1f));
                         component.enabled = true;

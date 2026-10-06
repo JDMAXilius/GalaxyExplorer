@@ -29,6 +29,12 @@ namespace CosmicSimulation
         private static readonly int SizeId = Shader.PropertyToID("_Size");
         private static readonly int SpikeGainId = Shader.PropertyToID("_SpikeGain");
         private static readonly int HaloGainId = Shader.PropertyToID("_HaloGain");
+        private const string ShaderName = "CosmicSimulation/NebulaStar";
+
+        [SerializeField]
+        [Tooltip("Written by Build Nebula Fields. A player build strips any shader reached only by name, so " +
+                 "the name lookup is an editor fallback and nothing more.")]
+        private Shader shader;
 
         [SerializeField]
         [ColorUsage(false, true)]
@@ -59,6 +65,10 @@ namespace CosmicSimulation
         {
             EnsureRenderer();
 
+            // A missing shader switches us off above, and a subscription made anyway would retry it, and log
+            // it, for every camera on every frame.
+            if (!enabled) return;
+
             // Built at render time as well as on enable, for the same reason NebulaField is: a component
             // configured by a build script reaches a usable state well after its OnEnable has been and gone,
             // and edit-mode Update ticks only when the editor feels like ticking.
@@ -87,6 +97,7 @@ namespace CosmicSimulation
 
         private void OnValidate()
         {
+            if (shader == null) shader = Shader.Find(ShaderName);
             if (_material != null) Push();
         }
 
@@ -94,10 +105,13 @@ namespace CosmicSimulation
         {
             if (_renderer != null && _material != null) return;
 
-            var shader = Shader.Find("CosmicSimulation/NebulaStar");
+#if UNITY_EDITOR
+            // Prefabs built before the field existed carry nothing here; in the editor the name still resolves.
+            if (shader == null) shader = Shader.Find(ShaderName);
+#endif
             if (shader == null)
             {
-                Debug.LogError("NebulaStar: shader 'CosmicSimulation/NebulaStar' not found.", this);
+                Debug.LogError($"NebulaStar: shader '{ShaderName}' not assigned; run Cosmic Simulation > Build Nebula Fields.", this);
                 enabled = false;
                 return;
             }
@@ -135,8 +149,9 @@ namespace CosmicSimulation
         }
 
         /// <summary>Sets the look from the builder, so a nebula's star is described in the same table as its gas.</summary>
-        public void Configure(Color starColour, float starIntensity, float metres)
+        public void Configure(Shader starShader, Color starColour, float starIntensity, float metres)
         {
+            shader = starShader;
             colour = starColour;
             intensity = starIntensity;
             sizeMetres = metres;

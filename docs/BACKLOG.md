@@ -1861,3 +1861,38 @@ order is shuffled.
 *Good news found while reading:* the additive star path already handles passthrough alpha on purpose -
 both point shaders are `Blend One One` but compute `a = dot(rgb, 1)`, so eye-buffer alpha accumulates
 with brightness. That matters because the Milky Way runs in Dimmed room with passthrough visible.
+
+## Phase 8 — Hand tracking (6 Oct 2026, from `docs/ROADMAP_HAND_TRACKING.md`)
+
+First standalone run on the owner's Quest 3 the same day: orb hard to grab, Start hard to press, no dock in
+view, no drawn hands, black instead of the room. The roadmap's §0 has the file-level causes. Rows below are
+the roadmap's tickets; wave 1 landed the code half of the `doing` rows in one parallel pass.
+
+| ID | Track | Title | Depends | Status |
+|---|---|---|---|---|
+| CS-270 | CC | One owner for passthrough: Mode button → `EnvironmentController.TogglePassthrough`; `PassthroughForced` is the saved preference (`CosmicSimulation.PassthroughForced`, default on); applied in `Start` so the intro runs in the room; App Check asserts both toggle states | — | doing (6 Oct, code: one caller of `ExperienceModeManager.SetMode` left, EnvironmentController.cs:159; privacy policy and Technical Overview updated; device check open) |
+| CS-271 | CC | Outlined hand: `CosmicSimulation/HandOutline` (depth prepass + rim, stereo macros), `xr_hand_material` on it, `HandLook` presets per environment mode | — | doing (6 Oct, code; TERM: rig gets `HandLook`, DepthOnly slot dropped; per-eye device check open) |
+| CS-272 | CC | Nebula shaders reach the build and fail once: serialized `Shader` on `NebulaStar`/`NebulaField`/`Bloom`, builders assign it, Always Included as belt-and-braces, no `onPreRender` subscription after a failed `EnsureRenderer` | — | doing (6 Oct, code; TERM must re-run Build Nebula Fields; device logcat check open) |
+| CS-273 | TERM | Build, install, look: Phase 1 on the headset, per eye, tracking loss, captures | CS-270–272 | todo |
+| CS-274 | TERM | Confirm the palm joint axis on device (`PalmAxisProbe` readout); set `palmAxis` on the dock prefab; closes CS-034's palm line | CS-273 | todo |
+| CS-275 | CC | The dock comes to you: either palm toward the face 0.5 s summons it to that hand's side; no gesture hides it; 0.70 × eye height; re-parks once when the intro hands over; suppressed while anything is held or during the system gesture | CS-274 | doing (6 Oct, code in DockController; axis unconfirmed) |
+| CS-276 | CC/TERM | Poke works on everything: `PokeSupport.AddPokeFilter` on every builder and runtime button (dock, pop-up, settings, slider, hint cards, labels, being); `GEPressVisual` on builder buttons | CS-273 | doing (6 Oct, code; TERM: Build UI Prefabs + device poke pass) |
+| CS-277 | CC | One menu: palm menu hidden on Quest 3; Reset and About on the dock (`resetButton`, `aboutButton`, `ResetPlaces()`, `ShowAbout()`) | CS-270 | doing (6 Oct, code; icons for the two new buttons still text until `icon_reset`/`icon_about` land) |
+| CS-278 | CC/TERM | Targets ≥ 24 mm with 12 mm gaps: under-dock row, drag bar 120×24, close buttons, settings window (now 222 mm tall), slider; `Cosmic Simulation/Verify/Dump Button Sizes` | CS-276 | doing (6 Oct, code; size dump open) |
+| CS-279 | CC | The pointing hand keeps its ray: `PokeGestureDetector` disables far casting only while the poke interactor hovers a target | CS-276 | doing (6 Oct, sample script edited with a header note) |
+| CS-280 | TERM | Hand and controller casters query layers 11 (POI) and 12 (ForceGrab): far mask 2147489825, near mask 4097 as rig overrides | CS-273 | doing (6 Oct, rig YAML; device pull of Earth in the Solar System open) |
+| CS-281 | CC | Pinch that takes: press 0.8 / release 0.6; grasp unbound from Select; orb pull not gated on narration; Start appears 0.5 m ahead at dock height on `SetToFree` | CS-273 | doing (6 Oct, code; 10/10 device run open) |
+| CS-282 | TERM | Nebulae and the Cosmic Web can be held | CS-273 | todo |
+| CS-283 | CC | Hands stay honest: `AppPause` (listener + VOManagers paused under the system menu, device only); `XRInputRig` cancels a hand's selections on tracking loss (XRI never clears `pinchTouched`) | CS-271 | doing (6 Oct, code; CS-219 checks open) |
+| CS-284 | TERM | Hands run sheet on device (closes CS-218 with it) | Phases 1–3 | todo |
+| CS-285 | CC | App Check asserts poke filters, sizes and layer masks; drives a grab, a poke and a two-hand scale | CS-276, 278, 280 | todo |
+| CS-286 | CC | Move and scale the whole place with two hands (widens CS-045) | CS-284 | todo |
+| CS-287 | CC | Panels with grab handles that stay where left | CS-278 | todo |
+| CS-288 | CC | Real hands in front of planets (depth prepass before opaques) | CS-271 | todo |
+| CS-289 | CC | Open palm toward the content pauses narration (`StaticHandGesture`) | CS-275 | todo |
+| CS-290 | CC | Fling to send home | CS-281 | todo |
+| CS-291 | CC | Pinch the logo to skip | CS-276 | todo |
+| CS-292 | OWNER | Meta XR SDK for microgestures and controller + hand together | — | dropped for 1.0 (D-H6; revisit with a timeline control) |
+| CS-293 | TERM | Wide Motion Mode once XR Hands 1.10 / OpenXR 1.19 ship | — | todo (blocked on package release) |
+| CS-294 | CC | `Assets/Cosmic/Core/Room.cs` is a second static passthrough owner in the rework tree; fold it into `EnvironmentController` or delete it when the rework tree ships | CS-270 | todo |
+| CS-295 | CC | `DockPopup`: option gaps 8 mm and the second row overflows the plate by 9 mm with four slots; raise `PlatePaddingMm`, re-derive row Y | CS-278 | todo |

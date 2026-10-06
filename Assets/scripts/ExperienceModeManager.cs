@@ -8,8 +8,10 @@ namespace GalaxyExplorer
 {
     /// <summary>
     /// On Meta Quest 3 the app runs either in passthrough (mixed reality: the content floats in the user's room,
-    /// as it did on HoloLens) or in full VR (a star background surrounds the user). Passthrough is the default and
-    /// the user's choice is remembered. Other platforms always render as before.
+    /// as it did on HoloLens) or in full VR (a star background surrounds the user). This only drives the headset;
+    /// the decision is <c>EnvironmentController</c>'s, which is the one caller of <see cref="SetMode"/> and holds
+    /// the saved preference. Nothing is remembered here, so VR can never survive into the next launch's intro.
+    /// Other platforms always render as before.
     /// </summary>
     public class ExperienceModeManager : MonoBehaviour
     {
@@ -18,8 +20,6 @@ namespace GalaxyExplorer
             Passthrough,
             VR
         }
-
-        private const string PrefsKey = "GalaxyExplorer.ExperienceMode";
 
         private ARSession _arSession;
         private ARCameraManager _cameraManager;
@@ -71,14 +71,9 @@ namespace GalaxyExplorer
                 return;
             }
 
-            CurrentMode = (Mode)PlayerPrefs.GetInt(PrefsKey, (int)Mode.Passthrough);
+            // CurrentMode may already have been set: EnvironmentController runs its Start before ours.
             Apply();
             ModeChanged?.Invoke(CurrentMode);
-        }
-
-        public void Toggle()
-        {
-            SetMode(CurrentMode == Mode.VR ? Mode.Passthrough : Mode.VR);
         }
 
         public void SetMode(Mode mode)
@@ -89,8 +84,6 @@ namespace GalaxyExplorer
             }
 
             CurrentMode = mode;
-            PlayerPrefs.SetInt(PrefsKey, (int)mode);
-            PlayerPrefs.Save();
             Apply();
             ModeChanged?.Invoke(mode);
         }

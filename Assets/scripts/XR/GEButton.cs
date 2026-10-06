@@ -44,6 +44,14 @@ namespace GalaxyExplorer.XR
                 return;
             }
 
+            // Looked up here as well as in Awake: a button assembled at run time can be clicked before Awake,
+            // and the prefab builder adds the visual after the button. A poke reaches here through
+            // OnPointerDown, so the press travel shows for a fingertip as it does for a ray.
+            if (_pressVisual == null)
+            {
+                _pressVisual = GetComponent<GEPressVisual>();
+            }
+
             if (_pressVisual != null)
             {
                 _pressVisual.Press();

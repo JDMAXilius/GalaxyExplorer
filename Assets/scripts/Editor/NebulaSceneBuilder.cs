@@ -24,6 +24,7 @@ namespace CosmicSimulation.EditorTools
     public static class NebulaSceneBuilder
     {
         private const string Folder = "Assets/scenes/nebula_scenes";
+        private const string BloomShaderPath = "Assets/shaders/bloom_shader.shader";
 
         [MenuItem("Cosmic Simulation/Build Nebula Scenes")]
         public static void BuildAll()
@@ -205,7 +206,11 @@ namespace CosmicSimulation.EditorTools
 
             holder.AddComponent<AudioListener>();
             holder.AddComponent<FreeLook>();
-            holder.AddComponent<Bloom>();
+
+            // A reference, not a name: a shader reached only by Shader.Find is stripped from a player build.
+            var bloom = new SerializedObject(holder.AddComponent<Bloom>());
+            bloom.FindProperty("shader").objectReferenceValue = AssetDatabase.LoadAssetAtPath<Shader>(BloomShaderPath);
+            bloom.ApplyModifiedPropertiesWithoutUndo();
 
             return holder;
         }

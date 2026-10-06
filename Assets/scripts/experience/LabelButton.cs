@@ -84,7 +84,19 @@ namespace CosmicSimulation
         /// <summary>True while this label's destination is the open one.</summary>
         public bool IsSelected { get; private set; }
 
-        private void Awake() => EnsureInit();
+        private void Awake()
+        {
+            EnsureInit();
+
+            // The collider object below is what a fingertip selects, and the poke interactors refuse an
+            // interactable with no XRPokeFilter (CS-276). The prefab carries one; a label assembled any other
+            // way gets it here. Idempotent, so the prefab case costs a lookup.
+            var interactable = GetComponentInChildren<GEInteractable>(true);
+            if (interactable != null)
+            {
+                PokeSupport.AddPokeFilter(interactable.gameObject, interactable.GetComponent<Collider>(), interactable);
+            }
+        }
 
         // A label is often bound and selected in the same frame it is spawned, and a caller has no way to know
         // whether Awake has run yet, so every entry point goes through this rather than trusting it has.

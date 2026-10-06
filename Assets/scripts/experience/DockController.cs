@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using GalaxyExplorer.XR;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
+using UnityEngine.XR.Interaction.Toolkit.Samples.Hands;
 
 namespace CosmicSimulation
 {
@@ -13,16 +16,19 @@ namespace CosmicSimulation
     /// The dock builds itself from <see cref="ExperienceDirector.Modules"/> rather than from tiles laid out by
     /// hand, so adding an experience is a data change. It parks three quarters of a metre in front of the
     /// player at chest height, tilted up toward the face, and stays put until the player drags the bar beneath
-    /// it or asks to recentre — it does not follow the head around, which would make it impossible to look away
-    /// from.
+    /// it, asks to recentre, or summons it — it does not follow the head around, which would make it impossible
+    /// to look away from. It re-parks itself once, when the intro hands the room over, because the player has
+    /// usually turned since the dock first parked during the logo.
     ///
     /// Chest height is derived from the player rather than fixed, because a seated player and a standing one do
     /// not have the same chest (GDD 11). The height is a fraction of the eye height with a floor under it, and it
     /// is sampled once per recentre: re-deriving it every frame would make the dock ride up and down as the
     /// player leans, which is the following behaviour the parking rule exists to avoid.
     ///
-    /// Showing and hiding is palm-up on the left hand in the headset (held briefly, so a passing gesture does
-    /// not flash it) and Tab on the desktop.
+    /// In the headset the dock is <em>summoned</em>, never hidden by a gesture (D-H2): either palm turned toward
+    /// the face and held briefly brings it to that hand's side, shown, facing the player. The old left-palm-up
+    /// toggle hid the dock on a resting hand often enough that players lost it (CS-275). Hiding is a button's
+    /// job, and Tab's on the desktop.
     /// </summary>
     public class DockController : MonoBehaviour
     {
@@ -40,6 +46,11 @@ namespace CosmicSimulation
         [SerializeField] private Cosmic.Companion.Being beingPrefab;
         [SerializeField] private Transform dragBar;
 
+        // The two things the retired palm menu did that nothing else does (CS-277, D-H1). Back was already
+        // superseded by the dock's own tiles and Mode by the passthrough button.
+        [SerializeField] private GEButton resetButton;
+        [SerializeField] private GEButton aboutButton;
+
         [Header("Utility window")]
         [SerializeField]
         [Tooltip("Settings window opened by the button under the dock. Instantiated on first use as a sibling " +
@@ -53,10 +64,11 @@ namespace CosmicSimulation
         private float distanceMetres = 0.75f;
 
         [SerializeField]
-        [Tooltip("Dock height as a fraction of the player's eye height, sampled at recentre. 0.55 of a 1.6 m " +
-                 "eye height is the 0.88 m chest height the dock used to be pinned to.")]
+        [Tooltip("Dock height as a fraction of the player's eye height, sampled at recentre. 0.70 of a 1.6 m " +
+                 "eye height is 1.12 m, a little under the sternum; the 0.55 it started at parked the tiles at " +
+                 "the waist, below where a player looks for them (CS-275).")]
         [Range(0.2f, 1f)]
-        private float heightFractionOfHead = 0.55f;
+        private float heightFractionOfHead = 0.70f;
 
         [SerializeField]
         [Tooltip("Metres above the floor the dock never drops below, however low the player is sitting. Below " +
@@ -86,19 +98,27 @@ namespace CosmicSimulation
                  "with a 4 mm gap, so 0.114 on a metre-scaled dock and 114 on a millimetre-scaled canvas.")]
         private float tilePitch = 114f;
 
-        [Header("Show and hide")]
+        [Header("Summon")]
         [SerializeField]
-        [Tooltip("Seconds the palm must stay up before the dock appears.")]
+        [Tooltip("Seconds the palm must stay turned toward the face before the dock comes to that hand.")]
         private float palmDwellSeconds = 0.5f;
 
         [SerializeField]
-        [Tooltip("How closely the palm must face up. 1 is exactly up.")]
+        [FormerlySerializedAs("palmUpThreshold")]
+        [Tooltip("How squarely the palm must face the head: the cosine of the angle between the palm normal and " +
+                 "the line from the palm to the eyes. 1 is dead on.")]
         [Range(0f, 1f)]
-        private float palmUpThreshold = 0.7f;
+        private float palmFacingThreshold = 0.7f;
 
         [SerializeField]
-        [Tooltip("Which axis of the palm joint points out of the palm. Confirm on device (CS-034).")]
-        private PalmAxis palmAxis = PalmAxis.Up;
+        [Tooltip("Which axis of the palm joint points out of the palm. Confirmed on device by CS-274; in the " +
+                 "OpenXR joint convention +Y is the back of the hand, so Down is the likely answer.")]
+        private PalmAxis palmAxis = PalmAxis.Down;
+
+        [SerializeField]
+        [Tooltip("Metres. How far to the player's left or right a summoned dock may park: the hand's offset " +
+                 "from the head, clamped to this, so an arm flung wide does not put the dock out of reach.")]
+        private float summonReachMetres = 0.5f;
 
         public enum PalmAxis
         {
@@ -112,9 +132,25 @@ namespace CosmicSimulation
         private UtilityWindow _utility;
         private bool _warnedNoUtility;
         private Camera _camera;
-        private float _palmTimer;
-        private bool _palmLatched;
         private bool _visible = true;
+
+        // One dwell per hand: left is 0, right is 1. Latched so a palm held toward the face summons once per
+        // raise rather than every frame it stays there.
+        private readonly float[] _palmTimers = new float[2];
+        private readonly bool[] _palmLatched = new bool[2];
+
+        // The rig's own say on whether a summon is wanted right now, cached per rig rather than searched for per
+        // frame: the interactors (anything held, by either hand or a controller) and the system-gesture
+        // detectors (the Meta palm-at-eye-level gesture, which is the same pose as the summon).
+        private XRInputRig _signalsRig;
+        private XRBaseInteractor[] _interactors = System.Array.Empty<XRBaseInteractor>();
+        private MetaSystemGestureDetector[] _systemGestures = System.Array.Empty<MetaSystemGestureDetector>();
+
+        // The one automatic re-park, when the intro lets go of the room.
+        private bool _parkedAfterIntro;
+
+        private GlobalMenuManager _menus;
+        private GalaxyExplorer.AboutSlate _about;
 
         // Sampled at recentre only. See the class comment for why this is not recomputed per frame.
         private float _heightMetres;
@@ -195,6 +231,16 @@ namespace CosmicSimulation
                 beingButton.OnClick.AddListener(ToggleBeing);
             }
 
+            if (resetButton != null)
+            {
+                resetButton.OnClick.AddListener(ResetPlaces);
+            }
+
+            if (aboutButton != null)
+            {
+                aboutButton.OnClick.AddListener(ShowAbout);
+            }
+
             // Wired here as well as lazily, so the bar is draggable from the first frame rather than from the
             // first LateUpdate. See the drag bar section for what this corrects and why.
             DragHandler();
@@ -244,6 +290,39 @@ namespace CosmicSimulation
         public void ToggleUtility() => EnsureUtility()?.Toggle();
 
         public void ToggleBeing() => Being.Host.Toggle(beingPrefab);
+
+        // ---------- what the palm menu used to do (CS-277)
+
+        /// <summary>Sends every pulled body home. The legacy menu's Reset, routed through the same manager.</summary>
+        public void ResetPlaces()
+        {
+            if (_menus == null)
+            {
+                _menus = FindAnyObjectByType<GlobalMenuManager>(FindObjectsInactive.Include);
+            }
+
+            if (_menus != null)
+            {
+                _menus.OnResetButtonPressed();
+            }
+        }
+
+        /// <summary>Opens or closes the About slate (GDD 8.6). The legacy menu's About.</summary>
+        public void ShowAbout()
+        {
+            // Found with inactive objects included: the slate switches its own GameObject off to hide, and
+            // GlobalMenuManager's reference, taken from the active objects at its Start, is null when the
+            // slate happened to be hidden then.
+            if (_about == null)
+            {
+                _about = FindAnyObjectByType<GalaxyExplorer.AboutSlate>(FindObjectsInactive.Include);
+            }
+
+            if (_about != null)
+            {
+                _about.ToggleAboutButton();
+            }
+        }
 
         /// <summary>The settings window, made the first time anybody asks for it. Null if none was assigned.</summary>
         public UtilityWindow Utility => EnsureUtility();
@@ -358,12 +437,33 @@ namespace CosmicSimulation
             // must not also strand a galaxy the player pushed across the room.
             FreePlacementAnchor.RestoreAll();
 
+            // A recentre with no camera has not been refused, it has nothing to measure from yet: whatever the
+            // pending flag was stays, so a wait already under way keeps waiting.
+            var result = Park(0f);
+            if (result != ParkResult.NoCamera)
+            {
+                _recenterPending = result == ParkResult.NoPose;
+            }
+        }
+
+        private enum ParkResult
+        {
+            Parked,
+            NoCamera,
+            NoPose
+        }
+
+        // The parking itself, shared by a recentre (dead ahead) and a summon (ahead, but over to the side the
+        // summoning hand is on). One routine so the height rule, the drag hand-over and the tidy-up cannot
+        // drift apart between the two.
+        private ParkResult Park(float lateralMetres)
+        {
             if (_camera == null)
             {
                 _camera = Camera.main;
                 if (_camera == null)
                 {
-                    return;
+                    return ParkResult.NoCamera;
                 }
             }
 
@@ -378,11 +478,9 @@ namespace CosmicSimulation
             // the head position, nothing is parked at all — see TryEyeHeight.
             if (!TryEyeHeight(out var eyeHeight))
             {
-                _recenterPending = true;
-                return;
+                return ParkResult.NoPose;
             }
 
-            _recenterPending = false;
             _heightMetres = Mathf.Max(eyeHeight * heightFractionOfHead, minimumHeightMetres);
             _heightSampled = true;
 
@@ -401,13 +499,19 @@ namespace CosmicSimulation
             }
 
             var origin = new Vector3(head.position.x, head.position.y - eyeHeight, head.position.z);
-            transform.position = origin + forward * distanceMetres + Vector3.up * _heightMetres;
-            transform.rotation = ParkedRotation(forward);
+            var right = Vector3.Cross(Vector3.up, forward);
+            transform.position = origin + forward * distanceMetres + right * lateralMetres + Vector3.up * _heightMetres;
 
-            // Recentring is one of the routes that puts the dock somewhere new, so it owes the same tidying
-            // as the others: without this the pop-up stays hanging where the dock used to be, and nothing
-            // listening to Moved hears that it went anywhere.
+            // Turned toward the player rather than along the look direction: the same thing dead ahead, and
+            // the difference between a dock that faces you and one you read at a slant when it is off to a side.
+            Flatten(transform.position - head.position, out var awayFromPlayer);
+            transform.rotation = ParkedRotation(awayFromPlayer);
+
+            // Parking is one of the routes that puts the dock somewhere new, so it owes the same tidying as the
+            // others: without this the pop-up stays hanging where the dock used to be, and nothing listening to
+            // Moved hears that it went anywhere.
             Placed();
+            return ParkResult.Parked;
         }
 
         // The two halves of the parking maths, shared by the two things that aim the dock: a recentre, which
@@ -714,6 +818,16 @@ namespace CosmicSimulation
                 utilityButton.gameObject.SetActive(visible);
             }
 
+            if (resetButton != null)
+            {
+                resetButton.gameObject.SetActive(visible);
+            }
+
+            if (aboutButton != null)
+            {
+                aboutButton.gameObject.SetActive(visible);
+            }
+
             if (!visible && popup != null)
             {
                 popup.Close();
@@ -739,7 +853,7 @@ namespace CosmicSimulation
                 Recenter();
             }
 
-            WatchPalm();
+            WatchPalms();
             WatchKeyboard();
         }
 
@@ -755,43 +869,140 @@ namespace CosmicSimulation
             }
         }
 
-        private void WatchPalm()
+        // ---------- summoning (CS-275)
+
+        private void WatchPalms()
         {
-            // Hiding the dock switches the drag bar's GameObject off, which ends the grab where it stands. A
-            // left palm that drifts upward while the right hand is placing the dock must not do that, so the
-            // dwell is simply not counted during a drag. The latch is left alone: a palm still up when the drag
-            // ends has to turn over and back before it toggles.
-            if (_dragging)
-            {
-                _palmTimer = 0f;
-                return;
-            }
-
             var rig = XRInputRig.Instance;
-            if (rig == null || !rig.LeftHandTracked || rig.LeftPalm == null)
+            if (rig == null)
             {
-                _palmTimer = 0f;
-                _palmLatched = false;
+                ResetPalm(0);
+                ResetPalm(1);
                 return;
             }
 
-            var outOfPalm = PalmNormal(rig.LeftPalm);
-            var facingUp = Vector3.Dot(outOfPalm, Vector3.up) >= palmUpThreshold;
-
-            if (!facingUp)
+            if (_camera == null)
             {
-                _palmTimer = 0f;
-                _palmLatched = false;
+                _camera = Camera.main;
+            }
+
+            CacheRigSignals(rig);
+
+            // Not while anything is held. A summon re-parks the dock, and the bar's handler holds the pose it
+            // captured when the grab began, so parking under a live drag would be undone next frame; and a
+            // palm that turns toward the face while the other hand is carrying a planet is a player looking at
+            // the planet, not asking for a menu. Not during the system gesture either — that is this same pose
+            // at eye level, and Meta owns it.
+            var suppressed = _dragging || AnythingHeld() || SystemGestureActive();
+
+            WatchPalm(0, rig.LeftHandTracked ? rig.LeftPalm : null, suppressed);
+            WatchPalm(1, rig.RightHandTracked ? rig.RightPalm : null, suppressed);
+        }
+
+        private void WatchPalm(int hand, Transform palm, bool suppressed)
+        {
+            if (palm == null || _camera == null)
+            {
+                ResetPalm(hand);
                 return;
             }
 
-            _palmTimer += Time.deltaTime;
-            if (_palmTimer >= palmDwellSeconds && !_palmLatched)
+            // The dwell is not counted while suppressed, but the latch is left alone: a palm still raised when
+            // the grab ends has to turn away and back before it summons.
+            if (suppressed)
             {
-                // Latched so holding the palm up toggles once rather than flickering every frame.
-                _palmLatched = true;
-                Toggle();
+                _palmTimers[hand] = 0f;
+                return;
             }
+
+            // Facing the head, not facing up: the dot of the palm normal with the line from the palm to the
+            // eyes, so it reads the same wherever the hand is held — low by the hip or out to the side.
+            var toHead = _camera.transform.position - palm.position;
+            var facing = toHead.sqrMagnitude > 1e-4f &&
+                         Vector3.Dot(PalmNormal(palm), toHead.normalized) >= palmFacingThreshold;
+            if (!facing)
+            {
+                ResetPalm(hand);
+                return;
+            }
+
+            _palmTimers[hand] += Time.deltaTime;
+            if (_palmTimers[hand] >= palmDwellSeconds && !_palmLatched[hand])
+            {
+                _palmLatched[hand] = true;
+                Summon(palm);
+            }
+        }
+
+        private void ResetPalm(int hand)
+        {
+            _palmTimers[hand] = 0f;
+            _palmLatched[hand] = false;
+        }
+
+        /// <summary>
+        /// Brings the dock to the hand that asked for it: shown, parked at the usual distance and height but
+        /// over on that hand's side, facing the player. Only ever shows — nothing the hands do hides the dock.
+        /// </summary>
+        private void Summon(Transform palm)
+        {
+            var head = _camera.transform;
+            Flatten(head.forward, out var forward);
+            var right = Vector3.Cross(Vector3.up, forward);
+
+            // The hand's offset from the head across the look direction, which is "that hand's side" without
+            // depending on how far forward the arm happens to be.
+            var lateral = Mathf.Clamp(Vector3.Dot(palm.position - head.position, right), -summonReachMetres, summonReachMetres);
+
+            // Shown before it is parked, so everything that re-places itself from Moved sees a visible dock.
+            SetVisible(true);
+            Park(lateral);
+        }
+
+        private void CacheRigSignals(XRInputRig rig)
+        {
+            if (_signalsRig == rig)
+            {
+                return;
+            }
+
+            // Inactive included: the controllers' interactors are switched off while hands are the input, and
+            // the detectors sit on hand objects that come and go with tracking.
+            _signalsRig = rig;
+            _interactors = rig.GetComponentsInChildren<XRBaseInteractor>(true);
+            _systemGestures = rig.GetComponentsInChildren<MetaSystemGestureDetector>(true);
+        }
+
+        // Anything selected by any interactor on the rig: a body, a galaxy, the bar, the being, a button
+        // mid-press. ForceSolver keeps no static "held" flag, and the interactors are the one place every grab
+        // in the headset passes through.
+        private bool AnythingHeld()
+        {
+            foreach (var interactor in _interactors)
+            {
+                if (interactor != null && interactor.isActiveAndEnabled && interactor.hasSelection)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Either hand's detector; they carry no handedness of their own, and a summon during the system gesture
+        // on the other hand is not worth having either.
+        private bool SystemGestureActive()
+        {
+            foreach (var detector in _systemGestures)
+            {
+                if (detector != null && detector.isActiveAndEnabled &&
+                    detector.systemGestureState.Value == MetaSystemGestureDetector.SystemGestureState.Started)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private Vector3 PalmNormal(Transform palm)
@@ -906,7 +1117,29 @@ namespace CosmicSimulation
         /// <summary>Raised when the player picks a layout for an experience.</summary>
         public static event System.Action<ExperienceModule, LayoutPreset> LayoutRequested;
 
-        private void OnExperienceChanged(ExperienceModule module) => MarkActive(module);
+        private void OnExperienceChanged(ExperienceModule module)
+        {
+            MarkActive(module);
+
+            // The first place to open after the intro is the intro handing over (ExperienceDirector adopts or
+            // switches to it only once OnIntroFinished has been raised and the transition has settled). The dock
+            // parked during the logo, before the player had turned to face anything; parking it again here
+            // puts it where they are now looking. Once only — later switches are the player's own, and a dock
+            // that jumped on every one of them would be following them around by another name.
+            if (_parkedAfterIntro || module == null)
+            {
+                return;
+            }
+
+            var director = ExperienceDirector.Instance;
+            if (director == null || director.IntroRunning)
+            {
+                return;
+            }
+
+            // Park, not Recenter: Recenter also sends every pulled galaxy and nebula home, which nobody asked for.
+            _parkedAfterIntro = Park(0f) == ParkResult.Parked;
+        }
 
         private void MarkActive(ExperienceModule module) => MarkActive(_tiles, module);
 

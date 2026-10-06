@@ -89,8 +89,14 @@ public class OnboardingManager : MonoBehaviour
                         throw new ArgumentOutOfRangeException();
                 }
                 OnboardingStage = Stage.AfterForcePull;
+                if (_freedEarly)
+                {
+                    _freedEarly = false;
+                    AdvanceStateMachine();
+                }
+
                 break;
-            
+
             case Stage.AfterForcePull:
                 switch (_platformId)
                 {
@@ -175,9 +181,18 @@ public class OnboardingManager : MonoBehaviour
         StartCoroutine(WaitTillEndOfVoiceOverAndEvaluate());
     }
 
+    // The orb can be pulled from the first frame, but the story only moves on once the opening narration has
+    // run: an early release is remembered and answered the moment that narration ends.
+    private bool _freedEarly;
+
     private void OnForcePullFree(ForceSolver _)
     {
-        OnboardingStage = Stage.AfterForcePull;
+        if (OnboardingStage != Stage.AfterForcePull)
+        {
+            _freedEarly = true;
+            return;
+        }
+
         AdvanceStateMachine();
     }
 
@@ -194,7 +209,18 @@ public class OnboardingManager : MonoBehaviour
     public void StartIntro(ForceSolver placementForceSolver, bool skipPlacement = false)
     {
         _placementForceSolver = placementForceSolver;
-        DisableForcePull();
+
+        // The pull used to be gated off here until the first narration ended, so a player who reached for the
+        // orb at once — which is what the narration asks them to do — found that nothing happened and tried
+        // again, harder (CS-281). The orb answers from the first frame now and the narration plays over it; the
+        // state machine's EnableForcePull at the end of the intro clip is then a no-op, and a release that comes
+        // before the narration is over is held back by OnForcePullFree until it is. The desktop keeps the
+        // gate: it has no placement step, and the orb there is a picture until onboarding is done.
+        if (skipPlacement)
+        {
+            DisableForcePull();
+        }
+
         _placementForceSolver.SetToFree.AddListener(OnForcePullFree);
         _platformId = GalaxyExplorerManager.Platform;
         if (_platformId == GalaxyExplorerManager.PlatformId.Quest3)

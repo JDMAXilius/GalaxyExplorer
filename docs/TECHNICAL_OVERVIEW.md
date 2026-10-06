@@ -86,7 +86,7 @@ Builds/Quest3/             GalaxyExplorer.apk (git-ignored)
 
 ### 5.1 Managers **[existing]**
 - `GalaxyExplorerManager` (singleton): platform id, scale factors, references to `TransitionManager`, `ViewLoaderScript`, `CardPoiManager`, `VoManager`, `CameraControllerHandler`; adds `DesktopMouseInput` on desktop.
-- `ExperienceModeManager`: Passthrough (camera clear alpha 0 + `ARCameraManager` on) vs VR (star background, opaque clear); persisted in `PlayerPrefs`; `ShowsVRScenery` consumed by `VREnabled` / `StarBackgroundManager`.
+- `ExperienceModeManager`: Passthrough (camera clear alpha 0 + `ARCameraManager` on) vs VR (star background, opaque clear). Its only caller is `EnvironmentController.Apply`, which owns the choice and persists `PassthroughForced` in `PlayerPrefs` (CS-270); `ShowsVRScenery` consumed by `VREnabled` / `StarBackgroundManager`.
 - `AudioService` (singleton; profile from `Resources/AudioServiceProfile`): `PlayClip(AudioId|clip, out source, transform, PlayOptions)`, pooled `PoolableAudioSource`.
 - `VOManager`: narration queue; `PlayClip(clip, delay, allowReplay, replaceQueue, blocksProgress)`; `Stop(clearQueue)`; `CurrentClip`. Body narration uses `allowReplay:true, replaceQueue:true`.
 - `CardPOIManager`: open/close of the galaxy POI cards; subscribes to `GEInputEvents.GlobalPointerDown`.

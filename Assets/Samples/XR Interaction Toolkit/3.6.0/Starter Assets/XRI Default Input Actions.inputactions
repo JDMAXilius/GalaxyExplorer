@@ -1025,17 +1025,6 @@
                 },
                 {
                     "name": "",
-                    "id": "3bbf9f24-2edd-41b9-8456-683298f1e58c",
-                    "path": "<HandInteraction>{LeftHand}/graspFirm",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Select",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "a86585c7-1d41-40e2-a7ca-bb76cca5c32a",
                     "path": "<HandInteraction>{LeftHand}/pinchTouched",
                     "interactions": "",
@@ -1080,17 +1069,6 @@
                 },
                 {
                     "name": "",
-                    "id": "7fa12256-8331-468c-9951-60255e867cd6",
-                    "path": "<XRHandDevice>{LeftHand}/graspFirm",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Select",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "49a23327-a116-48c0-8af9-0d2c50c15a88",
                     "path": "<XRController>{LeftHand}/{Grip}",
                     "interactions": "",
@@ -1104,17 +1082,6 @@
                     "name": "",
                     "id": "304be843-4b23-45d9-89fa-005ac163d9b9",
                     "path": "<MetaAimHand>{LeftHand}/pinchStrengthIndex",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Select Value",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "2a4b758a-252a-484c-9a26-438954189c08",
-                    "path": "<HandInteraction>{LeftHand}/graspValue",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -1148,17 +1115,6 @@
                     "name": "",
                     "id": "7bb4b9cf-262f-4f6c-ac85-8a228792bc2e",
                     "path": "<XRHandDevice>{LeftHand}/pinchValue",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Select Value",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "d08c5dcc-5696-4ca7-8f1f-a34a297b4501",
-                    "path": "<XRHandDevice>{LeftHand}/graspValue",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -2206,17 +2162,6 @@
                 },
                 {
                     "name": "",
-                    "id": "1fe3ab58-51f3-4274-995c-176ac72d9610",
-                    "path": "<HandInteraction>{RightHand}/graspFirm",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Select",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "f6083118-4e38-45a2-afaf-52fa60444f78",
                     "path": "<HandInteraction>{RightHand}/pinchTouched",
                     "interactions": "",
@@ -2272,17 +2217,6 @@
                 },
                 {
                     "name": "",
-                    "id": "ffad08e7-8ce9-47a3-b22c-a5295117a45a",
-                    "path": "<XRHandDevice>{RightHand}/graspFirm",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Select",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "dd433817-216c-46b9-8dd3-f3a4ea1767b9",
                     "path": "<XRController>{RightHand}/{Grip}",
                     "interactions": "",
@@ -2296,17 +2230,6 @@
                     "name": "",
                     "id": "770a07b5-a199-4342-b4a5-b3baafbe2bcb",
                     "path": "<MetaAimHand>{RightHand}/pinchStrengthIndex",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Select Value",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "e8d22d4b-ac0c-452b-9f5e-247f94754302",
-                    "path": "<HandInteraction>{RightHand}/graspValue",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -2340,17 +2263,6 @@
                     "name": "",
                     "id": "0a8a448a-b838-4e13-8eeb-3e3a95e88f2f",
                     "path": "<XRHandDevice>{RightHand}/pinchValue",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Select Value",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "c184e047-2003-4172-9a3d-af4fcbaae04f",
-                    "path": "<XRHandDevice>{RightHand}/graspValue",
                     "interactions": "",
                     "processors": "",
                     "groups": "",

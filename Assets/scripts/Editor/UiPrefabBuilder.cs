@@ -32,6 +32,16 @@ namespace CosmicSimulation.EditorTools
         private static readonly Color Plate = new Color32(0x0E, 0x14, 0x18, 0xCC); // 80%
         private static readonly Color OnAccent = new Color32(0x0E, 0x14, 0x18, 0xFF);
 
+        // Meta's minimum direct-touch target and the spacing between two of them (CS-278), in canvas
+        // millimetres. Every pressable the builder makes is at least TargetMm across the face.
+        private const float TargetMm = 24f;
+        private const float GapMm = 12f;
+        private const float GlyphMm = 14f;
+
+        // How far a press pushes a button's face in, in canvas millimetres - the same 4 mm DockTile uses, so the
+        // dock's tiles and its small buttons give a fingertip the same answer.
+        private const float PressDepthMm = 4f;
+
         [MenuItem("Cosmic Simulation/Build UI Prefabs")]
         public static void BuildAll()
         {
@@ -239,9 +249,11 @@ namespace CosmicSimulation.EditorTools
             underline.gameObject.SetActive(false);
 
             // A collider so a hand ray and a fingertip can find it; the canvas raycaster only serves the mouse.
+            // No GEPressVisual here: DockTile moves "move" itself, for the hover lift and the press alike.
             var box = move.gameObject.AddComponent<BoxCollider>();
             box.size = new Vector3(110f, 62f, 2f);
-            move.gameObject.AddComponent<GEInteractable>();
+            var interactable = move.gameObject.AddComponent<GEInteractable>();
+            PokeSupport.AddPokeFilter(move.gameObject, box, interactable);
             var button = move.gameObject.AddComponent<GEButton>();
 
             var tile = root.AddComponent<DockTile>();
@@ -276,16 +288,24 @@ namespace CosmicSimulation.EditorTools
             // Clear of the rightmost tile (its edge lands at 381) and inside the plate (half-width 417).
             ((RectTransform)passthrough.transform).anchoredPosition = new Vector2(400f, 0f);
 
-            var underRow = Rect("under_dock", rt, 834f, 12f);
+            // Under the plate: the grab handle in the middle and three controls either side of it, every one at
+            // Meta's 24 mm fingertip minimum with 12 mm between neighbours (CS-278), symmetric about the bar.
+            var underRow = Rect("under_dock", rt, 834f, TargetMm);
             underRow.anchorMin = new Vector2(0.5f, 0f);
             underRow.anchorMax = new Vector2(0.5f, 0f);
             underRow.pivot = new Vector2(0.5f, 1f);
             underRow.anchoredPosition = new Vector2(0f, -6f);
 
-            var bar = Panel("drag_bar", underRow, 60f, 1.6f, Load("ui_rounded_r8"), new Color(1f, 1f, 1f, 0.55f));
+            // The handle is a plate-coloured pill the size of its own hit area with the old 60 mm line drawn on
+            // it as the grip mark: the art grew to the target rather than a collider hanging 11 mm past a hairline.
+            const float barWidth = 120f;
+            var bar = Panel("drag_bar", underRow, barWidth, TargetMm, Load("ui_rounded_r16"), Plate);
             bar.rectTransform.anchoredPosition = Vector2.zero;
+            Panel("grip", bar.rectTransform, 60f, 1.6f, Load("ui_rounded_r8"), new Color(1f, 1f, 1f, 0.55f)).raycastTarget = false;
             var barBox = bar.gameObject.AddComponent<BoxCollider>();
-            barBox.size = new Vector3(60f, 8f, 2f);
+            barBox.size = new Vector3(barWidth, TargetMm, 2f);
+            // No poke filter: this is a handle for a pinch, not a button, and a filter would let any finger that
+            // brushes it drag the dock away.
             bar.gameObject.AddComponent<GEInteractable>();
 
             var barGrab = bar.gameObject.AddComponent<ManipulationHandler>();
@@ -294,7 +314,7 @@ namespace CosmicSimulation.EditorTools
             // The bar moves the *dock*, not itself (GDD 8.1, contract row F-06). Authored here rather than
             // patched at run time, because the prefab is the deployment story for this file. Left unset,
             // HostTransform falls back to the bar's own transform on first use and a working grab would peel
-            // the 60 mm bar off the plate it hangs under (CS-108).
+            // the bar off the plate it hangs under (CS-108).
             barGrabSo.FindProperty("hostTransform").objectReferenceValue = root.transform;
 
             // One hand only. The default is OneAndTwoHanded with MoveRotateScale, and both halves of that are
@@ -320,13 +340,10 @@ namespace CosmicSimulation.EditorTools
             // only handler anywhere above it in this prefab is none at all, and the bar carries no GEButton.
             bar.gameObject.AddComponent<ManipulationPointerRouter>();
 
-            var recenter = SquareButton("recenter_button", underRow, 9f, 6f, Load("icon_recenter"), Plate, Ink);
-            ((RectTransform)recenter.transform).anchoredPosition = new Vector2(396f, 0f);
+            // Three a side, 12 mm from the bar's end and from each other: 84, 120 and 156 mm out from centre.
+            float Slot(int i) => barWidth * 0.5f + GapMm + TargetMm * 0.5f + i * (TargetMm + GapMm);
 
-            var help = SquareButton("help_button", underRow, 9f, 6f, Load("icon_help"), Plate, Ink);
-            ((RectTransform)help.transform).anchoredPosition = new Vector2(408f, 0f);
-
-            // The third small button, left of Recenter. GDD 8.1 lists only Recenter and Help under the dock but
+            // The settings button. GDD 8.1 lists only Recenter and Help under the dock but
             // also says mute lives in the utility window, and GDD 11 puts three more settings in there — so
             // something has to open it, and nothing did. No settings glyph was exported by CS-017 (five rounded
             // rects, the tile foot and six icons), so the mute icon stands in: it is the control players will be
@@ -340,11 +357,25 @@ namespace CosmicSimulation.EditorTools
                           "mute glyph. Add Assets/ui/figma/icon_settings.png and re-run to replace it.");
             }
 
-            var utility = SquareButton("utility_button", underRow, 9f, 6f, settingsGlyph, Plate, Ink);
-            ((RectTransform)utility.transform).anchoredPosition = new Vector2(384f, 0f);
+            // Reset and About (CS-277) have no glyph exported yet, so they wear their names until icon_reset.png
+            // and icon_about.png land in Assets/ui/figma/ - the arrangement the settings button had.
+            var being = SquareButton("being_button", underRow, TargetMm, GlyphMm, Load("icon_being"), Plate, Ink);
+            ((RectTransform)being.transform).anchoredPosition = new Vector2(-Slot(2), 0f);
 
-            var being = SquareButton("being_button", underRow, 9f, 6f, Load("icon_being"), Plate, Ink);
-            ((RectTransform)being.transform).anchoredPosition = new Vector2(372f, 0f);
+            var utility = SquareButton("utility_button", underRow, TargetMm, GlyphMm, settingsGlyph, Plate, Ink);
+            ((RectTransform)utility.transform).anchoredPosition = new Vector2(-Slot(1), 0f);
+
+            var reset = SquareButton("reset_button", underRow, TargetMm, GlyphMm, LoadOptional("icon_reset"), Plate, Ink, "RESET");
+            ((RectTransform)reset.transform).anchoredPosition = new Vector2(-Slot(0), 0f);
+
+            var recenter = SquareButton("recenter_button", underRow, TargetMm, GlyphMm, Load("icon_recenter"), Plate, Ink);
+            ((RectTransform)recenter.transform).anchoredPosition = new Vector2(Slot(0), 0f);
+
+            var help = SquareButton("help_button", underRow, TargetMm, GlyphMm, Load("icon_help"), Plate, Ink);
+            ((RectTransform)help.transform).anchoredPosition = new Vector2(Slot(1), 0f);
+
+            var about = SquareButton("about_button", underRow, TargetMm, GlyphMm, LoadOptional("icon_about"), Plate, Ink, "ABOUT");
+            ((RectTransform)about.transform).anchoredPosition = new Vector2(Slot(2), 0f);
 
             var dock = root.AddComponent<DockController>();
             var so = new SerializedObject(dock);
@@ -355,6 +386,10 @@ namespace CosmicSimulation.EditorTools
             so.FindProperty("helpButton").objectReferenceValue = help;
             so.FindProperty("utilityButton").objectReferenceValue = utility;
             so.FindProperty("beingButton").objectReferenceValue = being;
+            // Fields CS-277 adds to DockController; wired by name so this builder compiles and runs whether or
+            // not that change has landed, and says so if it has not.
+            Assign(so, "resetButton", reset);
+            Assign(so, "aboutButton", about);
             so.FindProperty("beingPrefab").objectReferenceValue =
                 AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Being/being.prefab")?.GetComponent<Cosmic.Companion.Being>();
             so.FindProperty("utilityWindowPrefab").objectReferenceValue =
@@ -366,17 +401,26 @@ namespace CosmicSimulation.EditorTools
             Save(root, "dock_prefab");
         }
 
+        /// <summary>
+        /// A square icon button. The collider and button sit on the root; the face is a "move" child so the
+        /// press can push it in. With no icon and a fallback given, the face carries the word instead.
+        /// </summary>
         private static GEButton SquareButton(string name, Transform parent, float size, float glyph,
-                                             Sprite icon, Color fill, Color glyphColour)
+                                             Sprite icon, Color fill, Color glyphColour, string fallbackText = null)
         {
-            var back = Panel(name, parent, size, size, Load("ui_rounded_r16"), fill);
-            var mark = Panel("glyph", back.rectTransform, glyph, glyph, icon, glyphColour);
-            mark.raycastTarget = false;
+            var root = Rect(name, parent, size, size);
+            var back = Panel("move", root, size, size, Load("ui_rounded_r16"), fill);
+            if (icon != null || fallbackText == null)
+            {
+                Panel("glyph", back.rectTransform, glyph, glyph, icon, glyphColour).raycastTarget = false;
+            }
+            else
+            {
+                Label("glyph", back.rectTransform, size - 2f, size - 2f, fallbackText, glyph * 0.3f, glyphColour,
+                      TextAlignmentOptions.Center, FontWeight.SemiBold);
+            }
 
-            var box = back.gameObject.AddComponent<BoxCollider>();
-            box.size = new Vector3(size, size, 2f);
-            back.gameObject.AddComponent<GEInteractable>();
-            return back.gameObject.AddComponent<GEButton>();
+            return Pressable(root.gameObject, size, size, back.gameObject);
         }
 
         // ---------- the utility window
@@ -385,12 +429,14 @@ namespace CosmicSimulation.EditorTools
         // narration-only mute and a text size in the same window, which does not fit in 50 mm of height, so it
         // was 120 x 102. The owner then added the microphone and Quit (16 Sep, mockup CS-196), so it is
         // 120 x 130: mute and narration share a row to make room, and the microphone row and Quit sit below the
-        // text size. Every number below is a millimetre, because the canvas Root() builds is scaled 0.001.
+        // text size. CS-278 then grew every control to Meta's 24 mm fingertip minimum with 12 mm between
+        // neighbouring targets, which makes it 120 x 222. Every number below is a millimetre, because the canvas
+        // Root() builds is scaled 0.001.
 
         private static GameObject BuildUtilityWindow()
         {
             const float width = 120f;
-            const float height = 130f;
+            const float height = 222f;
             const float row = 110f; // content width: the plate less 5 mm of padding on each side
             const float top = height * 0.5f;
 
@@ -400,23 +446,23 @@ namespace CosmicSimulation.EditorTools
 
             Panel("plate", rt, width, height, Load("ui_rounded_r48"), Plate).raycastTarget = false;
 
-            var title = Label("title", rt, 100f, 8f, "Settings", 5.6f, Ink, TextAlignmentOptions.Left, FontWeight.SemiBold);
-            title.rectTransform.anchoredPosition = new Vector2(-5f, top - 9f);
+            var title = Label("title", rt, 80f, 8f, "Settings", 5.6f, Ink, TextAlignmentOptions.Left, FontWeight.SemiBold);
+            title.rectTransform.anchoredPosition = new Vector2(-15f, top - 16f);
 
-            var close = SquareButton("close_button", rt, 9f, 6f, Load("icon_close"), Plate, Ink);
-            ((RectTransform)close.transform).anchoredPosition = new Vector2(width * 0.5f - 9.5f, top - 9.5f);
+            var close = SquareButton("close_button", rt, TargetMm, GlyphMm, Load("icon_close"), Plate, Ink);
+            ((RectTransform)close.transform).anchoredPosition = new Vector2(width * 0.5f - 4f - TargetMm * 0.5f, top - 4f - TargetMm * 0.5f);
 
             // --- the scale rail
 
             var scaleLabel = Label("scale_label", rt, row, 6f, "SCALE", 4.55f, InkSecondary, TextAlignmentOptions.Left, FontWeight.SemiBold);
             scaleLabel.characterSpacing = 8f;
-            scaleLabel.rectTransform.anchoredPosition = new Vector2(0f, top - 19f);
+            scaleLabel.rectTransform.anchoredPosition = new Vector2(0f, top - 40f);
 
             var scaleValue = Label("scale_value", rt, row, 6f, "1.00x", 4.55f, Ink, TextAlignmentOptions.Right, FontWeight.Regular);
-            scaleValue.rectTransform.anchoredPosition = new Vector2(0f, top - 19f);
+            scaleValue.rectTransform.anchoredPosition = new Vector2(0f, top - 40f);
 
             var track = Panel("scale_track", rt, row, 2f, Load("ui_rounded_r8"), new Color(1f, 1f, 1f, 0.25f));
-            track.rectTransform.anchoredPosition = new Vector2(0f, top - 26f);
+            track.rectTransform.anchoredPosition = new Vector2(0f, top - 52f);
 
             var fill = Panel("scale_fill", track.rectTransform, row * 0.5f, 2f, Load("ui_rounded_r8"), Cyan);
             fill.raycastTarget = false;
@@ -430,29 +476,31 @@ namespace CosmicSimulation.EditorTools
             knob.raycastTarget = false;
             knob.rectTransform.anchoredPosition = Vector2.zero;
 
-            // The hit area is 12 mm tall over a 2 mm rail: a fingertip or a hand ray cannot be asked to find
-            // two millimetres, and the collider is what both of them actually hit.
+            // The hit area is 24 mm tall over a 2 mm rail: a fingertip or a hand ray cannot be asked to find
+            // two millimetres, and the collider is what both of them actually hit. Not a GEButton - the window
+            // reads the drag itself - but a fingertip still needs the filter before XRI lets it take hold.
             var trackBox = track.gameObject.AddComponent<BoxCollider>();
-            trackBox.size = new Vector3(row, 12f, 2f);
+            trackBox.size = new Vector3(row, TargetMm, 2f);
             var trackInteractable = track.gameObject.AddComponent<GEInteractable>();
+            PokeSupport.AddPokeFilter(track.gameObject, trackBox, trackInteractable);
 
             // --- sound
 
             var soundLabel = Label("sound_label", rt, row, 6f, "SOUND", 4.55f, InkSecondary, TextAlignmentOptions.Left, FontWeight.SemiBold);
             soundLabel.characterSpacing = 8f;
-            soundLabel.rectTransform.anchoredPosition = new Vector2(0f, top - 37f);
+            soundLabel.rectTransform.anchoredPosition = new Vector2(0f, top - 70f);
 
-            const float half = (row - 3f) * 0.5f;
-            var mute = PlateRow("mute_button", rt, half, 12f, -(half + 3f) * 0.5f, top - 47f, "Sound on",
+            const float half = (row - GapMm) * 0.5f;
+            var mute = PlateRow("mute_button", rt, half, TargetMm, -(half + GapMm) * 0.5f, top - 88f, "Sound on",
                 out var muteFill, out var muteLabel);
-            var narration = PlateRow("narration_button", rt, half, 12f, (half + 3f) * 0.5f, top - 47f, "Narration on",
+            var narration = PlateRow("narration_button", rt, half, TargetMm, (half + GapMm) * 0.5f, top - 88f, "Narration on",
                 out var narrationFill, out var narrationLabel);
 
             // --- text size
 
             var textLabel = Label("text_size_label", rt, row, 6f, "TEXT SIZE", 4.55f, InkSecondary, TextAlignmentOptions.Left, FontWeight.SemiBold);
             textLabel.characterSpacing = 8f;
-            textLabel.rectTransform.anchoredPosition = new Vector2(0f, top - 59f);
+            textLabel.rectTransform.anchoredPosition = new Vector2(0f, top - 106f);
 
             var window = root.AddComponent<UtilityWindow>();
             var so = new SerializedObject(window);
@@ -466,7 +514,8 @@ namespace CosmicSimulation.EditorTools
             var captions = new[] { "1.0x", "1.25x", "1.5x" };
             for (var i = 0; i < 3; i++)
             {
-                var button = PlateRow($"text_size_{i}", rt, 34f, 14f, (i - 1) * 37f, top - 70f, captions[i],
+                // Three across 110 mm with 12 mm between them: 28 wide on a 41 mm pitch.
+                var button = PlateRow($"text_size_{i}", rt, 28f, TargetMm, (i - 1) * 41f, top - 124f, captions[i],
                     out var sizeFill, out var sizeLabel);
 
                 sizeButtons.GetArrayElementAtIndex(i).objectReferenceValue = button;
@@ -490,15 +539,16 @@ namespace CosmicSimulation.EditorTools
 
             var micLabel = Label("mic_label", rt, row, 6f, "MICROPHONE", 4.55f, InkSecondary, TextAlignmentOptions.Left, FontWeight.SemiBold);
             micLabel.characterSpacing = 8f;
-            micLabel.rectTransform.anchoredPosition = new Vector2(0f, top - 82f);
+            micLabel.rectTransform.anchoredPosition = new Vector2(0f, top - 142f);
 
-            var previous = PlateRow("mic_previous", rt, 12f, 12f, -(row - 12f) * 0.5f, top - 92f, "<", out _, out _);
-            var next = PlateRow("mic_next", rt, 12f, 12f, (row - 12f) * 0.5f, top - 92f, ">", out _, out _);
+            var previous = PlateRow("mic_previous", rt, TargetMm, TargetMm, -(row - TargetMm) * 0.5f, top - 160f, "<", out _, out _);
+            var next = PlateRow("mic_next", rt, TargetMm, TargetMm, (row - TargetMm) * 0.5f, top - 160f, ">", out _, out _);
 
-            const float nameWidth = row - 28f;
-            var nameField = Panel("mic_name", rt, nameWidth, 12f, Load("ui_rounded_r32"), new Color(1f, 1f, 1f, 0.04f));
+            // What is left between the two arrows with 3 mm of air to each: a readout, not a target.
+            const float nameWidth = row - 2f * TargetMm - 6f;
+            var nameField = Panel("mic_name", rt, nameWidth, TargetMm, Load("ui_rounded_r32"), new Color(1f, 1f, 1f, 0.04f));
             nameField.raycastTarget = false;
-            nameField.rectTransform.anchoredPosition = new Vector2(0f, top - 92f);
+            nameField.rectTransform.anchoredPosition = new Vector2(0f, top - 160f);
             var deviceName = Label("label", nameField.rectTransform, nameWidth - 4f, 10f, "System default", 3.8f, Ink,
                 TextAlignmentOptions.Center, FontWeight.Regular);
             deviceName.overflowMode = TextOverflowModes.Ellipsis;
@@ -506,7 +556,7 @@ namespace CosmicSimulation.EditorTools
 
             var levelTrack = Panel("mic_track", rt, row, 2f, Load("ui_rounded_r8"), new Color(1f, 1f, 1f, 0.12f));
             levelTrack.raycastTarget = false;
-            levelTrack.rectTransform.anchoredPosition = new Vector2(0f, top - 101f);
+            levelTrack.rectTransform.anchoredPosition = new Vector2(0f, top - 177f);
             var level = Panel("mic_level", levelTrack.rectTransform, 0f, 2f, Load("ui_rounded_r8"), Cyan);
             level.raycastTarget = false;
             level.rectTransform.anchorMin = new Vector2(0f, 0.5f);
@@ -516,7 +566,7 @@ namespace CosmicSimulation.EditorTools
 
             var hint = Label("mic_hint", rt, row, 5f, "Speak to check it. The bar moves when the mic hears you.", 3.6f,
                 InkSecondary, TextAlignmentOptions.Left, FontWeight.Regular);
-            hint.rectTransform.anchoredPosition = new Vector2(0f, top - 106f);
+            hint.rectTransform.anchoredPosition = new Vector2(0f, top - 183f);
 
             var microphone = root.AddComponent<MicrophoneRow>();
             var mic = new SerializedObject(microphone);
@@ -530,7 +580,7 @@ namespace CosmicSimulation.EditorTools
 
             // --- quit
 
-            var quit = PlateRow("quit_button", rt, row, 12f, 0f, top - 119f, "Quit Cosmic Simulation",
+            var quit = PlateRow("quit_button", rt, row, TargetMm, 0f, top - 202f, "Quit Cosmic Simulation",
                 out var quitFill, out var quitLabel);
             so.FindProperty("quitButton").objectReferenceValue = quit;
             so.FindProperty("quitFill").objectReferenceValue = quitFill;
@@ -540,20 +590,60 @@ namespace CosmicSimulation.EditorTools
             return Save(root, "utility_window_prefab");
         }
 
-        /// <summary>A full-width pressable plate with a label on it, as the pop-up's options are.</summary>
+        /// <summary>A full-width pressable plate with a label on it, as the pop-up's options are. The collider
+        /// and button sit on the root; <paramref name="fill"/> is the "move" face a press pushes in.</summary>
         private static GEButton PlateRow(string name, Transform parent, float w, float h, float x, float y,
                                          string text, out Image fill, out TMP_Text label)
         {
-            fill = Panel(name, parent, w, h, Load("ui_rounded_r32"), Plate);
-            fill.rectTransform.anchoredPosition = new Vector2(x, y);
+            var root = Rect(name, parent, w, h);
+            root.anchoredPosition = new Vector2(x, y);
 
+            fill = Panel("move", root, w, h, Load("ui_rounded_r32"), Plate);
             label = Label("label", fill.rectTransform, w - 6f, h - 2f, text, 5f, Ink, TextAlignmentOptions.Center, FontWeight.Medium);
             label.rectTransform.anchoredPosition = Vector2.zero;
 
-            var box = fill.gameObject.AddComponent<BoxCollider>();
+            return Pressable(root.gameObject, w, h, fill.gameObject);
+        }
+
+        /// <summary>
+        /// What every pressable here shares: a collider the size of its face, the interactable that turns XRI
+        /// hover and select into the app's events, the poke filter a fingertip needs before XRI will select it
+        /// (CS-276), the press travel, and the button. Collider first: GEInteractable keeps only the colliders
+        /// already on its own GameObject.
+        /// </summary>
+        private static GEButton Pressable(GameObject go, float w, float h, GameObject moving)
+        {
+            var box = go.AddComponent<BoxCollider>();
             box.size = new Vector3(w, h, 2f);
-            fill.gameObject.AddComponent<GEInteractable>();
-            return fill.gameObject.AddComponent<GEButton>();
+            var interactable = go.AddComponent<GEInteractable>();
+            PokeSupport.AddPokeFilter(go, box, interactable);
+
+            if (moving != null)
+            {
+                // GEPressVisual's depth is in the parent's local units, which on this canvas is millimetres; its
+                // tooltip says metres because the legacy buttons it was written for sit at metre scale.
+                var press = go.AddComponent<GEPressVisual>();
+                var so = new SerializedObject(press);
+                so.FindProperty("movingButtonVisuals").objectReferenceValue = moving;
+                so.FindProperty("pressDepth").floatValue = PressDepthMm;
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            return go.AddComponent<GEButton>();
+        }
+
+        /// <summary>Sets a serialized reference by name, and says so when the field does not exist yet.</summary>
+        private static void Assign(SerializedObject so, string property, Object value)
+        {
+            var found = so.FindProperty(property);
+            if (found == null)
+            {
+                Debug.LogWarning($"UiPrefabBuilder: {so.targetObject.GetType().Name} has no '{property}' field; " +
+                                 "left unwired. Re-run Build UI Prefabs once it exists.");
+                return;
+            }
+
+            found.objectReferenceValue = value;
         }
 
         // ---------- the layout pop-up
@@ -588,27 +678,33 @@ namespace CosmicSimulation.EditorTools
             var seed = new[] { "Schematic", "Realistic", "Option 3", "Option 4" };
             for (var i = 0; i < Slots; i++)
             {
-                var fill = Panel($"option_{i}", rt, 108f, 44f, Load("ui_rounded_r32"), i == 0 ? Cyan : Plate);
+                // The slot is the collider and the button (DockPopup hides unused slots through it); its
+                // "move" child is the face a press pushes in.
+                var slot = Rect($"option_{i}", rt, 108f, 44f);
                 var column = i % 2 == 0 ? -58f : 58f;
                 var row = -6f - RowHeight * (i / 2);
-                fill.rectTransform.anchoredPosition = new Vector2(column, row);
+                slot.anchoredPosition = new Vector2(column, row);
 
+                var fill = Panel("move", slot, 108f, 44f, Load("ui_rounded_r32"), i == 0 ? Cyan : Plate);
                 var text = Label("label", fill.rectTransform, 100f, 12f, seed[i],
                     5f, i == 0 ? OnAccent : Ink, TextAlignmentOptions.Center, FontWeight.Medium);
                 text.rectTransform.anchoredPosition = Vector2.zero;
 
-                var box = fill.gameObject.AddComponent<BoxCollider>();
-                box.size = new Vector3(108f, 44f, 2f);
-                fill.gameObject.AddComponent<GEInteractable>();
-                var button = fill.gameObject.AddComponent<GEButton>();
+                var button = Pressable(slot.gameObject, 108f, 44f, fill.gameObject);
 
                 buttons.GetArrayElementAtIndex(i).objectReferenceValue = button;
                 labels.GetArrayElementAtIndex(i).objectReferenceValue = text;
                 fills.GetArrayElementAtIndex(i).objectReferenceValue = fill;
             }
 
-            var close = SquareButton("close_button", rt, 9f, 6f, Load("icon_close"), Plate, Ink);
-            ((RectTransform)close.transform).anchoredPosition = new Vector2(112f, tallest * 0.5f - 9f);
+            // Pinned to the plate's top-right corner so DockPopup.Fit, which re-heights the plate for two or four
+            // slots, keeps it in the corner; a centre-relative offset set for the tall case sat outside the short
+            // one. With one row the 24 mm box clears the first option by a millimetre.
+            var close = SquareButton("close_button", rt, TargetMm, GlyphMm, Load("icon_close"), Plate, Ink);
+            var closeRect = (RectTransform)close.transform;
+            closeRect.anchorMin = Vector2.one;
+            closeRect.anchorMax = Vector2.one;
+            closeRect.anchoredPosition = new Vector2(-4f - TargetMm * 0.5f, -4f - TargetMm * 0.5f);
             so.FindProperty("closeButton").objectReferenceValue = close;
             so.ApplyModifiedPropertiesWithoutUndo();
 
@@ -763,7 +859,8 @@ namespace CosmicSimulation.EditorTools
 
             var box = grow.gameObject.AddComponent<BoxCollider>();
             box.size = new Vector3(w, h, 2f);
-            grow.gameObject.AddComponent<GEInteractable>();
+            var interactable = grow.gameObject.AddComponent<GEInteractable>();
+            PokeSupport.AddPokeFilter(grow.gameObject, box, interactable);
 
             var label = root.AddComponent<LabelButton>();
             var so = new SerializedObject(label);

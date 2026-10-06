@@ -165,7 +165,7 @@ No material of theirs is referenced by any prefab or scene, and no script names 
 
 Deleting these three is a separate, better ticket than fixing them.
 
-### 4d. Already correct — all four macros **and** `multi_compile_instancing` (7)
+### 4d. Already correct — all four macros **and** `multi_compile_instancing` (8)
 
 | Shader | Reached by | EYE | target |
 |---|---|---|---|
@@ -176,6 +176,12 @@ Deleting these three is a separate, better ticket than fixing them.
 | `environment_tint_shader.shader` | run-time, `EnvironmentController` via `Shader.Find` | ✗ (not needed) | 3.5 |
 | `force_pull_shaders/tractor_beam_shader.shader` | `tractor_beam_line_material` → `tractor_beam_prefab`, on every POI | ✗ (not needed) | 4.5 |
 | `intro_shaders/intro_placement_shaders/intro_placement_object_shader.shader` | intro placement scene | ✗ (not needed) | 3.5 |
+| `hand_outline_shader.shader` | `xr_hand_material` → the four hand visuals on `ge_xr_rig` (CS-271, 6 Oct 2026) | ✗ (not needed: view direction is computed in `vert`, so `frag` reads nothing per-eye) | 3.5 |
+
+`hand_outline_shader` has **two passes** (depth prepass with `ColorMask 0`, then the blended rim pass) and
+carries all four macros plus `multi_compile_instancing` in **both**. It replaces the XRI sample `DepthOnly`
+material that §4f flags as reachable and macro-less; once the rig stops referencing that material, the
+`DepthOnly` row in §4f becomes "not reachable".
 
 `nebula_card_shader` is the reference to copy for anything that samples `_CameraDepthTexture`: it has
 `UNITY_SETUP_INSTANCE_ID(i)` **and** `UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i)` as the first two lines

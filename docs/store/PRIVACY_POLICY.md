@@ -56,7 +56,7 @@ storage, not synced or transmitted):
 
 | Key | What it remembers |
 |---|---|
-| `GalaxyExplorer.ExperienceMode` | Whether you last used passthrough or full VR (`Assets/scripts/ExperienceModeManager.cs`) |
+| `CosmicSimulation.PassthroughForced` | Whether you last chose to see your room (passthrough) or full VR (`Assets/scripts/experience/EnvironmentController.cs`) |
 | `GalaxyExplorer.Muted` | Whether you muted the app on desktop (`Assets/scripts/menu_scripts/DesktopMenuManager.cs`) |
 | `CosmicSimulation.DesktopDockVisible` | Whether the desktop dock menu is open (`Assets/scripts/experience/DesktopDock.cs`) |
 

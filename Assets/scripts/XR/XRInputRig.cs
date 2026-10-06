@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR;
 using UnityEngine.XR.Hands;
+using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Inputs;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
@@ -32,6 +33,7 @@ namespace GalaxyExplorer.XR
 
         private XRHandSubsystem _handSubsystem;
         private readonly List<XRHandSubsystem> _subsystems = new List<XRHandSubsystem>();
+        private readonly List<IXRInteractor> _registered = new List<IXRInteractor>();
 
         public static XRInputRig Instance { get; private set; }
 
@@ -138,8 +140,47 @@ namespace GalaxyExplorer.XR
                 }
             }
 
+            var leftWasTracked = LeftHandTracked;
+            var rightWasTracked = RightHandTracked;
             LeftHandTracked = UpdatePalm(_handSubsystem?.leftHand, LeftPalm);
             RightHandTracked = UpdatePalm(_handSubsystem?.rightHand, RightPalm);
+
+            if (leftWasTracked && !LeftHandTracked) ReleaseHand(InteractorHandedness.Left);
+            if (rightWasTracked && !RightHandTracked) ReleaseHand(InteractorHandedness.Right);
+        }
+
+        /// <summary>
+        /// Tracking loss does not release a grab by itself. XRHandDevice leaves pinchTouched/graspFirm at their
+        /// last value when a hand drops out (only the tracking fields reset), MetaAimHand.indexPressed trusts
+        /// whatever pinch strength the runtime last reported, and XRInputModalityManager only listens for tracking
+        /// *acquired*, so the hand's interactors stay registered with Select still performed. A pinch carried out
+        /// of the cameras' view would hold the body until the hand came back. Cancel it where it is (CS-283).
+        /// </summary>
+        private void ReleaseHand(InteractorHandedness side)
+        {
+            XRInteractionManager manager = null;
+            foreach (var interactor in selectInteractors)
+            {
+                if (interactor != null && interactor.interactionManager != null)
+                {
+                    manager = interactor.interactionManager;
+                    break;
+                }
+            }
+
+            if (manager == null)
+            {
+                return;
+            }
+
+            manager.GetRegisteredInteractors(_registered);
+            foreach (var interactor in _registered)
+            {
+                if (interactor.handedness == side && interactor is IXRSelectInteractor selector && selector.hasSelection)
+                {
+                    manager.CancelInteractorSelection(selector);
+                }
+            }
         }
 
         private static bool UpdatePalm(XRHand? hand, Transform palm)

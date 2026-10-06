@@ -45,6 +45,12 @@ namespace CosmicSimulation
         private static readonly int ColourMixId = Shader.PropertyToID("_ColourMix");
         private static readonly int LightDirectionId = Shader.PropertyToID("_LightDirection");
         private static readonly int LightStrengthId = Shader.PropertyToID("_LightStrength");
+        private const string ShaderName = "CosmicSimulation/NebulaField";
+
+        [SerializeField]
+        [Tooltip("Written by Build Nebula Fields. A player build strips any shader reached only by name, so " +
+                 "the name lookup is an editor fallback and nothing more.")]
+        private Shader shader;
 
         [SerializeField]
         [Tooltip("The baked density volume, written by Cosmic Simulation > Build Nebula Fields.")]
@@ -144,6 +150,10 @@ namespace CosmicSimulation
             ApplyPlatformBudget();
             EnsureRenderer();
 
+            // A missing shader switches us off above, and a subscription made anyway would retry it, and log
+            // it, for every camera on every frame.
+            if (!enabled) return;
+
             // Also built at render time. Edit-mode Update ticks only when the editor feels like ticking, and
             // a field that was configured by a build script after its OnEnable had already run then sat there
             // with no renderer until something happened to poke it. A camera about to render is the one moment
@@ -231,10 +241,13 @@ namespace CosmicSimulation
                 return;
             }
 
-            var shader = Shader.Find("CosmicSimulation/NebulaField");
+#if UNITY_EDITOR
+            // Prefabs built before the field existed carry nothing here; in the editor the name still resolves.
+            if (shader == null) shader = Shader.Find(ShaderName);
+#endif
             if (shader == null)
             {
-                Debug.LogError("NebulaField: shader 'CosmicSimulation/NebulaField' not found.", this);
+                Debug.LogError($"NebulaField: shader '{ShaderName}' not assigned; run Cosmic Simulation > Build Nebula Fields.", this);
                 enabled = false;
                 return;
             }
@@ -278,6 +291,7 @@ namespace CosmicSimulation
 
         private void OnValidate()
         {
+            if (shader == null) shader = Shader.Find(ShaderName);
             if (Application.isPlaying && _material != null) Push();
         }
 
@@ -315,9 +329,10 @@ namespace CosmicSimulation
         /// Sets the palette and the structure knobs from the builder, so a nebula's look is written down in
         /// one table rather than clicked into seven prefabs.
         /// </summary>
-        public void Configure(Texture3D bakedVolume, float radius, Color core, Color shell,
+        public void Configure(Shader fieldShader, Texture3D bakedVolume, float radius, Color core, Color shell,
             float floorValue, float contrastValue, float warp, float lit = 0f, Vector3? from = null)
         {
+            shader = fieldShader;
             lightStrength = lit;
             if (from.HasValue) lightDirection = from.Value;
             volume = bakedVolume;

@@ -156,9 +156,18 @@ namespace GalaxyExplorer.Editor
 
                     Check(_director.Current == wanted.Module,
                         $"clicking the {wanted.Module.Id} tile opens it ({Name(_director.Current)})");
+                    // Passthrough is forced on by default (CS-270), so what a place asks for only shows once
+                    // the toggle is off. Both states are asserted and the toggle is put back as it was found.
                     var room = EnvironmentController.Instance;
-                    Check(room != null && room.EffectiveMode == wanted.Module.Environment,
-                        $"and the room goes to {wanted.Module.Environment} ({(room == null ? "there is no EnvironmentController" : room.EffectiveMode.ToString())})");
+                    if (room == null) { Check(false, "and there is an EnvironmentController to ask about the room"); return; }
+                    var forced = room.PassthroughForced;
+                    var asked = wanted.Module.Environment;
+                    Check(room.EffectiveMode == (forced ? EnvironmentMode.Passthrough : asked),
+                        $"and with passthrough {(forced ? "forced" : "released")} the room is {room.EffectiveMode} (it asks for {asked})");
+                    room.TogglePassthrough();
+                    Check(room.EffectiveMode == (forced ? asked : EnvironmentMode.Passthrough),
+                        $"and with passthrough {(forced ? "released" : "forced")} the room is {room.EffectiveMode}");
+                    room.TogglePassthrough();
                 });
             }
 

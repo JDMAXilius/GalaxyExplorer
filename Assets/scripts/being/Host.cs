@@ -37,7 +37,10 @@ namespace CosmicSimulation.Being
         private void Awake()
         {
             _being = GetComponent<Cosmic.Companion.Being>();
-            gameObject.AddComponent<GEInteractable>();
+            var interactable = gameObject.AddComponent<GEInteractable>();
+            // A fingertip on the sphere, from any side, is a press (CS-276); the poke interactors refuse an
+            // interactable that has no filter.
+            PokeSupport.AddPokeFilter(gameObject, GetComponent<Collider>(), interactable);
             _hands = gameObject.AddComponent<ManipulationHandler>();
             _hands.HostTransform = transform;
             _hands.ManipulationType = ManipulationHandler.HandMovementType.OneAndTwoHanded;

@@ -1,5 +1,12 @@
+// LOCAL CHANGE (Cosmic Simulation XR, CS-279): this XRI 3.6.0 sample is edited in place. The poke gesture now
+// only counts while the hand's poke interactor is hovering something pokeable. The rig uses the gesture to switch
+// the near-far interactor's far casting off, and the pointing pose is also the pose a player adopts to aim the
+// ray at a tile a metre away — so as shipped, pointing at a far button killed the ray that would have pressed it.
+// Re-importing the sample overwrites this; diff before accepting.
+
 using System.Collections.Generic;
 using UnityEngine.Events;
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
 #if XR_HANDS_1_1_OR_NEWER
 using UnityEngine.XR.Hands;
 #endif
@@ -8,7 +15,8 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.Hands
 {
     /// <summary>
     /// Behavior that provides events for when an <see cref="XRHand"/> starts and ends a poke gesture. The gesture is
-    /// detected if the index finger is extended and the middle, ring, and little fingers are curled in.
+    /// detected if the index finger is extended and the middle, ring, and little fingers are curled in, and (local
+    /// change) the hand's poke interactor is hovering a target.
     /// </summary>
     public class PokeGestureDetector : MonoBehaviour
     {
@@ -19,6 +27,12 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.Hands
 #else
         int m_Handedness;
 #endif
+
+        [SerializeField]
+        [Tooltip("Local change (CS-279): the poke interactor on this hand. The gesture only counts while it is " +
+                 "hovering something pokeable, so pointing at a far tile keeps the ray. Found among this " +
+                 "object's children when left empty.")]
+        XRPokeInteractor m_PokeInteractor;
 
         [SerializeField]
         [Tooltip("Called when the hand has started a poke gesture.")]
@@ -40,6 +54,9 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.Hands
         /// </summary>
         protected void OnEnable()
         {
+            if (m_PokeInteractor == null)
+                m_PokeInteractor = GetComponentInChildren<XRPokeInteractor>(true);
+
 #if XR_HANDS_1_1_OR_NEWER
             SubsystemManager.GetSubsystems(s_Subsystems);
             if (s_Subsystems.Count == 0)
@@ -89,6 +106,11 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.Hands
                         IsLittleGrabbing(rightHand);
                     break;
             }
+
+            // Local change (CS-279): the pose alone is not a poke. Without a poke interactor to ask, the
+            // sample's original behavior stands.
+            if (m_PokeInteractor != null)
+                m_IsPoking = m_IsPoking && m_PokeInteractor.isActiveAndEnabled && m_PokeInteractor.hasHover;
 
             if (m_IsPoking && !wasPoking)
                 StartPokeGesture();

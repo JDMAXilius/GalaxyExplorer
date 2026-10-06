@@ -994,7 +994,10 @@ namespace CosmicSimulation
             var box = go.AddComponent<BoxCollider>();
             box.size = new Vector3(width, height, 2f);
 
-            go.AddComponent<GEInteractable>();
+            var interactable = go.AddComponent<GEInteractable>();
+
+            // Without this the hand's poke interactor hovers the card and never selects it (CS-276).
+            PokeSupport.AddPokeFilter(go, box, interactable);
             go.AddComponent<GEButton>().OnClick.AddListener(RequestAdvance);
         }
 

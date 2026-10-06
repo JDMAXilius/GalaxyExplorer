@@ -16,13 +16,15 @@ namespace CosmicSimulation
     /// object so it reads against a bright room.
     ///
     /// The dock's passthrough button overrides whatever the current experience asked for, until the player
-    /// changes it back or moves somewhere else.
+    /// changes it back. That choice is the one saved preference about the room, and this is the one place that
+    /// tells the headset which of its modes to be in.
     /// </summary>
     [DefaultExecutionOrder(-50)]
     public class EnvironmentController : MonoBehaviour
     {
         private const float DefaultFade = 0.4f;
         private const string TintShaderName = "CosmicSimulation/EnvironmentTint";
+        private const string PassthroughPrefsKey = "CosmicSimulation.PassthroughForced";
 
         [SerializeField]
         [Tooltip("How dark the room goes in Dimmed mode.")]
@@ -43,7 +45,8 @@ namespace CosmicSimulation
 
         [SerializeField]
         [Tooltip("Start with the dock's passthrough button on, so the room is not dimmed and the bodies read brighter " +
-                 "from the first moment (owner's direction, 27 Sep). The player can still turn it off.")]
+                 "from the first moment (owner's direction, 27 Sep). The player can still turn it off, and their " +
+                 "last choice is remembered over this on later launches.")]
         private bool passthroughOnStart = true;
 
         private Camera _camera;
@@ -87,8 +90,15 @@ namespace CosmicSimulation
         {
             Instance = this;
             _camera = Camera.main;
-            PassthroughForced = passthroughOnStart;
+            PassthroughForced = PlayerPrefs.GetInt(PassthroughPrefsKey, passthroughOnStart ? 1 : 0) == 1;
             BuildDimQuad();
+        }
+
+        private void Start()
+        {
+            // Before the intro, so the logo, orb and Start run in whatever the player last chose, and so the
+            // headset hears its mode from here rather than from a default it picked on its own.
+            Apply(0f);
         }
 
         private void OnDestroy()
@@ -131,6 +141,8 @@ namespace CosmicSimulation
         public void SetPassthroughForced(bool forced, float fadeSeconds = DefaultFade)
         {
             PassthroughForced = forced;
+            PlayerPrefs.SetInt(PassthroughPrefsKey, forced ? 1 : 0);
+            PlayerPrefs.Save();
             Apply(fadeSeconds);
         }
 

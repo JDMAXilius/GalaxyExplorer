@@ -22,6 +22,16 @@ namespace GalaxyExplorer
         [SerializeField]
         private Animator IntroEarthPlacementAnimator;
 
+        [SerializeField]
+        [Tooltip("Metres in front of the player the Start button appears once the orb is free (CS-281). It used " +
+                 "to hang at the ring's edge, wherever the orb had been pulled to, which put it behind the orb's " +
+                 "collider from where the player stood often enough that Start was hard to hit.")]
+        private float startButtonDistanceMetres = 0.5f;
+
+        [SerializeField]
+        [Tooltip("Metres below the eyes for the Start button when there is no dock to borrow a chest height from.")]
+        private float startButtonBelowEyesMetres = 0.4f;
+
         public delegate void ContentPlacedCallback(Vector3 position);
 
         public ContentPlacedCallback OnContentPlaced;
@@ -91,7 +101,43 @@ namespace GalaxyExplorer
             
             PlacementConfirmationButton.OnClick.AddListener(ConfirmPlacement);
 
+            // The scene wires SetToFree to the button's Show; this is where it shows. Listened to here rather
+            // than placed once at Start because the orb is let go more than once when the player re-pulls it,
+            // and the button goes with the orb's root until the next release re-places it.
+            if (_forceSolver != null && GalaxyExplorerManager.IsQuest3)
+            {
+                _forceSolver.SetToFree.AddListener(PlaceStartButton);
+            }
+
             StartCoroutine(StartOnboarding());
+        }
+
+        // In front of the player at chest height, facing them, the way the dock parks — not at the ring's edge
+        // below the orb. The ring-edge offset set in Start still stands for the HoloLens branch, which does not
+        // reach here. Chest height is the dock's own rule when a dock exists, so the two agree on what "chest"
+        // means for this player; otherwise a fixed drop below the eyes.
+        private void PlaceStartButton(ForceSolver _)
+        {
+            if (ConfirmationButtonOffsetTransform == null || _cameraMain == null)
+            {
+                return;
+            }
+
+            var head = _cameraMain.transform;
+            var forward = Vector3.ProjectOnPlane(head.forward, Vector3.up);
+            if (forward.sqrMagnitude < 1e-4f)
+            {
+                forward = Vector3.forward;
+            }
+
+            forward.Normalize();
+
+            var dock = CosmicSimulation.DockController.Instance;
+            var height = dock != null ? dock.HeightMetres : head.position.y - startButtonBelowEyesMetres;
+
+            ConfirmationButtonOffsetTransform.position =
+                new Vector3(head.position.x, height, head.position.z) + forward * startButtonDistanceMetres;
+            ConfirmationButtonOffsetTransform.rotation = Quaternion.LookRotation(forward, Vector3.up);
         }
 
         private IEnumerator StartOnboarding(bool skipPlacement = false)

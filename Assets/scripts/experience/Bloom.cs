@@ -28,6 +28,12 @@ namespace CosmicSimulation
     public class Bloom : MonoBehaviour
     {
         private const int MaxLevels = 6;
+        private const string ShaderName = "CosmicSimulation/Bloom";
+
+        [SerializeField]
+        [Tooltip("Written by Build Nebula Scenes. A player build strips any shader reached only by name, so " +
+                 "the name lookup is an editor fallback and nothing more.")]
+        private Shader shader;
 
         [SerializeField]
         [Tooltip("Light above this starts to bloom. Below 1 on an HDR camera catches bright gas as well as stars.")]
@@ -69,10 +75,12 @@ namespace CosmicSimulation
             _camera = GetComponent<Camera>();
             _camera.allowHDR = true;
 
-            var shader = Shader.Find("CosmicSimulation/Bloom");
+#if UNITY_EDITOR
+            if (shader == null) shader = Shader.Find(ShaderName);
+#endif
             if (shader == null)
             {
-                Debug.LogError("Bloom: shader 'CosmicSimulation/Bloom' not found, so nothing glows.", this);
+                Debug.LogError($"Bloom: shader '{ShaderName}' not assigned, so nothing glows; run Cosmic Simulation > Build Nebula Scenes.", this);
                 enabled = false;
                 return;
             }
@@ -90,6 +98,11 @@ namespace CosmicSimulation
             _buffer?.Release();
             _buffer = null;
             if (_material != null) DestroyImmediate(_material);
+        }
+
+        private void OnValidate()
+        {
+            if (shader == null) shader = Shader.Find(ShaderName);
         }
 
         private void OnPreRender()

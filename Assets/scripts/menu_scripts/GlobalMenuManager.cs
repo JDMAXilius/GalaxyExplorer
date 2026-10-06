@@ -137,9 +137,15 @@ public class GlobalMenuManager : MonoBehaviour
                 break;
 
             case GalaxyExplorerManager.PlatformId.ArticulatedHandsPlatform:
-            case GalaxyExplorerManager.PlatformId.Quest3:
                 // The hand menu follows the palm, or the controller when controllers are in use.
                 _handMenuManager.SetMenuAvailability(MenuIsAvailable, ResetButtonNeedsShowing, BackButtonNeedsShowing);
+                break;
+
+            case GalaxyExplorerManager.PlatformId.Quest3:
+                // One menu (CS-277, D-H1): the dock carries Reset and About now, Back is its tiles and Mode is
+                // its passthrough button, so the palm menu is never made available here. Asked to hide rather
+                // than left alone, so a menu the prefab ships visible goes away too.
+                _handMenuManager.SetMenuAvailability(false, ResetButtonNeedsShowing, BackButtonNeedsShowing);
                 break;
 
             case GalaxyExplorerManager.PlatformId.Desktop:
