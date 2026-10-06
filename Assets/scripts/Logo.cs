@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using GalaxyExplorer.XR;
 using UnityEngine;
 
 // Handles functionality for the Logo of the app that appears during introduction flow
@@ -22,6 +23,30 @@ namespace GalaxyExplorer
                 Vector3 forwardDirection = gameObject.transform.position - Camera.main.transform.position;
                 gameObject.transform.rotation = Quaternion.LookRotation(forwardDirection.normalized);
             }
+
+            MakeSkippable();
+        }
+
+        // A pinch, poke or click on the logo ends the logo stage (GDD 2.1). The target is the collider the
+        // logo already carries (the fader's box); it had nothing listening on it.
+        private void MakeSkippable()
+        {
+            var box = GetComponentInChildren<BoxCollider>();
+            if (box == null || box.GetComponent<GEInteractable>() != null)
+            {
+                return;
+            }
+
+            var interactable = box.gameObject.AddComponent<GEInteractable>();
+            PokeSupport.AddPokeFilter(box.gameObject, box, interactable);
+            box.gameObject.AddComponent<GEButton>().OnClick.AddListener(() =>
+            {
+                var intro = FindAnyObjectByType<IntroFlow>();
+                if (intro != null)
+                {
+                    intro.SkipLogo();
+                }
+            });
         }
     }
 }

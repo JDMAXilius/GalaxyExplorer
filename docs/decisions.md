@@ -6,6 +6,52 @@ you change one, update the affected docs in the same commit.
 
 ---
 
+## 2026-10-06 — Meta Horizon Store track
+
+### D-012 — Store v1: free, 13+, Quest 3 and 3S only, no Meta Platform SDK
+**Owner decisions, 6 October 2026**, answering D1, D3, D4 and D5 of `docs/release/ROADMAP_META_HORIZON_STORE.md`.
+
+- **Free for v1.** No financial account, no IAP. Price can come with a later update.
+- **Age group 13+** (`TEENS_AND_ADULTS` on upload). The voice guide streams speech to OpenAI; a younger
+  declaration would bring child-data rules onto that. The copy's reading age of about 12 stays a writing target.
+- **Quest 3 and Quest 3S only.** Same chipset and the passthrough the app is designed around. The manifest
+  declares `quest3|quest3s`; Quest 2 and Pro would each need their own performance pass first.
+- **No Meta Platform SDK, so no entitlement check.** VRC.Quest.Security.1 is *Recommended*, not required
+  ("Apps are not required to perform a platform entitlement check"), and a free app has no revenue to protect.
+  CS-235 leaves v1. Revisit if the app becomes paid.
+- **Publisher is the owner as an individual.** The app record exists: "Cosmic Simulation XR", App ID
+  `1436957446161428`, organization "Juan Diego Lugo" (admin identity verification, no business verification).
+
+Consequences in the code, same day: `Quest3ProjectSetup.ConfigureStoreFeatures` limits the Meta Quest feature's
+target devices and turns on the passthrough loading screen on every build; `Quest3Manifest.cs` writes the
+documented device names, `excludeFromRecents` and removes `BLUETOOTH`.
+
+### D-013 — The release keystore and its passwords never enter the repository
+**CS-236, 6 October 2026.** The store build (`Quest3Build.BuildStoreApk`) reads `COSMIC_KEYSTORE_PATH`,
+`COSMIC_KEYSTORE_PASS`, `COSMIC_KEYALIAS` and `COSMIC_KEYALIAS_PASS` from the process environment, refuses to
+build if any is missing or the file is absent, applies the keystore to `PlayerSettings.Android` for that build
+only and restores the previous values afterwards. The bench **Build APK** stays debug-signed.
+
+Why the environment rather than Project Settings or a file: Unity serializes the keystore path and alias into
+`ProjectSettings.asset`, which is committed; a password file in the project is one `git add` from public; and
+the store ties the app to this signature for good, so a leak or a loss is not recoverable. The owner creates the
+keystore and sets the variables by hand (`docs/release/RELEASE_SIGNING.md`); no agent session is given the
+passwords.
+
+### D-014 — Manifest corrections go through XR Management's provider interface, not a custom AndroidManifest.xml
+**6 October 2026.** Three entries Meta's release-manifest page requires are not written by the Unity packages:
+`android:excludeFromRecents="true"` on the launch activity, the device names `quest3|quest3s` (the OpenXR
+package writes Quest 3 as `eureka`), and the absence of `BLUETOOTH` (Unity adds it with `Microphone`; the
+OpenXR package's own older code path strips it as a cert failure, the current path does not).
+
+They are supplied by `Assets/build_scripts/Editor/Quest3Manifest.cs`, an `IAndroidManifestRequirementProvider`:
+the public interface the OpenXR Meta Quest feature itself uses. A custom `Assets/Plugins/Android/AndroidManifest.xml`
+was rejected because it has to restate the whole GameActivity declaration and silently goes stale when Unity
+changes its template; a second `IPostGenerateGradleAndroidProject` was rejected because it would race the
+package's own at the same callback order.
+
+---
+
 ## 2026-09-12 — Phase 7 (terminal session)
 
 ### D-011 — Source bulk star and galaxy catalogues from AT-HYG and OpenNGC, and treat Gaia DR3's licence as an open question until someone confirms it in writing

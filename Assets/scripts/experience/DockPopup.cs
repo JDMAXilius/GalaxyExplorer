@@ -180,24 +180,41 @@ namespace CosmicSimulation
             LayoutChosen?.Invoke(module, layout);
         }
 
-        /// <summary>A place's name, on two lines' worth of information in one: "Whirlpool Galaxy (M51)".</summary>
-
         /// <summary>
-        /// Grows the plate to hold however many options there are. The options sit two to a row, so two of
-        /// them keep the panel the shape it has always been and four make it two rows deep. Without this a
-        /// galaxy list would draw its second row outside the plate.
+        /// Lays the options out two to a row and sizes the plate round them: 12 mm between options and to the
+        /// plate's sides, the top band the close button sits in above the first row, and the same margin
+        /// under the last row however many rows there are. The prefab's own slot positions were 8 mm apart
+        /// and its second row hung 9 mm below a plate that grew by less than a row's pitch. The desktop
+        /// pop-up has no separate plate and keeps the layout it was built with.
         /// </summary>
         private void Fit(int count)
         {
-            if (plate == null) return;
+            if (plate == null || optionButtons.Count == 0 || optionButtons[0] == null) return;
+
+            var slot = ((RectTransform)optionButtons[0].transform).rect.size;
             var rows = Mathf.Max(1, Mathf.CeilToInt(count / 2f));
-            var height = RowHeightMm * rows + PlatePaddingMm;
-            plate.sizeDelta = new Vector2(plate.sizeDelta.x, height);
-            if (transform is RectTransform self) self.sizeDelta = new Vector2(self.sizeDelta.x, height);
+            var size = new Vector2(
+                slot.x * 2f + GapMm * 3f,
+                TopMm + slot.y * rows + GapMm * (rows - 1) + BottomMm);
+
+            plate.sizeDelta = size;
+            if (transform is RectTransform self) self.sizeDelta = size;
+
+            for (var i = 0; i < optionButtons.Count; i++)
+            {
+                if (optionButtons[i] == null) continue;
+
+                var column = (i % 2 == 0 ? -0.5f : 0.5f) * (slot.x + GapMm);
+                var row = size.y * 0.5f - TopMm - slot.y * 0.5f - (i / 2) * (slot.y + GapMm);
+                ((RectTransform)optionButtons[i].transform).anchoredPosition = new Vector2(column, row);
+            }
         }
 
-        private const float RowHeightMm = 52f;
-        private const float PlatePaddingMm = 38f;
+        private const float GapMm = 12f;
+
+        // The close button's 24 mm box, 4 mm in from the corner, and a millimetre clear of the first row.
+        private const float TopMm = 29f;
+        private const float BottomMm = 17f;
 
         private void Repaint()
         {

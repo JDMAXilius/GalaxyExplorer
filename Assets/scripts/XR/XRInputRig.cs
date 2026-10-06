@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR;
 using UnityEngine.XR.Hands;
+using UnityEngine.XR.Hands.Gestures;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Inputs;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
@@ -34,6 +35,10 @@ namespace GalaxyExplorer.XR
         private XRHandSubsystem _handSubsystem;
         private readonly List<XRHandSubsystem> _subsystems = new List<XRHandSubsystem>();
         private readonly List<IXRInteractor> _registered = new List<IXRInteractor>();
+
+        // Select presses that hit nothing and are still held, and the handler they are driving, if any.
+        private readonly List<XRBaseInputInteractor> _airPinches = new List<XRBaseInputInteractor>();
+        private ManipulationHandler _airHandler;
 
         public static XRInputRig Instance { get; private set; }
 
@@ -168,6 +173,15 @@ namespace GalaxyExplorer.XR
                 }
             }
 
+            // Its air pinch too: the select input keeps its last value when the hand drops out.
+            for (var i = _airPinches.Count - 1; i >= 0; i--)
+            {
+                if (_airPinches[i] == null || _airPinches[i].handedness == side)
+                {
+                    ReleaseAirPinch(i);
+                }
+            }
+
             if (manager == null)
             {
                 return;
@@ -238,8 +252,44 @@ namespace GalaxyExplorer.XR
             return true;
         }
 
+        /// <summary>
+        /// How far the four fingers of a tracked hand are curled, 0 flat to 1 fist, averaged. XR Hands' own
+        /// measure (<c>XRFingerShapeMath</c>, in the package runtime; the Gestures sample is not needed).
+        /// </summary>
+        public bool TryGetFingerCurl(bool leftHand, out float curl)
+        {
+            curl = 0f;
+            if (_handSubsystem == null || !(leftHand ? LeftHandTracked : RightHandTracked))
+            {
+                return false;
+            }
+
+            var hand = leftHand ? _handSubsystem.leftHand : _handSubsystem.rightHand;
+            for (var finger = XRHandFingerID.Index; finger <= XRHandFingerID.Little; finger++)
+            {
+                if (!hand.CalculateFingerShape(finger, XRFingerShapeTypes.FullCurl).TryGetFullCurl(out var fullCurl))
+                {
+                    return false;
+                }
+
+                curl += fullCurl * 0.25f;
+            }
+
+            return true;
+        }
+
         private void RaiseGlobalClicks()
         {
+            // A pinch in the air has no interactable to report its release, so it is watched here.
+            for (var i = _airPinches.Count - 1; i >= 0; i--)
+            {
+                var interactor = _airPinches[i];
+                if (interactor == null || !interactor.isActiveAndEnabled || !interactor.selectInput.ReadIsPerformed())
+                {
+                    ReleaseAirPinch(i);
+                }
+            }
+
             foreach (var interactor in selectInteractors)
             {
                 if (interactor == null || !interactor.isActiveAndEnabled || interactor.hasSelection)
@@ -247,10 +297,62 @@ namespace GalaxyExplorer.XR
                     continue;
                 }
 
-                if (interactor.selectInput.ReadWasPerformedThisFrame())
+                if (interactor.selectInput.ReadWasPerformedThisFrame() && !TakeAirPinch(interactor))
                 {
                     GEInputEvents.RaiseGlobalPointerDown(new GEPointerEventData(GEPointer.For(interactor)));
                 }
+            }
+        }
+
+        /// <summary>
+        /// A pinch that hit nothing. While the other hand holds something it joins that grab as the second
+        /// pointer; with nothing held, the second of two takes hold of the open place. Anything else is the
+        /// global click it always was (false).
+        /// </summary>
+        private bool TakeAirPinch(XRBaseInputInteractor interactor)
+        {
+            if (!_airPinches.Contains(interactor))
+            {
+                _airPinches.Add(interactor);
+            }
+
+            if (_airHandler != null && !_airHandler.IsManipulating)
+            {
+                _airHandler = null;
+            }
+
+            var pointer = GEPointer.For(interactor);
+            var held = ManipulationHandler.Held;
+            if (held != null)
+            {
+                if (!held.AddAirPointer(pointer))
+                {
+                    return false;
+                }
+
+                _airHandler = held;
+                return true;
+            }
+
+            var place = ManipulationHandler.Place;
+            if (place == null || _airPinches.Count != 2 ||
+                !place.BeginAirManipulation(GEPointer.For(_airPinches[0]), pointer))
+            {
+                return false;
+            }
+
+            _airHandler = place;
+            return true;
+        }
+
+        private void ReleaseAirPinch(int index)
+        {
+            var interactor = _airPinches[index];
+            _airPinches.RemoveAt(index);
+            if (interactor != null && _airHandler != null)
+            {
+                // Ignored by the handler unless it holds this pointer.
+                _airHandler.OnPointerUp(new GEPointerEventData(GEPointer.For(interactor)));
             }
         }
     }

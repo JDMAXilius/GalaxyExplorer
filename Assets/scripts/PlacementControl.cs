@@ -135,9 +135,51 @@ namespace GalaxyExplorer
             var dock = CosmicSimulation.DockController.Instance;
             var height = dock != null ? dock.HeightMetres : head.position.y - startButtonBelowEyesMetres;
 
-            ConfirmationButtonOffsetTransform.position =
-                new Vector3(head.position.x, height, head.position.z) + forward * startButtonDistanceMetres;
+            // The orb comes to rest with its ring at the hand that pulled it, which is about where this button
+            // goes. A pinch within GEPointer.NearDistance of any orb collider grabs the orb, and the scene hides
+            // the button on a grab, so a Start left among the orb's colliders vanished whenever it was pinched
+            // at. Step it back towards the player until it is clear of them.
+            var origin = new Vector3(head.position.x, height, head.position.z);
+            var orbParts = _forceSolver.GetComponentsInChildren<GEInteractable>();
+            var distance = startButtonDistanceMetres;
+            while (distance > StartButtonNearestMetres && OrbCovers(orbParts, origin + forward * distance))
+            {
+                distance -= 0.05f;
+            }
+
+            ConfirmationButtonOffsetTransform.position = origin + forward * distance;
             ConfirmationButtonOffsetTransform.rotation = Quaternion.LookRotation(forward, Vector3.up);
+        }
+
+        private const float StartButtonNearestMetres = 0.25f;
+
+        // Whether a point is inside, or within grabbing distance of, anything of the orb's that takes a pinch.
+        private bool OrbCovers(GEInteractable[] orbParts, Vector3 point)
+        {
+            foreach (var part in orbParts)
+            {
+                if (part.transform.IsChildOf(ConfirmationButtonOffsetTransform))
+                {
+                    continue;
+                }
+
+                foreach (var orbCollider in part.colliders)
+                {
+                    if (orbCollider == null || !orbCollider.enabled)
+                    {
+                        continue;
+                    }
+
+                    var bounds = orbCollider.bounds;
+                    bounds.Expand(2f * (GEPointer.NearDistance + 0.03f));
+                    if (bounds.Contains(point))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private IEnumerator StartOnboarding(bool skipPlacement = false)

@@ -1,6 +1,6 @@
 # Store listing draft
 
-Draft copy for the Meta Quest Store listing. Our own words only - nothing here
+Draft copy for the Meta Horizon Store listing (free, ages 13+, Quest 3 and 3S - decision D-012). Our own words only - nothing here
 is transcribed from the reference app's promo material. Written in the voice
 set out in `docs/copy/README.md`: plain and concrete, one striking fact at a
 time, no exclamation marks, no "amazing". This listing describes the Quest
@@ -45,14 +45,21 @@ five to twenty minutes and there is no score, no fail state and no required
 order - explore at your own pace, and a single button puts everything back
 where it started.
 
+Have a question? Summon the guide, a small sphere of light that stays beside you, and ask it out loud. It knows
+what you are looking at and answers in a spoken voice. The guide is the one part of the app that needs an
+internet connection and the microphone: your question is sent to OpenAI to produce the answer. Everything else
+works offline, and the guide stays silent until you call it.
+
 ## Feature bullets
 
 - Pinch to grab any planet or moon out of the sky; two hands to resize it
 - Real scale, shown honestly: hold a 15 cm Moon, or grow a planet to fill
   your room
 - Every body opens with a plain-language paragraph and four key numbers
-- Nine Milky Way destinations, including three nebulae and a black hole you
-  can walk around
+- Seven places to open from the Milky Way map - six nebulae and a star
+  cluster - and a black hole you can walk around
+- A voice guide you can ask questions out loud (needs internet and the
+  microphone; the rest of the app works offline)
 - Passthrough by default - your room stays part of the experience; a
   full-dark mode is one tap away
 - No score, no fail state, no required order - a five-minute look or a
@@ -61,11 +68,15 @@ where it started.
 
 ## Age and comfort framing
 
-**Recommended age.** Designed for a reading age of 12 and up: curious adults,
-families and classroom demos (`docs/GDD.md` section 1). This is our design
-target, not Meta's official content rating - that comes from Meta's own
-rating questionnaire during submission and has to be filled in there; do not
-publish an age badge based on this line alone.
+**Recommended age.** Declared age group on the store: **13+ (teens and
+adults)**, decision D-012 - the voice guide sends speech to a third party, so
+the app is not offered to under-13s. The copy keeps a reading age of about 12
+(`docs/GDD.md` section 1) as a writing target only. The content rating itself
+comes from the IARC questionnaire during submission; do not publish an age
+badge based on this line alone.
+
+**Internet.** Required for the voice guide only; set the store's internet
+field to the option that means "not required" / "optional".
 
 **Comfort.** All movement in the app is physical: you walk around objects and
 reach for them with your own hands, and there is no joystick or teleport
@@ -90,3 +101,9 @@ too for the solar-system and planet interactions.
    submission time.
 4. The official age rating and comfort rating, both set via Meta's own
    questionnaire, not asserted here.
+5. Feature bullets rechecked 6 Oct 2026 against `Assets/data/destinations/`
+   and `Assets/Cosmic/Data/Generated/places/`: seven map destinations (Helix,
+   Crab, Homunculus, Orion, Pillars of Creation, NGC 1501 - six nebulae - and
+   the Trumpler 14 cluster). The newer `Cosmic` tree also holds Andromeda,
+   Triangulum, Whirlpool, Pinwheel and the HD 110067 system; they are not
+   claimed here until it is confirmed on device that the store build shows them.

@@ -104,13 +104,15 @@ namespace GalaxyExplorer
         [Tooltip("Narration level. Under the being's voice on purpose.")]
         private float level = 0.8f;
 
-        private DateTime playStartTime;
-        private float clipLength;
+        // Seconds a progress-blocking clip still has to run. Counted down in Update rather than read off the
+        // wall clock, so it stops with this component when AppPause disables it under the system menu; on
+        // the clock, a transition waiting on the narration moved on in silence while the app was paused.
+        private float blockRemaining;
 
         private IAudioService audioService;
         
 
-        public bool ShouldAudioBlockProgress => DateTime.UtcNow < playStartTime.AddSeconds(clipLength);
+        public bool ShouldAudioBlockProgress => blockRemaining > 0f;
         public bool IsPlaying => clipQueue.Count > 0 || nextClip != null || audioSource != null && audioSource.isPlaying;
         public AudioClip CurrentClip => IsPlaying && audioSource != null ? audioSource.clip : null;
 
@@ -121,6 +123,11 @@ namespace GalaxyExplorer
 
         private void Update()
         {
+            if (blockRemaining > 0f)
+            {
+                blockRemaining -= Time.deltaTime;
+            }
+
             if (AudioHelper.FadingOut)
             {
                 // Don't process any of queue while fading out
@@ -156,16 +163,7 @@ namespace GalaxyExplorer
                 {
                     nextClip = queuedClip.clip;
                     nextClipDelay = queuedClip.delay;
-                    if (queuedClip.blockProgress)
-                    { 
-                        playStartTime = DateTime.UtcNow;
-                        clipLength = nextClip.length + queuedClip.delay;
-                    }
-                    else
-                    {
-                        playStartTime = DateTime.MinValue;
-                        clipLength = 0;
-                    }
+                    blockRemaining = queuedClip.blockProgress ? nextClip.length + queuedClip.delay : 0f;
 
                     playedClips.Add(nextClip.name);
                 }
@@ -212,8 +210,7 @@ namespace GalaxyExplorer
             }
 
             nextClip = null;
-            playStartTime = DateTime.MinValue;
-            clipLength = 0;
+            blockRemaining = 0f;
 
             // Fade out the audio that's currently playing to stop it. Check here to
             // prevent coroutines from stacking up and calling Stop() on audioSource

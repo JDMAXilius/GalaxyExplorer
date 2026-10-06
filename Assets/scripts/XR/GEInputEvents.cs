@@ -52,6 +52,9 @@ namespace GalaxyExplorer.XR
         /// <summary>True when the pointer was within grab distance (near interaction) rather than a far ray.</summary>
         public bool IsNear { get; }
 
+        /// <summary>True on a pointer-up that was taken away (tracking lost, interactor disabled), not let go.</summary>
+        public bool Canceled { get; set; }
+
         public bool Used { get; private set; }
 
         public void Use()

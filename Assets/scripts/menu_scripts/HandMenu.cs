@@ -34,6 +34,16 @@ public class HandMenu : MonoBehaviour
     [SerializeField]
     private float _minShowingAngle = 135f;
 
+    [SerializeField]
+    [Tooltip("Mean curl of the four fingers (0 flat, 1 fist) below which a closed hand counts as open again.")]
+    private float _openCurl = 0.35f;
+
+    [SerializeField]
+    [Tooltip("Mean curl of the four fingers above which the hand counts as closed and the menu hides.")]
+    private float _closedCurl = 0.6f;
+
+    private bool _handOpen = true;
+
     private AttachToControllerSolver _attachToControllerSolver;
     private HandMenuManager _handMenuManager;
     private GlobalMenuManager _globalMenuManager;
@@ -112,7 +122,12 @@ public class HandMenu : MonoBehaviour
         {
             _currentAngle = CalculateAngle();
 
-            if (_currentAngle > _minShowingAngle)
+            // Close the hand and the menu goes, whichever way the palm faces.
+            if (!IsHandOpen())
+            {
+                UpdateMenuVisibility(false);
+            }
+            else if (_currentAngle > _minShowingAngle)
             {
                 bool inManipulationState = (_globalMenuManager.ForceSolverFocusManager != null && _globalMenuManager.ForceSolverFocusManager.IsManipulatingPlanet);
 
@@ -163,6 +178,22 @@ public class HandMenu : MonoBehaviour
     private void OnTrackingLost()
     {
         UpdateMenuVisibility(false);
+    }
+
+    // This menu's own hand only, so the other hand poking a button cannot close it. Two thresholds on the mean
+    // curl of the four fingers (0 flat, 1 fist) so a hand hovering near one of them does not flicker: it has to
+    // close past _closedCurl to hide the menu and open past _openCurl to bring it back. A pinch curls the index
+    // alone and stays under the closing threshold. Controllers have no fingers and always count as open.
+    private bool IsHandOpen()
+    {
+        var rig = XRInputRig.Instance;
+        if (rig == null || _handMenuManager == null ||
+            !rig.TryGetFingerCurl(_handMenuManager.IsLeftMenu(this), out var curl))
+        {
+            return _handOpen = true;
+        }
+
+        return _handOpen = curl < (_handOpen ? _closedCurl : _openCurl);
     }
 
     private float CalculateAngle()

@@ -10,6 +10,41 @@ Track tags: **[OWNER]** account, legal, money or a decision; **[CC]** code in th
 headset. Tickets **CS-230 to CS-249** are reserved here and are proposals until they are backlog rows. Each ticket
 has a **Goal**, atomic **Objectives**, **Needs**, **Evidence** and **If it fails**.
 
+## Status and corrections, 6 Oct 2026
+
+Re-read against Meta's pages on 6 Oct 2026 (they opened this time). Where this block and the text below
+disagree, this block wins; the lines below that were wrong have been corrected in place and say so.
+
+**Decided (D-012 in `docs/decisions.md`):** D1 **free** for v1 · D3 **13+** (`TEENS_AND_ADULTS`) · D4 **Quest 3
+and Quest 3S only** · D5 publisher is the owner as an individual · **no Meta Platform SDK** in v1.
+
+**App record exists:** "Cosmic Simulation XR", **App ID `1436957446161428`**, organization **"Juan Diego Lugo"**
+(individual; admin identity verification, no business verification). Bundle id
+`com.jdmaxilius.cosmicsimulationxr`, version 0.9.0 (900).
+
+| What the roadmap said | What Meta's documentation says today | Source |
+|---|---|---|
+| Entitlement check is asked of store apps (Security.1 in P4, CS-235) | **Recommended, not required**: "Apps are not required to perform a platform entitlement check." CS-235 is dropped from v1 (free app, no Platform SDK) | https://developers.meta.com/horizon/resources/vrc-quest-security-1/ |
+| `installLocation` is internal (CS-237) | "must be set to `auto`" - which is what `Quest3ProjectSetup` already writes | https://developers.meta.com/horizon/resources/publish-mobile-manifest/ |
+| Input.6 (hands lost) is a VRC to pass (P4, CS-238) | **VRC.Quest.Input.6 is retired.** Hiding a lost hand is still good behaviour, not a review item | https://developers.meta.com/horizon/resources/publish-quest-req/ |
+| Platform "Meta Quest" / "Meta Quest Store" | The store is the **Meta Horizon Store** | same page |
+| Testers "see it in their library" once uploaded (CS-247) | "Initially, the Alpha, Beta, and Release Candidate channels are empty and contain no users - not even yourself." Add your own account first | https://developers.meta.com/horizon/resources/publish-release-channels/ |
+| Upload via MQDH only | The CLI works too and **`--age-group` is required** (`TEENS_AND_ADULTS`, `MIXED_AGES`, `CHILDREN`); without it the upload lands as a draft | https://developers.meta.com/horizon/resources/publish-reference-platform-command-line-utility/ |
+| (not listed) | `android:excludeFromRecents="true"` on the launch activity is required; supported devices are named `quest3`, `quest3s` | publish-mobile-manifest, above |
+| (not listed) | **VRC.Quest.Functional.14 (required):** apps that can launch in passthrough show a passthrough loading screen when launched from passthrough Home | https://developers.meta.com/horizon/resources/vrc-quest-functional-14/ |
+
+**Done in the repo on 6 Oct 2026 (needs one editor build to verify, see CS-237):** CS-236 release signing from
+the environment (`Quest3Build.BuildStoreApk`, `docs/release/RELEASE_SIGNING.md`); manifest: devices limited to
+Quest 3/3S, `excludeFromRecents`, `BLUETOOTH` removed (`Quest3Manifest.cs`, `Quest3ProjectSetup.ConfigureStoreFeatures`);
+passthrough loading screen switched on; CS-234 privacy policy rewritten; store listing updated.
+
+**CLI upload, for reference** (the app secret or user token comes from the dashboard's API page and is never
+committed):
+
+```
+ovr-platform-util upload-quest-build --age-group TEENS_AND_ADULTS --app-id 1436957446161428 --token <user token> --apk Builds\Quest3\CosmicSimulationXR-store.apk --channel alpha
+```
+
 ## 0. Where the store work stands today
 
 - **The store docs exist but one is now wrong.** `docs/store/STORE_LISTING.md`, `ABOUT_COPY.md`,
@@ -20,10 +55,10 @@ has a **Goal**, atomic **Objectives**, **Needs**, **Evidence** and **If it fails
 - **The OpenAI key would ship inside the APK.** `docs/COSMIC_BEING.md` says it: the APK needs the key in
   `being_keys.asset`, anyone with the APK can read it out, and a shipping build wants a short-lived client secret
   from a small endpoint, "not done". `Realtime.cs` sends it as `Authorization: Bearer`. First blocker.
-- **No entitlement check.** No `Oculus.Platform` anywhere. VRC.Quest.Security.1 asks store apps to call the
-  entitlement API within 10 seconds of launch.
-- **Debug-signed APK, no signing code.** `androidUseCustomKeystore: 0`; `Quest3Build.cs` sets nothing about
-  keystores. The store needs one release keystore, APK signature scheme v2, used from the first upload.
+- **No entitlement check, and none is needed for v1.** No `Oculus.Platform` anywhere. VRC.Quest.Security.1 is
+  *Recommended*, not required (corrected 6 Oct 2026); the app is free, so there is no revenue to protect.
+- **The bench APK is debug-signed; the store build is not.** *Build Store APK* signs from the environment
+  (CS-236, done 6 Oct 2026). The owner still has to create the keystore (`docs/release/RELEASE_SIGNING.md`).
 - **Target API is right.** Apps created in the Developer Dashboard after 1 Mar 2026 must target API 34 (min may
   stay 32). `Quest3ProjectSetup` writes min 32 / target 34, ARM64, IL2CPP, Vulkan.
 - **No pause handling** anywhere in the app (Functional.2).
@@ -39,13 +74,13 @@ has a **Goal**, atomic **Objectives**, **Needs**, **Evidence** and **If it fails
 | P1 | Live on the Meta Horizon Store under our own name, art and copy; the About slate shows our links, version and licence notices |
 | P2 | The published privacy policy, the DUC answers and the manifest describe the same app: mic only while the being listens, audio to OpenAI, nothing stored, no accounts |
 | P3 | No OpenAI key or other secret in the APK; the being obtains a short-lived secret from our endpoint, with a per-device cap |
-| P4 | Every VRC passes on the submitted build (Performance.1, Packaging.1/4, Security.1, Input.6/7/8, Functional.1–5, Tracking.1, Privacy.1, Asset.*) |
+| P4 | Every required VRC passes on the submitted build (Performance.1, Packaging.1–6, Input.7/8, Functional.1–5 and 14, Tracking.1, Privacy.1–5, Asset.*). Security.1 is recommended only; Input.6 is retired |
 | P5 | Organization verified; age group self-certified; content rated; comfort, play modes and devices filled from device results |
 
 ## 2. Decisions the owner has to make first
 
 These shape the code work, so they come before the phases. Each is a yes/no or a pick; the recommendation is
-first.
+first. **D1, D3, D4 and D5 were decided as recommended on 6 Oct 2026 (D-012); D2 is still open.**
 
 | # | Decision | Recommendation | What changes if not |
 |---|---|---|---|
@@ -70,7 +105,8 @@ privacy policy.
   2. Create the **organization** under the chosen name (D5).
   3. **Organization verification:** Admin verification (government ID, usually minutes) for an individual, or
      Business verification (documents) for a company. Unverified organizations cannot publish or recertify.
-  4. Create the **app**: platform Meta Quest; name "Cosmic Simulation XR"; note the **App ID** (CS-235 needs it).
+  4. Create the **app** on the Meta Horizon Store; name "Cosmic Simulation XR". **Done: App ID
+     `1436957446161428`, organization "Juan Diego Lugo".** Identity verification is still to do (step 3).
   5. If paid (D1): financial account with country, business type, name, address, tax ID; the TIN must match
      tax records exactly or payouts fail.
 - **Needs:** D1, D5.
@@ -164,7 +200,10 @@ functional checks, and is signed the way the store will see it forever.
 - **Evidence:** the file; the owner publishes it (M1).
 - **If it fails:** an unanswerable item stays in "Open questions" and is not asserted.
 
-#### CS-235 [CC] Entitlement check (VRC.Quest.Security.1)
+#### CS-235 [CC] Entitlement check (VRC.Quest.Security.1) — NOT IN v1
+
+*Dropped 6 Oct 2026 (D-012): the check is Recommended, not required, the app is free, and it would bring in the
+Meta Platform SDK for nothing else. Kept below for the day the app is paid.*
 
 - **Goal:** within 10 s of launch the app asks Meta whether this user is entitled, and quits politely if not.
 - **Objectives:**
@@ -184,7 +223,11 @@ functional checks, and is signed the way the store will see it forever.
 - **If it fails:** the package pair conflicts → the tarball install of the Platform SDK alone; it has no
   dependency on the Core SDK.
 
-#### CS-236 [CC] Release signing
+#### CS-236 [CC] Release signing — code done 6 Oct 2026
+
+*Implemented as `Quest3Build.BuildStoreApk` → `Builds/Quest3/CosmicSimulationXR-store.apk`; the keystore
+settings are applied for that build only and restored afterwards. Owner steps and the exact commands:
+`docs/release/RELEASE_SIGNING.md`. Remaining: the owner's keystore, and the `apksigner` evidence.*
 
 - **Goal:** one keystore, outside the repo, used by every store upload, with the build refusing to proceed without it.
 - **Objectives:**
@@ -206,14 +249,18 @@ functional checks, and is signed the way the store will see it forever.
 - **Goal:** the exported manifest requests exactly what the policy describes, nothing more.
 - **Objectives:**
   1. From the testing roadmap's CS-214 dump, list every `uses-permission` and `uses-feature`.
-  2. Expected set: `RECORD_AUDIO`, `INTERNET`, `com.oculus.permission.HAND_TRACKING`,
-     `oculus.software.handtracking` (required="false": hands-first, controllers through the same ray path), the VR
-     intent category and `headtracking` feature from the Meta OpenXR feature. `ACCESS_NETWORK_STATE` is acceptable
-     if a package adds it; anything else (location, storage, camera image access) is a finding.
-  3. If Unity's auto-merge gets one wrong, add `Assets/Plugins/Android/AndroidManifest.xml` with the corrected
-     entries and `tools:node="remove"` for the unwanted one.
-  4. Confirm `android:debuggable` is absent, `installLocation` is internal (Meta's requirement), and the category
-     is VR-only (not a 2D panel app) unless the owner decides otherwise.
+  2. Expected set: `RECORD_AUDIO`, `INTERNET`, `MODIFY_AUDIO_SETTINGS` (Unity adds it with the microphone),
+     `com.oculus.permission.HAND_TRACKING`, `oculus.software.handtracking` (required="false": hands-first,
+     controllers through the same ray path), `com.oculus.feature.PASSTHROUGH`, the VR intent category and
+     `headtracking` feature from the Meta Quest feature. `ACCESS_NETWORK_STATE` is acceptable if a package adds
+     it; anything else (`BLUETOOTH`, location, storage, camera image access) is a finding.
+  3. Corrections go in `Assets/build_scripts/Editor/Quest3Manifest.cs`, an XR Management
+     `IAndroidManifestRequirementProvider` (the route the OpenXR package itself uses), not a custom
+     `AndroidManifest.xml`. As of 6 Oct 2026 it sets `excludeFromRecents="true"` on the launch activity, writes
+     `com.oculus.supportedDevices` = `quest3|quest3s`, and removes `BLUETOOTH`.
+  4. Confirm `android:debuggable` is absent, `installLocation` is **auto** (Meta's requirement; corrected 6 Oct
+     2026 - it was written here as internal), `com.oculus.ossplash.background` is `passthrough-contextual`
+     (Functional.14), and the category is VR-only (not a 2D panel app) unless the owner decides otherwise.
 - **Needs:** CS-214.
 - **Evidence:** `aapt dump badging` matches the policy word for word; pasted into the row.
 - **If it fails:** a permission that cannot be removed because a package needs it → the policy documents it.
@@ -226,7 +273,7 @@ functional checks, and is signed the way the store will see it forever.
   1. **Functional.2:** `AppLifecycle.cs` with `OnApplicationPause(bool)`: on pause `VOManager.Stop()`,
      `AmbienceController.StopBed()` (or duck), the being's session closed and mic released; on resume, music back,
      mic re-armed if the being is out, nothing else re-triggered.
-  2. **Input.6:** hand visuals and `GEPointer` ray hidden when the hand's tracking state is lost; confirm in
+  2. **Hands lost (was Input.6, retired by Meta - polish, no longer a review item):** hand visuals and `GEPointer` ray hidden when the hand's tracking state is lost; confirm in
      `ge_xr_rig.prefab` whether XR Hands already does the visual half.
   3. **Input.8:** drop any press that arrives while the Meta aim extension reports the system gesture; audit
      `GEPointer` and `XRInputRig` for the aim flags.
@@ -352,8 +399,10 @@ client, and submission happens with every VRC already green.
 
 - **Goal:** the release-signed APK on a channel, installed by invited testers from the store client.
 - **Objectives:**
-  1. Upload via MQDH to **Alpha** (it checks the manifest on upload; read the result page).
-  2. Add tester emails (Meta account emails); confirm they see it in their library.
+  1. Upload to **Alpha** via MQDH, or the CLI with `--age-group TEENS_AND_ADULTS` (required; see the command
+     at the top). The upload checks the manifest; read the result page.
+  2. Channels start with **no users, not even the owner**: add the owner's own Meta account email to Alpha
+     first, then the testers'; confirm each sees it in their library.
   3. Run the testing roadmap's T6 on the channel build; fix; re-upload with a bumped version code.
   4. Promote the passing build to **Release Candidate**.
 - **Evidence:** the channel page; two tester confirmations.
@@ -365,7 +414,8 @@ client, and submission happens with every VRC already green.
 - **Objectives:**
   1. In the dashboard, confirm M4 and M5 are complete and the RC build is selected.
   2. Read the automated VRC results; each red line is a backlog row before human review (common ones: manifest
-     Packaging.1/4, entitlement Security.1, 72 fps Performance.1, cover art text Asset.*, privacy URL Privacy.1).
+     Packaging.1/2, passthrough loading screen Functional.14, 72 fps Performance.1, cover art text Asset.*,
+     privacy policy Privacy.1–4).
   3. Submit; note the date.
 - **Evidence:** the submission status and date.
 
@@ -387,7 +437,7 @@ client, and submission happens with every VRC already green.
 ## 4. Order
 
 M1 and M2 start now, in parallel (forms and code). M3's CS-234 and CS-238 can start today; CS-233 waits for CS-232;
-CS-235 waits for the App ID. M4 waits for the testing roadmap's release build. M5 waits for M1 and CS-234. M6 waits
+CS-235 is out of v1. M4 waits for the testing roadmap's release build. M5 waits for M1 and CS-234. M6 waits
 for all of it.
 
 ## 5. Risks
@@ -396,7 +446,8 @@ for all of it.
 - **OpenAI terms and age.** The API's usage policies set a minimum user age; a preteen declaration conflicts with
   streaming children's voices to a third party. D3 avoids it.
 - **Review surprises the code predicts:** no pause handler (Functional.2), hand-only paths with no controller
-  fallback (Input.7), the system gesture reaching a pointer press (Input.8). All tested in the testing roadmap's
+  fallback (Input.7), the system gesture reaching a pointer press (Input.8), and Unity's own splash screen
+  drawing an opaque frame between the passthrough system loading screen and the first scene (Functional.14). All tested in the testing roadmap's
   CS-219 before submission.
 - **Licence of reused narration.** The 22 original clips ride on the fork's MIT licence; confirm it covers the
   audio before the store copy claims "all our own", and keep the MIT notice shipping (CS-116/117).
@@ -407,6 +458,11 @@ for all of it.
 - Release-build manifest: https://developers.meta.com/horizon/resources/publish-mobile-manifest/
 - Android 14 (API 34) requirement from 1 Mar 2026: https://developers.meta.com/horizon/blog/meta-quest-apps-android-14-march-1/
 - Entitlement check (Security.1): https://developers.meta.com/horizon/documentation/unity/ps-entitlement-check/
+- Security.1 status (Recommended): https://developers.meta.com/horizon/resources/vrc-quest-security-1/
+- Functional.14 passthrough loading screen: https://developers.meta.com/horizon/resources/vrc-quest-functional-14/
+  and https://developers.meta.com/horizon/documentation/native/android/mobile-passthrough-loading-screens/
+- Splash screen best practices (artwork within 1500 × 1500 px): https://developers.meta.com/horizon/resources/mr-splash-screen-bp/
+- Command-line upload (`--age-group`): https://developers.meta.com/horizon/resources/publish-reference-platform-command-line-utility/
 - App submission review process: https://developers.meta.com/vr/blog/app-submission-review-process-guide/
 - Release channels: https://developers.meta.com/vr/resources/publish-release-channels/
 - Device targeting: https://developers.meta.com/horizon/resources/publish-release-channels-device-targeting/

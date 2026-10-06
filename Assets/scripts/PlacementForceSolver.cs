@@ -1,6 +1,9 @@
-﻿using UnityEngine;
+using GalaxyExplorer.XR;
+using UnityEngine;
 
-public class PlacementForceSolver : ForceSolver
+// Re-declares IGEFocusChangedHandler so the focus event below reaches this class first (C# interface
+// re-implementation); OnFocusChanged still maps to the base's.
+public class PlacementForceSolver : ForceSolver, IGEFocusChangedHandler
 {
     private PlacementRing _placementRing;
 
@@ -8,6 +11,22 @@ public class PlacementForceSolver : ForceSolver
     {
         base.Awake();
         _placementRing = GetComponentInChildren<PlacementRing>();
+    }
+
+    // With tracked hands the orb comes on a pinch, never on a hover. A hand ray rests on the orb most of the
+    // time, so the one second dwell pulled it to the palm unasked. This is how the original treated a device
+    // with nothing to dwell with (its gaze-and-tap branch skipped StartDwell): a select on the orb at Root pulls
+    // it to the selecting hand, which ForceSolver.OnPointerDown already does. Hover is therefore not passed on;
+    // a focus exit still is, so the base forgets a hand whose pinch had registered it.
+    void IGEFocusChangedHandler.OnBeforeFocusChange(GEFocusEventData eventData)
+    {
+        var rig = XRInputRig.Instance;
+        if (rig != null && rig.IsHandTrackingActive && eventData.NewFocusedObject != null)
+        {
+            return;
+        }
+
+        OnBeforeFocusChange(eventData);
     }
 
     protected override Vector3 GetOffsetPositionFromController()

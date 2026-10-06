@@ -23,7 +23,7 @@ MonoBehaviour:
   required: 0
   customRuntimeLoaderName: 
   m_CameraImageSupport: 0
-  m_PassthroughPreSplashScreen: 0
+  m_PassthroughPreSplashScreen: 1
 --- !u!114 &-8843786474666279717
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -834,13 +834,13 @@ MonoBehaviour:
   targetDevices:
   - visibleName: Quest
     manifestName: quest
-    enabled: 1
+    enabled: 0
   - visibleName: Quest 2
     manifestName: quest2
-    enabled: 1
+    enabled: 0
   - visibleName: Quest Pro
     manifestName: cambria
-    enabled: 1
+    enabled: 0
   - visibleName: Quest 3
     manifestName: eureka
     enabled: 1

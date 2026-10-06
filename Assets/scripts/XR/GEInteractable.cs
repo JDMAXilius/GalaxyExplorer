@@ -85,7 +85,7 @@ namespace GalaxyExplorer.XR
 
         internal void RaisePointerUp(GEPointer pointer, bool clicked)
         {
-            var eventData = new GEPointerEventData(pointer, this, pointer != null && pointer.IsNear(this));
+            var eventData = new GEPointerEventData(pointer, this, pointer != null && pointer.IsNear(this)) { Canceled = !clicked };
             GEInputEvents.ExecuteHierarchy<IGEPointerHandler>(gameObject, h => h.OnPointerUp(eventData));
             if (clicked)
             {

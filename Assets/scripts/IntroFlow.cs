@@ -86,6 +86,15 @@ namespace GalaxyExplorer
 
         private bool _anchored;
 
+        /// <summary>Ends the logo stage now instead of at the end of its timer (GDD 2.1: pinch the logo to skip).</summary>
+        public void SkipLogo()
+        {
+            if (currentState == IntroFlowState.kLogo)
+            {
+                timer = LogoDuration;
+            }
+        }
+
         /// <summary>Anchors the content where the intro would have: 2 m in front of the user, a bit lower on a headset.</summary>
         private void AnchorAhead()
         {

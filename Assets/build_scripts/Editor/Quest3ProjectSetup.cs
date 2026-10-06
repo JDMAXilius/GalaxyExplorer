@@ -94,6 +94,7 @@ namespace GalaxyExplorer.Build
             OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android).renderMode = OpenXRSettings.RenderMode.SinglePassInstanced;
             OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Standalone).renderMode = OpenXRSettings.RenderMode.MultiPass;
 
+            ConfigureStoreFeatures(log);
             ConfigureVersion(log);
             ConfigureAndroidPlayer(log);
             ConfigureQuality(log);
@@ -128,6 +129,67 @@ namespace GalaxyExplorer.Build
                 EditorUtility.SetDirty(feature);
             }
             log.AppendLine($"[{group}] enabled: " + string.Join(", ", features.Where(f => f.enabled).Select(f => f.GetType().Name)));
+        }
+
+        /// <summary>
+        /// Store settings that live on OpenXR features rather than in Player Settings: which headsets the app
+        /// declares (decision D-012: Quest 3 and Quest 3S), and passthrough behind the system loading screen
+        /// (VRC.Quest.Functional.14). Written on every build so a tick in Project Settings cannot revert them.
+        /// </summary>
+        /// <remarks>
+        /// Both fields are set through <see cref="SerializedObject"/> by their serialized names:
+        /// <c>MetaQuestFeature.targetDevices</c> is internal (com.unity.xr.openxr, MetaQuestFeature.cs), and doing
+        /// the same for <c>ARCameraFeature.m_PassthroughPreSplashScreen</c> keeps this file free of a compile-time
+        /// dependency on the Meta package. A renamed field is logged as MISSING, never skipped silently.
+        /// </remarks>
+        private static void ConfigureStoreFeatures(StringBuilder log)
+        {
+            var features = OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android).GetFeatures();
+
+            // Manifest names as the feature stores them: "eureka" is Quest 3. Quest3Manifest rewrites the emitted
+            // value to Meta's documented names.
+            var storeDevices = new[] { "eureka", "quest3s" };
+            var quest = features.FirstOrDefault(f => f.GetType().FullName == "UnityEngine.XR.OpenXR.Features.MetaQuestSupport.MetaQuestFeature");
+            var devices = quest == null ? null : new SerializedObject(quest).FindProperty("targetDevices");
+            if (devices == null || !devices.isArray)
+            {
+                log.AppendLine("  [Android] MISSING MetaQuestFeature.targetDevices; supported devices not set");
+            }
+            else
+            {
+                var enabled = new List<string>();
+                for (var i = 0; i < devices.arraySize; i++)
+                {
+                    var device = devices.GetArrayElementAtIndex(i);
+                    var name = device.FindPropertyRelative("manifestName").stringValue;
+                    var on = storeDevices.Contains(name);
+                    device.FindPropertyRelative("enabled").boolValue = on;
+                    if (on)
+                    {
+                        enabled.Add(name);
+                    }
+                }
+                devices.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(quest);
+                log.AppendLine($"[Android] target devices: {string.Join(", ", enabled)} (manifest: {Quest3Manifest.SupportedDevices})");
+            }
+
+            // Emits com.oculus.ossplash.background = passthrough-contextual (com.unity.xr.meta-openxr,
+            // ModifyAndroidManifest.cs): the system loading screen shows the room when the player launches from
+            // passthrough Home. The optional logo (MetaQuestFeature.systemSplashScreen) is left unassigned.
+            var camera = features.FirstOrDefault(f => f.GetType().FullName == "UnityEngine.XR.OpenXR.Features.Meta.ARCameraFeature");
+            var preSplash = camera == null ? null : new SerializedObject(camera).FindProperty("m_PassthroughPreSplashScreen");
+            if (preSplash == null)
+            {
+                log.AppendLine("  [Android] MISSING ARCameraFeature.m_PassthroughPreSplashScreen; passthrough loading screen not set");
+            }
+            else
+            {
+                preSplash.boolValue = true;
+                preSplash.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(camera);
+                log.AppendLine("[Android] passthrough pre-splash screen: on");
+            }
         }
 
         private static void ConfigureVersion(StringBuilder log)

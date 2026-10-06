@@ -183,10 +183,10 @@ namespace GalaxyExplorer.Editor
                 Check(Name(_director.Current) == "milky_way", $"the Milky Way opens ({Name(_director.Current)})");
                 tag = FindTag();
                 if (tag == null) { Skip("the destination tag click: no tag with a collider is on screen"); return; }
-                _holding = () => Move(ScreenOf(tag));
+                _holding = () => Move(_aim);
             });
-            Add(0.5f, () => { if (tag != null) _holding = () => Press(ScreenOf(tag), true); });
-            Add(0.2f, () => { if (tag != null) { _holding = null; Press(ScreenOf(tag), false); } });
+            Add(0.5f, () => { if (tag != null) _holding = () => Press(_aim, true); });
+            Add(0.2f, () => { if (tag != null) { _holding = null; Press(_aim, false); } });
             AddWaitWhile(() => tag != null && _director.IsSwitching, 20f);
             Add(SettleSeconds * 2f, () =>
             {
@@ -194,7 +194,7 @@ namespace GalaxyExplorer.Editor
                 var travelled = Name(_director.Current) != "milky_way";
                 Check(travelled || _director.HasOpenDestination,
                     $"clicking a marker on the Milky Way travels to it (now {Name(_director.Current)})");
-                if (!travelled && !_director.HasOpenDestination) Say($"the marker click met: {WhatIsUnder(ScreenOf(tag))}");
+                if (!travelled && !_director.HasOpenDestination) Say($"the marker click met: {WhatIsUnder(_aim)}");
             });
 
             // 5. The being, through the same pointer layer a player uses: summoned, it greets and listens by
@@ -244,7 +244,11 @@ namespace GalaxyExplorer.Editor
                 if (Microphone.devices.Length == 0) Skip("the being's listening: this machine has no microphone");
                 else Check(being.Current != Cosmic.Companion.Being.Phase.Idle, $"on arrival it greets and then listens ({being.Current})");
             });
-            Add(window + 1.5f, () =>
+            // Waited for, not timed: the window opens after the greeting, the echo tail and the chime, and with
+            // a key the greeting is the model's own and of no fixed length. A fixed wait from the stored clip
+            // read Listening two seconds before the being went idle by itself.
+            AddWaitWhile(() => being != null && being.Current != Cosmic.Companion.Being.Phase.Idle, window + 20f);
+            Add(0.1f, () =>
             {
                 if (being == null) return;
                 Check(being.Current == Cosmic.Companion.Being.Phase.Idle, $"and with nothing said it goes idle on the timeout ({being.Current})");
@@ -373,7 +377,6 @@ namespace GalaxyExplorer.Editor
                 // the pointer a dozen pixels between the press and the release - past DragThresholdPixels,
                 // which is exactly how DesktopMouseInput decides a press is a drag. The probe was producing
                 // the orbit it then reported as a failure to click.
-                _aim = ScreenOf(tag);
                 Say($"aiming at {tag.parent?.name ?? tag.name} at screen {_aim}, held fixed from here");
                 _holding = () => Move(_aim);
             });
@@ -462,7 +465,23 @@ namespace GalaxyExplorer.Editor
                 foreach (var collider in poi.GetComponentsInChildren<Collider>(false))
                 {
                     if (!collider.enabled || collider.bounds.size == Vector3.zero) continue;
-                    if (OnScreen(collider.transform)) return collider.transform;
+
+                    // Aimed at the collider, not at its transform, and only if a ray through that point
+                    // lands on this marker. PointOfInterest.ResizePOICollider stretches the box along the
+                    // indicator line and moves its centre, so the transform need not be inside it: the walk
+                    // of 6 Oct clicked the transform's pixel, reported "the marker click met: nothing" and
+                    // failed a click that had never reached a marker. Set once, so the pointer does not
+                    // creep past the drag threshold between press and release as the tag billboards.
+                    var cam = Camera.main;
+                    if (cam == null) return null;
+                    var at = cam.WorldToScreenPoint(collider.bounds.center);
+                    if (at.z <= 0.05f || at.x <= 8f || at.y <= 8f
+                        || at.x >= cam.pixelWidth - 8f || at.y >= cam.pixelHeight - 8f) continue;
+                    if (!Physics.Raycast(cam.ScreenPointToRay(at), out var hit, 200f)
+                        || hit.collider.GetComponentInParent<GalaxyExplorer.PointOfInterest>() != poi) continue;
+
+                    _aim = new Vector2(at.x, at.y);
+                    return collider.transform;
                 }
             }
             return null;

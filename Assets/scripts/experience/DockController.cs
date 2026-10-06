@@ -809,10 +809,7 @@ namespace CosmicSimulation
                 utilityButton.gameObject.SetActive(visible);
             }
 
-            if (resetButton != null)
-            {
-                resetButton.gameObject.SetActive(visible);
-            }
+            RefreshResetButton();
 
             if (aboutButton != null)
             {
@@ -845,6 +842,33 @@ namespace CosmicSimulation
             }
 
             WatchKeyboard();
+
+            // Twice a second is plenty for a button, and keeps a scene search out of every frame.
+            if (Time.unscaledTime >= _nextResetRefresh)
+            {
+                _nextResetRefresh = Time.unscaledTime + 0.5f;
+                RefreshResetButton();
+            }
+        }
+
+        private float _nextResetRefresh;
+
+        // Reset sends pulled planets home through the ForceSolverFocusManager, and only some places have one:
+        // everywhere else the button did nothing. Asked of the scene directly rather than of GlobalMenuManager's
+        // flag, which is refreshed on ViewLoader events only and goes stale when a prefab place opens. The row
+        // keeps its gap when it is hidden.
+        private void RefreshResetButton()
+        {
+            if (resetButton == null)
+            {
+                return;
+            }
+
+            var show = _visible && FindAnyObjectByType<ForceSolverFocusManager>() != null;
+            if (resetButton.gameObject.activeSelf != show)
+            {
+                resetButton.gameObject.SetActive(show);
+            }
         }
 
         // The desktop equivalent of the settings button under the dock. Read here rather than in
@@ -963,6 +987,11 @@ namespace CosmicSimulation
         private void OnExperienceChanged(ExperienceModule module)
         {
             MarkActive(module);
+
+            if (_menus == null)
+            {
+                _menus = FindAnyObjectByType<GlobalMenuManager>(FindObjectsInactive.Include);
+            }
 
             // The first place to open after the intro is the intro handing over (ExperienceDirector adopts or
             // switches to it only once OnIntroFinished has been raised and the transition has settled). The dock

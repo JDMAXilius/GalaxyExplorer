@@ -5,7 +5,8 @@
 // What it does, idempotently:
 //   1. Adds GalaxyExplorer.XR.HandLook to the rig root and points its handMaterial at xr_hand_material.
 //   2. Adds GalaxyExplorer.XR.AppPause to the rig root.
-//   3. Adds GalaxyExplorer.XR.PalmAxisProbe to the rig root (TEMPORARY, CS-274 - remove with the script).
+//   3. Strips the retired CS-274 palm probe from the rig root, and points the hand visuals' affordance
+//      material helpers at slot 0 (step 4b).
 //   4. On every hand SkinnedMeshRenderer under the rig (the four nested XRI "...QuestVisual" /
 //      "...AndroidXRVisual" instances), sets sharedMaterials to the single xr_hand_material: the sample's
 //      DepthOnly slot 0 goes, so slot 0 is the hand material HandLook filters on.
@@ -75,16 +76,10 @@ internal class CommandScript : IRunCommand
                 log.AppendLine("RIG: AppPause already present");
             }
 
-            // 3. PalmAxisProbe (temporary, CS-274)
-            if (root.GetComponent<GalaxyExplorer.XR.PalmAxisProbe>() == null)
-            {
-                root.AddComponent<GalaxyExplorer.XR.PalmAxisProbe>();
-                log.AppendLine("RIG: added PalmAxisProbe (temporary, CS-274)");
-            }
-            else
-            {
-                log.AppendLine("RIG: PalmAxisProbe already present");
-            }
+            // 3. The CS-274 palm probe is gone: the palm menu derives its normal from joints, so nothing reads
+            //    a palm axis any more. Its component is stripped as a missing script once the file is deleted.
+            var stripped = UnityEditor.GameObjectUtility.RemoveMonoBehavioursWithMissingScript(root);
+            log.AppendLine("RIG: removed " + stripped + " missing script(s) from the rig root");
 
             // 4. Hand mesh materials. Only the skinned meshes inside the four XRI hand visual instances
             //    ("...QuestVisual" / "...AndroidXRVisual"): the rig also carries skinned pinch/poke pointer
@@ -122,6 +117,34 @@ internal class CommandScript : IRunCommand
             if (hands != 4)
             {
                 log.AppendLine("RIG: WARNING expected 4 hand renderers, found " + hands);
+            }
+
+            // 4b. The sample's affordance helpers on the hand visuals address material slot 1, which was the
+            //     hand material while DepthOnly held slot 0. With one slot left they index past the array and
+            //     throw every frame on device (seen 6 Oct: ~220 IndexOutOfRangeException a second).
+            foreach (var helper in root.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Rendering.MaterialHelperBase>(true))
+            {
+                if (!IsHandVisual(helper.transform))
+                {
+                    continue;
+                }
+
+                if (helper.materialIndex != 0)
+                {
+                    var hso = new UnityEditor.SerializedObject(helper);
+                    hso.FindProperty("m_MaterialIndex").intValue = 0;
+                    hso.ApplyModifiedPropertiesWithoutUndo();
+                    log.AppendLine("RIG: " + PathOf(helper.gameObject) + " affordance material index -> 0");
+                }
+
+                // These receivers tint the sample hand shader's _EdgeColor, _FingerColor_1 and _ThumbColor,
+                // none of which HandOutline has, so each logs an error on first use. Off until the outline
+                // shader grows a pinch tint of its own.
+                if (helper.gameObject.activeSelf)
+                {
+                    helper.gameObject.SetActive(false);
+                    log.AppendLine("RIG: " + PathOf(helper.gameObject) + " deactivated");
+                }
             }
 
             // 5. Hand Visualizer material

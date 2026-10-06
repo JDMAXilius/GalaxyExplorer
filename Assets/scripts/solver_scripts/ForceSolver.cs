@@ -80,6 +80,11 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
     [Tooltip("How far a body may drift during the press and still count as tapped rather than dragged, in metres.")]
     public float TapMoveMetres = 0.03f;
 
+    [Tooltip("Let go of a body with one hand moving faster than this, in metres per second, and it returns to " +
+             "its orbit or layout instead of staying where it was released (CS-290). Zero turns it off. The " +
+             "mouse never flings.")]
+    public float FlingSpeed = 1.5f;
+
     [Tooltip("Width kept free beside a pulled body for its info card, in metres at text scale 1.")]
     public float CardRoomMetres = 0.2f;
 
@@ -484,6 +489,13 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
     private void OnManipulationEnd(ManipulationEventData _)
     {
         StartFree();
+
+        // Thrown rather than put down: the body goes home, as a tap sends it (CS-290). Bodies and moons only:
+        // the intro's orb is placed once and has no arrangement to go back to.
+        if (FlingSpeed > 0f && !(this is PlacementForceSolver) && _manipulationHandler.ReleaseSpeed >= FlingSpeed)
+        {
+            ReturnHome();
+        }
     }
 
     private void OnControllersLost()

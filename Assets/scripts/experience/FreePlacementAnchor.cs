@@ -231,7 +231,29 @@ namespace CosmicSimulation
                 }
 
                 anchor.CaptureHome();
+
+                // The content root itself is movable: that is the place two pinches in the air take hold of
+                // (CS-282, CS-286). Left alone when this content has none; the last place's handler dies with it.
+                if (host == content)
+                {
+                    handler.AirScaleClamp = anchor.ClampToHome;
+                    ManipulationHandler.Place = handler;
+                }
             }
+        }
+
+        // The settings slider's range (UtilityWindow), measured from the size the place was spawned at.
+        private const float MinPlaceScale = 0.5f, MaxPlaceScale = 2f;
+
+        private Vector3 ClampToHome(Vector3 desiredLocalScale)
+        {
+            if (!_captured || Mathf.Abs(_homeScale.x) < 1e-6f || Mathf.Abs(desiredLocalScale.x) < 1e-6f)
+            {
+                return desiredLocalScale;
+            }
+
+            var factor = desiredLocalScale.x / _homeScale.x;
+            return desiredLocalScale * (Mathf.Clamp(factor, MinPlaceScale, MaxPlaceScale) / factor);
         }
 
         private void ApplyHome()

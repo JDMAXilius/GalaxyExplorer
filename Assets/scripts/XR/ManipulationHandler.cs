@@ -88,6 +88,18 @@ namespace GalaxyExplorer.XR
         public ManipulationEvent OnHoverExited = new ManipulationEvent();
 
         private readonly List<GEPointer> _pointers = new List<GEPointer>();
+
+        // Pointers that joined by pinching the air rather than by selecting this object (see AddAirPointer).
+        private readonly List<GEPointer> _airPointers = new List<GEPointer>();
+        private bool _enabledForAir;
+
+        // Every handler with a hand on it, oldest first.
+        private static readonly List<ManipulationHandler> Active = new List<ManipulationHandler>();
+
+        // One-handed grab: how fast the hand itself is moving, smoothed, for the fling test on release (CS-290).
+        // The interactor's own position, not the attach point: a far grab's attach point swings on a long lever.
+        private const float VelocitySmoothingSeconds = 0.1f;
+        private Vector3 _lastPointerPosition, _pointerVelocity;
         private IManipulationScaleConstraint _scaleConstraint;
         private bool _lookedForScaleConstraint;
 
@@ -143,6 +155,135 @@ namespace GalaxyExplorer.XR
 
         public bool IsManipulating => _pointers.Count > 0;
 
+        /// <summary>The object most recently taken hold of and still held, or null.</summary>
+        public static ManipulationHandler Held
+        {
+            get
+            {
+                for (var i = Active.Count - 1; i >= 0; i--)
+                {
+                    if (Active[i] != null)
+                    {
+                        return Active[i];
+                    }
+
+                    Active.RemoveAt(i);
+                }
+
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The handler that moves the place the player is standing in (a nebula, the Cosmic Web), which no ray
+        /// from inside can hit. Set by whoever spawns the place; two pinches in the air drive it
+        /// (<see cref="BeginAirManipulation"/>).
+        /// </summary>
+        public static ManipulationHandler Place { get; set; }
+
+        /// <summary>
+        /// Scale limit used instead of <see cref="ClampScale"/> while only air pinches drive this handler. A
+        /// place's metre limits were written for an object held at arm's length and would crush a room.
+        /// </summary>
+        public Func<Vector3, Vector3> AirScaleClamp { get; set; }
+
+        /// <summary>
+        /// Speed in m/s of the hand that let go last; zero for the mouse, a two-handed release or a lost pointer.
+        /// </summary>
+        public float ReleaseSpeed { get; private set; }
+
+        /// <summary>
+        /// A pinch in the air by the other hand joins a one-handed grab as its second pointer, so spreading the
+        /// hands scales and turns what is held. It leaves through <see cref="OnPointerUp"/> like any pointer,
+        /// and never holds alone: when the hand that grabbed lets go, it goes too.
+        /// </summary>
+        public bool AddAirPointer(GEPointer pointer)
+        {
+            if (!enabled || pointer == null || _pointers.Count != 1 || _pointers.Contains(pointer) ||
+                manipulationType == HandMovementType.OneHandedOnly)
+            {
+                return false;
+            }
+
+            _pointers.Add(pointer);
+            _airPointers.Add(pointer);
+            CaptureGrabState();
+            return true;
+        }
+
+        /// <summary>
+        /// Two pinches in the air with nothing held move and scale this handler's host. Ends when either lets
+        /// go. Works on a handler that ships disabled (the nebulae): it is enabled for the gesture and put back.
+        /// </summary>
+        public bool BeginAirManipulation(GEPointer first, GEPointer second)
+        {
+            if (first == null || second == null || first == second || _pointers.Count > 0 ||
+                manipulationType == HandMovementType.OneHandedOnly || !gameObject.activeInHierarchy)
+            {
+                return false;
+            }
+
+            if (!enabled)
+            {
+                enabled = true;
+                _enabledForAir = true;
+            }
+
+            _pointers.Add(first);
+            _pointers.Add(second);
+            _airPointers.Add(first);
+            _airPointers.Add(second);
+            Begin(first);
+            CaptureGrabState();
+            return true;
+        }
+
+        private void Begin(GEPointer pointer)
+        {
+            Active.Remove(this);
+            Active.Add(this);
+            if (playGrabSounds)
+            {
+                AudioService.Instance?.PlayClip(AudioId.ManipulationStart);
+            }
+
+            OnManipulationStarted.Invoke(new ManipulationEventData { ManipulationSource = gameObject, Pointer = pointer });
+        }
+
+        private void End(GEPointer pointer)
+        {
+            Active.Remove(this);
+            _airPointers.Clear();
+            if (playGrabSounds)
+            {
+                AudioService.Instance?.PlayClip(AudioId.ManipulationEnd);
+            }
+
+            OnManipulationEnded.Invoke(new ManipulationEventData { ManipulationSource = gameObject, Pointer = pointer });
+
+            if (_enabledForAir)
+            {
+                enabled = false;
+            }
+        }
+
+        // An air pointer only ever assists. Once no pointer that selected the object is left and fewer than two
+        // air pinches remain, nothing is holding it.
+        private void DropStrandedAirPointers()
+        {
+            if (_airPointers.Count == 0)
+            {
+                return;
+            }
+
+            _airPointers.RemoveAll(p => !_pointers.Contains(p));
+            if (_pointers.Count == _airPointers.Count && _pointers.Count < 2)
+            {
+                _pointers.Clear();
+                _airPointers.Clear();
+            }
+        }
+
         /// <summary>
         /// Applies this object's scale constraint, if it has one, to a scale someone else worked out. Desktop
         /// mode scales with the wheel rather than with two hands, and must land inside the same limits.
@@ -185,12 +326,7 @@ namespace GalaxyExplorer.XR
             _pointers.Add(pointer);
             if (_pointers.Count == 1)
             {
-                if (playGrabSounds)
-                {
-                    AudioService.Instance?.PlayClip(AudioId.ManipulationStart);
-                }
-
-                OnManipulationStarted.Invoke(new ManipulationEventData { ManipulationSource = gameObject, Pointer = pointer });
+                Begin(pointer);
             }
 
             CaptureGrabState();
@@ -205,14 +341,14 @@ namespace GalaxyExplorer.XR
                 return;
             }
 
+            // Zero after a two-handed hold: CaptureGrabState cleared the velocity when the second hand joined.
+            // Zero when the grab was taken away too: a hand dropped fast out of view is not a throw.
+            ReleaseSpeed = pointer.IsMouse || eventData.Canceled ? 0f : _pointerVelocity.magnitude;
+            DropStrandedAirPointers();
+
             if (_pointers.Count == 0)
             {
-                if (playGrabSounds)
-                {
-                    AudioService.Instance?.PlayClip(AudioId.ManipulationEnd);
-                }
-
-                OnManipulationEnded.Invoke(new ManipulationEventData { ManipulationSource = gameObject, Pointer = pointer });
+                End(pointer);
             }
             else
             {
@@ -226,6 +362,9 @@ namespace GalaxyExplorer.XR
         {
             // Owners disable the handler when manipulation should stop; drop pointers without raising events.
             _pointers.Clear();
+            _airPointers.Clear();
+            _enabledForAir = false;
+            Active.Remove(this);
         }
 
         private void Update()
@@ -245,18 +384,14 @@ namespace GalaxyExplorer.XR
 
             if (lost > 0)
             {
+                DropStrandedAirPointers();
                 if (_pointers.Count == 0)
                 {
-                    if (playGrabSounds)
-                    {
-                        AudioService.Instance?.PlayClip(AudioId.ManipulationEnd);
-                    }
-
                     // Pointer is null because the one that went away is exactly what we no longer have.
                     // Listeners that match on ManipulationSource still work; those that match on Pointer
                     // have to tolerate null, which is the honest report of "we do not know which".
-                    OnManipulationEnded.Invoke(
-                        new ManipulationEventData { ManipulationSource = gameObject, Pointer = null });
+                    ReleaseSpeed = 0f;
+                    End(null);
                 }
                 else
                 {
@@ -305,7 +440,9 @@ namespace GalaxyExplorer.XR
                 if (scale && _twoHandStartVector.sqrMagnitude > 1e-6f)
                 {
                     targetScale = _hostStartScale * (handVector.magnitude / _twoHandStartVector.magnitude);
-                    targetScale = ClampScale(targetScale);
+                    targetScale = _airPointers.Count >= 2 && AirScaleClamp != null
+                        ? AirScaleClamp(targetScale)
+                        : ClampScale(targetScale);
                 }
             }
             else if (manipulationType != HandMovementType.TwoHandedOnly)
@@ -313,6 +450,15 @@ namespace GalaxyExplorer.XR
                 var pointerTransform = _pointers[0].AttachTransform;
                 targetRotation = pointerTransform.rotation * _oneHandRotationOffset;
                 targetPosition = pointerTransform.TransformPoint(_oneHandPositionOffset);
+
+                if (Time.deltaTime > 0f)
+                {
+                    var handPosition = _pointers[0].Transform.position;
+                    var velocity = (handPosition - _lastPointerPosition) / Time.deltaTime;
+                    _pointerVelocity = Vector3.Lerp(_pointerVelocity, velocity,
+                        1f - Mathf.Exp(-Time.deltaTime / VelocitySmoothingSeconds));
+                    _lastPointerPosition = handPosition;
+                }
             }
             else
             {
@@ -349,6 +495,7 @@ namespace GalaxyExplorer.XR
         private void CaptureGrabState()
         {
             var host = HostTransform;
+            _pointerVelocity = Vector3.zero;
             if (_pointers.Count >= 2)
             {
                 var a = _pointers[0].AttachTransform.position;
@@ -362,6 +509,7 @@ namespace GalaxyExplorer.XR
             else if (_pointers.Count == 1)
             {
                 var pointerTransform = _pointers[0].AttachTransform;
+                _lastPointerPosition = _pointers[0].Transform.position;
                 _oneHandPositionOffset = pointerTransform.InverseTransformPoint(host.position);
                 _oneHandRotationOffset = Quaternion.Inverse(pointerTransform.rotation) * host.rotation;
             }

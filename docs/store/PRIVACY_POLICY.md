@@ -1,172 +1,139 @@
-# Privacy policy (draft) — Cosmic Simulation XR
+# Privacy policy — Cosmic Simulation XR
 
-*Status: DRAFT, not published. Meta's store listing requires a privacy policy
-hosted at a public URL; nothing in this repo can host it. The owner must post
-this (or an edited version of it) somewhere public and put that URL both in
-the Meta Developer Dashboard and in the About screen (see
-`docs/store/ABOUT_COPY.md`), then remove this status line.*
+*Status: DRAFT, not published. Meta requires this at a public URL (VRC.Quest.Privacy.1). Before publishing, the
+owner fills the two placeholders marked **[OWNER: …]**, hosts the page, puts the URL in the Meta Developer
+Dashboard and on the About screen (`docs/store/ABOUT_COPY.md`), and deletes this status paragraph and the
+"Maintainer notes" section at the end.*
 
-*Version: draft 1, written 2026-09-12 against the `quest3-port` branch as it
-stood for ticket CS-084. Every claim below was checked against the code or the
-project settings on that date; see "How this was verified" at the end. If the
-app's behaviour changes, this document has to be checked again — it is not
-evergreen.*
+**Publisher:** [OWNER: publisher name as shown on the Meta Horizon Store]
+**Contact:** [OWNER: contact email address]
+**Last updated:** 6 October 2026 (app version 0.9.0)
 
 ---
 
 ## Summary
 
-Cosmic Simulation XR is an offline, single-player educational app. It does not
-have a network connection to any server we run, does not create an account,
-does not collect analytics, and does not save anything about your room. The
-few things it remembers are stored only on your own device and never leave it.
+Cosmic Simulation XR is a single-player educational app for Meta Quest 3 and 3S. It has no accounts, no
+advertising and no analytics, and we run no servers. Everything works offline except one optional feature: the
+**voice guide**. When you summon the guide and speak to it, your voice is sent over the internet to OpenAI,
+which produces the spoken answer. If you never summon the guide, the app sends nothing anywhere.
 
-## What the app uses on your device
+## What data the app handles
 
-**Hand tracking.** The app reads your hand position and finger pinch through
-the headset's own OpenXR hand-tracking API (`UnityEngine.XR.Hands.OpenXR.HandTracking`
-and the Meta hand-tracking-aim extension, enabled in
-`Assets/build_scripts/Editor/Quest3ProjectSetup.cs`). This is how pinching and
-pointing at objects works. Joint positions are used for that one frame and
-discarded; the app does not record, save or transmit hand data.
+### Your voice (only when you use the voice guide)
 
-**Passthrough camera.** With passthrough on (the default), the headset shows
-your room behind the stars. The app enables this through OpenXR's AR session
-and camera features (`ARSessionFeature`, `ARCameraFeature`); in code
-(`Assets/scripts/ExperienceModeManager.cs`) it only turns the `ARCameraManager`
-component on or off — it never calls an image-read API (`GetLatestImage` /
-`TryAcquireLatestCpuImage`; a search of the project found no such call). The
-compositing of the camera feed into the passthrough view happens in the
-headset's own system layer, outside this app. The app's own code never sees a
-camera frame.
+- The app asks for the headset's microphone permission the first time you summon the guide. You can refuse; the
+  rest of the app works without it.
+- The microphone is open only while the guide is out. Your speech is sent while the guide is listening - a few
+  seconds after it greets you, after each answer, or when you tap it - and not while it is speaking. Dismissing
+  the guide closes the microphone and the connection.
+- What is sent: the audio of what you say, and a one-line description of what you are looking at in the app
+  (for example which place is open and which planet you are holding) so the answer fits the moment.
+- Where it goes: directly from your headset to **OpenAI's Realtime API** (`api.openai.com`) over an encrypted
+  connection. OpenAI turns the audio into text, generates the answer and sends back the guide's voice. OpenAI
+  processes this as our service provider under its API data terms
+  (https://openai.com/policies/privacy-policy and https://openai.com/enterprise-privacy), which state that API
+  data is not used to train its models by default and may be retained for a limited period for abuse monitoring.
+- What we keep: **nothing.** Audio and transcripts are not written to the headset's storage and are not sent to
+  us; we have no server that could receive them. The conversation exists in memory until you dismiss the guide.
+- The microphone settings row can show a live input level so you can check the microphone works. That audio
+  stays on the headset and is not sent anywhere.
 
-**Room placement.** At the start of a session you place an "Earth pin" on your
-floor, which positions the content in your room for that session. This is a
-one-time transform set at runtime; `Assets/scripts/WorldAnchorHandler.cs`
-still contains code to persist a spatial anchor, but that code path is guarded
-by `#if UNITY_WSA && !UNITY_2020_1_OR_NEWER` — the old HoloLens runtime — and
-does not compile or run on Quest 3 or desktop. Nothing about your room's shape
-or the pin's position is written to disk or sent anywhere; place it again next
-time you open the app.
+### Preferences stored on your headset
 
-## What the app stores on your device
+The app saves a few settings locally (Unity `PlayerPrefs`) so they are remembered next time. They never leave
+the headset and do not identify you:
 
-Three small preferences, written with Unity's `PlayerPrefs` (local device
-storage, not synced or transmitted):
-
-| Key | What it remembers |
+| What is remembered | Stored as |
 |---|---|
-| `CosmicSimulation.PassthroughForced` | Whether you last chose to see your room (passthrough) or full VR (`Assets/scripts/experience/EnvironmentController.cs`) |
-| `GalaxyExplorer.Muted` | Whether you muted the app on desktop (`Assets/scripts/menu_scripts/DesktopMenuManager.cs`) |
-| `CosmicSimulation.DesktopDockVisible` | Whether the desktop dock menu is open (`Assets/scripts/experience/DesktopDock.cs`) |
+| Passthrough or dark sky | `CosmicSimulation.PassthroughForced` |
+| Sound muted; narration muted | `Cosmic.Muted`, `Cosmic.VoiceMuted`, `GalaxyExplorer.Muted`, `GalaxyExplorer.NarrationMuted` |
+| Text size | `Cosmic.TextScale`, `CosmicSimulation.PanelTextScale` |
+| Hint cards already shown; labels shown | `Cosmic.HintsSeen`, `CosmicSimulation.HintsSeen`, `Cosmic.LabelsVisible` |
+| Which microphone to use | `Companion.Microphone` |
+| Desktop menu open (desktop test build only) | `CosmicSimulation.DesktopDockVisible` |
 
-None of these identify you, and none are readable outside the app on your own
-device.
+### Hand tracking and passthrough
 
-## What the app does not do (verified)
+- **Hands.** The app reads your hand and finger positions through the headset's hand-tracking system so you can
+  pinch and point. They are used for the current frame and discarded; nothing is recorded or sent.
+- **Passthrough.** The view of your room is drawn by the headset's own system. The app only switches it on or
+  off; it never receives, stores or sends camera images.
+- **Room placement.** Where the content sits in your room is decided fresh each session and is not saved.
 
-- **No network calls.** A search of `Assets/scripts` for `UnityWebRequest`,
-  `HttpClient` and similar found none. The app makes no request to any server
-  we run.
-- **No analytics, ads, crash reporting or purchasing.** `ProjectSettings/UnityConnectSettings.asset`
-  has every Unity cloud service explicitly turned off in this project
-  (`UnityAnalyticsSettings.m_Enabled: 0`, `UnityAdsSettings.m_Enabled: 0`,
-  `CrashReportingSettings.m_EnableCloudDiagnosticsReporting: 0`,
-  `UnityPurchasingSettings.m_Enabled: 0`, top-level `m_Enabled: 0`). No
-  third-party analytics or ad SDK is present in the project.
-- **No microphone.** No code in the project calls `Microphone`; narration and
-  music are pre-recorded clips played back locally, not recorded speech.
-- **No eye, face or body tracking.** Only hand tracking and passthrough are
-  enabled in `Quest3ProjectSetup.cs`; no eye-tracking, face-tracking or
-  body-tracking OpenXR feature is turned on.
-- **No accounts, no user-generated content, no multiplayer, no chat.** All
-  explicitly out of scope for this app (`docs/GDD.md` section 13).
-- **No entitlement check.** The project does not currently include the
-  Meta/Oculus Platform SDK, so it makes no call to Meta's servers to verify
-  the install. (Noted as an open question below — this may change.)
+### What the app does not collect
 
-## Links you can open from the About screen
+No name, email, account or Meta user ID; no location; no contacts, photos or files; no eye, face or body
+tracking; no advertising identifiers; no analytics or crash reports sent to us or to third parties; no
+purchases. There is no multiplayer, chat or user-generated content.
 
-The About screen has buttons that open pages in your device's browser,
-outside the app (the app calls `Application.OpenURL`, in
-`Assets/scripts/Hyperlink.cs`). Once you leave the app this way, the site
-you land on has its own privacy policy, which this document does not cover.
-Today those links still point at Microsoft's pages, inherited from the
-project this app is forked from; replacing them with our own is ticket
-CS-086 (see the store-readiness checklist). Once replaced, this section
-should list our own destinations by name (for example: our source repository,
-this policy, and a terms page).
+## How the data is used
 
-## Third-party imagery and credit
+- Your voice and the one-line description of what you are looking at are used for one purpose: to answer the
+  question you asked the guide. We do not use them for advertising, profiling or analytics, and we do not sell
+  or share them with anyone other than OpenAI as described above.
+- The stored preferences are used only to restore your settings.
 
-Body descriptions and imagery come from NASA, ESA, the Hubble Space
-Telescope and Solar System Scope; the full list with licences is
-`Assets/_sources/CREDITS.md`. NASA does not endorse this app. No user data is
-shared with any of these sources; they are credited only as the origin of
-static art assets bundled in the app.
+## Internet use
 
-## Vendored code with unused network capability
+The app needs an internet connection only for the voice guide. Without one the guide plays a recorded greeting
+and cannot answer; everything else works offline. Links on the About screen open in the headset's browser,
+outside the app; the sites they lead to have their own privacy policies.
 
-**Resolved 12 Sep 2026: the module was removed, so there is nothing left to
-disclose here.** The project inherited Microsoft's TouchScript package for
-legacy touchscreen support (`Assets/external/TouchScript`), which bundled a
-TUIO/OSC module (`OSCsharp.dll`, `TUIOsharp.dll`) able to open a network socket
-to receive input from external multitouch tables. Nothing referenced it, but the
-two libraries were marked enabled for Android and were reachable from
-`TuioInput.cs`, which compiled into the app's own assembly - so the capability
-would have shipped in the APK even though no code path invoked it. The whole
-module (14 files: `TuioInput.cs`, its editor, the two DLLs and their folder
-metadata) was deleted. The app now bundles no library capable of opening a
-network socket.
+## Deleting your data
 
-## Age and audience
+- **Preferences on your headset:** uninstall the app, or use *Settings → Apps → Cosmic Simulation XR → Clear
+  data* on the headset. This removes everything the app has stored.
+- **Voice data:** we hold none, so there is nothing for us to delete. To ask about or request deletion of
+  anything OpenAI may have retained from your use of the guide, email us at **[OWNER: contact email address]**
+  with the date and approximate time you used it; we will reply within 30 days and pass the request to OpenAI.
+- **Microphone access:** you can withdraw it at any time in the headset's *Settings → Privacy and safety → App
+  permissions → Microphone*.
 
-The design target is a reading age of 12 and up (`docs/GDD.md` section 1);
-there is no content aimed at younger children and no mechanism to collect
-information from anyone, so no separate children's-privacy section is drafted
-here. Confirm this against Meta's actual data-safety questionnaire answers
-before submission — see open questions.
+## Children
 
-## Open questions for the owner
+The app is intended for ages 13 and up and is not directed at children under 13. We do not knowingly collect
+personal information from children. If you believe a child has used the voice guide and want to make a request
+about it, contact us at the address above.
 
-These are things this document cannot answer from the repository alone; do
-not let the published policy assert an answer that has not been decided.
+## Changes
 
-1. **Where will this policy be hosted?** Meta requires a public URL. A GitHub
-   Pages page rendering this file, or a page on whatever web presence the
-   product has, both work; nothing in the repo can host it.
-2. **Company/developer name and contact.** This draft has no real-world legal
-   entity, support email or address to publish. Needed before this can be
-   posted publicly or submitted to Meta.
-3. **Will the Meta/Oculus Platform SDK (entitlement check) be added later?**
-   If so, it does make a network call to Meta's servers to verify the
-   purchase/install, and this document needs a line added for it. Not present
-   today.
-4. **Will any crash or ANR reporting be added on Android** (Play-services-style
-   or Meta's own), beyond the disabled Unity Cloud Diagnostics already in the
-   project? None is configured today; if one is added, this document needs an
-   update before the next submission.
-5. **Should the vendored TouchScript TUIO/OSC module be removed** rather than
-   just left unwired? See "Vendored code with unused network capability" above.
-6. **Official age rating and content descriptors.** Meta's own questionnaire
-   produces the store's displayed age rating; this document states our
-   design target (12+) but does not attempt to answer Meta's questionnaire on
-   the owner's behalf.
-7. **Data-deletion / contact process.** Since nothing is collected off-device,
-   there is nothing to delete on request today; if that changes (see 3 and 4),
-   this section needs a real contact process.
+If the app's handling of data changes, this page is updated before the new version is released and the date at
+the top changes.
 
-## How this was verified
+---
 
-Grep-based search of `Assets/scripts/**/*.cs` for `UnityWebRequest`,
-`HttpClient`, `PlayerPrefs`, `Microphone`, `Analytics`, `File.Write` and
-similar; reading of `Assets/build_scripts/Editor/Quest3ProjectSetup.cs` for
-the enabled OpenXR features; reading of
-`ProjectSettings/UnityConnectSettings.asset` for Unity cloud service state;
-reading of `Assets/scripts/ExperienceModeManager.cs`,
-`Assets/scripts/WorldAnchorHandler.cs` and `Assets/scripts/Hyperlink.cs` in
-full; a search of `Packages/manifest.json` for analytics/ads packages; and a
-search of `Assets` for third-party plugin DLLs and Oculus Platform SDK files.
-No live build was run and no on-device network capture was taken — that
-verification (a Quest build with a packet capture during a full session)
-belongs with CS-081/CS-085, not this ticket.
+## Maintainer notes (delete before publishing)
+
+Maps to Meta's requirements (https://developers.meta.com/horizon/resources/publish-quest-req/): Privacy.1 the
+hosted URL; Privacy.2 "What data the app handles"; Privacy.3 "How the data is used"; Privacy.4 "Deleting your
+data"; Privacy.5 is the Data Use Checkup in the dashboard, answered consistently with this page.
+
+Checked against the code on 6 Oct 2026 (`quest3-port` at `9384a75b`):
+
+- Network: the only outbound connection in `Assets/scripts`, `Assets/Being`, `Assets/Cosmic` is
+  `wss://api.openai.com/v1/realtime` (`Assets/Being/Session.cs:15`, `Realtime.cs`). No `UnityWebRequest`,
+  no `HttpClient`.
+- Microphone: `Assets/Being/Mic.cs` (`Arm` opens the device while the being is out, `Start`/`Stop` bound the
+  frames that are sent, `Close` ends it); permission requested in `Mic.Request`. The level meters
+  (`Assets/Cosmic/UI/MicPicker.cs`, `Assets/scripts/experience/MicrophoneRow.cs`) read locally only.
+- Transcription is done by OpenAI inside the same session (`BeingSettings.transcriptionModel`); the app shows
+  transcripts but does not persist them.
+- `PlayerPrefs` keys: grep of `PlayerPrefs.` in the three folders. The earlier draft listed three keys; there
+  are now twelve across the two UI trees, all listed above.
+- Manifest permissions expected in the store build: `INTERNET`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`,
+  `com.oculus.permission.HAND_TRACKING`. `BLUETOOTH` is removed by `Quest3Manifest.cs`.
+- No Meta Platform SDK, so no entitlement call to Meta (decision D-012).
+
+Must change before the statement stays true:
+
+1. **CS-231–233 (token endpoint).** When the app fetches a short-lived secret from our own endpoint, add a
+   section: what the endpoint receives (an anonymous install id, app version, a daily count), that it receives
+   no audio, and add the install id to the preferences table. "We run no servers" then becomes false.
+2. If `alwaysListening` is ever turned on in `BeingSettings`, the "sent while the guide is listening" bullet
+   must say the microphone stays live between answers.
+3. Confirm OpenAI's current API retention wording when publishing; the links above are the source.
+
+Owner to confirm before publishing (not verifiable from the repository): the two headset menu paths in
+"Deleting your data" as they read on the current Horizon OS; and the 30-day reply commitment, which is a
+promise the owner makes, not a fact about the app.
