@@ -101,15 +101,52 @@ namespace GalaxyExplorer
             
             PlacementConfirmationButton.OnClick.AddListener(ConfirmPlacement);
 
-            // The scene wires SetToFree to the button's Show; this is where it shows. Listened to here rather
-            // than placed once at Start because the orb is let go more than once when the player re-pulls it,
-            // and the button goes with the orb's root until the next release re-places it.
+            // On the Quest, Start is there from the first moment and stays until it is pressed (owner, 6 Oct):
+            // the original only showed it once the orb had been pulled, and hid it again on every grab, so a
+            // player who never pulled the orb, or who was holding it, had no way to begin. The scene still wires
+            // SetToManipulate to the button's Hide; persistent listeners run before these, so Show wins. It is
+            // re-placed on each release because the orb may have come to rest where the button was.
             if (_forceSolver != null && GalaxyExplorerManager.IsQuest3)
             {
                 _forceSolver.SetToFree.AddListener(PlaceStartButton);
+                _forceSolver.SetToManipulate.AddListener(KeepStartShown);
+                StartCoroutine(ShowStartWhenPosed());
             }
 
             StartCoroutine(StartOnboarding());
+        }
+
+        // The head reads the floor until the headset reports its first pose, and a button placed from that
+        // would sit at the player's feet. Not waited for for ever: a pose that never comes still gets a button.
+        private IEnumerator ShowStartWhenPosed()
+        {
+            for (var waited = 0f; _cameraMain.transform.position.y < 0.5f && waited < 2f; waited += Time.deltaTime)
+            {
+                yield return null;
+            }
+
+            PlaceStartButton(null);
+            _confirmationButton.Show();
+        }
+
+        private void KeepStartShown(ForceSolver _)
+        {
+            if (!isPlaced)
+            {
+                _confirmationButton.Show();
+            }
+        }
+
+        // The button hangs under the orb's root, so it would ride along whenever the orb is pulled or carried.
+        // Held where it was put instead, after everything that moves the orb has run.
+        private Pose? _startPose;
+
+        private void LateUpdate()
+        {
+            if (_startPose.HasValue && !isPlaced && ConfirmationButtonOffsetTransform != null)
+            {
+                ConfirmationButtonOffsetTransform.SetPositionAndRotation(_startPose.Value.position, _startPose.Value.rotation);
+            }
         }
 
         // In front of the player at chest height, facing them, the way the dock parks — not at the ring's edge
@@ -147,8 +184,8 @@ namespace GalaxyExplorer
                 distance -= 0.05f;
             }
 
-            ConfirmationButtonOffsetTransform.position = origin + forward * distance;
-            ConfirmationButtonOffsetTransform.rotation = Quaternion.LookRotation(forward, Vector3.up);
+            _startPose = new Pose(origin + forward * distance, Quaternion.LookRotation(forward, Vector3.up));
+            ConfirmationButtonOffsetTransform.SetPositionAndRotation(_startPose.Value.position, _startPose.Value.rotation);
         }
 
         private const float StartButtonNearestMetres = 0.25f;
