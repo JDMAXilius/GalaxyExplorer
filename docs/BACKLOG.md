@@ -1900,3 +1900,70 @@ the roadmap's tickets; wave 1 landed the code half of the `doing` rows in one pa
 | CS-297 | CC | Milky Way marker click still fails App Check (38/39) after the test's aim was corrected, so it is an app bug: find why a click on a marker's collider centre meets nothing | — | todo |
 | CS-298 | CC | Outline hand has no pinch feedback now the sample affordances are off: add a tint to `HandOutline` driven by pinch strength | CS-271 | todo |
 | CS-299 | CC | Store build must refuse to ship `being_keys.asset` (CS-233 moves the key out; until then `Build Store APK` signs whatever is there) | CS-236 | todo |
+
+## Phase 9 — What is left (6 Oct 2026, end of the day's session)
+
+`main` is at the commit that adds this section. Three waves of hand-tracking work and the store build
+landed today; the rows below are everything still open, in the order it should be picked up. Rows that already
+exist above (CS-282 to CS-299) keep their own status and are only pointed at here.
+
+### Blocking: do first
+
+| ID | Track | Title | Depends | Status |
+|---|---|---|---|---|
+| CS-300 | TERM | The editor no longer enters play mode since the Steam S1 changes (uncommitted in the terminal's working tree): `EditorApplication.isPlaying = true` is requested, the OpenXR session goes SYNCHRONIZED -> STOPPING -> EXITING and play never starts, so App Check cannot run. Ruled out: the headset being awake; Standalone `m_InitManagerOnStart` (flipping it back to 1 did not help). Suspects: the three Standalone controller profiles (Index, Vive, WMR) enabled in `OpenXR Package Settings.asset`, and the editor's active build target having been switched to Windows by the Steam build. Bisect, fix, then run App Check | — | todo |
+| CS-301 | TERM | Commit Steam S1 (CS-250 to CS-254: `Launch.cs`, `-vr`/`-desktop`, Standalone controller profiles, `PassthroughAvailable`, `Unity6WindowsBuild` menu items and key guard) once CS-300 is closed and App Check passes. Verified so far: compiles, `Builds/Steam/win64/CosmicSimulationXR.exe -desktop` ran 30 s with no errors and did not wake SteamVR, and the Quest APK built from the same tree boots with passthrough. `-vr` is untested | CS-300 | todo |
+| CS-302 | TERM | Owner's worn pass of the latest Quest build (wave 3 + Start always visible): intro orb pinch-only, Start present from the first moment, palm menu opens and closes with the hand, dock square to the eyes, two-hand and air-pinch zoom on planets and moons, two air pinches on a place, fling, pinch the logo, outlined hands in both eyes. Read logcat afterwards (`adb logcat -G 16M` first; the default 256 KiB buffer loses the app log in minutes) | — | todo |
+
+### Hand tracking still open (rows above)
+
+CS-282, CS-286, CS-290, CS-291, CS-296 are `doing`: code landed, device check open (CS-302 covers them).
+CS-297 (Milky Way marker click fails App Check), CS-298 (pinch tint on the outline hand), CS-284 (hands run
+sheet), CS-285 (App Check asserts poke filters, sizes, masks), CS-287 (panels with grab handles), CS-288 (real
+hands in front of planets), CS-289 (open palm pauses narration), CS-045 (move the Solar System as a whole),
+CS-293 (Wide Motion Mode, blocked on package release).
+
+| ID | Track | Title | Depends | Status |
+|---|---|---|---|---|
+| CS-303 | TERM | Tune on device: `ForceSolver.FlingSpeed` (1.5 m/s is an estimate), the palm menu's curl thresholds (`HandMenu._openCurl` 0.35 / `_closedCurl` 0.6), and whether the intro orb and the being should take the second-hand air pinch at all | CS-302 | todo |
+| CS-304 | TERM | Confirm the intro logo's collider is on a layer the hand casters query (0, 5, 11, 12, 31); if not, pinch-to-skip never fires on device | CS-291 | todo |
+| CS-305 | CC | A place scales about its own pivot, not the midpoint of the two hands, so a place centred far from the player drifts as it scales (`ManipulationHandler` air manipulation) | CS-286 | todo |
+| CS-306 | CC | Palm menu's Dock button still wears the Back artwork; `icon_reset` and `icon_about` do not exist, so those dock buttons show text | — | todo |
+| CS-307 | CC | Docs behind the code: `GDD.md` (:223 dwell-pull with no intro exception, :337 left palm-up toggles the dock), `TECHNICAL_OVERVIEW.md` (:101, :112-113 lack air pinches, `Held`/`Place`, fling, the pinch-only orb; section 11 lacks Build Store APK and the Windows menu items), `AppPause.cs:14` comment | — | todo |
+| CS-308 | CC | `BeingKeys` still reads `OPENAI_API_KEY` from the environment and a `.env` beside the exe in a Standalone player; decide whether to compile that out of players | CS-254 | todo |
+
+### Meta Horizon Store (app 1436957446161428, org "Juan Diego Lugo")
+
+Done today: app record created; `Build Store APK` signs from `COSMIC_*` environment variables; manifest is
+Quest 3/3S only, `excludeFromRecents`, no BLUETOOTH, passthrough pre-splash (checked with `aapt2` on the built
+APK); privacy policy, listing, store roadmap and decisions rewritten; free, 13+.
+
+| ID | Track | Title | Depends | Status |
+|---|---|---|---|---|
+| CS-309 | OWNER | Sign the Developer Distribution Agreement (release channels are locked until it is signed) and complete admin identity verification for the org | — | todo |
+| CS-310 | OWNER | Create the release keystore per `docs/release/RELEASE_SIGNING.md`; back it up in two places with its passwords; set the four `COSMIC_*` variables. The first uploaded certificate is permanent for the app | — | todo |
+| CS-311 | TERM | First signed build to the Alpha channel: `Build Store APK`, `apksigner verify --print-certs -v`, upload with `ovr-platform-util upload-quest-build --age-group TEENS_AND_ADULTS`, invite the owner's own account (channels start empty), install from the Library. Uninstall the sideloaded debug copy first | CS-309, CS-310, CS-299 | todo |
+| CS-312 | OWNER | Fill publisher name and contact email in `docs/store/PRIVACY_POLICY.md`, confirm the two flagged lines, host it at a public URL, put the URL in the dashboard and `ABOUT_COPY.md` | — | todo |
+| CS-313 | OWNER | Decide who pays for the voice guide's OpenAI minutes and where the token endpoint is hosted; CS-231 to CS-233 (key out of the APK) follow as code and gate any build with the being leaving private testing | — | todo |
+| CS-314 | OWNER | Age-group self-certification (13+), Data Use Checkup if the dashboard asks for it, IARC rating, store art (covers, icon, logo), five 2560x1440 screenshots, trailer, optional splash PNG | CS-309 | todo |
+| CS-315 | TERM | On device: launch from passthrough Home and check the room stays visible through loading (VRC.Quest.Functional.14); note whether Unity's own splash interrupts it | CS-302 | todo |
+
+### Steam (roadmap: `docs/release/ROADMAP_STEAM.md`, tickets CS-250 to CS-269)
+
+The owner's Steamworks account (`juandlugopro`) has SDK access only: no partner agreement, no App ID. SDK
+1.65 is extracted at `D:\Documents\Claude\steamworks_sdk_165` (ContentBuilder is the upload tool).
+
+| ID | Track | Title | Depends | Status |
+|---|---|---|---|---|
+| CS-257 | OWNER | Steam Direct sign-up: legal name and address, NDA, Steam Distribution Agreement, the $100 fee, bank and tax details and identity verification; then create the app and note the App ID and depot ID. A 30-day wait after the fee and a two-week Coming Soon page apply to release, not to private testing | — | todo |
+| CS-255 | TERM | PC VR and desktop test pass: `-desktop` and no flag never wake SteamVR; `-vr` on SteamVR + Steam Link and on Quest Link shows the sky, no passthrough controls, hands and Touch working, and the app leaves SteamVR's list on quit; `-vr` with no runtime shows the notice and falls back | CS-301 | todo |
+| CS-264 | TERM | Depot scripts and first upload to a private branch with ContentBuilder; the owner logs in to `steamcmd` personally (password and Steam Guard) | CS-257, CS-301 | todo |
+| CS-316 | OWNER | Choose the Steam category: non-game software must fit a listed one; "Educational & Tutorials" fits | CS-257 | todo |
+
+### Housekeeping
+
+| ID | Track | Title | Depends | Status |
+|---|---|---|---|---|
+| CS-317 | OWNER | `Assets/scenes/view_scenes/solar_system_view_scene.unity` has a large uncommitted change in the terminal's working tree that predates 6 Oct (about 26,000 added lines; the Solar System moons of CS-202/203 may live only there). Decide: commit it or discard it | — | todo |
+| CS-318 | TERM | `origin/quest3-port` is stale (only `main` has been pushed since 4 Oct); push the branch or delete it on the remote | — | todo |
+| CS-319 | TERM | The headset's proximity sensor may be left overridden after an unattended launch (`am broadcast -a com.oculus.vrpowermanager.prox_close`); always end a test with `automation_disable` | — | todo |
