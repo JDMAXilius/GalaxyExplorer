@@ -2007,3 +2007,22 @@ For the separate ChatGPT conversation with Figma connected: [handoff](design/v2/
 | CHAT-V2-008 | CHAT | Correct feedback, room states and layouts | CHAT-V2-004 | todo |
 | CHAT-V2-009 | CHAT | Fix prototype links and safe V2 cleanup | CHAT-V2-005–CHAT-V2-008 | todo |
 | CHAT-V2-010 | CHAT | Re-export, verify visual fidelity/editability and report | CHAT-V2-009 | todo |
+
+
+## UI Version 2.0 — Unity implementation (proposal)
+
+Approach, reasoning and phase exit criteria: [design/v2/UNITY_ROADMAP.md](design/v2/UNITY_ROADMAP.md). These are phases, not yet broken into [CC]/[TERM] tickets; nothing is started. Phase 0 depends on CS-300, CS-301 and CS-317.
+
+| ID | Phase | Goal | Depends | Status |
+|---|---|---|---|---|
+| U2-P0 | Ground | Play mode fixed, tree clean, headset distance test, theme and icons exported | CS-300, CS-301, CS-317 | todo |
+| U2-P1 | Foundations | ui2 assembly, UiButton kit, ScreenAnchor, AppModel, adapters, new app check | U2-P0 | todo |
+| U2-P2 | Shell | Rail, dock, settings button, room toggle, context catalog | U2-P1 | todo |
+| U2-P3 | Card and picker | Selection service, picker, information card, photo and fact data, Listen | U2-P2 | todo |
+| U2-P4 | Milky Way | Pins, preview card, travel, notices, Back to map | U2-P3 | todo |
+| U2-P5 | Solar System | View chip and menu, body picker, moons, other systems | U2-P3 | todo |
+| U2-P6 | Settings | Settings panel, device chooser, About, confirmations | U2-P2 | todo |
+| U2-P7 | Guide | Companion status, Guide panel, mic permission paths | U2-P2 | todo |
+| U2-P8 | Help and first use | Lesson flow, placement, Help index, palm summon, tracking-lost | U2-P2 | todo |
+| U2-P9 | Compare | New compare feature, planets first | U2-P5 | todo |
+| U2-P10 | Cutover | Delete legacy UI, update docs, performance pass, Quest walkthrough | U2-P3 to U2-P8 | todo |
