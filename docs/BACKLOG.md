@@ -1967,3 +1967,25 @@ The owner's Steamworks account (`juandlugopro`) has SDK access only: no partner 
 | CS-317 | OWNER | `Assets/scenes/view_scenes/solar_system_view_scene.unity` has a large uncommitted change in the terminal's working tree that predates 6 Oct (about 26,000 added lines; the Solar System moons of CS-202/203 may live only there). Decide: commit it or discard it | — | todo |
 | CS-318 | TERM | `origin/quest3-port` is stale (only `main` has been pushed since 4 Oct); push the branch or delete it on the remote | — | todo |
 | CS-319 | TERM | The headset's proximity sensor may be left overridden after an unattended launch (`am broadcast -a com.oculus.vrpowermanager.prox_close`); always end a test with `automation_disable` | — | todo |
+
+
+## UI Version 2.0 — Figma transfer
+
+Owner-approved one-to-one transfer. TERM: read [the handoff](design/v2/TERMINAL_HANDOFF.md) and [full tickets](design/v2/FIGMA_TICKETS.md). Actual image assets are committed under `docs/design/v2/screens/`; exact hashes/dimensions are in `references.json`. Figma work is pending, not complete. Existing Unity changes are out of scope.
+
+| ID | Track | Title | Depends | Status |
+|---|---|---|---|---|
+| V2-001 | TERM | Verify authenticated Figma read/write | — | todo |
+| V2-002 | TERM | Inspect and lock exact image references | — | todo |
+| V2-003 | TERM | Create V2 pages and visible reference sections | V2-001, V2-002 | todo |
+| V2-004 | TERM | Create native design-system variables/styles | V2-003 | todo |
+| V2-005 | TERM | Build editable components and state variants | V2-004 | todo |
+| V2-006 | TERM | Recreate canonical exploration frame one-to-one | V2-005 | todo |
+| V2-007 | TERM | Complete Explore screens and local modes | V2-006 | todo |
+| V2-008 | TERM | Complete Guide and microphone states | V2-006 | todo |
+| V2-009 | TERM | Complete Settings, recovery, About and confirmations | V2-006 | todo |
+| V2-010 | TERM | Complete placement, Help and transient hand hints | V2-006 | todo |
+| V2-011 | TERM | Complete feedback, room states and desktop layouts | V2-006 | todo |
+| V2-012 | TERM | Wire native prototype journeys | V2-007–V2-011 | todo |
+| V2-013 | TERM | Pass visual fidelity and editability gate | V2-012 | todo |
+| V2-014 | TERM | Return verified Figma URLs and close evidenced tickets | V2-013 | todo |

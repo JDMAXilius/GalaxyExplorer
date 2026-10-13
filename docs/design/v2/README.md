@@ -47,3 +47,7 @@ Image-generated text, object scale and sky-map placement are illustrative. The s
 ## Earlier exploration
 
 The `explorations/` directory preserves all generated concepts and refinements from this session. The three `galaxy-ui-*.md` files preserve discovery and decision history. `screens/` contains the curated Version 2.0 review set. The ZIP is omitted because it duplicates this directory.
+
+## Cloud Terminal tickets
+
+Start with [TERMINAL_HANDOFF.md](TERMINAL_HANDOFF.md), then execute [FIGMA_TICKETS.md](FIGMA_TICKETS.md). Exact images and hashes are in [references.json](references.json). Record real Figma evidence in [FIGMA_PROGRESS.md](FIGMA_PROGRESS.md). These tickets are repository documents, not automatically created GitHub Issues.

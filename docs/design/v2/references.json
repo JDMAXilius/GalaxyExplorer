@@ -1,0 +1,63 @@
+{
+  "canonical": "docs/design/v2/screens/01-galaxies.png",
+  "figmaFileKey": "dx6MxAxPqZ9QBSRJqCCVev",
+  "referencePolicy": "Open actual PNGs; preserve approved pixels; no regenerated replacements",
+  "images": [
+    {
+      "path": "docs/design/v2/screens/01-galaxies.png",
+      "sha256": "6cb58395b794996445cd4f9f7e810944b1795f5b89a307a7b95109503ce09ed9",
+      "width": 1487,
+      "height": 1058,
+      "role": "canonical approved shell and photo-first card"
+    },
+    {
+      "path": "docs/design/v2/screens/02-solar-system.png",
+      "sha256": "91a12bca71daf6c67ef0329763ad7e9488a9c05c2aebc26d8c457473de843f60",
+      "width": 1487,
+      "height": 1058,
+      "role": "solar-system representative; reconcile mode/scale illustration"
+    },
+    {
+      "path": "docs/design/v2/screens/03-destination-preview.png",
+      "sha256": "07c692100f5f26dbced1346800d7cbdfb0e28113dd92f904b2e138e34fee9746",
+      "width": 1487,
+      "height": 1058,
+      "role": "Milky Way destination preview"
+    },
+    {
+      "path": "docs/design/v2/screens/04-guide.png",
+      "sha256": "ae961166a73b780cdfd8f5206572ef9cda915c78cda29f1e69607cf1607c5d22",
+      "width": 1487,
+      "height": 1058,
+      "role": "Guide listening representative"
+    },
+    {
+      "path": "docs/design/v2/screens/05-settings.png",
+      "sha256": "87ab5803dfb8e716d17a75ebd70f8d8952e6b1dc28dd3ca1a7335c0b219c82e0",
+      "width": 1487,
+      "height": 1058,
+      "role": "Settings representative"
+    },
+    {
+      "path": "docs/design/v2/screens/06-comparison.png",
+      "sha256": "5e5dfb69743c1f8b545a53f047da34bb630e162b7abc05272fa070981c4ec831",
+      "width": 1487,
+      "height": 1058,
+      "role": "Comparison representative; verify equal-size depiction"
+    },
+    {
+      "path": "docs/design/v2/screens/07-help.png",
+      "sha256": "054d9d26b7b71bab05df80ab10bc1590750cbbb6a3a995e383b8eb4f0abeaa7e",
+      "width": 1487,
+      "height": 1058,
+      "role": "Temporary gesture teaching representative"
+    },
+    {
+      "path": "docs/design/v2/screens/08-design-system.png",
+      "sha256": "f3c7de0aadf0385396dbc786b1d9fbe4e21fbc2f26c98ad3354e0781ccab71a9",
+      "width": 1487,
+      "height": 1058,
+      "role": "Component visual specimens; actual measurements come from approved frames"
+    }
+  ]
+}
