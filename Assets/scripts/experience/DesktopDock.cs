@@ -191,6 +191,7 @@ namespace CosmicSimulation
         {
             if (passthroughButton != null)
             {
+                passthroughButton.gameObject.SetActive(ExperienceModeManager.PassthroughAvailable);
                 passthroughButton.onClick.AddListener(TogglePassthrough);
             }
 

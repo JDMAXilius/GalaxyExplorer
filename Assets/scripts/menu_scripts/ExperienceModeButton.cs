@@ -25,7 +25,7 @@ public class ExperienceModeButton : MonoBehaviour
 
     private void Start()
     {
-        gameObject.SetActive(GalaxyExplorerManager.IsQuest3);
+        gameObject.SetActive(GalaxyExplorerManager.IsQuest3 && ExperienceModeManager.PassthroughAvailable);
         Refresh();
     }
 

@@ -80,4 +80,4 @@ MonoBehaviour:
   m_Name: Standalone Settings
   m_EditorClassIdentifier: Unity.XR.Management::UnityEngine.XR.Management.XRGeneralSettings
   m_Manager: {fileID: 3963456696975020518}
-  m_InitManagerOnStart: 1
+  m_InitManagerOnStart: 0

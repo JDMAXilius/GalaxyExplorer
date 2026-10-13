@@ -159,6 +159,16 @@ namespace CosmicSimulation
             }
         }
 
+        /// <summary>Says a line that is not about a place, such as a VR start that fell back to the desktop.</summary>
+        public static void Say(string message)
+        {
+            var notice = Resolve();
+            if (notice != null)
+            {
+                notice.Show(message);
+            }
+        }
+
         /// <summary>
         /// Puts the place's name into the message. A plain replace rather than <c>string.Format</c>: these
         /// strings are editable in the inspector and the copy deck, and a stray brace typed into one would

@@ -90,7 +90,8 @@ namespace CosmicSimulation
         {
             Instance = this;
             _camera = Camera.main;
-            PassthroughForced = PlayerPrefs.GetInt(PassthroughPrefsKey, passthroughOnStart ? 1 : 0) == 1;
+            PassthroughForced = ExperienceModeManager.PassthroughAvailable &&
+                                PlayerPrefs.GetInt(PassthroughPrefsKey, passthroughOnStart ? 1 : 0) == 1;
             BuildDimQuad();
         }
 
@@ -140,6 +141,12 @@ namespace CosmicSimulation
         /// <summary>The dock's passthrough button: show the room whatever the experience wanted, or stop doing so.</summary>
         public void SetPassthroughForced(bool forced, float fadeSeconds = DefaultFade)
         {
+            // No room to show (PC VR, the Windows desktop): nothing to toggle and no preference to write.
+            if (!ExperienceModeManager.PassthroughAvailable)
+            {
+                return;
+            }
+
             PassthroughForced = forced;
             PlayerPrefs.SetInt(PassthroughPrefsKey, forced ? 1 : 0);
             PlayerPrefs.Save();
@@ -153,7 +160,10 @@ namespace CosmicSimulation
             var effective = EffectiveMode;
 
             // Full black is the headset's VR mode; everything else keeps passthrough on underneath.
-            var wantsVR = effective == EnvironmentMode.FullBlack;
+            // Without passthrough there is no room either: the headset stays in VR (the sky), and there is
+            // nothing to dim or to put a halo against.
+            var room = ExperienceModeManager.PassthroughAvailable;
+            var wantsVR = effective == EnvironmentMode.FullBlack || !room;
             if (ExperienceModeManager.Instance != null)
             {
                 ExperienceModeManager.Instance.SetMode(wantsVR
@@ -161,7 +171,7 @@ namespace CosmicSimulation
                     : ExperienceModeManager.Mode.Passthrough);
             }
 
-            _dimTarget = effective == EnvironmentMode.Dimmed || effective == EnvironmentMode.BlackHalo
+            _dimTarget = room && (effective == EnvironmentMode.Dimmed || effective == EnvironmentMode.BlackHalo)
                 ? dimOpacity
                 : 0f;
             _dimSpeed = 1f / Mathf.Max(0.01f, fadeSeconds);
@@ -170,7 +180,7 @@ namespace CosmicSimulation
             {
                 if (halo != null)
                 {
-                    halo.SetVisible(effective == EnvironmentMode.BlackHalo);
+                    halo.SetVisible(room && effective == EnvironmentMode.BlackHalo);
                 }
             }
 
@@ -272,7 +282,7 @@ namespace CosmicSimulation
             var halo = go.AddComponent<BlackHalo>();
             halo.Initialise(target, diameter, HaloMaterial());
             _halos.Add(halo);
-            halo.SetVisible(!PassthroughForced && Mode == EnvironmentMode.BlackHalo);
+            halo.SetVisible(ExperienceModeManager.PassthroughAvailable && !PassthroughForced && Mode == EnvironmentMode.BlackHalo);
             return halo;
         }
 

@@ -33,6 +33,15 @@ namespace GalaxyExplorer
         public Mode CurrentMode { get; private set; } = Mode.Passthrough;
 
         /// <summary>
+        /// Whether this build can show the player's room at all (CS-252). Passthrough belongs to the standalone
+        /// Quest: SteamVR has no passthrough for apps and Meta leaves it developer-only over Link, so the Windows
+        /// player never offers it, in a headset or on the desktop. The editor keeps it, so Link sessions and the
+        /// desktop preview behave as they always have.
+        /// </summary>
+        public static bool PassthroughAvailable =>
+            Application.isEditor || Application.platform == RuntimePlatform.Android;
+
+        /// <summary>
         /// Whether VR-only scenery (the star background) should be shown: on opaque headsets, and on Quest 3 in VR mode.
         /// </summary>
         public static bool ShowsVRScenery =>

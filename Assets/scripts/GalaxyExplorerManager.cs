@@ -386,6 +386,12 @@ namespace GalaxyExplorer
                 MyAppPlatformManagerInitialized.Invoke();
             }
 
+            // -vr was asked for and no runtime started (CS-250): say so once the scene is up, not silently.
+            if (GalaxyExplorer.XR.Launch.VRFailed)
+            {
+                Invoke(nameof(SayVRFailed), 1f);
+            }
+
             TransitionManager = FindObjectOfType<TransitionManager>();
             VoManager = FindObjectOfType<VOManager>();
             OnboardingManager = FindObjectOfType<OnboardingManager>();
@@ -395,6 +401,11 @@ namespace GalaxyExplorer
             CardPoiManager = FindObjectOfType<CardPOIManager>();
             CameraControllerHandler = FindObjectOfType<CameraController>();
             FlowManagerHandler = FindObjectOfType<FlowManager>();
+        }
+
+        private void SayVRFailed()
+        {
+            CosmicSimulation.SwitchNotice.Say("No VR runtime found; starting on the desktop");
         }
     }
 }

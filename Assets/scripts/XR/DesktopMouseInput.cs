@@ -408,7 +408,7 @@ namespace GalaxyExplorer.XR
                 CosmicSimulation.MoonLabel.ShowLabels = !CosmicSimulation.MoonLabel.ShowLabels;
             }
 
-            if (keyboard.pKey.wasPressedThisFrame)
+            if (keyboard.pKey.wasPressedThisFrame && ExperienceModeManager.PassthroughAvailable)
             {
                 CosmicSimulation.EnvironmentController.Instance?.TogglePassthrough();
             }

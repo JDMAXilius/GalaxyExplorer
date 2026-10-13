@@ -73,6 +73,14 @@ namespace GalaxyExplorer.Build
             "UnityEngine.XR.OpenXR.Features.CompositionLayers.OpenXRCompositionLayersFeature",
         };
 
+        // PC VR only (CS-251): Valve reviews on an Index or a Vive, and neither is a Touch controller.
+        private static readonly string[] StandaloneOnlyFeatures =
+        {
+            "UnityEngine.XR.OpenXR.Features.Interactions.ValveIndexControllerProfile",
+            "UnityEngine.XR.OpenXR.Features.Interactions.HTCViveControllerProfile",
+            "UnityEngine.XR.OpenXR.Features.Interactions.MicrosoftMotionControllerProfile",
+        };
+
         private static readonly string[] AndroidOnlyFeatures =
         {
             "UnityEngine.XR.OpenXR.Features.MetaQuestSupport.MetaQuestFeature",
@@ -85,7 +93,7 @@ namespace GalaxyExplorer.Build
             EnsureOpenXRLoaders();
             var log = new StringBuilder("Quest 3 project setup\n");
 
-            EnableFeatures(BuildTargetGroup.Standalone, CommonFeatures, log);
+            EnableFeatures(BuildTargetGroup.Standalone, CommonFeatures.Concat(StandaloneOnlyFeatures), log);
             EnableFeatures(BuildTargetGroup.Android, CommonFeatures.Concat(AndroidOnlyFeatures), log);
 
             // Quest (Vulkan): multiview. The vertex stage gets each eye's matrices from the view index, so the app's
@@ -438,7 +446,10 @@ namespace GalaxyExplorer.Build
                     perTarget.CreateDefaultManagerSettingsForBuildTarget(group);
                 }
 
-                general.InitManagerOnStart = true;
+                // Android starts XR by itself. On Standalone GalaxyExplorer.XR.Launch starts it, and only when the
+                // player asked for VR (CS-250).
+                general.InitManagerOnStart = group == BuildTargetGroup.Android;
+                EditorUtility.SetDirty(general);
                 if (!general.Manager.activeLoaders.Any(l => l != null && l.GetType().FullName == OpenXRLoader))
                 {
                     XRPackageMetadataStore.AssignLoader(general.Manager, OpenXRLoader, group);

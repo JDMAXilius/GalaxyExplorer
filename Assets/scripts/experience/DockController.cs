@@ -786,7 +786,7 @@ namespace CosmicSimulation
 
             if (passthroughButton != null)
             {
-                passthroughButton.gameObject.SetActive(visible);
+                passthroughButton.gameObject.SetActive(visible && GalaxyExplorer.ExperienceModeManager.PassthroughAvailable);
             }
 
             if (recenterButton != null)
