@@ -1,6 +1,6 @@
 # Figma transfer progress
 
-Status: **in progress** (13 Oct 2026, local terminal session). V2-001 to V2-004 done, V2-005 partly built, V2-006 built and waiting on the owner's read of the logged conflicts. V2-007 onward not started.
+Status: **in progress** (13 Oct 2026, local terminal session). V2-001 to V2-004 done, V2-005 built with two open items, V2-006 built and waiting on the owner's read of the logged conflicts. V2-007 onward not started.
 
 Target: https://www.figma.com/design/dx6MxAxPqZ9QBSRJqCCVev/
 
@@ -10,7 +10,7 @@ Target: https://www.figma.com/design/dx6MxAxPqZ9QBSRJqCCVev/
 | V2-002 | done | All eight PNGs opened; SHA-256 and 1487 × 1058 match `references.json`. Regions and conflicts below. |
 | V2-003 | done | Ten `V2 /` pages created; eight reference frames with the exact PNGs placed and labelled on the Read me page. |
 | V2-004 | done | Variable collections, text styles and a Foundations specimen frame. Contrast checks not yet recorded. |
-| V2-005 | in progress | Ten components/sets built (list below). Still to build: Segmented, ToggleRow, DeviceRow, Card/DestinationPreview, Guide/Status, Feedback/Hint, Feedback/Notice, Confirmation. Larger-text and long-text behaviour not yet verified. |
+| V2-005 | in review | Eighteen components/sets built (list below, render in `evidence/components-library.jpg`). Open: per-button icon swap is not a property yet, so Enter nebula, Stop listening and similar show the play or compare icon; Larger-text and long-text behaviour not yet verified. |
 | V2-006 | in review | S01 built from component instances at 1487 × 1058. Export, side-by-side and overlay saved under `evidence/`. Deviations are listed under "Decisions requiring resolution". |
 | V2-007 | todo | — |
 | V2-008 | todo | — |
@@ -50,7 +50,7 @@ Components on `V2 / 02 — Components`:
 
 | Component | ID | Variants |
 |---|---|---|
-| Controls/Button | `44:128` | Type Primary/Secondary × State Default/Hover/Pressed/Focused/Disabled/Loading; text property `Label` |
+| Controls/Button | `44:128` | Type Primary/Secondary × State Default/Hover/Pressed/Focused/Disabled/Loading; text property `Label`, boolean `Show icon` |
 | Controls/IconButton | `44:152` | State Default/Hover/Pressed/Focused/Disabled |
 | Navigation/DockItem | `44:208` | Item Explore/Guide/Room × State Default/Active/Hover/Disabled |
 | Navigation/Dock | `44:210` | three DockItem instances |
@@ -60,6 +60,14 @@ Components on `V2 / 02 — Components`:
 | Navigation/Breadcrumb | `44:317` | — |
 | Card/FactPair | `44:321` | — |
 | Card/Information | `44:407` | Narration Off/Playing/Paused |
+| Controls/Segmented | `53:105` | Options 2/3 × Selected, plus Disabled |
+| Controls/ToggleRow | `53:132` | State On/Off/Disabled/Focused |
+| Controls/ListRow | `53:185` | Kind Navigation/Value/Device selected/Device unavailable/Outlined/Hover |
+| Card/DestinationPreview | `53:273` | State Ready/Loading/Unavailable |
+| Guide/Status | `53:318` | Phase Idle/Connecting/Listening/Thinking/Speaking/Unavailable/Permission needed |
+| Feedback/Hint | `53:365` | Gesture Palm/Pinch/Two-hand × State Active/Completed/Dismissed |
+| Feedback/Notice | `53:393` | Kind Progress/Unavailable/Failure/Restored/Tracking |
+| Feedback/Confirmation | `53:445` | Kind Quit/Restore × State Default/Waiting |
 
 Screens: S01 `44:409` on `V2 / 04 — Explore`. S02–S39: pending. Prototype: pending.
 

@@ -1979,7 +1979,7 @@ Owner-approved one-to-one transfer. TERM: read [the handoff](design/v2/TERMINAL_
 | V2-002 | TERM | Inspect and lock exact image references | — | done (13 Oct, see design/v2/FIGMA_PROGRESS.md) |
 | V2-003 | TERM | Create V2 pages and visible reference sections | V2-001, V2-002 | done (13 Oct, see design/v2/FIGMA_PROGRESS.md) |
 | V2-004 | TERM | Create native design-system variables/styles | V2-003 | done (13 Oct, see design/v2/FIGMA_PROGRESS.md) |
-| V2-005 | TERM | Build editable components and state variants | V2-004 | in progress |
+| V2-005 | TERM | Build editable components and state variants | V2-004 | in review (two open items) |
 | V2-006 | TERM | Recreate canonical exploration frame one-to-one | V2-005 | in review (deviations logged) |
 | V2-007 | TERM | Complete Explore screens and local modes | V2-006 | todo |
 | V2-008 | TERM | Complete Guide and microphone states | V2-006 | todo |
