@@ -1,10 +1,10 @@
 {
   "designVersion": "2.0",
-  "figmaStatus": "not created; no editing connector",
+  "figmaStatus": "built in dx6MxAxPqZ9QBSRJqCCVev on V2 / pages, awaiting owner review (see FIGMA_PROGRESS.md)",
   "screenStateSpecifications": 39,
   "rasterReferenceCount": 8,
-  "nativeComponentsCreated": false,
-  "prototypeLinksCreated": false,
+  "nativeComponentsCreated": true,
+  "prototypeLinksCreated": true,
   "sourceAppModified": false,
   "screens": [
     "01-galaxies.png",

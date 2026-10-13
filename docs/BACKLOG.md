@@ -1971,7 +1971,7 @@ The owner's Steamworks account (`juandlugopro`) has SDK access only: no partner 
 
 ## UI Version 2.0 — Figma transfer
 
-Owner-approved one-to-one transfer. TERM: read [the handoff](design/v2/TERMINAL_HANDOFF.md) and [full tickets](design/v2/FIGMA_TICKETS.md). Actual image assets are committed under `docs/design/v2/screens/`; exact hashes/dimensions are in `references.json`. Figma work is pending, not complete. Existing Unity changes are out of scope.
+Owner-approved one-to-one transfer. TERM: read [the handoff](design/v2/TERMINAL_HANDOFF.md) and [full tickets](design/v2/FIGMA_TICKETS.md). Actual image assets are committed under `docs/design/v2/screens/`; exact hashes/dimensions are in `references.json`. Figma work is built and awaiting owner review; status and node IDs are in design/v2/FIGMA_PROGRESS.md. Existing Unity changes are out of scope.
 
 | ID | Track | Title | Depends | Status |
 |---|---|---|---|---|
@@ -1979,13 +1979,13 @@ Owner-approved one-to-one transfer. TERM: read [the handoff](design/v2/TERMINAL_
 | V2-002 | TERM | Inspect and lock exact image references | — | done (13 Oct, see design/v2/FIGMA_PROGRESS.md) |
 | V2-003 | TERM | Create V2 pages and visible reference sections | V2-001, V2-002 | done (13 Oct, see design/v2/FIGMA_PROGRESS.md) |
 | V2-004 | TERM | Create native design-system variables/styles | V2-003 | done (13 Oct, see design/v2/FIGMA_PROGRESS.md) |
-| V2-005 | TERM | Build editable components and state variants | V2-004 | in review (two open items) |
-| V2-006 | TERM | Recreate canonical exploration frame one-to-one | V2-005 | in review (deviations logged) |
-| V2-007 | TERM | Complete Explore screens and local modes | V2-006 | todo |
-| V2-008 | TERM | Complete Guide and microphone states | V2-006 | todo |
-| V2-009 | TERM | Complete Settings, recovery, About and confirmations | V2-006 | todo |
-| V2-010 | TERM | Complete placement, Help and transient hand hints | V2-006 | todo |
-| V2-011 | TERM | Complete feedback, room states and desktop layouts | V2-006 | todo |
-| V2-012 | TERM | Wire native prototype journeys | V2-007–V2-011 | todo |
-| V2-013 | TERM | Pass visual fidelity and editability gate | V2-012 | todo |
-| V2-014 | TERM | Return verified Figma URLs and close evidenced tickets | V2-013 | todo |
+| V2-005 | TERM | Build editable components and state variants | V2-004 | in review (built 13 Oct) |
+| V2-006 | TERM | Recreate canonical exploration frame one-to-one | V2-005 | in review (built 13 Oct) |
+| V2-007 | TERM | Complete Explore screens and local modes | V2-006 | in review (built 13 Oct) |
+| V2-008 | TERM | Complete Guide and microphone states | V2-006 | in review (built 13 Oct) |
+| V2-009 | TERM | Complete Settings, recovery, About and confirmations | V2-006 | in review (built 13 Oct) |
+| V2-010 | TERM | Complete placement, Help and transient hand hints | V2-006 | in review (built 13 Oct) |
+| V2-011 | TERM | Complete feedback, room states and desktop layouts | V2-006 | in review (built 13 Oct) |
+| V2-012 | TERM | Wire native prototype journeys | V2-007–V2-011 | in review (built 13 Oct) |
+| V2-013 | TERM | Pass visual fidelity and editability gate | V2-012 | in progress (awaiting owner review) |
+| V2-014 | TERM | Return verified Figma URLs and close evidenced tickets | V2-013 | in progress (awaiting owner review) |
