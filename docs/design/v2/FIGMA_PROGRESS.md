@@ -55,6 +55,8 @@ Text styles: `V2/Title` 36/42 Semi Bold, `V2/Heading` 24/30 Medium, `V2/Body` 20
 | Controls/IconButton | `44:152` | State ×5 |
 | Controls/Segmented | `53:105` | Options 2/3 × Selected, Disabled |
 | Controls/ToggleRow | `53:132` | On/Off/Disabled/Focused |
+| Controls/Chip | `91:407` | Default/Hover/Open; `Category`, `Value` |
+| Controls/Menu | `91:643` | built from Controls/MenuItem `91:564` (Default/Selected/Hover) |
 | Controls/ListRow | `64:1172` | Kind ×6; `Title`, `Description`, `Leading icon` |
 | Icon/Glyph | `61:497` | 18 names × Tone Primary/OnAccent/Accent |
 | Navigation/DockItem | `44:208` | Item ×3 × State Default/Active/Hover/Disabled |
@@ -169,13 +171,19 @@ Buttons with no link in the prototype, by design or not yet designed: Compare on
 
 The per-screen comparison images under `evidence/` for S08 and S23 predate the wording change; the page overviews `explore-S01-S14.jpg` and `flows-S33-S39.jpg` are current.
 
+## Third pass (13 Oct 2026, owner feedback)
+
+- **Selection states** rebuilt from the approved image (`evidence/selection-reference-vs-figma.jpg`). Dock: the active Explore pill has a cyan outline that is bright on the left and fades toward the right, a faint cyan wash, a larger cyan icon and a semibold cyan label; active Guide and Room use a full outline. Rail: 3 px cyan outline with outer and inner glow, dark teal fill, glowing context image, semibold cyan label, larger dot on the left edge. Selected tile: inner glow and semibold cyan label. New text style `V2/Caption Strong`.
+- **Solar view control.** The two stacked controls (View: Orbits/Compare and Size: Equal/Relative) are replaced on S07, S08 and S36 by one `Controls/Chip` (`91:407`) that reads "View Equal Size" and opens `Controls/Menu` (`91:643`, items from `Controls/MenuItem` `91:564`): Orbits, Equal Size, Relative Size, then Other star systems. Size only ever applied in Compare, so the real choice is three views, not two-by-two. Options board on the Explore page and in `evidence/solar-view-control-options.jpg`: 0 before, A chip (recommended, applied), B one three-way switch. Prototype frames `S07b`/`S08b` show the open menu. This departs from reference 02 at the owner's request.
+- **tokens.json** now carries the accent (`#37E1FD`), type sizes and button radius measured from the approved frame; the previous values are kept in its `note`.
+- The S01 and S08 comparison images under `evidence/` are current. The S23 one still predates the Settings wording change.
+- Not done: new Unity captures for Sagittarius A* and the nebula interior. That needs a play-mode capture session in the editor and is better as its own [TERM] ticket.
+
 ## Open items
 
 Decisions taken without an owner response (all reversible):
 
-1. **Accent.** The `cyan/400` primitive is `#37E1FD`, sampled from the approved renders. `tokens.json` still says `#6CCFDD`.
-2. **Type scale.** Styles follow the canonical frame (36/24/20/17). `tokens.json` lists 28/22/16/14 and is unchanged.
-3. **Button radius and photo ratio** follow the canonical frame (18 and pill; about 1.64:1), not the tokens (12; 16:9).
+1. **Accent, type scale, button radius** follow the canonical frame, and `tokens.json` now matches. The card photo ratio (about 1.64:1) still differs from the spec's 16:9.
 4. **Spec over reference** for the Settings and Solar wording above.
 
 Known deviations and gaps:
