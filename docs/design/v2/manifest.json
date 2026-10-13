@@ -1,0 +1,19 @@
+{
+  "designVersion": "2.0",
+  "figmaStatus": "not created; no editing connector",
+  "screenStateSpecifications": 39,
+  "rasterReferenceCount": 8,
+  "nativeComponentsCreated": false,
+  "prototypeLinksCreated": false,
+  "sourceAppModified": false,
+  "screens": [
+    "01-galaxies.png",
+    "02-solar-system.png",
+    "03-destination-preview.png",
+    "04-guide.png",
+    "05-settings.png",
+    "06-comparison.png",
+    "07-help.png",
+    "08-design-system.png"
+  ]
+}
