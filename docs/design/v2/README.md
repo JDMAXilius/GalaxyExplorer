@@ -51,3 +51,7 @@ The `explorations/` directory preserves all generated concepts and refinements f
 ## Cloud Terminal tickets
 
 Start with [TERMINAL_HANDOFF.md](TERMINAL_HANDOFF.md), then execute [FIGMA_TICKETS.md](FIGMA_TICKETS.md). Exact images and hashes are in [references.json](references.json). Record real Figma evidence in [FIGMA_PROGRESS.md](FIGMA_PROGRESS.md). These tickets are repository documents, not automatically created GitHub Issues.
+
+## ChatGPT review and repair
+
+Use [CHATGPT_HANDOFF.md](CHATGPT_HANDOFF.md) in the separate ChatGPT conversation with Figma connected. [CHATGPT_REVIEW_TICKETS.md](CHATGPT_REVIEW_TICKETS.md) contains ten evidence-based review/fix tickets; record live results in [CHATGPT_REVIEW_PROGRESS.md](CHATGPT_REVIEW_PROGRESS.md). Coordinate writes with Terminal and inspect the live file; repository progress may be stale. No tickets are automatically sent to another chat.

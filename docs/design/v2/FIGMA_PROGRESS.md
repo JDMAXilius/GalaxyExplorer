@@ -180,6 +180,17 @@ The per-screen comparison images under `evidence/` for S08 and S23 predate the w
 - Listen, Pause and Resume now work on every information card through variant-change interactions on `Card/Information`. Quit leads to an end frame. Still unlinked: Compare on galaxy and other non-planet cards, Mic on, Transcript.
 - Not done: new Unity captures for Sagittarius A* and the nebula interior. That needs a play-mode capture session in the editor and is better as its own [TERM] ticket.
 
+## Handoff to the CHAT review (13 Oct 2026)
+
+The Terminal session has stopped writing to the Figma file as of commit time. All `V2 /` pages are free for the ChatGPT review session (`CHATGPT_REVIEW_TICKETS.md`); nothing there is mid-edit.
+
+Deliberate departures from the reference images, made on the owner's instruction in this session. A reviewer should not "repair" these back without checking with the owner:
+
+- Solar screens (S07, S08, S36): the two stacked controls from `02-solar-system.png` are replaced by one "View" chip that opens a menu. The owner found the stacked controls too invasive.
+- Settings (S23): About reads "Version and credits" and Restore scene reads "Put objects in this place back", following V2-009 rather than `05-settings.png`.
+- Accent `#37E1FD` and the type sizes follow the rendered pixels of `01-galaxies.png`; `tokens.json` was updated to match.
+- Selected states on the dock, rail and picker were rebuilt from `01-galaxies.png` and `04-guide.png` after the owner asked for a closer match.
+
 ## Open items
 
 Decisions taken without an owner response (all reversible):
