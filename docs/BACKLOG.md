@@ -1989,3 +1989,21 @@ Owner-approved one-to-one transfer. TERM: read [the handoff](design/v2/TERMINAL_
 | V2-012 | TERM | Wire native prototype journeys | V2-007–V2-011 | todo |
 | V2-013 | TERM | Pass visual fidelity and editability gate | V2-012 | todo |
 | V2-014 | TERM | Return verified Figma URLs and close evidenced tickets | V2-013 | todo |
+
+
+## UI Version 2.0 — ChatGPT live Figma review and repair
+
+For the separate ChatGPT conversation with Figma connected: [handoff](design/v2/CHATGPT_HANDOFF.md), [full review tickets](design/v2/CHATGPT_REVIEW_TICKETS.md), [live progress](design/v2/CHATGPT_REVIEW_PROGRESS.md). This is a review of Terminal's actual Figma output; no live findings are claimed before inspection.
+
+| ID | Track | Title | Depends | Status |
+|---|---|---|---|---|
+| CHAT-V2-001 | CHAT | Inspect live file, writer capability and ownership | — | todo |
+| CHAT-V2-002 | CHAT | Inspect exact sources and capture matched current frames | CHAT-V2-001 for live capture | todo |
+| CHAT-V2-003 | CHAT | Repair canonical exploration screen one-to-one | CHAT-V2-001, CHAT-V2-002 | todo |
+| CHAT-V2-004 | CHAT | Repair native design system and component variants | CHAT-V2-003 | todo |
+| CHAT-V2-005 | CHAT | Correct and complete Explore screens | CHAT-V2-004 | todo |
+| CHAT-V2-006 | CHAT | Correct and complete Guide states | CHAT-V2-004 | todo |
+| CHAT-V2-007 | CHAT | Correct and complete Settings, Help and recovery | CHAT-V2-004 | todo |
+| CHAT-V2-008 | CHAT | Correct feedback, room states and layouts | CHAT-V2-004 | todo |
+| CHAT-V2-009 | CHAT | Fix prototype links and safe V2 cleanup | CHAT-V2-005–CHAT-V2-008 | todo |
+| CHAT-V2-010 | CHAT | Re-export, verify visual fidelity/editability and report | CHAT-V2-009 | todo |
