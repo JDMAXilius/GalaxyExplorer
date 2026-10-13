@@ -1,6 +1,6 @@
 # Figma transfer progress
 
-Status: **built, awaiting owner review** (13 Oct 2026, local terminal session). Everything in V2-001 to V2-012 exists in Figma. V2-013 and V2-014 are not closed: fidelity evidence exists for the seven exact-reference screens, but contrast is unmeasured, derived screens use stand-in scenes, and the open items below have no owner response.
+Status: **built, awaiting owner review** (13 Oct 2026, local terminal session). Everything in V2-001 to V2-012 exists in Figma. V2-013 and V2-014 are not closed: fidelity evidence exists for the seven exact-reference screens, but some derived screens still lack proper scene art, and the open items below have no owner response.
 
 File: https://www.figma.com/design/dx6MxAxPqZ9QBSRJqCCVev/ (existing file; original pages untouched).
 Prototype page: https://www.figma.com/design/dx6MxAxPqZ9QBSRJqCCVev/?node-id=39-21
@@ -11,7 +11,7 @@ Prototype page: https://www.figma.com/design/dx6MxAxPqZ9QBSRJqCCVev/?node-id=39-
 | V2-002 | done | Eight PNGs opened; SHA-256 and 1487 × 1058 match `references.json`. Measurements below. |
 | V2-003 | done | Ten `V2 /` pages; eight labelled reference frames on the Read me page. |
 | V2-004 | done | Four variable collections, seven text styles, Foundations specimen `40:44`. Contrast not measured. |
-| V2-005 | in review | 22 components/sets with variants (`evidence/components-library.jpg` shows the first 18). Larger-text and long-label check on the Layouts page (`evidence/layouts.jpg`): cards grow from 706 to 780 to 889 px, nothing clipped. |
+| V2-005 | in review | 23 components/sets with variants (`evidence/components-library.jpg` shows the first 18). Larger-text and long-label check on the Layouts page (`evidence/layouts.jpg`): cards grow from 706 to 780 to 889 px, nothing clipped. |
 | V2-006 | in review | S01 `44:409`; `evidence/S01-*`. Deviations under "Open items". |
 | V2-007 | in review | S02–S14 on the Explore page (`evidence/explore-S01-S14.jpg`). Exact: S03, S08, S13. Derived frames carry an on-frame note. |
 | V2-008 | in review | S15–S22 on the Guide page (`evidence/guide-S15-S22.jpg`). Exact: S17. |
@@ -19,7 +19,7 @@ Prototype page: https://www.figma.com/design/dx6MxAxPqZ9QBSRJqCCVev/?node-id=39-
 | V2-010 | in review | S28–S32, same evidence file. Exact: S29. |
 | V2-011 | in review | S33–S39 (`evidence/flows-S33-S39.jpg`), Layouts page (`evidence/layouts.jpg`). |
 | V2-012 | in review | 39 frames cloned to the Prototype page, about 290 reactions, ten named flows. Read-back: no frame without an outgoing link. Gaps listed below. |
-| V2-013 | in progress | Export, side-by-side and 50% overlay for the seven exact references under `evidence/`. Not done: contrast measurement, separate foreground/background diff, measured bounds for screens other than S01. |
+| V2-013 | in progress | Export, side-by-side and 50% overlay for the seven exact references under `evidence/`. Contrast measured (see Review pass). Not done: separate foreground/background diff, measured bounds for screens other than S01, refreshed per-screen comparisons for S08 and S23. |
 | V2-014 | in progress | This file, Handoff page, `manifest.json`. Tickets are not closed pending the owner's review. |
 
 ## Pages
@@ -63,6 +63,7 @@ Text styles: `V2/Title` 36/42 Semi Bold, `V2/Heading` 24/30 Medium, `V2/Body` 20
 | Navigation/Rail | `44:282` | — |
 | Navigation/DestinationTile | `44:315` | Default/Selected/Loading/Unavailable; `Text` |
 | Navigation/Breadcrumb | `44:317` | — |
+| Navigation/MapPin | `71:395` | Default/Selected/Hover; `Text` |
 | Card/FactPair | `44:321` | — |
 | Card/Information | `44:407` | Narration Off/Playing/Paused |
 | Card/DestinationPreview | `53:273` | Ready/Loading/Unavailable |
@@ -152,6 +153,22 @@ Page overviews: `components-library.jpg`, `explore-S01-S14.jpg`, `guide-S15-S22.
 
 Device validation: unrun.
 
+## Review pass (13 Oct 2026, second pass)
+
+- **Scene art.** S04, S05, S06, S07 and S38 now use the app's own Unity renders (desktop captures from `Logs/` and `.utmp/shots/`) instead of a reference scene. The Sagittarius A* and Orion renders are low resolution; no interior nebula capture is good enough to use.
+- **Copy.** Derived cards use the wording in `docs/copy/experiences.md`, `nebulae.md` and `moons.md` (Milky Way, Cosmic Web, Sagittarius A*, Orion interior, HD 110067, Andromeda details, Moon). Sagittarius A* mass corrected from "4 million" to "4.3 million solar masses".
+- **Map pins.** New `Navigation/MapPin` component (`71:395`, Default/Selected/Hover, `Text` property). Instances sit over the rendered labels on S02, S03, S33, S34, S35 and are wired in the prototype.
+- **Spec wording.** `Settings/Panel`: About reads "Version and credits"; Restore scene reads "Put objects in this place back". S08 and S36: "View" and "Size" labels outside the controls, "Equal Size / Relative Size". Both depart from the reference images on purpose, following V2-009 and the copy table.
+- **S11.** Reachable from a proposed "Other star systems" button on S07.
+- **Narration.** Prototype frame `S01b` (`71:4243`) shows the Playing state; Listen and Pause toggle between it and S01.
+- **Selected states.** The glow no longer shows through translucent fills; selected rail, dock and tile states are dark with a cyan outline, as in the references. Cards, dock and rail are opaque so the rendered copies underneath do not show through.
+- **Contrast** (WCAG ratio, flat colours; table also on the Design system page): primary text on panel 16.9:1, on deep 18.6:1; secondary text on panel 8.2:1, on deep 9.0:1; dark text on accent 11.8:1; accent text on panel 10.8:1; attention 10.5:1; error 10.0:1; divider 2.0:1 (decorative). Text over passthrough is not covered by these numbers.
+- **Prototype click-through** (Chrome, Figma prototype view): S01 → rail Milky Way → S02 → Orion pin → S03 → Enter nebula → S33 → timer → S04; dock Guide → S15 → Start listening → S16; settings gear → S23. All navigated. Other flows were verified by reading the links back, not by clicking.
+
+Buttons with no link in the prototype, by design or not yet designed: Compare on galaxy and non-planet cards (needs a metric decision), Listen outside S01, Mic on, Transcript, Quit's final step, About's Close-to-source links.
+
+The per-screen comparison images under `evidence/` for S08 and S23 predate the wording change; the page overviews `explore-S01-S14.jpg` and `flows-S33-S39.jpg` are current.
+
 ## Open items
 
 Decisions taken without an owner response (all reversible):
@@ -159,16 +176,14 @@ Decisions taken without an owner response (all reversible):
 1. **Accent.** The `cyan/400` primitive is `#37E1FD`, sampled from the approved renders. `tokens.json` still says `#6CCFDD`.
 2. **Type scale.** Styles follow the canonical frame (36/24/20/17). `tokens.json` lists 28/22/16/14 and is unchanged.
 3. **Button radius and photo ratio** follow the canonical frame (18 and pill; about 1.64:1), not the tokens (12; 16:9).
+4. **Spec over reference** for the Settings and Solar wording above.
 
 Known deviations and gaps:
 
-4. Selawik is not available in Figma; Inter is used.
-5. Reference cards and rails are in perspective; native ones are flat. Where a native card is shorter than the rendered one it is stretched to the reference height.
-6. Map pins (S02, S03) and the Moon (S09) are raster in the scene art.
-7. S23 keeps the reference wording "Version 2.0" and "Recenter the simulation view"; the spec wants real version metadata and a restore that is separate from menu recovery.
-8. S08 keeps the reference label "Size Equal"; the copy table says "Size: Equal Size / Relative Size".
-9. S13 shows "Earth diameter / Saturn diameter" as fact labels; the reference stacks name, "Diameter", value.
-10. Facts and copy on derived cards (Milky Way, Cosmic Web, Sagittarius A*, Moon, HD 110067) and the Placement, About, Device chooser, Help index and desktop wording are proposed and not checked against repository content.
-11. Derived screens have no approved scene art (nebula interior, Cosmic Web, Galactic Center, orbit model, dark scene).
-12. Icons are hand-written SVG; the gear path is from Lucide (ISC licence).
-13. In S23 the rendered dock sits slightly lower than the native one and shows faintly beneath it.
+5. Selawik is not available in Figma; Inter is used.
+6. Reference cards and rails are in perspective; native ones are flat. Where a native card is shorter than the rendered one it is stretched to the reference height.
+7. Rendered pin labels and leader lines are still in the scene image under the native pins. The Moon on S09 is raster with a hotspot.
+8. S13 shows "Earth diameter / Saturn diameter" as fact labels; the reference stacks name, "Diameter", value.
+9. Placement, About, Device chooser, Help index, "Other star systems" and desktop wording are proposed.
+10. Icons are hand-written SVG; the gear path is from Lucide (ISC licence).
+11. Nothing has been tried on a headset.
