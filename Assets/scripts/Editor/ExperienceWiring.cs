@@ -152,8 +152,8 @@ namespace CosmicSimulation.EditorTools
                 SceneManager.MoveGameObjectToScene(root, scene);
             }
 
-            var environment = root.GetComponent<EnvironmentController>() ?? root.AddComponent<EnvironmentController>();
-            var director = root.GetComponent<ExperienceDirector>() ?? root.AddComponent<ExperienceDirector>();
+            var environment = GetOrAdd<EnvironmentController>(root);
+            var director = GetOrAdd<ExperienceDirector>(root);
 
             // Modules in dock order, so the director's list and the dock agree without a second ordering.
             var byId = LoadModules();
@@ -230,7 +230,7 @@ namespace CosmicSimulation.EditorTools
 
             // Music sits beside the EnvironmentController because the beds are per room state (GDD 9), not per
             // experience, and the room state is what that component owns.
-            var music = root.GetComponent<MusicController>() ?? root.AddComponent<MusicController>();
+            var music = GetOrAdd<MusicController>(root);
             var musicWired = WireMusic(music);
 
             if (musicWired)
@@ -351,5 +351,10 @@ namespace CosmicSimulation.EditorTools
                 .GroupBy(m => m.Id)
                 .ToDictionary(g => g.Key, g => g.First());
         }
+
+        // Not `GetComponent() ?? AddComponent()`: in the editor a missing component comes back as Unity's fake null,
+        // which `??` treats as a value, so nothing was ever added (CS-333).
+        private static T GetOrAdd<T>(GameObject root) where T : Component =>
+            root.TryGetComponent<T>(out var found) ? found : root.AddComponent<T>();
     }
 }

@@ -211,6 +211,7 @@ namespace CosmicSimulation
         }
 
         private float _introWatchdogStarted;
+        private float _nextIntroSearch;
         private bool _saidIntroOverran;
 
         /// <summary>
@@ -288,7 +289,15 @@ namespace CosmicSimulation
                 return;
             }
 
-            _introFlow = FindAnyObjectByType<IntroFlow>(FindObjectsInactive.Include);
+            // The intro registers itself when it wakes. One that sits on an object that is still inactive has not,
+            // so the scene is searched as well, but at most once a second rather than on every read (CS-331).
+            _introFlow = IntroFlow.Active;
+            if (_introFlow == null && Time.unscaledTime >= _nextIntroSearch)
+            {
+                _nextIntroSearch = Time.unscaledTime + 1f;
+                _introFlow = FindAnyObjectByType<IntroFlow>(FindObjectsInactive.Include);
+            }
+
             if (_introFlow != null)
             {
                 _introFlow.OnIntroFinished += HandleIntroFinished;
@@ -477,12 +486,24 @@ namespace CosmicSimulation
         /// centred itself on the player, that is the player, and a drag becomes a look-around - or the content
         /// root for a scene-backed place. False before anything is open.
         /// </summary>
+        private GameObject _pivotSource;
+        private CentreOnViewer _pivotCentred;
+        private GalaxyField _pivotField;
+
         public bool TryGetViewPivot(out Vector3 pivot)
         {
             if (_prefabContent != null)
             {
-                var centred = _prefabContent.GetComponentInChildren<CentreOnViewer>(true);
-                var field = _prefabContent.GetComponentInChildren<GalaxyField>(true);
+                // Resolved once per place, not on every orbit-drag frame (CS-336).
+                if (_pivotSource != _prefabContent)
+                {
+                    _pivotSource = _prefabContent;
+                    _pivotCentred = _prefabContent.GetComponentInChildren<CentreOnViewer>(true);
+                    _pivotField = _prefabContent.GetComponentInChildren<GalaxyField>(true);
+                }
+
+                var centred = _pivotCentred;
+                var field = _pivotField;
                 pivot = centred != null ? centred.transform.position
                     : field != null && field.CentresOnViewer ? field.ShellCentre
                     : _prefabContent.transform.position;

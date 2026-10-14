@@ -86,6 +86,8 @@ namespace GalaxyExplorer.XR
         private InputAction _leftPinch, _rightPinch;
         private Look _look;
         private Material _occluder;
+        private readonly List<SkinnedMeshRenderer> _found = new List<SkinnedMeshRenderer>();
+        private readonly List<Material> _materials = new List<Material>();
         private bool _occlude;
 
         /// <summary>Whether real hands hide the content behind them in passthrough. Applies at once.</summary>
@@ -202,7 +204,8 @@ namespace GalaxyExplorer.XR
 
             // Includes inactive: the Hand Visualizer keeps an untracked hand's root off, and both the Meta Quest
             // and Android XR meshes exist whichever one the platform picks.
-            foreach (var hand in GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            GetComponentsInChildren(true, _found);
+            foreach (var hand in _found)
             {
                 if (handMaterial != null && hand.sharedMaterial != handMaterial)
                 {
@@ -224,12 +227,15 @@ namespace GalaxyExplorer.XR
                 return;
             }
 
-            var materials = hand.sharedMaterials;
-            var at = Array.IndexOf(materials, _occluder);
-            if (on == (at >= 0))
+            // Checked without allocating; the array is copied only when it has to change.
+            hand.GetSharedMaterials(_materials);
+            if (on == _materials.Contains(_occluder))
             {
                 return;
             }
+
+            var materials = hand.sharedMaterials;
+            var at = Array.IndexOf(materials, _occluder);
 
             if (on)
             {

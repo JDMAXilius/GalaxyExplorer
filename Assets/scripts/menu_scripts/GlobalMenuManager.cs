@@ -10,7 +10,7 @@ public class GlobalMenuManager : MonoBehaviour
         {
             if (_forceSolverFocusManager == null)
             {
-                _forceSolverFocusManager = FindObjectOfType<ForceSolverFocusManager>();
+                _forceSolverFocusManager = FindAnyObjectByType<ForceSolverFocusManager>();
             }
 
             return _forceSolverFocusManager;
@@ -23,7 +23,7 @@ public class GlobalMenuManager : MonoBehaviour
         {
             if (_planetPreviewController == null)
             {
-                _planetPreviewController = FindObjectOfType<PlanetPreviewController>();
+                _planetPreviewController = FindAnyObjectByType<PlanetPreviewController>();
             }
 
             return _planetPreviewController;
@@ -60,7 +60,7 @@ public class GlobalMenuManager : MonoBehaviour
         _ggvMenuManager = GetComponent<GGVMenuManager>();
         _handMenuManager = GetComponent<HandMenuManager>();
 
-        _aboutSlate = FindObjectOfType<AboutSlate>();
+        _aboutSlate = FindAnyObjectByType<AboutSlate>();
 
         BackButtonNeedsShowing = false;
         ResetButtonNeedsShowing = false;

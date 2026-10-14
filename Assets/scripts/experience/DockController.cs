@@ -841,6 +841,12 @@ namespace CosmicSimulation
                 Recenter();
             }
 
+            // Under UI 2.0 this dock is hidden and the shell owns the keys and the buttons (CS-332).
+            if (UI2.Ui2Shell.Instance != null)
+            {
+                return;
+            }
+
             WatchKeyboard();
 
             // Twice a second is plenty for a button, and keeps a scene search out of every frame.

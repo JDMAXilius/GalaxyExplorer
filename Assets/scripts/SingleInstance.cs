@@ -16,7 +16,7 @@ public class SingleInstance<T> : MonoBehaviour where T : SingleInstance<T>
         {
             if (_Instance == null)
             {
-                T[] objects = FindObjectsOfType<T>();
+                T[] objects = FindObjectsByType<T>(FindObjectsSortMode.InstanceID);
                 if (objects.Length == 1)
                 {
                     _Instance = objects[0];

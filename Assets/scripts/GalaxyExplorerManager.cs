@@ -392,15 +392,15 @@ namespace GalaxyExplorer
                 Invoke(nameof(SayVRFailed), 1f);
             }
 
-            TransitionManager = FindObjectOfType<TransitionManager>();
-            VoManager = FindObjectOfType<VOManager>();
-            OnboardingManager = FindObjectOfType<OnboardingManager>();
-            GeFadeManager = FindObjectOfType<GEFadeManager>();
-            GGVMenuManager = FindObjectOfType<GGVMenuManager>();
-            ViewLoaderScript = FindObjectOfType<ViewLoader>();
-            CardPoiManager = FindObjectOfType<CardPOIManager>();
-            CameraControllerHandler = FindObjectOfType<CameraController>();
-            FlowManagerHandler = FindObjectOfType<FlowManager>();
+            TransitionManager = FindAnyObjectByType<TransitionManager>();
+            VoManager = FindAnyObjectByType<VOManager>();
+            OnboardingManager = FindAnyObjectByType<OnboardingManager>();
+            GeFadeManager = FindAnyObjectByType<GEFadeManager>();
+            GGVMenuManager = FindAnyObjectByType<GGVMenuManager>();
+            ViewLoaderScript = FindAnyObjectByType<ViewLoader>();
+            CardPoiManager = FindAnyObjectByType<CardPOIManager>();
+            CameraControllerHandler = FindAnyObjectByType<CameraController>();
+            FlowManagerHandler = FindAnyObjectByType<FlowManager>();
         }
 
         private void SayVRFailed()

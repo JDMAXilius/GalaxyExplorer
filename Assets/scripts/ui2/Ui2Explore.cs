@@ -220,6 +220,7 @@ namespace CosmicSimulation.UI2
 
         private void OnDestroy()
         {
+            LowerPulled();
             ExperienceDirector.ExperienceChanged -= OnPlaceChanged;
             if (PlanetPOI.Preview == OnMarker)
             {
@@ -343,6 +344,8 @@ namespace CosmicSimulation.UI2
         private readonly List<ForceSolver> _pulled = new List<ForceSolver>();
         private readonly List<ForceSolver> _pulledNow = new List<ForceSolver>();
         private readonly Dictionary<Material, int> _raised = new Dictionary<Material, int>();
+        private readonly List<(Renderer renderer, Material[] before, Material[] now)> _copied =
+            new List<(Renderer, Material[], Material[])>();
 
         private void KeepPulledInFront()
         {
@@ -366,16 +369,7 @@ namespace CosmicSimulation.UI2
                 return;
             }
 
-            foreach (var pair in _raised)
-            {
-                if (pair.Key != null)
-                {
-                    pair.Key.renderQueue = pair.Value;
-                }
-            }
-
-            _raised.Clear();
-            _pulled.Clear();
+            LowerPulled();
             _pulled.AddRange(_pulledNow);
             foreach (var solver in _pulled)
             {
@@ -387,9 +381,13 @@ namespace CosmicSimulation.UI2
 
                 foreach (var renderer in renderers)
                 {
-                    // Instances, so the shared material assets are never written to.
-                    foreach (var material in renderer.materials)
+                    // renderer.materials copies whatever is still a shared asset, so the assets are never written;
+                    // the copies made here are remembered and destroyed when the body goes home (CS-330).
+                    var before = renderer.sharedMaterials;
+                    var now = renderer.materials;
+                    for (var i = 0; i < now.Length; i++)
                     {
+                        var material = now[i];
                         if (material == null || _raised.ContainsKey(material))
                         {
                             continue;
@@ -398,8 +396,49 @@ namespace CosmicSimulation.UI2
                         _raised[material] = material.renderQueue;
                         material.renderQueue = 3700 + Mathf.Clamp((material.renderQueue - 2000) / 10, 0, 150);
                     }
+
+                    _copied.Add((renderer, before, now));
                 }
             }
+        }
+
+        // Puts every pulled body's draw order back: the original materials onto the renderers, the copies made by
+        // KeepPulledInFront destroyed, and the queue restored on copies other scripts own (the Sun's, say).
+        private void LowerPulled()
+        {
+            foreach (var (renderer, before, now) in _copied)
+            {
+                var swapped = false;
+                for (var i = 0; i < now.Length; i++)
+                {
+                    var mine = now[i] != null && (i >= before.Length || now[i] != before[i]);
+                    if (!mine)
+                    {
+                        continue;
+                    }
+
+                    _raised.Remove(now[i]);
+                    Destroy(now[i]);
+                    swapped = true;
+                }
+
+                if (swapped && renderer != null)
+                {
+                    renderer.sharedMaterials = before;
+                }
+            }
+
+            foreach (var pair in _raised)
+            {
+                if (pair.Key != null)
+                {
+                    pair.Key.renderQueue = pair.Value;
+                }
+            }
+
+            _copied.Clear();
+            _raised.Clear();
+            _pulled.Clear();
         }
 
         // ---------- picker

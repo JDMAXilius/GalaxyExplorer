@@ -162,9 +162,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
             GoalRotation = SolverHandler.TransformTarget.rotation * _rotationOffset;
             UpdateWorkingRotationToGoal();
             GoalScale = ControllerTracker.ResolvedTransform.localScale;
-            GoalPosition = _focusers.Select(p => p.Handedness == Handedness.Left
-                ? ControllerTracker.LeftSidePosition
-                : ControllerTracker.RightSidePosition).Average();
+            GoalPosition = AverageFocuserPosition();
         }
         else
         {
@@ -235,12 +233,32 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
         return false;
     }
 
+    // Loops rather than LINQ: these run every frame of a pull, and Select/Average allocate (CS-336).
+    private Vector3 AverageFocuserPosition()
+    {
+        var sum = Vector3.zero;
+        foreach (var p in _focusers)
+        {
+            sum += p.Handedness == Handedness.Left ? ControllerTracker.LeftSidePosition : ControllerTracker.RightSidePosition;
+        }
+
+        return _focusers.Count > 0 ? sum / _focusers.Count : sum;
+    }
+
+    private Vector3 AverageFocuserForward()
+    {
+        var sum = Vector3.zero;
+        foreach (var p in _focusers)
+        {
+            sum += (p.Handedness == Handedness.Left ? ControllerTracker.LeftSideRotation : ControllerTracker.RightSideRotation) * Vector3.forward;
+        }
+
+        return _focusers.Count > 0 ? sum / _focusers.Count : sum;
+    }
+
     protected virtual Vector3 GetOffsetPositionFromController()
     {
-        var controllerFwd = _focusers.Select(p => (p.Handedness == Handedness.Left
-            ? ControllerTracker.LeftSideRotation
-            : ControllerTracker.RightSideRotation) * Vector3.forward)
-        .Average().normalized;
+        var controllerFwd = AverageFocuserForward().normalized;
         
         var position = transform.position;
         var ray = new Ray(position - controllerFwd * 100, controllerFwd);
@@ -722,7 +740,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
         eventData = eventData ?? new GEPointerEventData(null);
         if (planetController == null)
         {
-            planetController = FindObjectOfType<PlanetPreviewController>();
+            planetController = FindAnyObjectByType<PlanetPreviewController>();
         }
         if (ForceState != State.Free)
         {

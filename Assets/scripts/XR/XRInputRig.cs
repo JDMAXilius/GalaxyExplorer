@@ -129,10 +129,14 @@ namespace GalaxyExplorer.XR
             RaiseGlobalClicks();
         }
 
+        private float _nextSubsystemLook;
+
         private void UpdateHands()
         {
-            if (_handSubsystem == null || !_handSubsystem.running)
+            // Looked for at most once a second: on the desktop there is never one, and asking every frame allocates.
+            if ((_handSubsystem == null || !_handSubsystem.running) && Time.unscaledTime >= _nextSubsystemLook)
             {
+                _nextSubsystemLook = Time.unscaledTime + 1f;
                 _handSubsystem = null;
                 SubsystemManager.GetSubsystems(_subsystems);
                 foreach (var subsystem in _subsystems)

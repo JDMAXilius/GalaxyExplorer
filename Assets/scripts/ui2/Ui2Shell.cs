@@ -273,7 +273,8 @@ namespace CosmicSimulation.UI2
             }
 
             // Esc backs out one step on a keyboard: the overlay first, then the guide.
-            if (Input.GetKeyDown(KeyCode.Escape))
+            var keyboard = UnityEngine.InputSystem.Keyboard.current;
+            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
             {
                 if (Open != Overlay.None)
                 {

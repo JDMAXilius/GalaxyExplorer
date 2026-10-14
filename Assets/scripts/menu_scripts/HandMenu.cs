@@ -64,8 +64,8 @@ public class HandMenu : MonoBehaviour
 
     private void Start()
     {
-        _handMenuManager = FindObjectOfType<HandMenuManager>();
-        _globalMenuManager = FindObjectOfType<GlobalMenuManager>();
+        _handMenuManager = FindAnyObjectByType<HandMenuManager>();
+        _globalMenuManager = FindAnyObjectByType<GlobalMenuManager>();
 
         _menuParent.SetActive(false);
         IsCurrentlyVisible = false;

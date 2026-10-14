@@ -31,17 +31,4 @@ public static class GEUnityExtensions
             child.gameObject.SetLayerRecursively(layer);
         }
     }
-
-    public static Vector3 Average(this IEnumerable<Vector3> vectors)
-    {
-        var sum = Vector3.zero;
-        var count = 0;
-        foreach (var vector in vectors)
-        {
-            sum += vector;
-            count++;
-        }
-
-        return count > 0 ? sum / count : Vector3.zero;
-    }
 }

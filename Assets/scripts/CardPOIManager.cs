@@ -77,12 +77,12 @@ namespace GalaxyExplorer
             bool isAnyCardActive = IsAnyCardActive();
             if (spiralGalaxies == null || spiralGalaxies.Length < 1)
             {
-                spiralGalaxies = FindObjectsOfType<SpiralGalaxy>();
+                spiralGalaxies = FindObjectsByType<SpiralGalaxy>(FindObjectsSortMode.InstanceID);
             }
 
             if (poiAnimator == null)
             {
-                poiAnimator = FindObjectOfType<PoiAnimator>();
+                poiAnimator = FindAnyObjectByType<PoiAnimator>();
             }
 
             if (isAnyCardActive)

@@ -46,7 +46,7 @@ namespace GalaxyExplorer
 
         private void Start()
         {
-            ViewLoader[] allLoaders = FindObjectsOfType<ViewLoader>();
+            ViewLoader[] allLoaders = FindObjectsByType<ViewLoader>(FindObjectsSortMode.InstanceID);
             if (allLoaders != null && allLoaders.Length > 1)
             {
                 Debug.LogWarning("Only one ViewLoader should exist, destroy this");

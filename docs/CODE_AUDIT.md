@@ -107,7 +107,7 @@ Waves, in order. Each wave compiles and runs on its own. **CC** is the cloud ses
 |---|---|---|---|
 | CS-337 | Delete what nothing uses | `DefaultPlayables`, `RotationPlayable`, NuGet files and `.nupkg`, the three tombstones, `Build.cs` (WSA), `LabelTheme` | about 3.5k lines, 50 files |
 | CS-338 | Delete the scenes outside the build and what only they use | `development_scenes`, `working_scenes`, `projector_poi_prototype`, `onboarding_sprites_scene` with `ForceTractorShaderTester`, `VisualProjector` and their own models and materials | about 300 lines, dozens of assets |
-| CS-339 | Strip the HoloLens era | `WorldAnchorHandler`'s `UNITY_WSA` blocks; `PlatformId.HoloLensGen1`/`Phone` arms; two unused HoloLens voice clips | about 200 lines |
+| CS-339 | Strip the HoloLens era | `WorldAnchorHandler`'s `UNITY_WSA` blocks; two unused HoloLens voice clips. *Correction 14 Oct: the `PlatformId.HoloLensGen1`/`Phone` arms are not dead (`HoloLensGen1` is the default before the platform is set) and the enum is serialized; they stay* | about 50 lines |
 | CS-340 | Trim the samples to what the rig uses | Delete the demo scenes and `DemoAssets` folders the rig never references, one folder per commit with a compile between (TERM) | about 190 files, 27 MB |
 
 ### R2 — Foundations the rest builds on (CC)

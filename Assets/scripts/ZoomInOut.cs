@@ -186,12 +186,12 @@ namespace GalaxyExplorer
 
         private void GetRelatedPlanets(out GameObject relatedPlanetObject, out GameObject singlePlanetObject)
         {
-            PlanetView planetView = FindObjectOfType<PlanetView>();
+            PlanetView planetView = FindAnyObjectByType<PlanetView>();
 
             singlePlanetObject = (planetView) ? planetView.gameObject : null;
             relatedPlanetObject = null;
 
-            PlanetPOI[] allPlanets = FindObjectsOfType<PlanetPOI>();
+            PlanetPOI[] allPlanets = FindObjectsByType<PlanetPOI>(FindObjectsSortMode.InstanceID);
             foreach (var planet in allPlanets)
             {
                 // if this scene is loaded from this planet

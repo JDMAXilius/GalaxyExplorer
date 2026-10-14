@@ -175,9 +175,9 @@ namespace GalaxyExplorer
 
             GalaxyExplorerManager.Instance.GeFadeManager.OnFadeComplete += OnFadeComplete;
 
-            ZoomInOutBehaviour = FindObjectOfType<ZoomInOut>();
-            movingAudio = FindObjectOfType<MovableAudioSource>();
-            transformSource = FindObjectOfType<TransformSource>();
+            ZoomInOutBehaviour = FindAnyObjectByType<ZoomInOut>();
+            movingAudio = FindAnyObjectByType<MovableAudioSource>();
+            transformSource = FindAnyObjectByType<TransformSource>();
 
             defaultSceneRotation = transformSource.transform.rotation;
             defaultSceneScale = transformSource.transform.localScale;
@@ -277,7 +277,7 @@ namespace GalaxyExplorer
         // Find top parent entity of new scene that is loaded
         private GameObject FindContent()
         {
-            TransformHandler[] parentContent = FindObjectsOfType<TransformHandler>();
+            TransformHandler[] parentContent = FindObjectsByType<TransformHandler>(FindObjectsSortMode.InstanceID);
             foreach (var parent in parentContent)
             {
                 if (parent.gameObject != prevSceneLoaded)
@@ -288,7 +288,7 @@ namespace GalaxyExplorer
 
             // if the scene didn't have an object with at TransformHandler, we are
             // in the initial placmenet mode. Look for that script instead.
-            PlacementControl placement = FindObjectOfType<PlacementControl>();
+            PlacementControl placement = FindAnyObjectByType<PlacementControl>();
             return placement?.gameObject;
         }
 
@@ -694,12 +694,12 @@ namespace GalaxyExplorer
 
         private void GetRelatedPlanets(out GameObject relatedPlanetObject, out GameObject singlePlanetObject)
         {
-            PlanetView planetView = FindObjectOfType<PlanetView>();
+            PlanetView planetView = FindAnyObjectByType<PlanetView>();
 
             singlePlanetObject = (planetView) ? planetView.gameObject : null;
             relatedPlanetObject = null;
 
-            PlanetPOI[] allPlanets = FindObjectsOfType<PlanetPOI>();
+            PlanetPOI[] allPlanets = FindObjectsByType<PlanetPOI>(FindObjectsSortMode.InstanceID);
             foreach (var planet in allPlanets)
             {
                 // if this scene is loaded from this planet

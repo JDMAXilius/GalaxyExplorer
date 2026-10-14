@@ -9,6 +9,7 @@ using GalaxyExplorer.XR;
 using TMPro;
 using UnityEngine;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD // the UI 2 check, run from an editor menu (CS-335)
 namespace CosmicSimulation.UI2
 {
     /// <summary>
@@ -312,3 +313,4 @@ namespace CosmicSimulation.UI2
         }
     }
 }
+#endif

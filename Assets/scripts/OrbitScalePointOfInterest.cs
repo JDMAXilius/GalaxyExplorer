@@ -37,7 +37,7 @@ namespace GalaxyExplorer
             targetPosition = new Vector3(transform.localPosition.x, 0.0f, transform.localPosition.z);
             targetOffset = new Vector3(0.0f, transform.localPosition.y, 0.0f) * GalaxyExplorerManager.OrbitScalePoiMoveFactor;
 
-            trueScale = FindObjectOfType<TrueScaleSetting>();
+            trueScale = FindAnyObjectByType<TrueScaleSetting>();
         }
 
         private IEnumerator AnimateUsingCurve(AnimationCurve curve, Action onComplete)

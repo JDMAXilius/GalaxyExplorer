@@ -3,6 +3,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD // the nebula working scenes' camera, never in the build (CS-335)
 namespace CosmicSimulation
 {
     /// <summary>
@@ -81,3 +82,4 @@ namespace CosmicSimulation
         }
     }
 }
+#endif

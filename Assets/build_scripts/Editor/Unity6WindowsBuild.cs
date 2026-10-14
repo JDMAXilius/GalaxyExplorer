@@ -64,7 +64,12 @@ namespace GalaxyExplorer.Build
                 return;
             }
 
-            var scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).Distinct().ToArray();
+            var scenes = BuildScenes.Enabled(out var sceneProblem);
+            if (sceneProblem != null)
+            {
+                Fail(sceneProblem + ".");
+                return;
+            }
 
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
             {

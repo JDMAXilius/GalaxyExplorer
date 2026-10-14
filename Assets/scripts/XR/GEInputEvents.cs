@@ -94,8 +94,6 @@ namespace GalaxyExplorer.XR
             GlobalPointerDown?.Invoke(eventData);
         }
 
-        private static readonly List<Component> ComponentBuffer = new List<Component>();
-
         /// <summary>
         /// Invokes <paramref name="action"/> on every enabled <typeparamref name="T"/> on the first GameObject,
         /// starting at <paramref name="target"/> and walking up its parents, that has one. This matches how
@@ -105,17 +103,19 @@ namespace GalaxyExplorer.XR
         {
             for (var t = target != null ? target.transform : null; t != null; t = t.parent)
             {
-                ComponentBuffer.Clear();
-                t.GetComponents(ComponentBuffer);
                 var handled = false;
-                // Copy: handlers may add/remove components while being invoked.
-                var components = ComponentBuffer.ToArray();
-                foreach (var component in components)
+                // A pooled list per call, not a shared buffer: a handler may add or remove components, or raise
+                // another event that walks a hierarchy of its own (CS-336).
+                using (UnityEngine.Pool.ListPool<Component>.Get(out var components))
                 {
-                    if (component is T handler && (!(component is Behaviour behaviour) || behaviour.isActiveAndEnabled))
+                    t.GetComponents(components);
+                    foreach (var component in components)
                     {
-                        action(handler);
-                        handled = true;
+                        if (component is T handler && (!(component is Behaviour behaviour) || behaviour.isActiveAndEnabled))
+                        {
+                            action(handler);
+                            handled = true;
+                        }
                     }
                 }
 

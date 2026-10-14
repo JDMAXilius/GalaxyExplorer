@@ -1982,16 +1982,16 @@ The audit, the rules and the plan behind these rows: [CODE_AUDIT.md](CODE_AUDIT.
 
 | ID | Track | Title | Depends | Status |
 |---|---|---|---|---|
-| CS-330 | CC | No material leak on pulled bodies (`Ui2Explore.KeepPulledInFront` copies `renderer.materials`) | — | todo |
-| CS-331 | CC | Intro gate resolves once: `IntroFlow` registers; no per-frame scene search in `IntroComplete` | — | todo |
-| CS-332 | CC | `U` and the 0.5 s dock poll stand down under UI 2.0; `Ui2Shell` Escape on the Input System | — | todo |
-| CS-333 | CC | Builder bugs: `?? AddComponent` in `ExperienceWiring`, `string.GetHashCode` seeds, asset-override folder list | — | todo |
-| CS-334 | CC | The rework cannot ship: `COSMIC_REWORK` define on the Cosmic asmdefs; builds refuse unless scene 0 is `main_scene` | — | todo |
-| CS-335 | CC | `Ui2SelfCheck` and `FreeLook` out of the player | — | todo |
-| CS-336 | CC | Hot paths stop allocating and searching (ForceSolver LINQ, ExecuteHierarchy, view pivot, HandLook rescan, XRInputRig subsystems, obsolete FindObjectOfType) | — | todo |
-| CS-337 | CC | Delete unused: DefaultPlayables, RotationPlayable, NuGet, tombstones, Build.cs, LabelTheme | — | todo |
-| CS-338 | CC/TERM | Delete scenes outside the build and what only they use | — | todo |
-| CS-339 | CC | Strip HoloLens-era code paths | — | todo |
+| CS-330 | CC | No material leak on pulled bodies (`Ui2Explore.KeepPulledInFront` copies `renderer.materials`) | — | done in code (14 Oct, cloud, not run): the material copies `renderer.materials` makes for a pulled body are remembered and destroyed when it goes home or its scene unloads, with the original materials put back; copies other scripts own (the Sun's) only get their queue restored, so their effects keep running. Verify in CS-360 |
+| CS-331 | CC | Intro gate resolves once: `IntroFlow` registers; no per-frame scene search in `IntroComplete` | — | done in code (14 Oct, cloud, not run): `IntroFlow.Active` is set on `Awake`; the director reads it and falls back to a scene search at most once a second (an intro on an inactive object has not woken). The 45 s watchdog stays: it guards a real failure (play mode with a view scene open) |
+| CS-332 | CC | `U` and the 0.5 s dock poll stand down under UI 2.0; `Ui2Shell` Escape on the Input System | — | done in code (14 Oct, cloud, not run): `DockController.Update` returns after its pending recentre while `Ui2Shell.Instance` exists, so `U` and the 0.5 s reset-button scene search stand down under UI 2.0; `Ui2Shell` Escape reads the Input System |
+| CS-333 | CC | Builder bugs: `?? AddComponent` in `ExperienceWiring`, `string.GetHashCode` seeds, asset-override folder list | — | done in part (14 Oct, cloud): `ExperienceWiring` uses `TryGetComponent` (`?? AddComponent` never added in the editor); the Android override menu scans folders that exist; Quest3ProjectSetup's stereo comment corrected. Not done on purpose: the `string.GetHashCode` seeds stay until a CoreCLR move, because changing them changes every generated nebula and thumbnail on the next rebuild |
+| CS-334 | CC | The rework cannot ship: `COSMIC_REWORK` define on the Cosmic asmdefs; builds refuse unless scene 0 is `main_scene` | — | done in code (14 Oct, cloud, not run): both Cosmic asmdefs need `COSMIC_REWORK` (add it to Scripting Define Symbols to bring the rework back); `BuildScenes.Enabled` makes both builds refuse unless scene 0 is `main_scene` and no `Assets/Cosmic` scene is enabled. `tools/mcp/smoke.cs` runs the parked walk and will not compile without the define |
+| CS-335 | CC | `Ui2SelfCheck` and `FreeLook` out of the player | — | done in code (14 Oct, cloud, not run): `Ui2SelfCheck` and `FreeLook` compile only in the editor and Development Builds; neither is on any build scene or prefab |
+| CS-336 | CC | Hot paths stop allocating and searching (ForceSolver LINQ, ExecuteHierarchy, view pivot, HandLook rescan, XRInputRig subsystems, obsolete FindObjectOfType) | — | done in code (14 Oct, cloud, not run): 40 obsolete `FindObject(s)OfType` calls renamed (plural keeps instance-ID order) in 17 files; ForceSolver's per-frame LINQ averages are loops and the unused `Average` extension is gone; `ExecuteHierarchy` uses a pooled list per call (re-entrant); the view pivot is resolved once per place; `XRInputRig` looks for a hand subsystem at most once a second; `HandLook`'s rescan no longer allocates |
+| CS-337 | CC | Delete unused: DefaultPlayables, RotationPlayable, NuGet, tombstones, Build.cs, LabelTheme | — | done (14 Oct, cloud): deleted `DefaultPlayables`, `RotationPlayable`, `external/NuGet`, `NuGet.config`, `packages.config`, the Layers `.nupkg`, the three tombstones, `Build.cs` (WSA) and `LabelTheme` - 129 files; each re-checked for asset and code references first. Compile in CS-360 |
+| CS-338 | CC/TERM | Delete scenes outside the build and what only they use | — | todo (14 Oct, cloud, held): the terminal touched `tractor_beam_scene` in September and `tools/mcp/rework` hosts in `development_scenes/solar_system_prefab_scene`; the terminal says which non-build scenes it still uses before any go |
+| CS-339 | CC | Strip HoloLens-era code paths | — | done in part (14 Oct, cloud): `WorldAnchorHandler` keeps only its placement (the UWP anchor code could not compile on 6000.6; `DestroyWorldAnchor` had no callers). Not done on purpose: the `PlatformId.HoloLensGen1`/`Phone` arms are not dead - `HoloLensGen1` is the enum's default, read before the manager sets the platform - and the enum values are serialized in `PlatformGameObjectEnabler` lists, so members cannot be removed |
 | CS-340 | TERM | Trim XR samples to what the rig uses, a folder per compile | — | todo |
 | CS-341 | CC | Assemblies: vendored, app, app editor, editor kit, tests, references one way | CS-337 | todo |
 | CS-342 | CC | `Registry<T>` replaces runtime scene scans | CS-341 | todo |
@@ -2012,6 +2012,7 @@ The audit, the rules and the plan behind these rows: [CODE_AUDIT.md](CODE_AUDIT.
 | CS-357 | CC | One build entry point on Build Profiles | CS-355 | todo |
 | CS-358 | CC | Comments say why: history out, file by file | — | todo |
 | CS-359 | CC/OWNER | Segoe font out, LFS for binaries, zips out of docs, history decision | — | todo |
+| CS-360 | TERM | Compile after R0 and R1 (129 files deleted, 17 renamed calls, two new editor files); App Check / `Ui2SelfCheck`; pull and return a planet several times in Solar System Planets and check in the Profiler's memory view that material count does not grow (CS-330); a build with the rework's scene enabled first is refused (CS-334); `U` does nothing under UI 2.0 (CS-332); confirm which non-build scenes are still used (CS-338) | CS-330 to CS-339 | todo |
 
 ## UI Version 2.0 — Figma transfer
 
