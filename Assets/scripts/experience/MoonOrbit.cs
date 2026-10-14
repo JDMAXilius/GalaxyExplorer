@@ -5,38 +5,10 @@ using UnityEngine;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// Keeps one moon riding its planet, and hands it over to the player when it is pulled.
-    ///
-    /// <para><b>The moon pattern.</b> A moon owns no orbit of its own: its parent carries an <i>orbit anchor</i> —
-    /// an empty transform on a pivot that turns once per <see cref="orbitSeconds"/> — and the anchor is the moon's
-    /// <see cref="ForceSolver.RootTransform"/>. The solver snaps the moon onto that anchor every
-    /// <c>SolverUpdate</c>, and this component snaps it again in <see cref="Application.onBeforeRender"/> and in
-    /// <c>LateUpdate</c>, because the planet can be moved, scaled or released <i>after</i> the solver has run in
-    /// the same frame and a moon that lags its planet by one frame reads as detached. That is exactly what
-    /// <c>MoonForceSolver</c> does in the orbit model, and this is that behaviour lifted out of it.</para>
-    ///
-    /// <para><b>Why not <c>MoonForceSolver</c> itself.</b> It derives from <c>PlanetForceSolver</c>, which pins
-    /// <c>GoalScale</c> to <c>Vector3.one</c> in its Root state — every moon would inflate to a metre — and
-    /// dereferences a <c>PlanetHighlighter</c> with no null check on every state change. Both are fine in the
-    /// orbit model, where the scale controller and the highlighter are present; neither survives the arrangeable
-    /// body pattern, where a body's <c>localScale</c> <i>is</i> its diameter in metres. So a moon here carries the
-    /// plain <c>ForceSolver</c> the planets carry, and this component supplies the three things the subclass would
-    /// have: the orbit ride, the show/hide, and the growth to a held size.</para>
-    ///
-    /// <para><b>Sizes are ratios, not lengths</b> (GDD 6.2: "3-7 cm, scaled to parent, floor 3 cm"). The moon's
-    /// diameter is <see cref="diameterRatio"/> of whatever its planet currently measures, never below
-    /// <see cref="minOrbitDiameter"/>, so growing Jupiter to a metre with two hands takes its moons with it. The
-    /// orbit radius needs no such rule: the anchor is a child of the planet's own root, so it scales with it for
-    /// free.</para>
-    ///
-    /// <para><b>Hidden until the planet is pulled out</b> (GDD 4.1). Visibility follows the <i>parent's</i> solver
-    /// state, through the existing <see cref="Moon"/> fader, which cross-fades <c>_TransitionAlpha</c> and switches
-    /// the moon's colliders off so a hidden moon cannot be pinched. A moon the player is holding stays up whatever
-    /// its planet is doing (<see cref="Moon.KeepVisible"/>), and when the planet goes home the moon is walked back
-    /// to its anchor over <see cref="restoreSeconds"/> — GDD 4.1: "moons return to their planets".</para>
-    ///
-    /// <para>Built by <c>MoonBuilder</c>; every field below is written there.</para>
+    /// Keeps one moon riding its planet's orbit anchor, shown only while the planet is out (GDD 4.1, 6.2).
     /// </summary>
+    // Not MoonForceSolver: its PlanetForceSolver base pins scale to one, but here localScale is the diameter in
+    // metres. Diameter is a ratio of the planet's, floored at 3 cm. Every field is written by MoonBuilder.
     [DisallowMultipleComponent]
     [RequireComponent(typeof(ForceSolver))]
     public class MoonOrbit : MonoBehaviour
@@ -148,11 +120,7 @@ namespace CosmicSimulation
             }
         }
 
-        /// <summary>
-        /// True while the moon is riding its orbit, or being dwelled on from it. Matches
-        /// <c>MoonForceSolver</c>'s own test: dwelling on a moon still in its orbit is not holding it, but
-        /// dwelling on one already pulled out is.
-        /// </summary>
+        /// <summary>True while riding its orbit, or dwelled on from it; dwelling on a pulled-out moon counts as held.</summary>
         public bool InOrbit
         {
             get
@@ -178,9 +146,8 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// True while the planet is out of its arrangement, which is the whole condition for a moon existing at
-        /// all (GDD 4.1). The same test <see cref="InfoPanel"/> uses to decide a body's panel is open, so a
-        /// planet's panel and its moons always appear and disappear together.
+        /// True while the planet is out of its arrangement. The same test <see cref="InfoPanel"/> uses, so a
+        /// planet's panel and its moons appear together.
         /// </summary>
         public bool ParentIsOut
         {
@@ -207,10 +174,7 @@ namespace CosmicSimulation
             }
         }
 
-        /// <summary>
-        /// How wide the moon should be right now while it is in its orbit, in the units of whatever the body
-        /// group is scaled to. A fraction of the planet, floored at the GDD's 3 cm.
-        /// </summary>
+        /// <summary>Diameter while in orbit: a fraction of the planet's, floored at 3 cm.</summary>
         public float OrbitDiameter
         {
             get
@@ -224,9 +188,7 @@ namespace CosmicSimulation
 
         private void Awake() => EnsureInit();
 
-        // A moon, its label and its panel are bound in the same frame they spawn, and a caller reading InOrbit or
-        // OrbitDiameter has no way to know whether Awake has run yet, so every entry point comes through here
-        // rather than trusting that it has.
+        // Moons are bound the frame they spawn, before Awake may have run, so every entry point initialises lazily.
         private void EnsureInit()
         {
             if (_ready)
@@ -247,8 +209,7 @@ namespace CosmicSimulation
                 fade = GetComponent<Moon>();
             }
 
-            // Belt and braces: the builder serialises this too, but a moon whose anchor was lost would otherwise
-            // snap to the world origin the first time the solver ran.
+            // Also serialised by the builder; a lost anchor would otherwise snap the moon to the world origin.
             if (anchor != null && _moon != null)
             {
                 _moon.RootTransform = anchor;
@@ -300,8 +261,7 @@ namespace CosmicSimulation
             var parentOut = ParentIsOut;
             ApplyVisibility(parentOut);
 
-            // The planet has just gone home with the moon still out in the room. Nothing else will fetch it:
-            // LayoutRig only knows about the bodies an arrangement names, and a moon has no slot of its own.
+            // Planet went home with the moon still out; LayoutRig has no slot for a moon, so nothing else fetches it.
             if (_wasParentOut && !parentOut && !InOrbit)
             {
                 SendHome();
@@ -337,9 +297,7 @@ namespace CosmicSimulation
 
             transform.SetPositionAndRotation(anchor.position, anchor.rotation);
 
-            // OrbitDiameter is measured in the space the parent's body root lives in. The moons group and the
-            // bodies group are both children of the content root at scale one, so the two spaces are the same
-            // one; the correction is here so that stays true if either group is ever nested differently.
+            // OrbitDiameter is in the parent root's space; corrects for the moons group being scaled differently.
             var mine = transform.parent != null ? transform.parent.lossyScale.x : 1f;
             var theirs = parentRoot != null && parentRoot.parent != null ? parentRoot.parent.lossyScale.x : mine;
             var correction = mine > 0.0001f ? theirs / mine : 1f;
@@ -355,8 +313,7 @@ namespace CosmicSimulation
 
             if (fade != null)
             {
-                // Moon cross-fades this over 0.3 s and switches the colliders with it, so a hidden moon cannot be
-                // pinched by mistake. KeepVisible overrides the blend while the player has hold of it.
+                // Moon fades its colliders with the blend, so a hidden moon cannot be pinched.
                 fade.Blend = parentOut ? 1f : 0f;
                 fade.KeepVisible = held;
             }
@@ -394,11 +351,7 @@ namespace CosmicSimulation
 
         // ---------- size and reach
 
-        /// <summary>
-        /// GDD 6.2: "Held moon grows to 20 cm." It only ever grows, and it stops the moment the player takes hold
-        /// of it, so a two-handed resize is never fought. Same shape as <see cref="LayoutRig"/>'s pull-out growth,
-        /// which a moon cannot use because it has no slot in any arrangement.
-        /// </summary>
+        // Grows to the held size (GDD 6.2) and stops once the player takes hold, so a two-handed resize is never fought.
         private void Grow()
         {
             if (heldDiameter <= 0f || _moon == null)
@@ -406,10 +359,7 @@ namespace CosmicSimulation
                 return;
             }
 
-            // A moon whose planet has gone home is walked back to its orbit by FreePlacementSolver, which lerps
-            // the same localScale down to the orbit size. That runs while the solver is still in Free, which is
-            // a state this method keeps growing in, so without this the two would write the scale in the same
-            // frame all the way home.
+            // FreePlacementSolver's restore lerps the same localScale during Free; growing then would fight it.
             if (placement != null && placement.IsRestoring)
             {
                 _growing = false;
@@ -446,11 +396,7 @@ namespace CosmicSimulation
             transform.localScale = Vector3.one * next;
         }
 
-        /// <summary>
-        /// GDD 4.1's 6 cm grab sphere, applied to a moon: the collider is widened rather than a second shape
-        /// added, so the moon has one interactable however small the arrangement leaves it. The visual is
-        /// normalised to a 1 m diameter, so a radius of 0.5 is exactly its surface.
-        /// </summary>
+        // Widens the one collider to the 6 cm grab sphere (GDD 4.1); the visual is 1 m across, so radius 0.5 is its surface.
         private void KeepReachable()
         {
             if (grab == null)

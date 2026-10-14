@@ -6,15 +6,7 @@ using UnityEngine.Rendering;
 
 namespace CosmicSimulation
 {
-    /// <summary>
-    /// One rectangle cut out of a deep-field plate: a single real galaxy, framed.
-    ///
-    /// <para>Everything in it is measured, not designed. <see cref="UvRect"/> is where
-    /// <c>GalaxyFieldBuilder</c> found a compact, isolated source in the plate; <see cref="Floor"/> is the sky
-    /// level it measured around that source, which the shader subtracts so the cutout does not add a grey
-    /// square to the view; <see cref="Gain"/> normalises a faint cutout against a bright one so the field does
-    /// not consist of three visible galaxies and four hundred smudges.</para>
-    /// </summary>
+    /// <summary>One real galaxy cut out of a deep-field plate. Every field is measured by the builder, not authored.</summary>
     [System.Serializable]
     public struct GalaxyCutout
     {
@@ -35,42 +27,12 @@ namespace CosmicSimulation
     }
 
     /// <summary>
-    /// The Galaxies deep field (GDD 4.6, F-25, CS-063/CS-064): a few hundred real galaxies scattered through a
-    /// shell around the player, seen at a distance, drifting slowly.
-    ///
-    /// <para><b>Why this is not a point cloud.</b> <c>DrawStars</c> — the renderer behind the Milky Way,
-    /// Andromeda and the Cosmic Web — is a hero renderer and the rendering research is blunt about it
-    /// (docs/research/scale_and_rendering.md 3.2-3.4): below about 20 cm of apparent width a point-cloud
-    /// galaxy is drawing more than one sub-pixel additive quad per covered pixel and is strictly worse than a
-    /// single billboard, for roughly a hundred times the triangle setup. Every galaxy here is 3-25 cm. So the
-    /// field is billboards, and the budget is trivial: a few hundred quads is a thousand triangles and two
-    /// draw calls, against a frame ceiling of 400,000 point sprites (Technical Overview 7.4).</para>
-    ///
-    /// <para><b>Why one mesh per plate rather than <c>Graphics.DrawMeshInstanced</c>.</b> Both are one draw
-    /// call at this count. A plain <c>MeshRenderer</c> wins on everything else: it is the path multiview is
-    /// most thoroughly exercised on (the whole field is stereo-correct or the whole app is), it is culled and
-    /// sorted by the ordinary renderer, it follows the transform for free so the director's grow-in and the
-    /// player's two-handed scale need no per-frame matrix rebuild, and it costs zero CPU per frame. The
-    /// per-instance data an instanced draw would put in a constant buffer simply rides in the vertex streams
-    /// instead; <c>galaxy_sprite_shader</c> documents the layout.</para>
-    ///
-    /// <para><b>The geometry is built at run time, not baked.</b> Same reasoning as
-    /// <see cref="CosmicWebRenderer"/>: the arrangement is deterministic from <see cref="seed"/>, so a
-    /// run-time build is exactly as reproducible as an asset and costs nothing to store. What <i>is</i> baked,
-    /// because it is the expensive and genuinely authored part, is the cutout table: the builder scans the
-    /// plates for galaxies and writes the winning sub-rectangles into <see cref="cutouts"/>.</para>
-    ///
-    /// <para><b>The shell is centred on the player, not on the content root.</b> The director spawns a
-    /// module's content about two metres in front of the player, which is right for a galaxy on a table and
-    /// wrong for a universe you are standing in the middle of — it would put some galaxies a hand's width from
-    /// the face and the rest five metres behind. So a child node carries an offset, measured once when the
-    /// experience opens, that puts the centre of the shell where the player's head is. The root itself never
-    /// moves, so <c>FreePlacementAnchor</c>'s home pose, the grab sphere and Restore all behave exactly as
-    /// they do for every other module.</para>
-    ///
-    /// <para><b>Nothing here writes to the transform.</b> The drift is a shader uniform, so it can never
-    /// fight a two-handed grab.</para>
+    /// The Galaxies deep field (GDD 4.6, CS-063/CS-064): a few hundred real galaxies on a shell around the player.
     /// </summary>
+    // Billboards, not DrawStars: below ~20 cm apparent width a point-cloud galaxy is worse than one quad
+    // (docs/research/scale_and_rendering.md 3.2-3.4). One MeshRenderer per plate keeps it two draw calls, stereo-safe.
+    // The shell sits on a child offset to the player's head so the root, its home pose and grab stay untouched;
+    // drift is a shader uniform so nothing here fights a grab.
     [DefaultExecutionOrder(55)]
     public class GalaxyField : MonoBehaviour
     {
@@ -177,10 +139,7 @@ namespace CosmicSimulation
         /// <summary>How many distinct cutouts the field is drawing from.</summary>
         public int CutoutCount => cutouts == null ? 0 : cutouts.Length;
 
-        /// <summary>
-        /// True when the shell is put around the player's head. The director reads this to leave such content
-        /// where it put itself, and to keep the place's panel inside the shell rather than beyond it.
-        /// </summary>
+        /// <summary>True when the shell sits around the player's head; the director then leaves it and its panel in place.</summary>
         public bool CentresOnViewer => centreOnViewer;
 
         /// <summary>Where the middle of the shell is in the world: the player's head when the place opened.</summary>
@@ -200,9 +159,8 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// Moves the shell so its centre sits on the main camera again. Not called on its own: the field is
-        /// placed once when it opens, because a shell that chased the head would turn walking into sliding.
-        /// Nothing calls it yet; Recenter does not, so in a headset the shell stays where it was first placed.
+        /// Moves the shell centre back onto the main camera. Never automatic: a shell that chased the head would
+        /// turn walking into sliding.
         /// </summary>
         public void RecentreOnViewer()
         {
@@ -217,8 +175,7 @@ namespace CosmicSimulation
 
         private void OnEnable()
         {
-            // Awake has not necessarily run when something adds this component and uses it the same frame, so
-            // the build happens from wherever it is first needed rather than from one entry point.
+            // Awake may not have run for a same-frame AddComponent, so Build is lazy and idempotent.
             Build();
         }
 
@@ -242,9 +199,7 @@ namespace CosmicSimulation
                 _block = new MaterialPropertyBlock();
             }
 
-            // A property block rather than a material instance: these two values change every frame, and
-            // writing them into the shared material asset is exactly the runtime leak the working rules in
-            // CLAUDE.md forbid committing.
+            // A property block, so per-frame values never leak into the shared material asset.
             _block.Clear();
             _block.SetFloat(AgeId, _age);
             _block.SetFloat(TransitionAlphaId, TransitionAlpha);
@@ -379,11 +334,7 @@ namespace CosmicSimulation
             }
         }
 
-        /// <summary>
-        /// The named-galaxy pins are built around their node's origin at just inside the shell's radius, so the
-        /// node goes wherever the shell's centre goes. Without this, once the shell sits on the player's head
-        /// the pins would hang two metres off it (CS-199).
-        /// </summary>
+        // Pins are laid out about their node's origin, so the node follows the shell centre (CS-199).
         private void FollowShell()
         {
             foreach (var pins in GetComponentsInChildren<GalaxyPins>(true))
@@ -395,10 +346,7 @@ namespace CosmicSimulation
             }
         }
 
-        /// <summary>
-        /// Where to put the centre of the shell, in this transform's local space. Zero — the content root
-        /// itself — when there is no camera to measure against or the offset is asked to be absurd.
-        /// </summary>
+        // Shell centre in local space, clamped so a stale or mis-parented camera cannot fling the field.
         private Vector3 ViewerOffset()
         {
             if (!centreOnViewer)
@@ -431,14 +379,7 @@ namespace CosmicSimulation
             public int Cutout;
         }
 
-        /// <summary>
-        /// Scatters the galaxies through the shell.
-        ///
-        /// Directions come off a golden-angle spiral, which covers a sphere evenly without the pole clumping a
-        /// naive two-random-angles scheme produces, and are then jittered so the even coverage does not read as
-        /// a lattice. Radius, size, roll, tint, brightness and drift rate are all independent draws: the point
-        /// is that no two galaxies in the field look placed.
-        /// </summary>
+        // Golden-angle spiral directions cover the sphere without pole clumping; jitter hides the lattice.
         private List<Placed> Place()
         {
             var count = Mathf.Clamp(spriteCount, 0, MaxSprites);
@@ -492,8 +433,7 @@ namespace CosmicSimulation
                 var halfX = 0.5f * width * (aspect >= 1f ? 1f : aspect);
                 var halfY = 0.5f * width * (aspect >= 1f ? 1f / aspect : 1f);
 
-                // Cool to warm, centred on white. The plates carry the real colour; this only stops four
-                // hundred copies of thirty images from reading as four hundred identical stamps.
+                // A nudge around white: the plates carry the real colour; this only breaks up repeated cutouts.
                 var warm = (rng.Next01() - 0.5f) * 2f * Mathf.Clamp01(tintSpread);
                 var tint = new Color(
                     1f + 0.20f * warm,
@@ -519,10 +459,7 @@ namespace CosmicSimulation
             return result;
         }
 
-        /// <summary>
-        /// One mesh holding every galaxy that came out of one plate, four vertices and two triangles each.
-        /// Returns null when this plate has no galaxies in the field.
-        /// </summary>
+        // Null when no galaxy in the field came from this plate.
         private Mesh BuildMesh(List<Placed> placed, int plate)
         {
             var quads = 0;
@@ -596,10 +533,8 @@ namespace CosmicSimulation
             mesh.SetColors(colors);
             mesh.SetTriangles(triangles, 0, false);
 
-            // Stated rather than recalculated. Every vertex holds a sprite's *centre*, so recalculated bounds
-            // would be the shell and would miss both the quad the shader expands around each centre and the
-            // drift that turns the whole field — and the field would then pop out of view at the edges of a
-            // glance. A sphere the size of the shell plus the largest sprite can never be wrong.
+            // Stated, not recalculated: vertices hold sprite centres, so computed bounds would miss the expanded
+            // quads and the drift and the field would be culled at the edge of a glance.
             var reach = Mathf.Max(shellOuterRadius, shellInnerRadius) + Mathf.Max(maxSpriteMetres, minSpriteMetres);
             mesh.bounds = new Bounds(Vector3.zero, Vector3.one * (reach * 2f));
 
@@ -608,10 +543,7 @@ namespace CosmicSimulation
         }
 
         // ---------- deterministic randomness
-        //
-        // Its own generator rather than UnityEngine.Random: that one is global state, so seeding it here would
-        // silently change every other random draw in the frame, and anything else drawing from it would change
-        // this field. Xorshift32, which is more than enough for scattering billboards.
+        // Xorshift32, not UnityEngine.Random: seeding that global state would perturb every other draw in the frame.
 
         private struct Rng
         {
@@ -654,8 +586,7 @@ namespace CosmicSimulation
 
         private static Vector3 InsideUnitSphere(ref Rng rng)
         {
-            // Rejection sampling, capped: uniform inside the sphere, and it cannot spin forever on a
-            // pathological generator.
+            // Capped rejection sampling: uniform, and cannot spin forever on a pathological generator.
             for (var attempt = 0; attempt < 16; attempt++)
             {
                 var v = new Vector3(

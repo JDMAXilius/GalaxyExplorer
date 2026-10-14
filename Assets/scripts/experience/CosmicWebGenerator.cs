@@ -8,51 +8,14 @@ using UnityEngine;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// Makes the point cloud the Cosmic Web is drawn from (GDD 4.7, Technical Overview 7.3).
-    ///
-    /// The web is not a new rendering problem: it is the galaxy's point cloud with a different distribution, so
-    /// it produces <see cref="StarVertDescriptor"/>s for exactly the same <c>StructuredBuffer</c> +
-    /// <c>DrawProcedural</c> path <c>DrawStars</c> uses, and <c>CosmicSimulation/CosmicWebPoints</c> expands
-    /// them with the same <c>cginc/StarQuad.cginc</c>. Nothing here needs a second particle system.
-    ///
-    /// **How the fields of that struct are read here.** The galaxy stores a star's place on a spiral ellipse;
-    /// the web stores a plain cylindrical position, because the four position fields happen to be exactly what
-    /// that needs and reusing the struct is what keeps the buffer stride identical:
-    ///
-    ///   <c>ellipseDistance</c> - distance from the volume's vertical axis, metres at local scale 1
-    ///   <c>curveOffset</c>     - angle about that axis, radians
-    ///   <c>yOffset</c>         - height, metres at local scale 1
-    ///   <c>ellipseOffset</c>   - **repurposed**: 0..1 along the violet ramp (void -> filament -> node)
-    ///   <c>color</c>           - plain per-point brightness; all hue comes from the material's ramp, so the
-    ///                            look can be retuned without regenerating a single point
-    ///   <c>size</c>            - sprite size multiplier, scaled to metres by the material's _WSScale
-    ///   <c>random</c>          - per-point shimmer phase
-    ///   <c>uv</c>              - which tile of the shared star sprite atlas this point draws
-    ///
-    /// Storing the angle rather than x/z is not an accident either: the shader reconstructs the position from
-    /// <c>curveOffset + _Age</c>, which gives the GDD's 0.5 deg/min drift of the whole volume for free, in the
-    /// vertex stage, without ever touching the transform the player is holding.
-    ///
-    /// **The distribution.** Matter in the real universe sits on the boundaries between voids, so the voids are
-    /// the Voronoi cells and the structure is their walls (sheets), edges (filaments) and vertices (clusters).
-    /// That is generated directly rather than by rejection-sampling a noise field, which would throw away
-    /// ninety-odd percent of its candidates:
-    ///
-    ///   1. Sites are a jittered grid: a site's position is a pure function of its integer cell and the seed,
-    ///      hashed once into a small table because the search runs a few million times.
-    ///   2. A candidate is thrown uniformly into the volume and its four nearest sites are found by scanning
-    ///      the 3x3x3 neighbourhood of its own cell.
-    ///   3. It is then *projected* onto the piece of the tessellation it was drawn to be. A Voronoi wall is a
-    ///      plane (the perpendicular bisector of two sites), an edge is the intersection of two of those planes
-    ///      and a vertex the intersection of three, so every projection is exact linear algebra, not a search.
-    ///   4. The projection can land on the *extension* of a bisector, outside the face that actually exists, so
-    ///      the result is re-measured and kept only if the sites it was built from are still its nearest.
-    ///   5. A little isotropic jitter gives the structure thickness.
-    ///
-    /// Deterministic from <see cref="Settings.Seed"/> and nothing else: no <c>UnityEngine.Random</c> (global
-    /// state, and shared with everything else in the frame), no dependence on frame timing or on how many
-    /// slices <see cref="Builder.Step"/> is asked for.
+    /// Point cloud for the Cosmic Web (GDD 4.7): <see cref="StarVertDescriptor"/>s for the same buffer and quad
+    /// shader the galaxy uses. Deterministic from <see cref="Settings.Seed"/> alone.
     /// </summary>
+    // The struct carries a cylindrical position so the buffer stride matches the galaxy's: ellipseDistance = radius,
+    // curveOffset = angle in radians (the shader adds _Age, giving the drift without touching the transform), yOffset
+    // = height, metres at local scale 1; ellipseOffset = 0..1 on the ramp; color = brightness only, hue is the material's.
+    // Voids are Voronoi cells; points are projected exactly onto bisector planes, lines and points (walls, filaments,
+    // nodes) rather than rejection-sampled, then kept only if their sites are still the nearest.
     public static class CosmicWebGenerator
     {
         /// <summary>Which piece of the tessellation a point belongs to. Drives its size, brightness and ramp.</summary>
@@ -87,20 +50,13 @@ namespace CosmicSimulation
             /// <summary>How far a site may wander from its cell centre, as a fraction of the cell. Keep at or below 0.5.</summary>
             public float SiteJitter;
 
-            /// <summary>
-            /// Share of *candidates* aimed at each structure, normalised, so they need not sum to one. Not the
-            /// share of the result: a vertex projection is rejected far more often than a wall projection, so
-            /// the finished cloud leans towards the simpler structures. Tune by eye, not by arithmetic.
-            /// </summary>
+            /// <summary>Share of candidates, normalised; not of the result, since vertex projections are rejected far more often.</summary>
             public float VoidShare, WallShare, FilamentShare, NodeShare;
 
             /// <summary>Thickness of each structure, as a fraction of a cell.</summary>
             public float WallThickness, FilamentRadius, NodeRadius;
 
-            /// <summary>
-            /// How close to equidistant a point must be to count as on the tessellation, as a fraction of a
-            /// cell. Larger keeps more points and blurs the web; smaller is crisper and rejects more.
-            /// </summary>
+            /// <summary>How near equidistant counts as on the tessellation, as a fraction of a cell. Larger is blurrier.</summary>
             public float SnapTolerance;
 
             /// <summary>Density falls off from here (0..1 of the radius) to nothing at the rim, so the volume has no visible edge.</summary>
@@ -112,12 +68,7 @@ namespace CosmicSimulation
             /// <summary>Brightness multiplier for each structure. The hue is the material's, not ours.</summary>
             public float VoidBrightness, WallBrightness, FilamentBrightness, NodeBrightness;
 
-            /// <summary>
-            /// The values CS-065 shipped, with the point count lowered to
-            /// <see cref="CosmicWebRenderer.DefaultPointCount"/> — a tenth of the frame budget rather than
-            /// thirty percent of it, for the reasons recorded there. See CosmicWebRenderer for where each of
-            /// these is exposed.
-            /// </summary>
+            /// <summary>The CS-065 tuning, with the point count from <see cref="CosmicWebRenderer.DefaultPointCount"/>.</summary>
             public static Settings Default => new Settings
             {
                 Seed = 20260912,
@@ -166,9 +117,8 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// The generator as a resumable job. <see cref="Step"/> fills as much of the caller's array as it can
-        /// inside a millisecond budget and returns how many it added, so the caller can upload just that slice
-        /// and let the web condense into view instead of freezing the headset for a tenth of a second.
+        /// Resumable generator: <see cref="Step"/> fills the caller's array within a millisecond budget, so the web
+        /// condenses into view instead of stalling the headset.
         /// </summary>
         public sealed class Builder
         {
@@ -246,10 +196,7 @@ namespace CosmicSimulation
 
             private int Budget => _settings.PointCount * CandidatesPerPoint + 1024;
 
-            /// <summary>
-            /// Writes points into <paramref name="into"/> starting at <see cref="Count"/> and returns how many
-            /// were added. A <paramref name="millisecondBudget"/> of zero or less runs to completion.
-            /// </summary>
+            /// <summary>Appends points from <see cref="Count"/>; returns how many. A budget of zero or less runs to completion.</summary>
             public int Step(StarVertDescriptor[] into, float millisecondBudget)
             {
                 if (into == null)
@@ -340,10 +287,8 @@ namespace CosmicSimulation
                         return false;
                     }
 
-                    // The projection is onto an infinite plane or line; only the part of it that is really a
-                    // face of the tessellation counts, and that is exactly "the sites it was built from are
-                    // still the nearest ones". Measured before the thickness jitter, because a node's jitter
-                    // is meant to carry it off the vertex and would fail its own test.
+                    // Projections land on infinite planes/lines; only points whose sites are still the nearest are on a
+                    // real face. Measured before the thickness jitter, which would carry a node off its own vertex.
                     Nearest(p, out _, out _, out _, out _, out var d1, out var d2, out var d3, out var d4);
                     var reached = structure == Structure.Wall ? d2 - d1
                         : structure == Structure.Filament ? d3 - d1
@@ -421,11 +366,7 @@ namespace CosmicSimulation
 
             // ---------- the tessellation
 
-            /// <summary>
-            /// The four sites nearest <paramref name="p"/>, with their distances in ascending order. Only the
-            /// 3x3x3 neighbourhood of p's own cell is scanned, which is exact as long as the site jitter stays
-            /// at or below half a cell (enforced in the constructor).
-            /// </summary>
+            // Scanning only the 3x3x3 neighbourhood is exact while site jitter stays at or below half a cell.
             private void Nearest(Vector3 p,
                 out Vector3 s1, out Vector3 s2, out Vector3 s3, out Vector3 s4,
                 out float d1, out float d2, out float d3, out float d4)
@@ -481,11 +422,7 @@ namespace CosmicSimulation
                 d4 = Mathf.Sqrt(q4);
             }
 
-            /// <summary>
-            /// The site owned by one integer cell, read from the table built in <see cref="BuildSites"/>.
-            /// Indices outside the table are clamped rather than wrapped: they can only be reached by a point
-            /// that has already wandered outside the volume, and such a point is rejected a few lines later.
-            /// </summary>
+            // Clamped, not wrapped: only a point already outside the volume reaches past the table, and it is rejected.
             private Vector3 Site(int ix, int iy, int iz) =>
                 _sites[(Clamp(ix) * _span + Clamp(iy)) * _span + Clamp(iz)];
 
@@ -495,11 +432,7 @@ namespace CosmicSimulation
                 return i < 0 ? 0 : i >= _span ? _span - 1 : i;
             }
 
-            /// <summary>
-            /// Every site the search can reach, hashed once. The site of a given cell is a pure function of
-            /// that cell and the seed either way, so this is only a speed-up - but it is a large one: the
-            /// nearest-four search runs a few million times and would otherwise hash 27 sites on every pass.
-            /// </summary>
+            // Hashed once up front: the nearest-four search runs millions of times and would otherwise hash 27 sites each.
             private Vector3[] BuildSites()
             {
                 var sites = new Vector3[_span * _span * _span];
@@ -537,18 +470,14 @@ namespace CosmicSimulation
 
             private static Vector3 Midpoint(Vector3 a, Vector3 b) => (a + b) * 0.5f;
 
-            /// <summary>Drops a point onto the plane through <paramref name="through"/> with the given normal.</summary>
             private static Vector3 ProjectOntoPlane(Vector3 p, Vector3 through, Vector3 normal)
             {
                 var n = normal.normalized;
                 return p - n * Vector3.Dot(p - through, n);
             }
 
-            /// <summary>
-            /// Slides a point already on the (s1,s2) wall along that wall until it also lies on the (s1,s3)
-            /// wall - that is, onto the Voronoi edge the two share. Fails when the two walls are so nearly
-            /// parallel that their line of intersection is meaningless.
-            /// </summary>
+            // Slides a point on the (s1,s2) wall along it onto the (s1,s3) wall: their shared Voronoi edge.
+            // Fails when the walls are near parallel.
             private static bool ProjectOntoEdge(ref Vector3 p, Vector3 s1, Vector3 s2, Vector3 s3)
             {
                 var nA = (s2 - s1).normalized;
@@ -566,10 +495,7 @@ namespace CosmicSimulation
                 return true;
             }
 
-            /// <summary>
-            /// Slides a point already on the (s1,s2,s3) edge along it onto the (s1,s4) wall - the Voronoi
-            /// vertex where four voids meet. Fails when the edge runs parallel to that wall.
-            /// </summary>
+            // Slides a point on the (s1,s2,s3) edge along it onto the (s1,s4) wall: the Voronoi vertex.
             private static bool ProjectOntoVertex(ref Vector3 p, Vector3 s1, Vector3 s2, Vector3 s3, Vector3 s4)
             {
                 var direction = Vector3.Cross(s2 - s1, s3 - s1);
@@ -630,10 +556,7 @@ namespace CosmicSimulation
         /// <summary>A hash turned into 0..1, using the top 24 bits: the low bits of an xorshift are the weak ones.</summary>
         private static float Unit(uint h) => (h >> 8) * (1f / 16777216f);
 
-        /// <summary>
-        /// xorshift32. Deliberately not <c>UnityEngine.Random</c>: that is global state shared with every other
-        /// script in the frame, so the web would come back different depending on what else ran first.
-        /// </summary>
+        // xorshift32, not UnityEngine.Random: shared global state would make the web depend on what ran first.
         private struct Rng
         {
             private uint _state;
