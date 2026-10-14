@@ -466,6 +466,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 843412436}
     m_Modifications:
+    - target: {fileID: 1568870901711540860, guid: 1a294a6b2a9410546a10f493581a513d, type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
+      objectReference: {fileID: 0}
     - target: {fileID: 5135508126109684546, guid: 1a294a6b2a9410546a10f493581a513d, type: 3}
       propertyPath: m_Name
       value: galaxy_bar
@@ -606,6 +610,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   FadeOutTime: 2
+  level: 0.8
 --- !u!82 &251394379
 AudioSource:
   m_ObjectHideFlags: 0
@@ -940,7 +945,7 @@ PrefabInstance:
     - target: {fileID: 11400000, guid: 1c4dd8a13f501b04f84fe824120f70bb, type: 3}
       propertyPath: 'layers.Array.data[0]'
       value: 
-      objectReference: {fileID: 736967546}
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -987,10 +992,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 736967551}
-  - component: {fileID: 736967549}
-  - component: {fileID: 736967548}
-  - component: {fileID: 736967547}
-  - component: {fileID: 736967546}
+  - component: {fileID: 736967552}
   m_Layer: 0
   m_Name: TouchController
   m_TagString: Untagged
@@ -998,122 +1000,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &736967546
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 736967545}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bc7fd33c57d694994b0ab9f33fcdcbea, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Name: Fullscreen @ main_camera_prefab
-  type: 0
-  _camera: {fileID: 318198838}
---- !u!114 &736967547
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 736967545}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 74ae431eff8434b0897d3f7f1cff4311, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  debugMode: 0
-  OnStateChange:
-    m_PersistentCalls:
-      m_Calls: []
-  basicEditor: 0
-  generalProps: 0
-  limitsProps: 0
-  advancedProps: 0
-  minPointers: 2
-  maxPointers: 10
-  useSendMessage: 0
-  sendStateChangeMessages: 0
-  sendMessageTarget: {fileID: 0}
-  useUnityEvents: 0
-  sendStateChangeEvents: 0
-  requireGestureToFail: {fileID: 0}
-  friendlyGestures: []
-  OnTransformStart:
-    m_PersistentCalls:
-      m_Calls: []
-  OnTransform:
-    m_PersistentCalls:
-      m_Calls: []
-  OnTransformComplete:
-    m_PersistentCalls:
-      m_Calls: []
-  type: 7
-  screenTransformThreshold: 0.2
-  minScreenPointsDistance: 0.5
---- !u!114 &736967548
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 736967545}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 74ae431eff8434b0897d3f7f1cff4311, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  debugMode: 0
-  OnStateChange:
-    m_PersistentCalls:
-      m_Calls: []
-  basicEditor: 0
-  generalProps: 0
-  limitsProps: 0
-  advancedProps: 0
-  minPointers: 1
-  maxPointers: 1
-  useSendMessage: 0
-  sendStateChangeMessages: 0
-  sendMessageTarget: {fileID: 0}
-  useUnityEvents: 0
-  sendStateChangeEvents: 0
-  requireGestureToFail: {fileID: 0}
-  friendlyGestures: []
-  OnTransformStart:
-    m_PersistentCalls:
-      m_Calls: []
-  OnTransform:
-    m_PersistentCalls:
-      m_Calls: []
-  OnTransformComplete:
-    m_PersistentCalls:
-      m_Calls: []
-  type: 1
-  screenTransformThreshold: 0.05
-  minScreenPointsDistance: 0.5
---- !u!114 &736967549
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 736967545}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b5f2ff2a908224e94b8dde12c7b83c3d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  TwoFingerMoveGesture: {fileID: 736967548}
-  ManipulationGesture: {fileID: 736967547}
-  PanSpeed: 0.01
-  RotationSpeed: 200
-  ZoomSpeed: 10
-  Pivot: {fileID: 690705930}
-  EntityToMove: {fileID: 736967551}
 --- !u!4 &736967551
 Transform:
   m_ObjectHideFlags: 0
@@ -1130,6 +1016,20 @@ Transform:
   - {fileID: 690705930}
   m_Father: {fileID: 2129971422}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &736967552
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 736967545}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b4886810fb7463589ce3a7e4dee4bdb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicSimulation.ViewPivot
+  pivot: {fileID: 690705930}
+  entityToMove: {fileID: 736967551}
 --- !u!1001 &824967459
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1456,6 +1356,7 @@ MonoBehaviour:
   scenePanelPrefab: {fileID: 284596933589354139, guid: 782d1fee663b8e841b4659df5742eb48, type: 3}
   scenePanelOffset: {x: 0.55, y: 0.2, z: 0}
   panelClearanceMetres: 0.15
+  desktopFitMargin: 0.95
 --- !u!114 &843412435
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1472,6 +1373,7 @@ MonoBehaviour:
   dimDistance: 0.06
   haloTexture: {fileID: 0}
   tintShader: {fileID: 0}
+  passthroughOnStart: 1
 --- !u!4 &843412436
 Transform:
   m_ObjectHideFlags: 0
@@ -1519,6 +1421,7 @@ MonoBehaviour:
   crossfadeSeconds: 2
   output: {fileID: 0}
   narrationDuck: 0.55
+  level: 0.7
   duckSeconds: 0.35
 --- !u!1 &907698622
 GameObject:
@@ -2268,6 +2171,10 @@ PrefabInstance:
     - target: {fileID: 4814723783947301950, guid: 73586b1b89144fd4faee105092cb67ff, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7304816369305290856, guid: 73586b1b89144fd4faee105092cb67ff, type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
