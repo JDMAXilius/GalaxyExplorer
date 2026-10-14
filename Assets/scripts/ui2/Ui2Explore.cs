@@ -141,6 +141,9 @@ namespace CosmicSimulation.UI2
         /// <summary>The body or moon the card is describing, or null.</summary>
         public BodyInfo Selected => _body;
 
+        /// <summary>The place a map marker is previewing on the card, not yet entered, or null.</summary>
+        public ExperienceModule Previewing => _preview;
+
         /// <summary>The transform that carries the selected planet's size, or null (nothing out, or a moon).</summary>
         public Transform SelectedRoot
         {

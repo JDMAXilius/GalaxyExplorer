@@ -18,6 +18,7 @@ namespace Cosmic.Companion
         Vector3 pressedAt;
         float pressedTime, window, micPeak, openAt;
         bool greeting, answerDone, leaving, ready, speechHeard;
+        string situated;
 
         public Phase Current { get; private set; }
         public IHost Host { get; private set; }
@@ -64,7 +65,7 @@ namespace Cosmic.Companion
             Init();
             if (!session.IsReady) { Debug.Log("Being: offline, cannot ask.", this); return; }
             Interrupt();
-            session.Situate(Situation());
+            Situate();
             session.Ask(text);
             Set(Phase.Thinking);
         }
@@ -148,7 +149,7 @@ namespace Cosmic.Companion
             else Debug.Log("Being: no OpenAI key; offline.", this);
             for (var t = 0f; t < settings.connectTimeoutSeconds && !session.IsReady && key.Length > 0; t += Time.unscaledDeltaTime) yield return null;
             greeting = true;
-            if (session.IsReady) { session.Situate(Situation()); session.Greet(); }
+            if (session.IsReady) { Situate(); session.Greet(); }
             else if (!voice.Say(settings.greeting)) { greeting = false; Listen(true, 0f); }
         }
 
@@ -160,7 +161,7 @@ namespace Cosmic.Companion
             answerDone = false;
             micPeak = 0f;
             window = settings.listenWindowSeconds;
-            if (session.IsReady) session.Situate(Situation());
+            Situate();
             var cue = chime && settings.listenChime != null ? settings.listenChime.length + 0.05f : 0f;
             if (chime) voice.Cue(settings.listenChime);
             openAt = Time.unscaledTime + quietSeconds + cue;
@@ -186,7 +187,12 @@ namespace Cosmic.Companion
             Set(Phase.Idle);
         }
 
-        void OnSpeechStarted() => speechHeard = true;
+        void OnSpeechStarted()
+        {
+            speechHeard = true;
+            // Before the turn this speech becomes: it may have changed since the window opened (always-listening keeps one open).
+            Situate();
+        }
 
         void OnSpeechStopped()
         {
@@ -236,14 +242,31 @@ namespace Cosmic.Companion
             Host?.Duck(phase != Phase.Idle);
         }
 
+        // Told again only when it changed: the line is a conversation item, and a repeat of it is noise.
+        void Situate()
+        {
+            if (!session.IsReady) return;
+            var line = Situation();
+            if (line == situated) return;
+            situated = line;
+            session.Situate(line);
+        }
+
         string Situation()
         {
             var s = Host != null ? Host.Situation() : default;
             var platform = UnityEngine.XR.XRSettings.isDeviceActive ? "headset" : "desktop";
-            var line = $"[Situation: the player is in \"{(string.IsNullOrEmpty(s.place) ? "the intro" : s.place)}\"";
-            if (!string.IsNullOrEmpty(s.layout)) line += ", layout " + s.layout;
-            if (s.held != null && s.held.Length > 0) line += ", holding " + string.Join(", ", s.held);
-            return line + ", on " + platform + ".]";
+            var line = string.IsNullOrEmpty(s.place)
+                ? "[Situation: the player is in the intro"
+                : $"[Situation: the player is in {s.place} (id {s.placeId})";
+            line += ", on " + platform + ".";
+            if (!string.IsNullOrEmpty(s.layout)) line += " Layout: " + s.layout + ".";
+            if (!string.IsNullOrEmpty(s.selected)) line += " The info card shows " + s.selected + ".";
+            if (!string.IsNullOrEmpty(s.previewing)) line += " The card is previewing " + s.previewing + ", not yet entered.";
+            if (s.held != null && s.held.Length > 0) line += " Pulled out now: " + string.Join(", ", s.held) + ".";
+            if (s.bodies != null && s.bodies.Length > 0) line += " Bodies pull_body can bring out here: " + string.Join(", ", s.bodies) + ".";
+            if (s.destinations != null && s.destinations.Length > 0) line += " Places that open from this map: " + string.Join(", ", s.destinations) + ".";
+            return line + "]";
         }
 
         string Instructions() => (settings.prompt != null ? settings.prompt.text : "") + "\n\n" + (settings.knowledge != null ? settings.knowledge.text : "");

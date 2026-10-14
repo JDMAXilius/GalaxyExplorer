@@ -194,20 +194,20 @@ Builds/Quest3/CosmicSimulationXR.apk  (gitignored)
 | File | Responsibility |
 |---|---|
 | `Being.cs` | Phases Idle / Listening / Thinking / Speaking. Press/release decides tap vs drag (0.4 s, 3 cm). Greet on summon, then a 3 s listen window. Tap rules; dismiss. Wires Voice, Mic, Look, Follow, Session. |
-| `Session.cs` | The OpenAI Realtime protocol. Its `session.update` sends: PCM16 24 kHz in/out, voice `marin`, model `gpt-realtime`, `gpt-4o-transcribe` transcription in English, server VAD (threshold 0.65, 600 ms silence), and the tools `open_place`, `pull_body`, `restore`. Handles append/clear/`conversation.item.create`/`response.create`/`response.cancel`; a cancelled response is dropped by id. |
+| `Session.cs` | The OpenAI Realtime protocol. Its `session.update` sends: PCM16 24 kHz in/out, voice `marin`, model `gpt-realtime`, `gpt-4o-transcribe` transcription in English, server VAD (threshold 0.65, 600 ms silence), and the tools `open_place`, `pull_body`, `send_home`, `restore`. Handles append/clear/`conversation.item.create`/`response.create`/`response.cancel`; a cancelled response is dropped by id. |
 | `Realtime.cs` | One `System.Net.WebSockets.ClientWebSocket` to `wss://api.openai.com/v1/realtime`, with a Bearer header, 20 s keepalive, serialised sends, a background receive loop and a main-thread inbox pumped each frame. |
 | `Mic.cs` | Unity `Microphone` → resampled 24 kHz PCM16 frames, level meter, remembered device, Android permission. Half-duplex: opens `echoTailSeconds` (0.6 s) after the Being stops speaking. |
 | `Voice.cs` | Streamed `AudioClip` fed from a 30 s ring buffer through `PCMReaderCallback`. Carries an odd byte across frames. Start cushion `startBufferSeconds` 0.5; on starvation it holds silence until 0.3 s is buffered (CS-204). On finish it waits out Unity's read-ahead and the DSP buffers before stopping, so the last word is kept. Exposes loudness, four spectrum bands, and `StartLatencyMs` / `ShortReads` diagnostics. |
 | `Look.cs` | Drives the point material (`_Density`, `_Inward`, `_Bands`, `_Active`, `_TouchPoint`), spin per phase, the rim glow, the press pop and the reveal fade. |
 | `Follow.cs` | Keeps station in the head's yaw+pitch frame (1.4 m out, 0.32 m aside, 0.1 m down) and faces the head. |
-| `IHost.cs` | The only contact with the app: `Held`, `Situation()` (place, layout, held body), `Act(name, id)`, `Duck(bool)`, `Click()`. |
+| `IHost.cs` | The only contact with the app: `Held`, `Situation()` (place and id, layout, the card's body, a previewed marker, bodies out, bodies pullable here, places on this map), `Act(name, id)`, `Duck(bool)`, `Click()`. |
 | `BeingSettings.cs` | All tuning, on `Data/being_settings.asset`. |
 | `BeingKeys.cs` | Key lookup: asset field → `OPENAI_API_KEY` environment variable → project-root `.env` (editor/standalone only). With no key it runs offline, with the recorded greeting. |
 | `Shaders/Points.shader`, `Rim.shader` | The body (voice bands deepen an inward fall only) and the rim; stereo macros, target 3.5. |
 | `Editor/BeingPrefab.cs` | **Cosmic Simulation/Build Being**: the prefab, synthesised cue WAVs, dock wiring. |
 | `Editor/Knowledge.cs` | **Build Being Knowledge**: places and bodies → `being_knowledge.txt`, sent as instructions. |
 
-**Host adapters:** `Assets/scripts/being/Host.cs` (shipping) and `Assets/Cosmic/Being/Host.cs` (rework). Each adds `GEInteractable`, `ManipulationHandler` and `TouchNudge` at summon; maps the tools onto `ExperienceDirector.Switch`, the first `LayoutRig`'s pull, and restore; and implements ducking. `Host.Toggle` keeps `Current` set through the fade.
+**Host adapters:** `Assets/scripts/being/Host.cs` (shipping) and `Assets/Cosmic/Being/Host.cs` (rework). Each adds `GEInteractable`, `ManipulationHandler` and `TouchNudge` at summon; maps the tools onto `ExperienceDirector.Switch`, a pull of any body here (the `LayoutRig` entry, else the orbit view's `poi_<id>_prefab` solver, waiting for a place that is still opening), one body's `ReturnHome`, and restore; and implements ducking. `Host.Toggle` keeps `Current` set through the fade.
 
 **Measured (editor, 27 Sep):** the greeting's first audio played 175 ms after its first chunk with 0 short reads (3 before CS-204); a three-sentence answer took 182 ms with 1 rebuffer.
 

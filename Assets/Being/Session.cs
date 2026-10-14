@@ -14,8 +14,9 @@ namespace Cosmic.Companion
 
         const string Url = "wss://api.openai.com/v1/realtime?model=";
         const string Tools =
-            @"[{""type"":""function"",""name"":""open_place"",""description"":""Travel to a place in the simulation. Use the id from the knowledge list."",""parameters"":{""type"":""object"",""properties"":{""id"":{""type"":""string""}},""required"":[""id""]}}," +
-            @"{""type"":""function"",""name"":""pull_body"",""description"":""Pull a planet, the Sun or a moon out of the row in front of the player. Only in the Planets place."",""parameters"":{""type"":""object"",""properties"":{""id"":{""type"":""string""}},""required"":[""id""]}}," +
+            @"[{""type"":""function"",""name"":""open_place"",""description"":""Travel to a place in the simulation, including a place listed as opening from the current map. Use the id from the knowledge or the situation line."",""parameters"":{""type"":""object"",""properties"":{""id"":{""type"":""string""}},""required"":[""id""]}}," +
+            @"{""type"":""function"",""name"":""pull_body"",""description"":""Bring a body out in front of the player, which also puts it on the info card. Only ids the situation line lists as pullable here."",""parameters"":{""type"":""object"",""properties"":{""id"":{""type"":""string""}},""required"":[""id""]}}," +
+            @"{""type"":""function"",""name"":""send_home"",""description"":""Send one pulled-out body back to its place."",""parameters"":{""type"":""object"",""properties"":{""id"":{""type"":""string""}},""required"":[""id""]}}," +
             @"{""type"":""function"",""name"":""restore"",""description"":""Put every body back in its arrangement."",""parameters"":{""type"":""object"",""properties"":{}}}]";
 
         [Serializable] class Event { public string type, delta, transcript, name, call_id, arguments, response_id; public Fault error; public Reply response; }

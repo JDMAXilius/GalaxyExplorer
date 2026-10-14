@@ -13,8 +13,12 @@ namespace CosmicSimulation.Being
     {
         public static Cosmic.Companion.Being Current { get; private set; }
 
+        private const float PullWaitSeconds = 15f;
+
         private Cosmic.Companion.Being _being;
         private ManipulationHandler _hands;
+        private string _pull;
+        private float _pullUntil;
 
         public static void Toggle(Cosmic.Companion.Being prefab)
         {
@@ -86,18 +90,49 @@ namespace CosmicSimulation.Being
             var current = director != null ? director.Current : null;
             var rig = Registry<LayoutRig>.First;
             var held = new List<string>();
+            var bodies = new List<string>();
             foreach (var force in Registry<ForceSolver>.Active)
             {
+                var id = BodyId(force);
+                if (id == null)
+                {
+                    continue;
+                }
                 if (force.ForceState == ForceSolver.State.Free || force.ForceState == ForceSolver.State.Manipulation)
                 {
-                    held.Add(force.name.Replace("body_", ""));
+                    held.Add(id);
+                }
+                else if (force.ForceState == ForceSolver.State.Root && !bodies.Contains(id))
+                {
+                    bodies.Add(id);
                 }
             }
+
+            // The map's markers, minus the place itself: the ids open_place can take from here.
+            var destinations = new List<string>();
+            foreach (var poi in FindObjectsByType<PointOfInterest>(FindObjectsSortMode.None))
+            {
+                var module = poi is CardPOI card ? card.Destination : poi is PlanetPOI planet ? planet.Destination : null;
+                var entry = module != null ? Named(module.DisplayName, module.Id) : null;
+                if (entry != null && module != current && poi.gameObject.activeInHierarchy && !destinations.Contains(entry))
+                {
+                    destinations.Add(entry);
+                }
+            }
+
+            var explore = UI2.Ui2Explore.Instance;
+            var selected = explore != null ? explore.Selected : null;
+            var previewing = explore != null ? explore.Previewing : null;
             return new Cosmic.Companion.Situation
             {
                 place = current != null ? (string.IsNullOrEmpty(current.DisplayName) ? current.Id : current.DisplayName) : "",
+                placeId = current != null ? current.Id : "",
                 layout = rig != null && rig.Current != null ? rig.Current.Id : "",
                 held = held.ToArray(),
+                selected = selected != null ? Named(selected.DisplayName, selected.Id) : "",
+                previewing = previewing != null && previewing != current ? Named(previewing.DisplayName, previewing.Id) : "",
+                bodies = bodies.ToArray(),
+                destinations = destinations.ToArray(),
             };
         }
 
@@ -109,13 +144,102 @@ namespace CosmicSimulation.Being
                     ExperienceDirector.Instance?.Switch(id);
                     break;
                 case "pull_body":
-                    Registry<LayoutRig>.First?.Find(id)?.Force?.OnPointerDown();
+                    // The being often opens the place and pulls in one breath; the body arrives with the place.
+                    _pull = id;
+                    _pullUntil = Time.unscaledTime + PullWaitSeconds;
+                    TryPull();
+                    break;
+                case "send_home":
+                    var home = Find(id);
+                    if (home != null && home.ForceState != ForceSolver.State.Root)
+                    {
+                        home.ReturnHome();
+                    }
                     break;
                 case "restore":
                     Arrangement.Restore();
                     break;
             }
         }
+
+        private void Update()
+        {
+            if (_pull != null)
+            {
+                TryPull();
+            }
+        }
+
+        private void TryPull()
+        {
+            var director = ExperienceDirector.Instance;
+            if (Time.unscaledTime > _pullUntil)
+            {
+                _pull = null;
+                return;
+            }
+            if (director != null && director.IsSwitching)
+            {
+                return;
+            }
+            // Only from Root: a press on a body that is already out sends it home instead.
+            var force = Find(_pull);
+            if (force == null)
+            {
+                return;
+            }
+            if (force.ForceState == ForceSolver.State.Root)
+            {
+                force.OnPointerDown();
+            }
+            _pull = null;
+        }
+
+        /// <summary>The body id a solver answers to: its rig entry in the row of planets, else its <c>poi_&lt;id&gt;_prefab</c>.</summary>
+        private static string BodyId(ForceSolver force)
+        {
+            if (force == null || !force.isActiveAndEnabled)
+            {
+                return null;
+            }
+            var rig = Registry<LayoutRig>.First;
+            if (rig != null)
+            {
+                foreach (var body in rig.Bodies)
+                {
+                    if (body != null && body.Force == force)
+                    {
+                        return body.Id;
+                    }
+                }
+            }
+            // A moon sits under its planet's prefab and would answer to the planet's id.
+            return force is MoonForceSolver ? null : PlanetPOI.BodyIdOf(force.transform);
+        }
+
+        private static ForceSolver Find(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return null;
+            }
+            var entry = Registry<LayoutRig>.First?.Find(id);
+            if (entry != null && entry.Force != null)
+            {
+                return entry.Force;
+            }
+            foreach (var force in Registry<ForceSolver>.Active)
+            {
+                if (BodyId(force) == id)
+                {
+                    return force;
+                }
+            }
+            return null;
+        }
+
+        private static string Named(string name, string id) =>
+            string.IsNullOrEmpty(id) ? null : string.IsNullOrEmpty(name) ? id : $"{name} ({id})";
 
         // The being is the one voice in the room while it is awake: the beds drop under it and the narrator stops.
         public void Duck(bool on)

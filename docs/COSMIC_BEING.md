@@ -37,7 +37,7 @@ The being is the one voice in the room while it is awake: music and ambience dro
 | `Voice.cs` | 24 kHz PCM16 into a streamed clip through a ring buffer; a quarter second of start buffer; the odd byte of a split sample carried, never dropped; loudness and four bands for the look |
 | `Look.cs` | Phase, loudness, bands and the player's own mic level into the points' `_Density`, `_Inward`, `_Bands`, `_Active`, spin, and the rim's glow; the press pop; the reveal |
 | `Follow.cs` | Keeps station in the head's yaw-and-pitch frame, faces the head, yields to a hand and re-reads its offset on release |
-| `IHost.cs` | What the app provides: the situation (place, layout, what is held), the three actions, ducking, the tap click, whether a hand holds it |
+| `IHost.cs` | What the app provides: the situation (place, layout, the body on the card, a previewed marker, what is out, what can be pulled, which places open from this map), the four actions, ducking, the tap click, whether a hand holds it |
 | `BeingSettings.cs` | Every number, with its unit in its name |
 | `BeingKeys.cs` | The OpenAI key; blank reads `OPENAI_API_KEY` or the project's `.env`, in the editor and Development Builds only (CS-308). The asset is gitignored |
 | `Editor/BeingPrefab.cs` | **Cosmic Simulation → Build Being**: knowledge, mesh, materials, cues, settings, prefab, wired into the old dock prefab |
@@ -49,13 +49,33 @@ The being is the one voice in the room while it is awake: music and ambience dro
 ## Protocol
 
 Up: `session.update` once; `input_audio_buffer.append` (base64 PCM16 24 kHz) while listening; `input_audio_buffer.clear`
-when a window closes unused; a `conversation.item.create` user message carrying the situation line before each turn;
+when a window closes unused; a `conversation.item.create` user message carrying the situation line before a turn whenever it has changed (see Context);
 `response.create` for typed questions and the greeting; `response.cancel` on interrupt; `function_call_output` after
 a tool.
 
 Down: `session.updated`; `input_audio_buffer.speech_started` / `speech_stopped`; `conversation.item.input_audio_transcription.completed`;
 `response.output_audio.delta`; `response.output_audio_transcript.done`; `response.function_call_arguments.done`;
 `response.done`; `error`.
+
+## Context
+
+The being is told where the player is, so it answers and suggests from there. Before the greeting, when a listen
+window opens, when the player starts speaking and before a typed question, `Being.Situate` builds the situation line
+from `IHost.Situation()` and sends it, only when it differs from the last one sent. A line reads like:
+
+`[Situation: the player is in Solar System (id solar_system), on desktop. The info card shows Earth (earth). Pulled out now: earth. Bodies pull_body can bring out here: jupiter, saturn, sun, ... ]`
+
+On the Milky Way it lists the map's markers instead (`Places that open from this map: Orion Nebula (orion), ...`), and
+a marker previewed on the UI 2.0 card is named as not yet entered. The shipping host reads the place from
+`ExperienceDirector`, the card from `Ui2Explore.Selected`/`Previewing`, the bodies from every active `ForceSolver`
+(its `LayoutRig` id in the Planets row, its `poi_<id>_prefab` in the orbit view; moons skipped there) and the
+markers from every active `CardPOI`/`PlanetPOI` with a destination. With UI 2.0 off there is no card, so only the
+pulled-out bodies say what is selected.
+
+Tools: `open_place` (any place or marker id), `pull_body` (an id listed as pullable here; asked for right after
+`open_place`, it waits up to 15 s for the place to arrive), `send_home` (one body) and `restore` (all). The prompt
+tells it that "this" means the body on the card, to suggest what is in this place first, and that questions about
+anywhere else are still answered.
 
 ## Running it
 
