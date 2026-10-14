@@ -28,10 +28,10 @@ namespace CosmicSimulation.UI2
 
         private const string FlagKey = "CosmicSimulation.Ui2";
 
-        /// <summary>Whether the UI 2.0 shell replaces the legacy dock. Off until cutover (U2-P10).</summary>
+        /// <summary>Whether the UI 2.0 shell replaces the legacy dock. On unless turned off (Cosmic Simulation > UI 2 > Turn Off).</summary>
         public static bool Enabled
         {
-            get => PlayerPrefs.GetInt(FlagKey, 0) == 1;
+            get => PlayerPrefs.GetInt(FlagKey, 1) == 1;
             set
             {
                 PlayerPrefs.SetInt(FlagKey, value ? 1 : 0);
