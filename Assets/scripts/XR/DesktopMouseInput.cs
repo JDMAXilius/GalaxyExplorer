@@ -6,33 +6,14 @@ using UnityEngine.InputSystem;
 namespace GalaxyExplorer.XR
 {
     /// <summary>
-    /// Mouse and keyboard input for desktop mode (no headset). The mouse acts as a far pointer through the same
-    /// focus/pointer routing the Quest hands use, so hovering, clicking and dragging reach the same handlers:
-    ///
-    /// - Hover: markers and planets highlight and play their focus sound.
-    /// - Left click: open cards, change views, press buttons; a planet is pulled in front of the camera.
-    /// - Left drag on a pulled planet: move it. Right drag on it: spin it. Wheel over it: scale it.
-    /// - Right drag on two-handed content (a nebula, the Cosmic Web): turn it. Wheel over it: scale it, inside
-    ///   its own <c>ScaleLimits</c>. This is the desktop half of the GDD's two-hand rotate and scale.
-    /// - Left drag on the world dock's drag bar: move the whole dock, upright and dock-sized (right drag and the
-    ///   wheel stay on the view there — see <c>ManipulatedHandler</c>). The world dock parks below the
-    ///   desktop frustum on purpose, so the dock a monitor player actually uses is <c>DesktopDock</c>, which is
-    ///   pinned to the screen and has nothing to drag.
-    /// - Left drag on empty space: orbit the view. Right drag: pan. Wheel: zoom.
-    /// - R: restore the arrangement. Home: recenter. P: passthrough preview. Esc: close a panel or the overlay.
-    /// - 1-9, 0: pull the Sun through Pluto (again to send that one back). M: the Moon.
-    /// - Tab: show or hide the dock. H or F1: controls overlay. F2-F8: switch experience.
-    ///
-    /// The key map is GDD 5.3 and is meant to be read against it row by row. There is deliberately no Backspace:
-    /// drill-down navigation is retired (roadmap 4.3), <c>TransitionManager</c>'s Back survives only as an
-    /// internal transition helper, and everything the player navigates with now goes through the dock.
+    /// Desktop mouse and keyboard: the mouse is a far pointer through the same routing the hands use; keys follow GDD 5.3.
     /// </summary>
+    // No Backspace: drill-down navigation is retired (roadmap 4.3); everything navigates through the dock.
     public class DesktopMouseInput : MonoBehaviour
     {
         private const float RaycastDistance = 100f;
         private const float DragThresholdPixels = 4f;
 
-        // Seconds between attempts to find a menu that is not there yet, or at all.
         private const float MenuLookupSeconds = 0.5f;
 
         [SerializeField] private float orbitDegreesPerScreen = 200f;
@@ -51,16 +32,13 @@ namespace GalaxyExplorer.XR
             Key.Digit6, Key.Digit7, Key.Digit8, Key.Digit9, Key.Digit0, Key.M,
         };
 
-        // The same eleven bodies as BodyKeys, index for index - a key's position in one array is its body in the
-        // other. These are BodyInfo.Id / LayoutRig.Body.Id keys; the legacy preview bar knew them as slot
-        // numbers instead, which is why the index is what the two tables share.
+        // Index-matched with BodyKeys; values are BodyInfo.Id / LayoutRig.Body.Id.
         private static readonly string[] BodyIds =
         {
             "sun", "mercury", "venus", "earth", "mars",
             "jupiter", "saturn", "uranus", "neptune", "pluto", "moon",
         };
 
-        // The seven dock tiles, in the order they appear on the dock.
         private static readonly Key[] ExperienceKeys =
         {
             Key.F2, Key.F3, Key.F4, Key.F5, Key.F6, Key.F7, Key.F8,
@@ -80,19 +58,14 @@ namespace GalaxyExplorer.XR
         private Vector2 _leftPressPosition, _rightPressPosition;
         private bool _orbiting, _panning;
 
-        /// <summary>
-        /// Whether the left button was down last frame, so a press can be recognised without relying on
-        /// wasPressedThisFrame. See the note in <see cref="HandleLeftButton"/>.
-        /// </summary>
+        /// <summary>Left button state last frame, so a press is detected even when wasPressedThisFrame is missed.</summary>
         private bool _leftWasDown;
 
-        // Content pose at startup, restored by Home.
         private bool _viewDefaultsStored;
         private Pose _pivotDefault, _entityDefault;
 
         public static DesktopMouseInput Instance { get; private set; }
 
-        /// <summary>Input is paused while scenes transition.</summary>
         public bool InputEnabled { get; set; } = true;
 
         private void Awake()
@@ -139,35 +112,20 @@ namespace GalaxyExplorer.XR
                 return;
             }
 
-            // Recover from a button release we never saw.
-            //
-            // CancelInteraction only ran when input was disabled, so any drag state that started but never
-            // got its matching release stayed set for the rest of the session: press on an object and
-            // release outside the Game view, or over a uGUI panel that swallowed the up-event, and _pressed
-            // / _orbiting / _panning were still true afterwards. From then on the guards at the top of each
-            // handler ("if _pressed == null && !_orbiting ...") refused every new interaction, which is
-            // exactly the reported "works at first, then rotation and zoom get stuck once you have used
-            // everything back and forth".
-            //
-            // The button is the authority, not our bookkeeping: if it is not down, the drag is over.
+            // A release we never saw (outside the Game view, swallowed by uGUI) would leave drag state stuck and
+            // block every later interaction; the button, not our bookkeeping, is the authority.
             ReconcileButtons(mouse);
 
             UpdateGrabPoint(ray);
 
-            // The desktop menu and the desktop dock are uGUI: leave the mouse to them when the cursor is over
-            // one. Deliberately a screen-space-only test - the world-space UI prefabs carry GraphicRaycasters
-            // too, and standing down over a destination tag or an info panel would kill the very hover and
-            // click this method exists to deliver.
+            // Screen-space only: world-space prefabs carry GraphicRaycasters too, and standing down over them
+            // would kill the hover and click this method exists to deliver.
             var overUI = CosmicSimulation.UiEventSystemInstaller.IsPointerOverScreenSpaceUi(screenPosition);
             var hit = !overUI && Physics.Raycast(ray, out var hitInfo, RaycastDistance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide)
                 ? hitInfo
                 : (RaycastHit?)null;
-            // GetComponentInParent, not GetComponent: an interactable owns its child colliders, which is how
-            // XRI treats them for the hands, and several of ours put the collider on a child on purpose - a
-            // destination tag's box lives on the pill that grows under the pointer, not on the tag root that
-            // carries the LabelButton. Looking only at the collider's own object meant a mouse click on every
-            // Milky Way destination tag hit the collider, found no interactable, and was dropped in silence,
-            // while the same tag answered a hand ray. Hands worked, the monitor did not.
+            // GetComponentInParent: several interactables put their collider on a child (a destination tag's pill),
+            // as XRI allows for the hands.
             var target = hit.HasValue ? hit.Value.collider.GetComponentInParent<GEInteractable>() : null;
 
             if (_pressed == null && !_orbiting)
@@ -182,8 +140,7 @@ namespace GalaxyExplorer.XR
 
         private void UpdateGrabPoint(Ray ray)
         {
-            // The grab point rides the mouse ray at the grab distance, facing like the camera, so the
-            // manipulation handler moves a dragged planet along with the cursor.
+            // The manipulation handler follows this point, so a dragged planet tracks the cursor.
             _grabPoint.SetPositionAndRotation(ray.GetPoint(_grabDistance), _camera.transform.rotation);
         }
 
@@ -210,17 +167,8 @@ namespace GalaxyExplorer.XR
         {
             var button = mouse.leftButton;
 
-            // A press is "down now, up last frame" as well as wasPressedThisFrame.
-            //
-            // wasPressedThisFrame is a single-frame edge, and anything that costs a frame can stand between
-            // the edge and this handler seeing it - a domain reload, a hitch, a scene opening, or synthetic
-            // input queued a frame out of step. Missing it used to be quietly catastrophic rather than merely
-            // a lost click, because _leftPressPosition is only written inside that branch: it kept whatever
-            // it held before, which on the first press of a session is (0,0). The next frame then measured
-            // the "drag" from (0,0) to wherever the pointer actually was, found it a thousand pixels, and
-            // started orbiting. Every subsequent press did the same. Symptom: clicking a destination tag on
-            // the Milky Way hovers it, never presses it, and spins the camera instead - which is exactly what
-            // the tag probe recorded, with the pointer held at one fixed pixel and a drag distance of zero.
+            // A press is also "down now, up last frame": wasPressedThisFrame is a one-frame edge that a hitch or
+            // queued synthetic input can skip, and a missed edge leaves _leftPressPosition stale and starts an orbit.
             var pressedNow = button.isPressed && !_leftWasDown;
             var pressEdge = button.wasPressedThisFrame || pressedNow;
             _leftWasDown = button.isPressed;
@@ -237,7 +185,6 @@ namespace GalaxyExplorer.XR
                 }
                 else if (hit == null && !IsOverUI())
                 {
-                    // Clicking empty space counts as a global click (closes cards), then may start an orbit.
                     GEInputEvents.RaiseGlobalPointerDown(new GEPointerEventData(_pointer));
                 }
             }
@@ -271,12 +218,10 @@ namespace GalaxyExplorer.XR
             if (button.wasPressedThisFrame)
             {
                 _rightPressPosition = screenPosition;
-                // Spin a planet that has been pulled out; right-dragging anything else pans the view.
                 var solver = target != null ? target.GetComponentInParent<ForceSolver>() : null;
                 _spinning = solver != null && solver.ForceState != ForceSolver.State.Root ? solver : null;
 
-                // Content the hands turn with two hands rather than by pulling it out — a nebula overlay, the
-                // Cosmic Web — has no ForceSolver, so without this it would have no desktop rotation at all.
+                // Two-handed content (nebula, Cosmic Web) has no ForceSolver; this is its desktop rotation.
                 _spinningHost = _spinning == null ? ManipulatedHost(target) : null;
                 _panning = _spinning == null && _spinningHost == null && !IsOverUI();
             }
@@ -319,15 +264,14 @@ namespace GalaxyExplorer.XR
             var solver = target != null ? target.GetComponentInParent<ForceSolver>() : null;
             if (solver != null && solver.ForceState != ForceSolver.State.Root)
             {
-                // Bodies differ a lot in base scale (the Moon's is small), so clamp relative to the pulled size.
+            // Bodies differ a lot in base scale (the Moon's is small), so clamp relative to the pulled size.
                 var pulledScale = solver is PlanetForceSolver planet ? planet.EditScale : 1f;
                 var scale = solver.transform.localScale.x * Mathf.Pow(planetScalePerNotch, notches);
                 solver.transform.localScale = Vector3.one * Mathf.Clamp(scale, minPlanetScale * pulledScale, maxPlanetScale * pulledScale);
             }
             else if (solver == null && ManipulatedHandler(target) is ManipulationHandler handler)
             {
-                // The two-handed equivalent. The limits are the object's own (ScaleLimits), not the planet
-                // ones above, so a nebula and the Cosmic Web stop where the GDD says they stop.
+                // The object's own ScaleLimits, not the planet limits above.
                 var host = handler.HostTransform;
                 host.localScale = handler.ClampScale(host.localScale * Mathf.Pow(planetScalePerNotch, notches));
             }
@@ -338,8 +282,7 @@ namespace GalaxyExplorer.XR
         }
 
         /// <summary>
-        /// The <see cref="ManipulationHandler"/> above an interactable that is not pulled by a force solver and
-        /// that two hands could turn or scale — the pair of gestures the right-drag and the wheel stand in for.
+        /// The two-handed <see cref="ManipulationHandler"/> above an interactable no force solver pulls; right-drag and wheel stand in for it.
         /// </summary>
         private static ManipulationHandler ManipulatedHandler(GEInteractable target)
         {
@@ -354,15 +297,11 @@ namespace GalaxyExplorer.XR
                 return null;
             }
 
-            // A one-handed handle has no two-handed gesture to mirror, and mirroring one anyway would be worse
-            // than nothing: the dock's drag bar moves the dock, so a right-drag would leave the whole dock
-            // rolled over at an angle nothing brings back, and a wheel notch would resize its millimetre canvas
-            // without limit. Both gestures fall back to panning and zooming the view, as they did before the bar
-            // could be dragged at all. The left drag is unaffected — that arrives through GEInteractable.
+            // One-handed handles (the dock's drag bar) have no two-hand gesture to mirror; a right-drag would roll the
+            // dock unrecoverably and the wheel would resize its canvas unbounded, so those fall back to the view.
             return handler.ManipulationType == ManipulationHandler.HandMovementType.OneHandedOnly ? null : handler;
         }
 
-        /// <summary>The transform such a handler would move, or null.</summary>
         private static Transform ManipulatedHost(GEInteractable target)
         {
             var handler = ManipulatedHandler(target);
@@ -379,9 +318,7 @@ namespace GalaxyExplorer.XR
 
             FindDesktopMenu();
 
-            // GDD 5.3, in the order that table lists it. Nothing here asks GlobalMenuManager whether it is
-            // "available": that flag is raised by the legacy ViewLoader intro flow, and a key map that only
-            // works once a retired flow has finished is a key map that does not work.
+            // GDD 5.3 order. Not gated on GlobalMenuManager availability: that flag belongs to the retired intro flow.
 
             if (keyboard.rKey.wasPressedThisFrame && InputEnabled)
             {
@@ -398,11 +335,7 @@ namespace GalaxyExplorer.XR
                 CosmicSimulation.DockController.Instance?.ToggleBeing();
             }
 
-            // P previews on the desktop what the passthrough button does in the headset: there is no room to
-            // show through a monitor, so this toggles the dimming and the black backdrop instead.
-            // L hides and shows the name labels over every body and moon. The owner asked for the labels
-            // to be something that can be turned off, and a key is the desktop half of that; the utility
-            // window is where the headset half belongs.
+            // P previews passthrough on desktop by toggling the dimming and backdrop. L toggles body and moon labels.
             if (keyboard.lKey.wasPressedThisFrame)
             {
                 CosmicSimulation.MoonLabel.ShowLabels = !CosmicSimulation.MoonLabel.ShowLabels;
@@ -413,16 +346,14 @@ namespace GalaxyExplorer.XR
                 CosmicSimulation.EnvironmentController.Instance?.TogglePassthrough();
             }
 
-            // Tab belongs to the dock, and DesktopDock reads it for itself. Only when there is no dock does Tab
-            // fall back to folding the legacy button row away, so the two can never fight over one key.
+            // Tab belongs to DesktopDock; only without one does it fold the legacy row, so the two never fight.
             if (keyboard.tabKey.wasPressedThisFrame && CosmicSimulation.DesktopDock.Instance == null &&
                 _desktopMenu != null)
             {
                 _desktopMenu.OnToggleDesktopButtonVisibility();
             }
 
-            // The controls overlay still lives on the legacy desktop HUD; DesktopMenuManager reopens its own
-            // root for it, so this no longer depends on the rest of that HUD being on screen.
+            // The controls overlay still lives on the legacy desktop HUD.
             if ((keyboard.hKey.wasPressedThisFrame || keyboard.f1Key.wasPressedThisFrame) && _desktopMenu != null)
             {
                 _desktopMenu.OnHelpButtonPressed();
@@ -433,7 +364,6 @@ namespace GalaxyExplorer.XR
                 CloseTopmost();
             }
 
-            // F2 to F8 jump straight to an experience, in dock order.
             for (var i = 0; i < ExperienceKeys.Length; i++)
             {
                 if (keyboard[ExperienceKeys[i]].wasPressedThisFrame)
@@ -454,9 +384,8 @@ namespace GalaxyExplorer.XR
             }
         }
 
-        // The legacy HUD lives in a scene that is loaded and unloaded under us, so a reference taken once goes
-        // stale - but a FindAnyObjectByType every frame for something that may simply not be in the scene is a
-        // cost paid forever. Look again a couple of times a second while it is missing.
+        // The legacy HUD's scene loads and unloads under us, so a cached reference goes stale; retry on a timer
+        // rather than searching every frame for something that may not exist.
         private void FindDesktopMenu()
         {
             if (_desktopMenu != null)
@@ -474,19 +403,13 @@ namespace GalaxyExplorer.XR
             _desktopMenu = FindAnyObjectByType<DesktopMenuManager>();
         }
 
-        /// <summary>
-        /// R, and the dock's Restore. GDD 5.2: the current experience's objects go back to their arrangement,
-        /// and nothing else moves.
-        /// </summary>
+        /// <summary>R and the dock's Restore: the current experience's objects return to their arrangement (GDD 5.2).</summary>
         private static void RestoreLayout()
         {
-            // First, and outside both branches below, because neither can reach it: content the player arranges
-            // that is not a body has no ForceSolver and belongs to no rig — the nebula overlays, the Cosmic Web,
-            // Andromeda — and the rig branch returns (CS-107).
+            // First and unconditional: non-body content has no solver or rig, and the rig branch returns (CS-107).
             CosmicSimulation.FreePlacementAnchor.RestoreAll();
 
-            // A rig knows the arrangement, animates the anchors, and walks anything the player pulled out home
-            // over the same duration, so ask it rather than snapping bodies to their roots behind its back.
+            // The rig animates anchors and walks pulled bodies home together; don't snap bodies behind its back.
             var restored = false;
             foreach (var rig in CosmicSimulation.Registry<CosmicSimulation.LayoutRig>.Active)
             {
@@ -499,18 +422,17 @@ namespace GalaxyExplorer.XR
                 return;
             }
 
-            // Experiences built before CS-060 have no rig. Restoring each body through its own placement solver
-            // keeps the 0.8 s ease the GDD asks for; a body without one has nowhere to animate from and snaps.
+            // Pre-CS-060 experiences have no rig; each body's placement solver keeps the 0.8 s ease.
             foreach (var solver in CosmicSimulation.Registry<ForceSolver>.Active)
             {
                 RestoreBody(solver);
             }
         }
 
-        /// <summary>Home. Both halves of the word: the dock re-parks, and the desktop camera goes back.</summary>
+        /// <summary>Home: the dock re-parks and the desktop camera goes back.</summary>
         private void Recenter()
         {
-            // Through the dock when there is one, so Home and the dock's own Recenter button cannot drift apart.
+            // Through the dock so Home and its Recenter button cannot drift apart.
             var dock = CosmicSimulation.DesktopDock.Instance;
             if (dock != null)
             {
@@ -522,10 +444,7 @@ namespace GalaxyExplorer.XR
             ResetView();
         }
 
-        /// <summary>
-        /// Esc: close the one thing that is in the way. The controls overlay covers the view, so it goes first
-        /// and alone; otherwise anything that opened over the experience closes together.
-        /// </summary>
+        /// <summary>Esc: closes the controls overlay alone if open, otherwise everything opened over the experience.</summary>
         private void CloseTopmost()
         {
             if (_desktopMenu != null && _desktopMenu.IsHelpVisible)
@@ -549,9 +468,7 @@ namespace GalaxyExplorer.XR
                 return;
             }
 
-            // A destination overlay covers the map it was opened from, so it is the next thing in the way
-            // (GDD 4.3: "the overlay closes with Esc"). Above the panel sweep below, which would otherwise hide
-            // the destination's own panel and leave the nebula sitting there with nothing naming it.
+            // Before the panel sweep, which would hide the destination's panel and leave the nebula unnamed (GDD 4.3).
             var director = CosmicSimulation.ExperienceDirector.Instance;
             if (director != null && director.HasOpenDestination)
             {
@@ -559,15 +476,13 @@ namespace GalaxyExplorer.XR
                 return;
             }
 
-            // A body's panel is not closable on its own - it is open exactly while its body is out of the
-            // arrangement, so R is what shuts it. Hide() only reaches the panels that are driven by hand, which
-            // is the destination and scene panels, and is a no-op on the rest.
+            // Body panels close only with R; Hide() is a no-op on them and reaches destination and scene panels.
             foreach (var panel in CosmicSimulation.Registry<CosmicSimulation.InfoPanel>.Active)
             {
                 panel.Hide();
             }
 
-            // SwitchNotice dismisses itself on Escape, in its own Update. Deliberately not repeated here.
+            // SwitchNotice handles Escape itself.
 
             var manager = GalaxyExplorerManager.Instance;
             if (manager != null && manager.CardPoiManager != null)
@@ -576,7 +491,7 @@ namespace GalaxyExplorer.XR
             }
         }
 
-        // Opens the nth dock experience. Counts only the tiles, so destinations never take a function key.
+        // Counts only dock tiles, so destinations never take a function key.
         private static void SwitchExperience(int index)
         {
             var director = CosmicSimulation.ExperienceDirector.Instance;
@@ -601,9 +516,7 @@ namespace GalaxyExplorer.XR
             }
         }
 
-        // Pulls one body out in front of the camera, or sends that one back. Three ways to find it, newest
-        // first: the arrangement's rig, the moon orbits, and finally the legacy preview-bar slots, which are
-        // all that the pre-CS-060 view scenes have.
+        // Lookup order: the rig, the moon orbits, then the legacy preview-bar slots (pre-CS-060 view scenes).
         private static void ToggleBody(int slot)
         {
             var id = BodyIds[slot];
@@ -618,8 +531,7 @@ namespace GalaxyExplorer.XR
                 }
             }
 
-            // A moon is not part of an arrangement: it rides its orbit and only exists once its planet is out,
-            // so before that there is nothing for M to pull and the key correctly does nothing.
+            // A moon exists only once its planet is out; until then M correctly does nothing.
             foreach (var orbit in FindObjectsByType<CosmicSimulation.MoonOrbit>(FindObjectsSortMode.None))
             {
                 if (orbit.Info != null && orbit.Info.Id == id && orbit.Solver != null)
@@ -647,9 +559,7 @@ namespace GalaxyExplorer.XR
                 return;
             }
 
-            // Only this one goes back. The old path here pressed the menu's Reset, which sent *every* planet
-            // home - the opposite of GDD 5.2, where many objects are out at once and nothing the player did
-            // not ask about moves.
+            // Only this one goes back: many objects are out at once (GDD 5.2).
             RestoreBody(solver);
         }
 
@@ -659,20 +569,11 @@ namespace GalaxyExplorer.XR
             solver.ReturnHome();
         }
 
-        /// <summary>
-        /// Ends any drag whose mouse button is no longer held. Cheap, runs every frame, and is the only
-        /// thing standing between a missed release and a session that stops responding.
-        /// </summary>
+        /// <summary>Ends any drag whose mouse button is no longer held, so a missed release cannot wedge input.</summary>
         private void ReconcileButtons(Mouse mouse)
         {
-            // wasReleasedThisFrame is the whole guard, and leaving it out cost every world-space click in the
-            // app. On the frame a button comes up the Input System reports isPressed already false *and*
-            // wasReleasedThisFrame true; this method runs before HandleLeftButton, so an unguarded
-            // "!isPressed" matched every ordinary release, cleared _pressed and raised the up as a cancel.
-            // HandleLeftButton then found nothing to release and never raised OnPointerClicked - so a mouse
-            // click delivered a down and a cancel and nothing else, and every GEButton, every destination tag
-            // and every POI card went silently dead to the mouse. The case this exists for is a release we
-            // never saw at all, which is exactly the case where wasReleasedThisFrame is false.
+            // The wasReleasedThisFrame guard is essential: this runs before HandleLeftButton, and on a normal release
+            // isPressed is already false, so without it every click would become a cancel.
             var leftLost = !mouse.leftButton.isPressed && !mouse.leftButton.wasReleasedThisFrame;
             var rightLost = !mouse.rightButton.isPressed && !mouse.rightButton.wasReleasedThisFrame;
 
@@ -681,8 +582,7 @@ namespace GalaxyExplorer.XR
                 var pressed = _pressed;
                 _pressed = null;
 
-                // Released, but we cannot know it was over the same object, so this is a cancel rather than
-                // a click: raising it as a click here would fire actions the player did not aim at.
+                // A cancel, not a click: we cannot know the release was over the same object.
                 pressed.RaisePointerUp(_pointer, false);
             }
 
@@ -718,7 +618,6 @@ namespace GalaxyExplorer.XR
             return CosmicSimulation.UiEventSystemInstaller.IsPointerOverScreenSpaceUi();
         }
 
-        // View controls move the same content transforms TouchScript's camera controller uses on touchscreens.
         private bool TryGetViewTransforms(out Transform pivot, out Transform entity)
         {
             var controller = GalaxyExplorerManager.Instance != null ? GalaxyExplorerManager.Instance.CameraControllerHandler : null;
@@ -739,17 +638,7 @@ namespace GalaxyExplorer.XR
         }
 
         // ---------- the desktop view: the camera rig moves (CS-172)
-        //
-        // These used to turn and slide the old touch pivot (Loader/TouchController/Pivot), which is what the
-        // original app's camera hung off. Nothing hangs off it any more - the camera is the XR rig's, the
-        // content sits under the Loader beside it - so every drag and every wheel notch moved a transform with
-        // one child, BoundingBox, and the view never changed. It read as "the inputs stop working when you
-        // travel", because the first place the player tried to fly through was a nebula. The standalone nebula
-        // scenes have FreeLook on their camera and fly fine; the app gets the same feel here, on the same
-        // buttons: left drag looks / orbits, right drag pans, wheel dollies, Home puts the camera back.
-        //
-        // Only the rig moves, never the content, so nothing an experience owns is touched and a headset
-        // session - where the player is the camera - is left alone.
+        // Only the rig moves, never content, so experiences are untouched and headset sessions are left alone.
 
         private Transform _rig;
         private Pose _rigHome;
@@ -761,7 +650,7 @@ namespace GalaxyExplorer.XR
                  "camera over the top.")]
         private float maxPitchDegrees = 85f;
 
-        /// <summary>The transform the desktop view moves: the camera's rig root. Null in a headset.</summary>
+        /// <summary>The camera's rig root, which the desktop view moves. Null in a headset.</summary>
         private Transform Rig()
         {
             if (UnityEngine.XR.XRSettings.isDeviceActive || _camera == null)
@@ -785,9 +674,7 @@ namespace GalaxyExplorer.XR
         }
 
         /// <summary>
-        /// What a left drag turns about: the open content's own centre. For a place the player is standing
-        /// inside - a nebula centred on the viewer - that point is the camera itself, and the drag is a
-        /// look-around; for the galaxy or the solar system two metres away it is an orbit round them.
+        /// The open content's centre; for a nebula centred on the viewer that is the camera, so the drag becomes a look-around.
         /// </summary>
         private Vector3 OrbitPivot()
         {
@@ -811,14 +698,13 @@ namespace GalaxyExplorer.XR
             var cameraTransform = _camera.transform;
             var pivot = OrbitPivot();
 
-            // Drag right, look right; drag up, look up - FreeLook's convention, which the nebula scenes set.
+            // FreeLook's convention, which the nebula scenes use.
             var yaw = delta.x / Screen.width * orbitDegreesPerScreen;
             var pitch = -delta.y / Screen.height * orbitDegreesPerScreen;
             var clamped = Mathf.Clamp(_orbitPitch + pitch, -maxPitchDegrees, maxPitchDegrees) - _orbitPitch;
             _orbitPitch += clamped;
 
-            // Yaw about the world's up and pitch about the camera's own right, in that order: that pair never
-            // introduces roll, however far the view is turned.
+            // Yaw about world up, then pitch about camera right: that pair never introduces roll.
             rig.RotateAround(pivot, Vector3.up, yaw);
             rig.RotateAround(pivot, cameraTransform.right, clamped);
         }
@@ -831,7 +717,6 @@ namespace GalaxyExplorer.XR
                 return;
             }
 
-            // The world follows the mouse: drag right, the camera slides left.
             var cameraTransform = _camera.transform;
             var move = (cameraTransform.right * delta.x + cameraTransform.up * delta.y) / Screen.height * panMetersPerScreen;
             rig.position -= move;
@@ -845,8 +730,6 @@ namespace GalaxyExplorer.XR
                 return;
             }
 
-            // Wheel up flies forward along the view, wheel down backs off - into and out of a nebula, toward
-            // and away from a galaxy.
             rig.position += _camera.transform.forward * (notches * zoomMetersPerNotch);
         }
 
@@ -860,15 +743,11 @@ namespace GalaxyExplorer.XR
 
         public void ResetView()
         {
-            // Every desktop route to the word "Recenter" funnels through here — the Home key, the dock's button
-            // (DesktopDock.Recenter) and the legacy HUD's Reset View — so it is the one place that can honour
-            // contract F-13's "Recenter returns everything" for content no rig and no solver owns (CS-107).
-            // Bodies are deliberately untouched: today Recenter does not move them, and this ticket does not
-            // change that. In the headset the world dock's Recenter button goes to DockController.Recenter,
-            // which needs the same line.
+            // Every desktop Recenter route funnels here (Home, DesktopDock.Recenter, legacy Reset View), so this is
+            // where non-body content comes home (F-13, CS-107). DockController.Recenter needs the same in the headset.
             CosmicSimulation.FreePlacementAnchor.RestoreAll();
 
-            // The camera goes back to where the intro left it (CS-172).
+            // Back to where the intro left the camera (CS-172).
             var rig = Rig();
             if (rig != null)
             {

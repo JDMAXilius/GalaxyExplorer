@@ -11,52 +11,24 @@ using UnityEngine.UI;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// Guarantees one live <see cref="EventSystem"/> carrying one input module, so a screen-space canvas can
-    /// actually be clicked.
-    ///
-    /// The app shipped without a usable one. <c>main_camera_prefab</c> carries an <see cref="EventSystem"/>, and
-    /// <c>core_systems_scene</c> adds an <c>XRUIInputModule</c> to that instance with every action reference left
-    /// empty — enough for uGUI to draw a button and never deliver a press. Every button on the desktop menu and
-    /// the desktop dock was dead. Nothing noticed because every *other* pointer in this project goes through
-    /// <c>GEPointer</c> and a physics raycast, which does not involve the EventSystem.
-    ///
-    /// Why it installs from a boot hook rather than from whoever needs it: the app's EventSystem arrives with
-    /// <c>core_systems_scene</c>, which is loaded well into the boot flow rather than at frame 0 (<c>main_scene</c>
-    /// is build index 0 and carries only a LayerCompositor, which loads the boot scene a frame later). An
-    /// installer that ran once at startup would find nothing, make its own, and then be sitting next to a second
-    /// EventSystem the moment the boot scene landed. So this runs at startup *and* on every scene load, and it
-    /// prefers the app's own EventSystem over the one it made: whichever shows up, the invariant holds.
-    ///
-    /// Module choice: <see cref="InputSystemUIInputModule"/>. Active Input Handling is "Both" (Android needs
-    /// the legacy backend for TouchScript), so <c>StandaloneInputModule</c> would compile - but it reads
-    /// <c>UnityEngine.Input</c>, while every pointer this project actually reads comes from the Input System
-    /// (<c>Mouse.current</c> in <c>DesktopMouseInput</c>, XRI 3.6 throughout). Two backends reading the cursor
-    /// is how you get a click that lands somewhere the hover was not. XRI's <c>XRUIInputModule</c> is the other
-    /// candidate and is deliberately not used: it drives world-space uGUI from the hand ray through a
-    /// <c>TrackedDeviceGraphicRaycaster</c>, and there is not one in this project — world-space UI here is hit
-    /// with physics through <c>GEPointer</c>, not with graphic raycasts. So ours is the module of record and any
-    /// other module on the keeper is switched off; see <see cref="Ensure"/> for why switching off is required
-    /// rather than merely adding ours.
+    /// Guarantees one live <see cref="EventSystem"/> with one <see cref="InputSystemUIInputModule"/>, so screen-space canvases take clicks.
     /// </summary>
+    // Runs at boot and on every scene load because core_systems_scene brings its own EventSystem late; the app's wins.
+    // Input System module, not StandaloneInputModule: two backends reading the cursor make clicks land off the hover.
     public static class UiEventSystemInstaller
     {
-        // What we have already settled on, so the common path is three reference compares rather than a scan.
         private static EventSystem _system;
         private static BaseInputModule _module;
 
-        // The EventSystem we created, if we had to. Kept so it can stand down when the app's own turns up later
-        // in the boot flow.
+        // Kept so it can stand down when the app's own EventSystem arrives later in the boot flow.
         private static GameObject _created;
 
-        // Set whenever a scene load or unload could have brought an EventSystem or taken one away. Without it the
-        // cheap guard below is never false after the first call - our own EventSystem satisfies it - and the scan
-        // that retires the duplicate would never run again, which is exactly what happened: the app's second
-        // EventSystem arrives one frame after ours and was never noticed.
+        // Set by scene load/unload; without it our own EventSystem satisfies the guard and the duplicate is never retired.
         private static bool _scanPending = true;
 
         private static bool _hooked;
 
-        // One probe reused for the screen-space test below; a fresh PointerEventData every frame is garbage.
+        // One reused probe; a fresh PointerEventData per frame is garbage.
         private static readonly List<RaycastResult> Hits = new List<RaycastResult>();
         private static PointerEventData _probe;
         private static EventSystem _probeSystem;
@@ -67,26 +39,19 @@ namespace CosmicSimulation
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Boot()
         {
-            // Explicit rather than relying on the field initialiser: with Enter Play Mode reload turned off the
-            // statics survive from the last session, and a stale "nothing has changed" would skip the first scan.
+            // Explicit because with domain reload off the statics survive from the last play session.
             _scanPending = true;
 
-            // The first scene is already loaded by now and will never raise sceneLoaded for us, so it is
-            // handled here; everything after arrives through the hook.
+            // The first scene is already loaded and will never raise sceneLoaded for us.
             Ensure();
             SweepRaycasters();
         }
 
-        /// <summary>
-        /// Idempotent. Safe to call from an <c>Awake</c>, a <c>Start</c> or every frame; callers should not try
-        /// to work out whether it is needed.
-        /// </summary>
+        /// <summary>Idempotent; safe to call from Awake, Start or every frame.</summary>
         public static void Ensure()
         {
             Hook();
 
-            // The scan is skipped only while nothing can have changed. Every scene load and unload clears that,
-            // because a scene is the only thing that brings an EventSystem with it.
             if (!_scanPending && _system != null && _module != null && EventSystem.current == _system)
             {
                 return;
@@ -97,8 +62,7 @@ namespace CosmicSimulation
             EventSystem keeper = null;
             foreach (var candidate in Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None))
             {
-                // A disabled EventSystem is not in the running for EventSystem.current, so it is not a
-                // duplicate either - leave it alone.
+            // A disabled EventSystem cannot become current, so it is not a duplicate.
                 if (candidate == null || !candidate.isActiveAndEnabled)
                 {
                     continue;
@@ -110,7 +74,7 @@ namespace CosmicSimulation
                     continue;
                 }
 
-                // Ours exists only because nothing else had appeared yet; the app's own always wins.
+            // Ours exists only because nothing else had appeared yet; the app's own always wins.
                 if (IsOurs(keeper) && !IsOurs(candidate))
                 {
                     Retire(keeper);
@@ -123,27 +87,14 @@ namespace CosmicSimulation
 
             if (keeper == null)
             {
-                // Parented to nothing and kept across loads: the active scene when this runs is often a view
-                // scene, and the director unloads those.
+            // Kept across loads: the active scene here is often a view scene, which the director unloads.
                 _created = new GameObject("ui_event_system");
                 Object.DontDestroyOnLoad(_created);
                 keeper = _created.AddComponent<EventSystem>();
             }
 
-            // Unlike the EventSystem, the module is not up for adoption: ours is the one that runs, and a module
-            // the app brought stands down. The app's is an XRUIInputModule, authored onto the camera prefab
-            // instance in core_systems_scene with every action reference empty, and XRI's ray interactors add one
-            // themselves if they ever find none (UI interaction is on in ge_xr_rig.prefab). Adopting it is what
-            // left every screen-space button dead in the first place.
-            //
-            // Switching it off is required, not tidiness: an EventSystem runs the *first* module in component
-            // order that wants to activate, and the authored XRUIInputModule is earlier in that order than
-            // anything added at runtime, so simply adding ours next to it changes nothing.
-            //
-            // Nothing is lost by it. XRUIInputModule reaches world-space uGUI through TrackedDeviceGraphicRaycaster
-            // and this project has none - world-space UI is hit with physics through GEPointer - and its pointer
-            // path needs the action references the authored instance does not have. Disabled rather than
-            // destroyed, so XRI still finds it and does not go looking for somewhere to add another.
+            // Other modules must be switched off, not just joined: an EventSystem runs the first module in component
+            // order, and the authored XRUIInputModule (empty actions) precedes ours. Disabled, not destroyed, so XRI won't add another.
             var module = keeper.GetComponent<InputSystemUIInputModule>();
             if (module == null)
             {
@@ -173,14 +124,7 @@ namespace CosmicSimulation
             _system = keeper;
         }
 
-        /// <summary>
-        /// Gives a runtime-added module the package's default UI actions if it did not come up with any.
-        ///
-        /// <c>AddComponent</c> is not the editor's Add Component: the editor path runs <c>Reset</c>, which is
-        /// where the default actions are normally assigned, and <c>Reset</c> never runs at runtime. A module with
-        /// a null actions asset reads no pointer at all, which is the dead-button bug this class exists to fix,
-        /// wearing a different hat. Cheap to ask, so it is asked rather than assumed.
-        /// </summary>
+        /// <summary>Assigns the package's default UI actions: <c>Reset</c> never runs for a runtime <c>AddComponent</c>.</summary>
         private static void EnsureDefaultActions(InputSystemUIInputModule module)
         {
             if (module == null || module.actionsAsset != null)
@@ -194,8 +138,7 @@ namespace CosmicSimulation
             }
             catch (System.Exception e)
             {
-                // Never worth taking the app down for: without actions the screen-space UI is dead, which is bad,
-                // but the headset does not use it at all.
+            // Not fatal: only the desktop's screen-space UI depends on it.
                 Debug.LogWarning("UiEventSystemInstaller: the UI input module came up with no actions and the " +
                                  "package defaults could not be assigned, so screen-space clicks will not be " +
                                  "delivered. " + e.Message);
@@ -203,16 +146,8 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// True when the cursor is over a **screen-space** canvas that can take the click.
-        ///
-        /// This exists instead of <c>EventSystem.IsPointerOverGameObject()</c> because that answer is true for
-        /// any canvas with a <see cref="GraphicRaycaster"/>, and every world-space UI prefab here has one
-        /// (<c>UiPrefabBuilder</c> puts it on the canvas it builds). Until this class existed there was no
-        /// module, so that call always answered false and the difference never showed. With a module in place
-        /// the blanket version would make the desktop mouse stand down over a destination tag, an info panel or
-        /// the world dock - the physics raycast would be skipped and hover would never happen - which would
-        /// trade dead uGUI buttons for dead labels. World-space UI is hit through <c>GEPointer</c>, so it must
-        /// not count as "the UI has this click".
+        /// True when the cursor is over a screen-space canvas. Not <c>IsPointerOverGameObject</c>, which also counts
+        /// world-space canvases and would stop the desktop mouse hovering tags and panels hit through <c>GEPointer</c>.
         /// </summary>
         public static bool IsPointerOverScreenSpaceUi(Vector2 screenPosition)
         {
@@ -233,11 +168,8 @@ namespace CosmicSimulation
             _probePosition = screenPosition;
             _probeResult = false;
 
-            // Asked live rather than reading the module's last-known answer through IsPointerOverGameObject:
-            // that answer is a frame behind, covers world-space canvases too, and is worded per pointer id,
-            // which each module defines for itself. A raycast we run ourselves has none of those questions.
-            // A PointerEventData holds the EventSystem it was made for and will not take another, so it is
-            // rebuilt whenever the keeper changes - which happens once, when the boot scene's own turns up.
+            // A live raycast: the module's cached answer is a frame behind and covers world space. A PointerEventData
+            // is bound to one EventSystem, so it is rebuilt when the keeper changes.
             if (_probe == null || _probeSystem != system)
             {
                 _probe = new PointerEventData(system);
@@ -251,8 +183,7 @@ namespace CosmicSimulation
 
             for (var i = 0; i < Hits.Count; i++)
             {
-                // GraphicRaycaster requires a Canvas on its own object, and that is the canvas the hit
-                // belongs to - a nested canvas would have brought its own raycaster.
+                // A GraphicRaycaster's own Canvas is the hit's canvas; a nested canvas brings its own raycaster.
                 var raycaster = Hits[i].module as GraphicRaycaster;
                 if (raycaster == null)
                 {
@@ -270,7 +201,7 @@ namespace CosmicSimulation
             return _probeResult;
         }
 
-        /// <summary>Same test at wherever the mouse is now. Desktop only; there is no mouse in a headset.</summary>
+        /// <summary>Same test at the current mouse position. Desktop only.</summary>
         public static bool IsPointerOverScreenSpaceUi()
         {
             var mouse = Mouse.current;
@@ -298,7 +229,7 @@ namespace CosmicSimulation
 
         private static void OnSceneUnloaded(Scene scene)
         {
-            // The keeper may have gone with the scene, and a scan is the only way to find out.
+            // The keeper may have gone with the scene.
             _scanPending = true;
             Ensure();
         }
@@ -310,13 +241,12 @@ namespace CosmicSimulation
 
         private static void Retire(EventSystem system)
         {
-            // Disabled first either way: that takes it out of the EventSystem list this frame rather than at
-            // the end of it, so EventSystem.current is right immediately.
+            // Disabled first so EventSystem.current is right this frame, not at the end of it.
             system.enabled = false;
 
             if (IsOurs(system))
             {
-                // Takes our module with it, which is why nothing else has to remember it.
+                // Takes our module with it.
                 Object.Destroy(system.gameObject);
                 _created = null;
                 _module = null;
@@ -328,10 +258,7 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// An input module alone does not make a canvas clickable - the canvas needs a raycaster of its own.
-        /// Both screen-space canvases we ship already have one, so this normally does nothing; it is here so a
-        /// canvas built without one fails loudly in the console instead of silently swallowing every press.
-        /// Scene load is the only moment new canvases arrive: nothing spawns a screen-space canvas at runtime.
+        /// Gives an interactive screen-space canvas without a raycaster one, and says so; canvases only arrive with scenes.
         /// </summary>
         private static void SweepRaycasters()
         {
@@ -347,10 +274,7 @@ namespace CosmicSimulation
                     continue;
                 }
 
-                // Only canvases that could take a press. A canvas of pure text wants no raycaster and gets none:
-                // SwitchNotice builds one deliberately without, so it can never stand between the player and the
-                // tile they are about to poke, and telling its author to "add it to the prefab" would be advice
-                // about an object with no prefab and a console line that is simply untrue.
+                // Pure-text canvases (SwitchNotice) deliberately have no raycaster so they never block a press.
                 if (canvas.GetComponentInChildren<IEventSystemHandler>(true) == null)
                 {
                     continue;
