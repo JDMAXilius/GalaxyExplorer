@@ -27,19 +27,14 @@ namespace GalaxyExplorer
             }
         }
 
-        // Narration-only mute (GDD 11, CS-076). Static rather than a field on the instance because the setting
-        // outlives the component: the VOManager lives in a view scene that is loaded and unloaded under the
-        // player, while the preference belongs to the player. Loaded lazily from PlayerPrefs on first read, so
-        // it is correct before any Awake has run.
+        // Narration-only mute (GDD 11). Static because it outlives the view scene this component lives in;
+        // loaded lazily from PlayerPrefs so it is right before any Awake has run.
         private const string NarrationMutedPrefsKey = "GalaxyExplorer.NarrationMuted";
 
         private static bool narrationEnabled = true;
         private static bool narrationLoaded;
 
-        /// <summary>
-        /// Whether spoken narration plays. Off silences the voice alone and leaves music and effects be, which
-        /// is the point: a player who knows the copy still wants the room to sound like something.
-        /// </summary>
+        /// <summary>Whether narration plays. Voice only: a player who knows the copy still wants music and effects.</summary>
         public static bool NarrationEnabled
         {
             get
@@ -104,21 +99,16 @@ namespace GalaxyExplorer
         [Tooltip("Narration level. Under the being's voice on purpose.")]
         private float level = 0.8f;
 
-        // Seconds a progress-blocking clip still has to run. Counted down in Update rather than read off the
-        // wall clock, so it stops with this component when AppPause disables it under the system menu; on
-        // the clock, a transition waiting on the narration moved on in silence while the app was paused.
+        // Seconds a progress-blocking clip has left. Counted down in Update, not off the wall clock, so it
+        // stops while AppPause disables this under the system menu.
         private float blockRemaining;
 
         private IAudioService audioService;
         
 
-        /// <summary>
-        /// Whether a place or body starts narrating by itself when it opens. UI 2.0 turns this off: there
-        /// narration starts from the card's Listen button.
-        /// </summary>
+        /// <summary>Whether a place narrates as it opens; off in UI 2.0, where the card's Listen button starts it.</summary>
         public static bool AutoStart { get; set; } = true;
 
-        /// <summary>True while the current narration is held by <see cref="Pause"/>.</summary>
         public bool IsPaused { get; private set; }
 
         /// <summary>Holds the narration where it is. <see cref="Resume"/> carries on from the same word.</summary>
@@ -177,7 +167,6 @@ namespace GalaxyExplorer
 
             if (AudioHelper.FadingOut)
             {
-                // Don't process any of queue while fading out
                 return;
             }
 
@@ -187,8 +176,7 @@ namespace GalaxyExplorer
 
                 if (nextClipDelay <= 0.0f)
                 {
-                    // Fading out sets volume to 0, ensure we're playing at the right
-                    // volume every time
+                    // A fade-out leaves the source at volume 0.
                     if (audioSource != null)
                     {
                         audioSource.volume = defaultVolume;
@@ -223,7 +211,7 @@ namespace GalaxyExplorer
             }
         }
 
-        // Play clip with no delay and dont replace in queue. This is hooked in the editor in FlowManager
+        // Single-argument overload so the intro's FlowManager stages can call it from a UnityEvent.
         public void PlayClip(AudioClip clip)
         {
             PlayClip(clip, 0.0f, false);
@@ -270,10 +258,8 @@ namespace GalaxyExplorer
             IsPaused = false;
             pausedClip = null;
 
-            // Fade out the audio that's currently playing to stop it. Check here to
-            // prevent coroutines from stacking up and calling Stop() on audioSource
-            // at undesired times. Audio that would be faded out instead would just
-            // be skipped over if the queue was cleared, which is what we want.
+            // One fade at a time, so stacked coroutines cannot Stop() a later clip; a clip that would have
+            // faded is skipped anyway once the queue is cleared.
             if (!AudioHelper.FadingOut)
             {
                 StartCoroutine(AudioHelper.FadeOutOverSeconds(audioSource, FadeOutTime));

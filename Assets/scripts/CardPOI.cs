@@ -7,22 +7,9 @@ using UnityEngine;
 using GalaxyExplorer.XR;
 
 /// <summary>
-/// The Milky Way map's nebula marker: the original Galaxy Explorer point of interest, with its picture card,
-/// now used two ways at once (CS-170, 14 Sep 2026).
-///
-/// <list type="bullet">
-/// <item><b>Hover</b> (hand ray or mouse over the label) opens the card with the photograph, the distance and
-/// the size, at the marker's base; moving off closes it after a short grace so the card does not flicker
-/// when the pointer crosses the label's edge.</item>
-/// <item><b>Click</b> (pinch or mouse button) travels: the marker's <see cref="ExperienceModule"/> goes through
-/// <see cref="ExperienceDirector.Switch(ExperienceModule)"/>, the same call the dock's tiles make, so the
-/// Milky Way map and the dock can never disagree about what a place is.</item>
-/// </list>
-///
-/// The card is a hover hint, not a mode: it never sets <see cref="PointOfInterest.IsCardActive"/>, so
-/// <c>CardPOIManager</c> never freezes the galaxy's spin or switches the other markers' colliders off the way it
-/// did for the original click-to-open card, and the card's own colliders are switched off once so it can never
-/// steal the hover from the label that opened it.
+/// Nebula marker: hover shows the card; click travels through <see cref="ExperienceDirector.Switch(ExperienceModule)"/>
+/// like a dock tile, so map and dock agree. The card never sets <see cref="PointOfInterest.IsCardActive"/>, so
+/// <c>CardPOIManager</c> neither stops the galaxy's spin nor turns the other markers' colliders off.
 /// </summary>
 namespace GalaxyExplorer
 {
@@ -77,7 +64,6 @@ namespace GalaxyExplorer
             }
         }
 
-        /// <summary>True while the hover card is showing.</summary>
         public bool IsCardShown
         {
             get { return cardShown; }
@@ -97,13 +83,10 @@ namespace GalaxyExplorer
 
             if (CardObject)
             {
-                // Scale card/magic window based on platform
                 CardObject.transform.localScale *= GalaxyExplorerManager.MagicWindowScaleFactor;
 
-                // The card used to carry a close button and a pressable plate of its own. Under a hover card
-                // those would sit between the pointer and the label, take the focus, close the card, give the
-                // focus back, and reopen it - a flicker loop. The card is purely visual now, so its colliders
-                // are off for good; the label's own collider is on the marker, outside the card, and untouched.
+                // Card colliders would take the focus from the label and close and reopen the card in a loop.
+                // The label's own collider is on the marker, outside the card.
                 foreach (var collider in CardObject.GetComponentsInChildren<Collider>(true))
                 {
                     collider.enabled = false;
@@ -131,7 +114,7 @@ namespace GalaxyExplorer
 
         private void LateUpdate()
         {
-            // If the card of this poi is open, then override the card's and descriptions's position and rotation so these are moved with the rotation animation
+            // Follow the galaxy's rotation animation by position only, keeping the rotation the card opened with.
             if (CardObject && CardObject.gameObject.activeSelf)
             {
                 CardObject.transform.rotation = cardRotation;
@@ -142,8 +125,6 @@ namespace GalaxyExplorer
         protected override void UpdateState()
         {
         }
-
-        // ---------- hover: the card
 
         public override void OnFocusEnter(GEFocusEventData eventData)
         {
@@ -222,7 +203,7 @@ namespace GalaxyExplorer
             cardShown = false;
 
             CardObject.HideContents();
-            // TODO this need to be removed and happen in the animation, but it doesnt
+            // Here rather than in the hide animation, which does not deactivate the card.
             CardObject.gameObject.SetActive(false);
 
             if (CardAnimator)
@@ -230,8 +211,6 @@ namespace GalaxyExplorer
                 CardAnimator.SetBool("CardVisible", false);
             }
         }
-
-        // ---------- click: travel
 
         public override void OnPointerDown(GEPointerEventData eventData)
         {
@@ -278,10 +257,8 @@ namespace GalaxyExplorer
                 return;
             }
 
-            // Switch, and not DockController.Choose: Choose needs a dock tile and opens the layout pop-up beside
-            // the dock, which is not where the player is looking when they have just pinched a nebula on the far
-            // side of the galaxy. Switch itself answers a refusal - intro running, a switch in flight, a module
-            // with nothing to open - through SwitchNotice, so no click is swallowed in silence.
+            // Not DockController.Choose: that opens its pop-up beside the dock, not where the player is looking.
+            // Switch reports its own refusals through SwitchNotice, so no click is swallowed in silence.
             director.Switch(module);
         }
 

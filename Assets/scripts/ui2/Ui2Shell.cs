@@ -8,17 +8,14 @@ using UnityEngine;
 namespace CosmicSimulation.UI2
 {
     /// <summary>
-    /// The UI 2.0 shell: the side rail of four contexts, the three-item dock, the settings button and the rule
-    /// that only one focused panel is up at a time (docs/design/v2). It drives the existing app through
-    /// <see cref="ExperienceDirector"/>, <see cref="EnvironmentController"/> and the legacy dock's pose, and it
-    /// only exists when <see cref="UiTheme.Enabled"/> is on.
+    /// UI 2.0 shell (docs/design/v2): rail, dock, settings, one focused panel at a time. Drives the existing app through
+    /// <see cref="ExperienceDirector"/> and <see cref="EnvironmentController"/>; exists only when <see cref="UiTheme.Enabled"/>.
     /// </summary>
     public class Ui2Shell : MonoBehaviour
     {
         /// <summary>What the dock has selected. Hidden is Explore pressed a second time: the scene alone.</summary>
         public enum Mode { Explore, Guide, Hidden }
 
-        /// <summary>A panel that sits over whichever mode is showing.</summary>
         public enum Overlay { None, Settings, Help }
 
         [SerializeField]
@@ -44,11 +41,7 @@ namespace CosmicSimulation.UI2
         [SerializeField] private GameObject notice = null;
         [SerializeField] private TMP_Text noticeText = null;
 
-        /// <summary>
-        /// World size of one pixel of the approved 1487 x 1058 design frame the prefab is laid out in. At this
-        /// scale the rail is 88 mm wide and the whole frame is 1.15 m across; a starting value until the
-        /// headset distance test (U2-P0) fixes it.
-        /// </summary>
+        /// <summary>World size of one 1487 x 1058 design-frame pixel (rail 88 mm, frame 1.15 m). Provisional until U2-P0.</summary>
         public const float MetresPerPixel = 0.00077f;
 
         // The dock's centre sits this far below the centre of the design frame.
@@ -69,7 +62,7 @@ namespace CosmicSimulation.UI2
 
         public Overlay Open { get; private set; } = Overlay.None;
 
-        /// <summary>Raised when the mode or the overlay changes.</summary>
+        /// <summary>Raised when anything the shell shows changes: mode, overlay, notice or frame.</summary>
         public event Action Changed;
 
         /// <summary>True when the rail, picker and card should be showing.</summary>
@@ -150,7 +143,6 @@ namespace CosmicSimulation.UI2
             }
         }
 
-        /// <summary>Changes what the dock has selected. Any overlay closes.</summary>
         public void Set(Mode mode)
         {
             Current = mode;
@@ -185,7 +177,6 @@ namespace CosmicSimulation.UI2
             return true;
         }
 
-        /// <summary>The rail index a place belongs to, or -1.</summary>
         public int ContextOf(string placeId)
         {
             if (placeId == null || _contexts == null)
@@ -248,8 +239,7 @@ namespace CosmicSimulation.UI2
         {
             UiButton.Deliver();
 
-            // Nothing shows until the introduction has finished and a place is open.
-            // "Finished" is held for a moment so the shell does not flash up between two intro stages.
+            // Shown once the intro is over and a place is open, held a moment so it does not flash between intro stages.
             var director = ExperienceDirector.Instance;
             var manager = GalaxyExplorerManager.IsInitialized ? GalaxyExplorerManager.Instance : null;
             // The intro's real end, not IntroRunning, which gives up after a timeout while the player may
@@ -287,11 +277,8 @@ namespace CosmicSimulation.UI2
             }
         }
 
-        /// <summary>
-        /// On a monitor the same prefab becomes a screen-space canvas: it scales with the window, and because
-        /// every group is anchored to the edge it belongs to (rail left, card right, dock bottom), a wider or
-        /// taller window spreads the groups out instead of cropping them.
-        /// </summary>
+        // On a monitor the prefab becomes a screen-space canvas; its groups are edge-anchored, so a different
+        // window shape spreads them out instead of cropping them.
         private void FitToScreen()
         {
             if (_camera == null || !_camera.isActiveAndEnabled)

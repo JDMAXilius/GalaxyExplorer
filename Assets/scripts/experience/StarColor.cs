@@ -6,9 +6,8 @@ using UnityEngine;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// A star's light colour from its effective temperature (<c>st_teff</c>): Planck spectrum over 360-830 nm
-    /// against the Wyman, Sloan and Shirley 2013 CIE 1931 fits (jcgt.org/published/0002/02/01), D65 sRGB,
-    /// gamut-clipped, brightest channel at 1. Unadapted (seen from outside), so brightness stays separate.
+    /// A star's light colour from its effective temperature (<c>st_teff</c>): Planck over 360-830 nm against the Wyman,
+    /// Sloan and Shirley 2013 CIE 1931 fits (jcgt.org/published/0002/02/01), D65 sRGB, unadapted so brightness stays separate.
     /// Check values (docs/research/exoplanet_systems.md 4.2): Sun 5772 K #FFF1EA, TRAPPIST-1 2566 K #FFA94F.
     /// </summary>
     public static class StarColor
@@ -125,8 +124,6 @@ namespace CosmicSimulation
             return $"#{r:X2}{g:X2}{b:X2}";
         }
 
-        // ---------- Planck
-
         /// <summary>Planck's law per metre of wavelength, wavelength in nm: 2hc^2 / lambda^5 / (exp(hc / lambda k T) - 1).</summary>
         private static double SpectralRadiance(double nm, double temperatureK)
         {
@@ -148,8 +145,7 @@ namespace CosmicSimulation
             return 2d * PlanckH * LightC * LightC / (Math.Pow(lambda, 5d) * denominator);
         }
 
-        // ---------- CIE 1931, analytic
-        // Wyman, Sloan and Shirley 2013 multi-lobe fit: each lobe is a Gaussian with different widths either side.
+        // CIE 1931 per the Wyman, Sloan and Shirley 2013 multi-lobe fit: each lobe is a Gaussian with different widths either side.
 
         private static double CieX(double nm)
         {
@@ -175,8 +171,6 @@ namespace CosmicSimulation
             var t = (nm - peak) / (nm < peak ? widthBelow : widthAbove);
             return Math.Exp(-0.5 * t * t);
         }
-
-        // ---------- sRGB transfer
 
         /// <summary>Linear light to an sRGB-encoded channel: the IEC 61966-2-1 transfer function.</summary>
         private static float Encode(float linear)

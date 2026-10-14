@@ -89,7 +89,6 @@ namespace CosmicSimulation
                  "is every body outside our own solar system.")]
         public float RingOuterRadiusPlanetRadii;
 
-        /// <summary>A sane starting point: nothing measured, lit by a Sun-temperature star.</summary>
         public static BodyAppearance Default => new BodyAppearance
         {
             Class = BodyClass.Unknown,
@@ -106,10 +105,7 @@ namespace CosmicSimulation
         public bool AlbedoMeasured => GeometricAlbedo >= 0f;
     }
 
-    /// <summary>
-    /// One body of a <see cref="SystemProfile"/>: which copy it carries, where its geometry comes from, and
-    /// the two published numbers an arrangement needs (its diameter and how far out it orbits).
-    /// </summary>
+    /// <summary>One body of a <see cref="SystemProfile"/>: its copy, its geometry source, and its published size and orbit.</summary>
     [Serializable]
     public class SystemBody
     {
