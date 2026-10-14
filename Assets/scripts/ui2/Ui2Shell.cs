@@ -2,18 +2,29 @@
 
 using System;
 using GalaxyExplorer;
+using TMPro;
 using UnityEngine;
 
 namespace CosmicSimulation.UI2
 {
     /// <summary>
-    /// The UI 2.0 shell: the side rail of four contexts, the three-item dock and the settings button
-    /// (docs/design/v2, U2-P2). First slice: it drives the existing app through <see cref="ExperienceDirector"/>,
-    /// <see cref="EnvironmentController"/> and the legacy dock's toggles, and parks where the legacy dock parks.
-    /// It only exists when <see cref="UiTheme.Enabled"/> is on.
+    /// The UI 2.0 shell: the side rail of four contexts, the three-item dock, the settings button and the rule
+    /// that only one focused panel is up at a time (docs/design/v2). It drives the existing app through
+    /// <see cref="ExperienceDirector"/>, <see cref="EnvironmentController"/> and the legacy dock's pose, and it
+    /// only exists when <see cref="UiTheme.Enabled"/> is on.
     /// </summary>
     public class Ui2Shell : MonoBehaviour
     {
+        /// <summary>What the dock has selected. Hidden is Explore pressed a second time: the scene alone.</summary>
+        public enum Mode { Explore, Guide, Hidden }
+
+        /// <summary>A panel that sits over whichever mode is showing.</summary>
+        public enum Overlay { None, Settings, Help }
+
+        [SerializeField]
+        [Tooltip("Everything the player sees. Off while the introduction is running.")]
+        private GameObject frame = null;
+
         [SerializeField] private GameObject rail = null;
         [SerializeField] private UiButton[] railItems = Array.Empty<UiButton>();
 
@@ -22,10 +33,16 @@ namespace CosmicSimulation.UI2
                  "The first id is the one the item opens.")]
         private string[] railPlaces = Array.Empty<string>();
 
+        [SerializeField] private string[] railNames = Array.Empty<string>();
+
         [SerializeField] private UiButton explore = null;
         [SerializeField] private UiButton guide = null;
         [SerializeField] private UiButton room = null;
         [SerializeField] private UiButton settings = null;
+
+        [Header("Notice")]
+        [SerializeField] private GameObject notice = null;
+        [SerializeField] private TMP_Text noticeText = null;
 
         /// <summary>
         /// World size of one pixel of the approved 1487 x 1058 design frame the prefab is laid out in. At this
@@ -37,7 +54,29 @@ namespace CosmicSimulation.UI2
         // The dock's centre sits this far below the centre of the design frame.
         private const float DockBelowCentrePx = 414.5f;
 
+        // On a monitor the canvas is drawn this far in front of the camera, nearer than anything in the scene.
+        private const float ScreenPlaneMetres = 0.3f;
+
         private Camera _camera;
+        private bool _screen;
+        private float _settled;
+        private float _noticeUntil;
+        private string[][] _contexts;
+
+        public static Ui2Shell Instance { get; private set; }
+
+        public Mode Current { get; private set; } = Mode.Explore;
+
+        public Overlay Open { get; private set; } = Overlay.None;
+
+        /// <summary>Raised when the mode or the overlay changes.</summary>
+        public event Action Changed;
+
+        /// <summary>True when the rail, picker and card should be showing.</summary>
+        public bool ExploreVisible => Current == Mode.Explore && Open == Overlay.None;
+
+        /// <summary>True while a notice is up; the breadcrumb gives way to it.</summary>
+        public bool NoticeShowing => notice != null && notice.activeSelf;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Boot()
@@ -57,55 +96,145 @@ namespace CosmicSimulation.UI2
             DontDestroyOnLoad(Instantiate(prefab));
         }
 
+        private void Awake()
+        {
+            Instance = this;
+            _contexts = new string[railPlaces.Length][];
+            for (var i = 0; i < railPlaces.Length; i++)
+            {
+                _contexts[i] = railPlaces[i].Replace(" ", string.Empty).Split(',');
+            }
+
+            SwitchNotice.Redirect = TakeNotice;
+            frame.SetActive(false);
+        }
+
         private void Start()
         {
             for (var i = 0; i < railItems.Length; i++)
             {
                 var index = i;
-                railItems[i].Clicked += () => Open(index);
+                railItems[i].Clicked += () => OpenContext(index);
             }
 
-            explore.Clicked += () =>
-            {
-                rail.SetActive(!rail.activeSelf);
-                explore.Selected = rail.activeSelf;
-            };
-            guide.Clicked += () => DockController.Instance?.ToggleBeing();
+            explore.Clicked += () => Set(Current == Mode.Explore && Open == Overlay.None ? Mode.Hidden : Mode.Explore);
+            guide.Clicked += () => Set(Current == Mode.Guide && Open == Overlay.None ? Mode.Explore : Mode.Guide);
             room.Clicked += () => EnvironmentController.Instance?.TogglePassthrough();
-            settings.Clicked += () => DockController.Instance?.ToggleUtility();
+            settings.Clicked += () => Show(Open == Overlay.None ? Overlay.Settings : Overlay.None);
 
             ExperienceDirector.ExperienceChanged += OnPlaceChanged;
             EnvironmentController.ModeChanged += OnRoomChanged;
 
-            explore.Selected = true;
+            if (notice != null)
+            {
+                notice.SetActive(false);
+            }
+
             OnPlaceChanged(ExperienceDirector.Instance != null ? ExperienceDirector.Instance.Current : null);
             OnRoomChanged(default);
+            Apply();
         }
 
         private void OnDestroy()
         {
             ExperienceDirector.ExperienceChanged -= OnPlaceChanged;
             EnvironmentController.ModeChanged -= OnRoomChanged;
+            if (SwitchNotice.Redirect == TakeNotice)
+            {
+                SwitchNotice.Redirect = null;
+            }
+
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
 
-        private void Open(int index)
+        /// <summary>Changes what the dock has selected. Any overlay closes.</summary>
+        public void Set(Mode mode)
         {
-            var director = ExperienceDirector.Instance;
-            if (director == null || index >= railPlaces.Length)
+            Current = mode;
+            Open = Overlay.None;
+            Apply();
+        }
+
+        /// <summary>Opens Settings or Help over the current mode, or closes it with <see cref="Overlay.None"/>.</summary>
+        public void Show(Overlay overlay)
+        {
+            Open = overlay;
+            Apply();
+        }
+
+        /// <summary>Shows one line across the top for a few seconds: loading, unavailable, failed, restored.</summary>
+        public void Notify(string message, float seconds = 4f)
+        {
+            if (notice == null || string.IsNullOrEmpty(message))
             {
                 return;
             }
 
-            director.Switch(railPlaces[index].Split(',')[0].Trim());
+            noticeText.text = message;
+            notice.SetActive(true);
+            _noticeUntil = Time.unscaledTime + seconds;
+            Changed?.Invoke();
+        }
+
+        private bool TakeNotice(string message)
+        {
+            Notify(message);
+            return true;
+        }
+
+        /// <summary>The rail index a place belongs to, or -1.</summary>
+        public int ContextOf(string placeId)
+        {
+            if (placeId == null || _contexts == null)
+            {
+                return -1;
+            }
+
+            for (var i = 0; i < _contexts.Length; i++)
+            {
+                if (Array.IndexOf(_contexts[i], placeId) >= 0)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        public string ContextName(int index) =>
+            index >= 0 && index < railNames.Length ? railNames[index] : string.Empty;
+
+        /// <summary>The place a context opens, which is also its top level (the map, the row of planets).</summary>
+        public string ContextHome(int index) =>
+            index >= 0 && _contexts != null && index < _contexts.Length ? _contexts[index][0] : null;
+
+        private void OpenContext(int index)
+        {
+            var home = ContextHome(index);
+            if (home != null)
+            {
+                ExperienceDirector.Instance?.Switch(home);
+            }
+        }
+
+        private void Apply()
+        {
+            rail.SetActive(ExploreVisible);
+            explore.Selected = Current == Mode.Explore;
+            guide.Selected = Current == Mode.Guide;
+            settings.Selected = Open == Overlay.Settings;
+            Changed?.Invoke();
         }
 
         private void OnPlaceChanged(ExperienceModule module)
         {
-            var id = module != null ? module.Id : null;
+            var context = ContextOf(module != null ? module.Id : null);
             for (var i = 0; i < railItems.Length; i++)
             {
-                railItems[i].Selected = id != null && i < railPlaces.Length &&
-                                        Array.IndexOf(railPlaces[i].Replace(" ", string.Empty).Split(','), id) >= 0;
+                railItems[i].Selected = i == context;
             }
         }
 
@@ -115,11 +244,78 @@ namespace CosmicSimulation.UI2
             room.SetLabel(env != null && env.EffectiveMode == EnvironmentMode.Passthrough ? "Room on" : "Room off");
         }
 
+        private void Update()
+        {
+            UiButton.Deliver();
+
+            // Nothing shows until the introduction has finished and a place is open.
+            // "Finished" is held for a moment so the shell does not flash up between two intro stages.
+            var director = ExperienceDirector.Instance;
+            var manager = GalaxyExplorerManager.IsInitialized ? GalaxyExplorerManager.Instance : null;
+            var intro = director == null || director.IntroRunning || director.Current == null ||
+                        (manager != null && manager.ViewLoaderScript != null && manager.ViewLoaderScript.IsIntro() &&
+                         !string.IsNullOrEmpty(director.Current.SceneName));
+            _settled = intro ? 0f : _settled + Time.unscaledDeltaTime;
+            var ready = _settled > 1.5f;
+            if (frame.activeSelf != ready)
+            {
+                frame.SetActive(ready);
+                Changed?.Invoke();
+            }
+
+            if (notice != null && notice.activeSelf && Time.unscaledTime > _noticeUntil)
+            {
+                notice.SetActive(false);
+                Changed?.Invoke();
+            }
+
+            // Esc backs out one step on a keyboard: the overlay first, then the guide.
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                if (Open != Overlay.None)
+                {
+                    Show(Overlay.None);
+                }
+                else if (Current == Mode.Guide)
+                {
+                    Set(Mode.Explore);
+                }
+            }
+        }
+
+        /// <summary>
+        /// On a monitor the same prefab becomes a screen-space canvas: it scales with the window, and because
+        /// every group is anchored to the edge it belongs to (rail left, card right, dock bottom), a wider or
+        /// taller window spreads the groups out instead of cropping them.
+        /// </summary>
+        private void FitToScreen()
+        {
+            if (_camera == null || !_camera.isActiveAndEnabled)
+            {
+                _camera = Camera.main;
+                _screen = false;
+            }
+
+            if (_camera == null || _screen)
+            {
+                return;
+            }
+
+            var canvas = GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.worldCamera = _camera;
+            canvas.planeDistance = Mathf.Max(ScreenPlaneMetres, _camera.nearClipPlane * 1.5f);
+            var scaler = GetComponent<UnityEngine.UI.CanvasScaler>();
+            scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1487f, 1058f);
+            scaler.screenMatchMode = UnityEngine.UI.CanvasScaler.ScreenMatchMode.Expand;
+            _screen = true;
+        }
+
         private void LateUpdate()
         {
             // The legacy docks own parking, dragging and recentering for now, so the shell rides on the world
-            // dock's pose and keeps both legacy docks down. On a monitor it rides on the camera instead, which
-            // is the stand-in for the screen anchoring U2-P1 calls for.
+            // dock's pose and keeps both legacy docks down. On a monitor it rides on the camera instead.
             var dock = DockController.Instance;
             if (dock != null)
             {
@@ -133,16 +329,7 @@ namespace CosmicSimulation.UI2
 
             if (GalaxyExplorerManager.IsDesktop)
             {
-                if (_camera == null)
-                {
-                    _camera = Camera.main;
-                }
-
-                if (_camera != null)
-                {
-                    var t = _camera.transform;
-                    transform.SetPositionAndRotation(t.position + t.forward * 0.9f, t.rotation);
-                }
+                FitToScreen();
             }
             else if (dock != null)
             {

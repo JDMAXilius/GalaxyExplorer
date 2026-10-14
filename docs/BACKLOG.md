@@ -2015,14 +2015,14 @@ Approach, reasoning and phase exit criteria: [design/v2/UNITY_ROADMAP.md](design
 
 | ID | Phase | Goal | Depends | Status |
 |---|---|---|---|---|
-| U2-P0 | Ground | Play mode fixed, tree clean, headset distance test, theme and icons exported | CS-300, CS-301, CS-317 | in progress: play mode works (App Check 38/38), tree clean; headset distance test and theme asset still to do |
-| U2-P1 | Foundations | ui2 assembly, UiButton kit, ScreenAnchor, AppModel, adapters, new app check | U2-P0 | in progress: UiTheme, UiButton, Ui2Builder landed; ScreenAnchor, AppModel, adapters, new app check still to do |
-| U2-P2 | Shell | Rail, dock, settings button, room toggle, context catalog | U2-P1 | in progress: rail, dock and settings button run behind the Ui2 switch, driving the legacy app |
-| U2-P3 | Card and picker | Selection service, picker, information card, photo and fact data, Listen | U2-P2 | in progress: card follows the place or the pulled body/moon with two facts, Listen, galaxy picker, breadcrumb, selected glow; photo data, proper selection service, Solar picker and narration-on-demand still to do |
-| U2-P4 | Milky Way | Pins, preview card, travel, notices, Back to map | U2-P3 | todo |
-| U2-P5 | Solar System | View chip and menu, body picker, moons, other systems | U2-P3 | todo |
-| U2-P6 | Settings | Settings panel, device chooser, About, confirmations | U2-P2 | todo |
-| U2-P7 | Guide | Companion status, Guide panel, mic permission paths | U2-P2 | todo |
-| U2-P8 | Help and first use | Lesson flow, placement, Help index, palm summon, tracking-lost | U2-P2 | todo |
-| U2-P9 | Compare | New compare feature, planets first | U2-P5 | todo |
-| U2-P10 | Cutover | Delete legacy UI, update docs, performance pass, Quest walkthrough | U2-P3 to U2-P8 | todo |
+| U2-P0 | Ground | Play mode fixed, tree clean, headset distance test, theme and icons exported | CS-300, CS-301, CS-317 | in progress: play mode works, tree clean, icons exported from Figma; headset distance test still to do (needs the owner in the headset) |
+| U2-P1 | Foundations | ui2 assembly, UiButton kit, ScreenAnchor, AppModel, adapters, new app check | U2-P0 | in review: UiTheme, UiButton, UiSwitch, Ui2Kit, prefab builder, screen fitting on a monitor (the prefab becomes a screen-space canvas, groups pinned to edges), in-app check `Cosmic Simulation > UI 2 > Run Check`. No separate AppModel: the shell and explore components hold the state and call the legacy app directly |
+| U2-P2 | Shell | Rail, dock, settings button, room toggle, context catalog | U2-P1 | in review: rail (four contexts), dock, settings button, room toggle, hidden during the intro. Runs behind the Ui2 switch |
+| U2-P3 | Card and picker | Selection service, picker, information card, photo and fact data, Listen | U2-P2 | in review: card for place, body, moon; two facts; pictures; picker carousel; Listen plays the selection's own sound (narration starts by itself). The in-world 3D card stays beside a pulled body at the owner's request. Selection is still read off the legacy panels |
+| U2-P4 | Milky Way | Pins, preview card, travel, notices, Back to map | U2-P3 | in review: map marker opens a preview card (Distance, Type, Enter, Listen, Back to map), notice bar, Back to map from inside a nebula. Map markers keep their old look |
+| U2-P5 | Solar System | View chip and menu, body picker, moons, other systems | U2-P3 | in review: View chip and menu (Orbits, Equal Size, Relative Size, Other star systems), Orbits by default, planet carousel, pulled body drawn in front |
+| U2-P6 | Settings | Settings panel, device chooser, About, confirmations | U2-P2 | in review: Settings panel, microphone chooser with level bar, About, Restore and Quit confirmations. Legacy UtilityWindow not yet deleted |
+| U2-P7 | Guide | Companion status, Guide panel, mic permission paths | U2-P2 | in review: Guide panel with status wording for idle, connecting, listening, thinking, speaking, unavailable, permission, no microphone; two suggested questions. Failure paths not exercised |
+| U2-P8 | Help and first use | Lesson flow, placement, Help index, palm summon, tracking-lost | U2-P2 | in progress: lesson panel, Help index, first-use run in the headset only. Not done: placement step, palm summon restyle, tracking-lost notice; nothing tried on a headset |
+| U2-P9 | Compare | New compare feature, planets first | U2-P5 | in review: compare two bodies of a row at equal or relative size (Change planet, Done). Galaxies and moons not offered |
+| U2-P10 | Cutover | Delete legacy UI, update docs, performance pass, Quest walkthrough | U2-P3 to U2-P8 | todo: needs the headset walkthrough and the owner's go-ahead before any legacy UI is deleted. UI 2 is still off by default in builds |

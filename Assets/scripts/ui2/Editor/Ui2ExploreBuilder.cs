@@ -1,7 +1,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections.Generic;
+using System.IO;
 using CosmicSimulation.UI2;
-using GalaxyExplorer.XR;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -10,42 +11,100 @@ using UnityEngine.UI;
 namespace CosmicSimulation.EditorTools
 {
     /// <summary>
-    /// The exploring half of the UI 2.0 shell prefab: breadcrumb, top picker and the photo-first information
-    /// card. Called by <see cref="Ui2Builder.BuildShell"/>; positions are pixels of the approved Figma frame.
+    /// The exploring half of the UI 2.0 shell prefab: breadcrumb, top picker, the Solar System's View chip and
+    /// menu, the compare controls and the photo-first card. Called by <see cref="Ui2Builder.BuildShell"/>;
+    /// positions are pixels of the approved Figma frame (S01, S03, S08, S12, S13).
     /// </summary>
     internal static class Ui2ExploreBuilder
     {
         private const string PortraitFolder = "Assets/Textures/galaxies/portraits/";
-        private const string ThumbFolder = "Assets/ui/thumbnails/";
+        private const string PhotoFolder = "Assets/ui/photos";
 
         internal static void Build(RectTransform frame, GameObject root)
         {
             // Breadcrumb. Figma: Navigation/Breadcrumb, centred on the frame at y 40.
-            var crumb = Text(Ui2Builder.Box("breadcrumb", frame, 343f, 36f, 800f, 36f), string.Empty, 24f,
-                             UiTheme.Ink, TextAlignmentOptions.Center, FontWeight.Medium, false);
+            var crumb = Ui2Kit.Text(Ui2Builder.Box("Breadcrumb", frame, 343f, 36f, 800f, 36f), string.Empty, 24f,
+                                    UiTheme.Ink, TextAlignmentOptions.Center, FontWeight.Medium, false);
+            Ui2Builder.Pin(crumb.rectTransform, Ui2Builder.Top);
 
-            // Picker. Figma: four Navigation/DestinationTile at x 455, 608, 750, 893, y 93.
-            var picker = Ui2Builder.Box("picker", frame, 440f, 84f, 610f, 136f);
-            var ids = new[] { "andromeda", "whirlpool", "pinwheel", "triangulum" };
-            var names = new[] { "Andromeda", "Whirlpool", "Pinwheel", "Triangulum" };
-            var xs = new[] { 15f, 168f, 310f, 453f };
-            var tiles = new UiButton[ids.Length];
-            for (var i = 0; i < ids.Length; i++)
+            // Picker. Figma: Navigation/DestinationTile, four showing from x 455, y 93. It is a carousel: every
+            // entry has a tile on one strip, the strip slides behind a mask, and an arrow either side moves it.
+            const int Pool = 12;
+            var picker = Ui2Builder.Box("Picker", frame, 399f, 84f, 690f, 136f);
+            var viewport = Ui2Builder.Box("viewport", picker, 48f, 0f, 588f, 136f);
+            viewport.gameObject.AddComponent<RectMask2D>();
+            var strip = Ui2Builder.Rect("strip", viewport, 0f, 136f);
+            strip.anchorMin = strip.anchorMax = strip.pivot = new Vector2(0f, 0.5f);
+            strip.anchoredPosition = Vector2.zero;
+            var tiles = new UiButton[Pool];
+            var tilePhotos = new Image[Pool];
+            for (var i = 0; i < Pool; i++)
             {
-                tiles[i] = Tile("tile_" + ids[i], picker, xs[i], 9f, names[i], Photo(ids[i]));
+                tiles[i] = Tile("tile_" + i, strip, 8f + 146f * i, 9f, out tilePhotos[i]);
             }
 
+            var prev = Ui2Kit.IconButton(picker, "previous", 4f, 35f, 36f, "v2_icon_back", 20f);
+            var next = Ui2Kit.IconButton(picker, "next", 640f, 35f, 36f, "v2_icon_chevron", 20f);
+            Ui2Builder.Pin(picker, Ui2Builder.Top);
+
+            // View chip and its menu. Figma: Controls/Chip at 646, 226, 194 x 46; Controls/Menu 266 x 219.
+            var chipRoot = Ui2Builder.Box("View", frame, 646f, 226f, 194f, 46f);
+            Ui2Builder.Fill(Ui2Builder.Rect("fill", chipRoot, 194f, 46f), "ui_rounded_r64_fill", 23f,
+                            Ui2Builder.WithAlpha(UiTheme.Deep, 0.88f));
+            Ui2Builder.Fill(Ui2Builder.Rect("edge", chipRoot, 194f, 46f), "ui_rounded_r64_ring", 23f,
+                            new Color(1f, 1f, 1f, 0.3f));
+            var chipWash = Ui2Builder.Fill(Ui2Builder.Rect("wash", chipRoot, 194f, 46f), "ui_rounded_r64_fill", 23f,
+                                           Color.clear);
+            var chipOutline = Ui2Builder.Fill(Ui2Builder.Rect("outline", chipRoot, 194f, 46f), "ui_rounded_r64_ring",
+                                              23f, UiTheme.Accent);
+            chipOutline.enabled = false;
+            Ui2Kit.Label(chipRoot, "category", 19f, 12f, 44f, 22f, "View", 17f, UiTheme.InkSecondary);
+            var chipValue = Ui2Kit.Label(chipRoot, "value", 67f, 13f, 88f, 20f, "Equal Size", 16f, UiTheme.Ink,
+                                         FontWeight.SemiBold);
+            Ui2Kit.Glyph(chipRoot, "v2_icon_chevron_down", 157f, 11f, 24f, UiTheme.Ink);
+            var chip = Ui2Kit.Press(chipRoot, 194f, 46f, chipWash, chipOutline, null, null, true);
+
+            Ui2Builder.Pin(chipRoot, Ui2Builder.Top);
+
+            var menu = Ui2Kit.Panel(frame, "ViewMenu", 610f, 280f, 266f, 219f, 18f);
+            Ui2Builder.Pin(menu, Ui2Builder.Top);
+            var menuNames = new[] { "Orbits", "Equal Size", "Relative Size", "Other star systems" };
+            var menuTops = new[] { 9f, 59f, 109f, 162f };
+            var menuItems = new UiButton[menuNames.Length];
+            var menuChecks = new GameObject[menuNames.Length];
+            Ui2Kit.Divider(menu, 17f, 159f, 232f);
+            for (var i = 0; i < menuNames.Length; i++)
+            {
+                var item = Ui2Builder.Box("item_" + i, menu, 9f, menuTops[i], 248f, 48f);
+                var wash = Ui2Builder.Fill(Ui2Builder.Rect("wash", item, 248f, 48f), "ui_rounded_r64_fill", 12f,
+                                           Color.clear);
+                var label = Ui2Kit.Label(item, "label", 16f, 14f, 190f, 20f, menuNames[i], 17f, UiTheme.Ink,
+                                         FontWeight.Medium);
+                var check = Ui2Kit.Glyph(item, "v2_icon_check", 210f, 12f, 24f, UiTheme.Accent);
+                menuChecks[i] = check.gameObject;
+                menuItems[i] = Ui2Kit.Press(item, 248f, 48f, wash, null, label, null, false);
+            }
+
+            // Compare. Figma S13: Controls/Segmented at 533, 127; S12: Cancel at 668, 232.
+            var size = Ui2Kit.Segmented(frame, "CompareSize", 533f, 127f, new[] { 120f, 140f },
+                                        new[] { "Equal Size", "Relative Size" });
+            var sizeBar = size[0].transform.parent.gameObject;
+            Ui2Builder.Pin((RectTransform)sizeBar.transform, Ui2Builder.Top);
+            var cancel = Ui2Kit.Secondary(frame, "CompareCancel", 668f, 232f, 151f, 60f, "Cancel", null);
+            Ui2Builder.Pin((RectTransform)cancel.transform, Ui2Builder.Top);
+
             // Card. Figma: Card/Information at 1083, 118, 384 wide, growing downward with its text.
-            var card = Ui2Builder.Rect("card", frame, 384f, 600f);
+            var card = Ui2Builder.Rect("Card", frame, 384f, 600f);
             card.pivot = new Vector2(0.5f, 1f);
             card.anchoredPosition = new Vector2(1083f + 192f - frame.sizeDelta.x * 0.5f, frame.sizeDelta.y * 0.5f - 118f);
+            Ui2Builder.Pin(card, Ui2Builder.TopRight);
             Behind(Ui2Builder.Fill(Ui2Builder.Rect("plate", card, 384f, 600f), "ui_rounded_r64_fill", 20f,
-                                   WithAlpha(UiTheme.Panel, 0.97f)));
+                                   Ui2Builder.WithAlpha(UiTheme.Panel, 0.97f)));
             Behind(Ui2Builder.Fill(Ui2Builder.Rect("edge", card, 384f, 600f), "ui_rounded_r64_ring", 20f,
                                    new Color(1f, 1f, 1f, 0.16f)));
 
             var stack = card.gameObject.AddComponent<VerticalLayoutGroup>();
-            stack.padding = new RectOffset(20, 20, 32, 30);
+            stack.padding = new RectOffset(21, 21, 33, 30);
             stack.spacing = 17f;
             stack.childAlignment = TextAnchor.UpperLeft;
             stack.childControlWidth = true;
@@ -54,105 +113,183 @@ namespace CosmicSimulation.EditorTools
             stack.childForceExpandHeight = false;
             card.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            var photoRoot = Ui2Builder.Rect("photo", card, 344f, 207f);
+            // "Back to map" sits 23 px under the card's top edge, 10 px tighter than the padding: the slot is
+            // short and the row hangs up out of it.
+            var backSlot = Ui2Builder.Rect("back", card, 342f, 12f);
+            backSlot.gameObject.AddComponent<LayoutElement>().preferredHeight = 12f;
+            var backRow = Ui2Builder.Box("row", backSlot, 0f, -10f, 150f, 22f);
+            var backWash = Ui2Builder.Fill(Ui2Builder.Box("wash", backRow, -8f, -6f, 166f, 34f), "ui_rounded_r64_fill",
+                                           12f, Color.clear);
+            Ui2Kit.Glyph(backRow, "v2_icon_back", 0f, 0f, 22f, UiTheme.Ink);
+            Ui2Kit.Label(backRow, "label", 32f, 0f, 118f, 22f, "Back to map", 17f, UiTheme.Ink);
+            var back = Ui2Kit.Press(backRow, 166f, 34f, backWash, null, null, null, true);
+
+            var photoRoot = Ui2Builder.Rect("photo", card, 342f, 207f);
             photoRoot.gameObject.AddComponent<LayoutElement>().preferredHeight = 207f;
-            // The mask is drawn, in the deep surface colour: the galaxy portraits are light on transparent.
             Ui2Builder.Fill(photoRoot, "ui_rounded_r64_fill", 12f, UiTheme.Deep);
             photoRoot.gameObject.AddComponent<Mask>().showMaskGraphic = true;
-            var photo = Cover(photoRoot);
+            var photo = Half(photoRoot, "first", 0f, 1f);
+            var photo2 = Half(photoRoot, "second", 0.5f, 1f);
 
-            var title = Text(Ui2Builder.Rect("title", card, 344f, 42f), "ANDROMEDA", 36f, UiTheme.Ink,
-                             TextAlignmentOptions.TopLeft, FontWeight.SemiBold, true);
-            var body = Text(Ui2Builder.Rect("description", card, 344f, 81f), "Description", 20f, UiTheme.Ink,
-                            TextAlignmentOptions.TopLeft, FontWeight.Regular, true);
+            var title = Ui2Kit.Text(Ui2Builder.Rect("title", card, 342f, 42f), "ANDROMEDA", 36f, UiTheme.Ink,
+                                    TextAlignmentOptions.TopLeft, FontWeight.SemiBold, true);
+            var body = Ui2Kit.Text(Ui2Builder.Rect("description", card, 342f, 81f), "Description", 20f, UiTheme.Ink,
+                                   TextAlignmentOptions.TopLeft, FontWeight.Regular, true);
             body.lineSpacing = 8f;
 
-            var divider = Ui2Builder.Rect("divider", card, 344f, 1f);
+            var divider = Ui2Builder.Rect("divider", card, 342f, 1f);
             divider.gameObject.AddComponent<LayoutElement>().preferredHeight = 1f;
             var line = divider.gameObject.AddComponent<Image>();
             line.color = UiTheme.Divider;
             line.raycastTarget = false;
 
-            var facts = Ui2Builder.Rect("facts", card, 344f, 78f);
+            // Card/FactPair: label, value, and a unit line when the unit is long. 151 wide each, 192 apart.
+            var facts = Ui2Builder.Rect("facts", card, 342f, 78f);
             facts.gameObject.AddComponent<LayoutElement>().preferredHeight = 78f;
             var factLabels = new TMP_Text[2];
             var factValues = new TMP_Text[2];
             var factUnits = new TMP_Text[2];
             for (var i = 0; i < 2; i++)
             {
-                var x = i * 192f;
-                factLabels[i] = Text(Ui2Builder.Box("label_" + i, facts, x, 0f, 152f, 22f), "Label", 17f,
-                                     UiTheme.InkSecondary, TextAlignmentOptions.TopLeft, FontWeight.Regular, false);
-                factValues[i] = Text(Ui2Builder.Box("value_" + i, facts, x, 23f, 152f, 30f), "Value", 24f,
-                                     UiTheme.Ink, TextAlignmentOptions.TopLeft, FontWeight.SemiBold, false);
-                factUnits[i] = Text(Ui2Builder.Box("unit_" + i, facts, x, 55f, 152f, 22f), "unit", 18f,
-                                    UiTheme.Ink, TextAlignmentOptions.TopLeft, FontWeight.Regular, false);
+                var column = Ui2Builder.Rect("fact_" + i, facts, 151f, 78f);
+                column.anchorMin = column.anchorMax = column.pivot = new Vector2(0f, 1f);
+                column.anchoredPosition = new Vector2(i * 192f, 0f);
+                var rows = column.gameObject.AddComponent<VerticalLayoutGroup>();
+                rows.spacing = 2f;
+                rows.childControlWidth = true;
+                rows.childControlHeight = true;
+                rows.childForceExpandHeight = false;
+                factLabels[i] = Ui2Kit.Text(Ui2Builder.Rect("label", column, 151f, 22f), "Label", 17f,
+                                            UiTheme.InkSecondary, TextAlignmentOptions.TopLeft, FontWeight.Regular, false);
+                factValues[i] = Ui2Kit.Text(Ui2Builder.Rect("value", column, 151f, 30f), "Value", 24f, UiTheme.Ink,
+                                            TextAlignmentOptions.TopLeft, FontWeight.SemiBold, false);
+                factUnits[i] = Ui2Kit.Text(Ui2Builder.Rect("unit", column, 151f, 22f), "unit", 18f, UiTheme.Ink,
+                                           TextAlignmentOptions.TopLeft, FontWeight.Regular, false);
             }
 
-            var split = Ui2Builder.Box("split", facts, 171.5f, 4f, 1f, 70f).gameObject.AddComponent<Image>();
-            split.color = UiTheme.Divider;
-            split.raycastTarget = false;
+            var split = Ui2Builder.Rect("split", facts, 1f, 78f);
+            split.anchorMin = split.anchorMax = split.pivot = new Vector2(0f, 1f);
+            split.anchoredPosition = new Vector2(171f, 0f);
+            var splitImage = split.gameObject.AddComponent<Image>();
+            splitImage.color = UiTheme.Divider;
+            splitImage.raycastTarget = false;
 
-            var actions = Ui2Builder.Rect("actions", card, 344f, 60f);
-            actions.gameObject.AddComponent<LayoutElement>().preferredHeight = 60f;
-            var listen = Primary("listen", actions, 0f, 0f, 167f, 60f, "Listen");
-            Secondary("compare", actions, 177f, 0f, 167f, 60f, "Compare");
+            // Three action rows, one showing at a time: information, destination preview, compare pair.
+            var info = Actions(card, "actions");
+            var listen = Ui2Kit.Primary(info, "listen", 0f, 0f, 165f, 60f, "Listen", "v2_icon_play", "Resume");
+            var compare = Ui2Kit.Secondary(info, "compare", 175f, 0f, 167f, 60f, "Compare", "v2_icon_compare");
+            var preview = Actions(card, "actions_preview");
+            var enter = Ui2Kit.Primary(preview, "enter", 0f, 0f, 188f, 60f, "Enter nebula", "v2_icon_rocket");
+            var previewListen = Ui2Kit.Secondary(preview, "listen", 198f, 0f, 144f, 60f, "Listen", "v2_icon_playcircle", "Resume");
+            var pair = Actions(card, "actions_compare");
+            var change = Ui2Kit.Primary(pair, "change", 0f, 0f, 190f, 60f, "Change planet", "v2_icon_planet");
+            var done = Ui2Kit.Secondary(pair, "done", 200f, 0f, 142f, 60f, "Done", "v2_icon_check");
 
             var explore = root.AddComponent<Ui2Explore>();
             var so = new SerializedObject(explore);
             so.FindProperty("card").objectReferenceValue = card;
+            so.FindProperty("back").objectReferenceValue = back;
             so.FindProperty("photoRoot").objectReferenceValue = photoRoot.gameObject;
             so.FindProperty("photo").objectReferenceValue = photo;
+            so.FindProperty("photo2").objectReferenceValue = photo2;
             so.FindProperty("title").objectReferenceValue = title;
             so.FindProperty("body").objectReferenceValue = body;
-            so.FindProperty("listen").objectReferenceValue = listen;
+            so.FindProperty("divider").objectReferenceValue = divider.gameObject;
             so.FindProperty("factsRoot").objectReferenceValue = facts.gameObject;
-            Objects(so.FindProperty("factLabels"), factLabels);
-            Objects(so.FindProperty("factValues"), factValues);
-            Objects(so.FindProperty("factUnits"), factUnits);
+            so.FindProperty("factSplit").objectReferenceValue = split;
+            Ui2Kit.Objects(so.FindProperty("factLabels"), factLabels);
+            Ui2Kit.Objects(so.FindProperty("factValues"), factValues);
+            Ui2Kit.Objects(so.FindProperty("factUnits"), factUnits);
+            so.FindProperty("actionsInfo").objectReferenceValue = info.gameObject;
+            so.FindProperty("listen").objectReferenceValue = listen;
+            so.FindProperty("compare").objectReferenceValue = compare;
+            so.FindProperty("actionsPreview").objectReferenceValue = preview.gameObject;
+            so.FindProperty("enter").objectReferenceValue = enter;
+            so.FindProperty("previewListen").objectReferenceValue = previewListen;
+            so.FindProperty("actionsCompare").objectReferenceValue = pair.gameObject;
+            so.FindProperty("change").objectReferenceValue = change;
+            so.FindProperty("done").objectReferenceValue = done;
+            so.FindProperty("playIcon").objectReferenceValue = Ui2Builder.Icon("v2_icon_play");
+            so.FindProperty("pauseIcon").objectReferenceValue = Ui2Builder.Icon("icon_pause");
             so.FindProperty("picker").objectReferenceValue = picker.gameObject;
+            so.FindProperty("strip").objectReferenceValue = strip;
+            Ui2Kit.Objects(so.FindProperty("tiles"), tiles);
+            Ui2Kit.Objects(so.FindProperty("tilePhotos"), tilePhotos);
+            so.FindProperty("prev").objectReferenceValue = prev;
+            so.FindProperty("next").objectReferenceValue = next;
             so.FindProperty("crumb").objectReferenceValue = crumb;
+            so.FindProperty("chip").objectReferenceValue = chip;
+            so.FindProperty("chipValue").objectReferenceValue = chipValue;
+            so.FindProperty("menu").objectReferenceValue = menu.gameObject;
+            Ui2Kit.Objects(so.FindProperty("menuItems"), menuItems);
+            Ui2Kit.Objects(so.FindProperty("menuChecks"), menuChecks);
+            so.FindProperty("sizeBar").objectReferenceValue = sizeBar;
+            so.FindProperty("equalSize").objectReferenceValue = size[0];
+            so.FindProperty("relativeSize").objectReferenceValue = size[1];
+            so.FindProperty("cancel").objectReferenceValue = cancel;
 
-            var photoIds = new[] { "andromeda", "whirlpool", "pinwheel", "triangulum" };
-            Strings(so.FindProperty("photoIds"), photoIds);
-            var photos = so.FindProperty("photos");
-            photos.arraySize = photoIds.Length;
-            for (var i = 0; i < photoIds.Length; i++)
+            // Pictures by id. A card uses card_<id>, a tile uses tile_<id> (both cut from the approved design
+            // images); where the design has no picture of something, <id> is the app's own render of it, and a
+            // galaxy falls back to its portrait.
+            var ids = new List<string>();
+            foreach (var path in Directory.GetFiles(PhotoFolder, "*.png"))
             {
-                photos.GetArrayElementAtIndex(i).objectReferenceValue = Photo(photoIds[i]);
+                var id = Path.GetFileNameWithoutExtension(path);
+                if (id.StartsWith("lesson_"))
+                {
+                    continue;
+                }
+
+                id = id.StartsWith("card_") ? id.Substring(5) : id.StartsWith("tile_") ? id.Substring(5) : id;
+                if (!ids.Contains(id))
+                {
+                    ids.Add(id);
+                }
             }
 
-            Strings(so.FindProperty("tileIds"), ids);
-            var tilesProp = so.FindProperty("tiles");
-            tilesProp.arraySize = tiles.Length;
-            for (var i = 0; i < tiles.Length; i++)
+            var cards = new Object[ids.Count];
+            var thumbs = new Object[ids.Count];
+            for (var i = 0; i < ids.Count; i++)
             {
-                tilesProp.GetArrayElementAtIndex(i).objectReferenceValue = tiles[i];
+                var own = Ui2Kit.Photo(ids[i]);
+                var portrait = AssetDatabase.LoadAssetAtPath<Sprite>(PortraitFolder + ids[i] + "_portrait.png");
+                cards[i] = Ui2Kit.Photo("card_" + ids[i]) ?? own ?? Ui2Kit.Photo("tile_" + ids[i]) ?? portrait;
+                thumbs[i] = Ui2Kit.Photo("tile_" + ids[i]) ?? own ?? Ui2Kit.Photo("card_" + ids[i]) ?? portrait;
             }
 
+            Ui2Kit.Strings(so.FindProperty("photoIds"), ids.ToArray());
+            Ui2Kit.Objects(so.FindProperty("photos"), cards);
+            Ui2Kit.Objects(so.FindProperty("thumbs"), thumbs);
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        /// <summary>A galaxy's portrait if it imports as a sprite, else its dock thumbnail, else nothing.</summary>
-        private static Sprite Photo(string id)
+        private static RectTransform Actions(RectTransform card, string name)
         {
-            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(PortraitFolder + id + "_portrait.png");
-            return sprite != null ? sprite : AssetDatabase.LoadAssetAtPath<Sprite>(ThumbFolder + id + ".png");
+            var row = Ui2Builder.Rect(name, card, 342f, 60f);
+            row.gameObject.AddComponent<LayoutElement>().preferredHeight = 60f;
+            return row;
         }
 
-        private static UiButton Tile(string name, RectTransform parent, float x, float y, string text, Sprite sprite)
+        /// <summary>One side of the card photo. Alone it spans the frame; in a compare pair each takes a half.</summary>
+        private static Image Half(RectTransform photoRoot, string name, float fromX, float toX)
+        {
+            var half = Ui2Builder.Rect(name, photoRoot, 0f, 0f);
+            half.anchorMin = new Vector2(fromX, 0f);
+            half.anchorMax = new Vector2(toX, 1f);
+            half.offsetMin = half.offsetMax = Vector2.zero;
+            half.gameObject.AddComponent<RectMask2D>();
+            return Ui2Kit.Cover(half);
+        }
+
+        /// <summary>Navigation/DestinationTile: a 134 x 88 picture with its name under it.</summary>
+        private static UiButton Tile(string name, RectTransform parent, float x, float y, out Image image)
         {
             var root = Ui2Builder.Box(name, parent, x, y, 134f, 118f);
 
             var picture = Ui2Builder.Box("picture", root, 0f, 0f, 134f, 88f);
             Ui2Builder.Fill(picture, "ui_rounded_r64_fill", 12f, UiTheme.Deep);
             picture.gameObject.AddComponent<Mask>().showMaskGraphic = true;
-            var image = Cover(picture);
-            image.sprite = sprite;
-            if (sprite != null)
-            {
-                image.GetComponent<AspectRatioFitter>().aspectRatio = sprite.rect.width / sprite.rect.height;
-            }
+            image = Ui2Kit.Cover(picture);
 
             Ui2Builder.Fill(Ui2Builder.Box("edge", root, 0f, 0f, 134f, 88f), "ui_rounded_r64_ring", 12f,
                             new Color(1f, 1f, 1f, 0.3f));
@@ -164,78 +301,14 @@ namespace CosmicSimulation.EditorTools
                                           15f, UiTheme.Accent);
             outline.enabled = false;
 
-            var label = Text(Ui2Builder.Box("label", root, 0f, 98f, 134f, 20f), text, 16f, UiTheme.Ink,
-                             TextAlignmentOptions.Center, FontWeight.Medium, false);
+            var label = Ui2Kit.Text(Ui2Builder.Box("label", root, -8f, 98f, 150f, 20f), "Name", 16f, UiTheme.Ink,
+                                    TextAlignmentOptions.Center, FontWeight.Medium, false);
 
-            var tile = Pressable(root, 134f, 118f, null, outline, label, false);
+            var tile = Ui2Kit.Press(root, 134f, 118f, null, outline, label, null, false);
             var tileSo = new SerializedObject(tile);
             tileSo.FindProperty("glow").objectReferenceValue = glow;
             tileSo.ApplyModifiedPropertiesWithoutUndo();
             return tile;
-        }
-
-        private static UiButton Primary(string name, RectTransform parent, float x, float y, float w, float h, string text)
-        {
-            var root = Ui2Builder.Box(name, parent, x, y, w, h);
-            Ui2Builder.Fill(Ui2Builder.Rect("fill", root, w, h), "ui_rounded_r64_fill", 18f, UiTheme.Accent);
-            var wash = Ui2Builder.Fill(Ui2Builder.Rect("wash", root, w, h), "ui_rounded_r64_fill", 18f, Color.clear);
-            Glyph(root, "icon_play", w * 0.5f - 50f, (h - 22f) * 0.5f, 22f, UiTheme.Deep);
-            var label = Text(Ui2Builder.Box("label", root, w * 0.5f - 18f, (h - 24f) * 0.5f, 90f, 24f), text, 19f,
-                             UiTheme.Deep, TextAlignmentOptions.Left, FontWeight.SemiBold, false);
-            return Pressable(root, w, h, wash, null, label, true);
-        }
-
-        /// <summary>The Compare button: drawn, but not pressable until the compare feature exists (U2-P9).</summary>
-        private static void Secondary(string name, RectTransform parent, float x, float y, float w, float h, string text)
-        {
-            var root = Ui2Builder.Box(name, parent, x, y, w, h);
-            Ui2Builder.Fill(Ui2Builder.Rect("fill", root, w, h), "ui_rounded_r64_fill", 30f, WithAlpha(UiTheme.Deep, 0.6f));
-            Ui2Builder.Fill(Ui2Builder.Rect("edge", root, w, h), "ui_rounded_r64_ring", 30f, new Color(1f, 1f, 1f, 0.75f));
-            Glyph(root, "icon_compare", w * 0.5f - 64f, (h - 28f) * 0.5f, 28f, UiTheme.Ink);
-            Text(Ui2Builder.Box("label", root, w * 0.5f - 28f, (h - 24f) * 0.5f, 100f, 24f), text, 19f, UiTheme.Ink,
-                 TextAlignmentOptions.Left, FontWeight.SemiBold, false);
-            root.gameObject.AddComponent<CanvasGroup>().alpha = 0.45f;
-        }
-
-        private static void Glyph(RectTransform parent, string sprite, float x, float y, float size, Color colour)
-        {
-            var image = Ui2Builder.Box("icon", parent, x, y, size, size).gameObject.AddComponent<Image>();
-            image.sprite = Ui2Builder.Icon(sprite);
-            image.preserveAspect = true;
-            image.color = colour;
-            image.raycastTarget = false;
-        }
-
-        private static UiButton Pressable(RectTransform root, float w, float h, Image wash, Image outline,
-                                          TMP_Text label, bool keepColours)
-        {
-            // Collider first: GEInteractable keeps only the colliders already on its own GameObject.
-            var box = root.gameObject.AddComponent<BoxCollider>();
-            box.size = new Vector3(w, h, 3f);
-            var interactable = root.gameObject.AddComponent<GEInteractable>();
-            PokeSupport.AddPokeFilter(root.gameObject, box, interactable);
-            root.gameObject.AddComponent<GEButton>();
-
-            var button = root.gameObject.AddComponent<UiButton>();
-            var so = new SerializedObject(button);
-            so.FindProperty("plate").objectReferenceValue = wash;
-            so.FindProperty("outline").objectReferenceValue = outline;
-            so.FindProperty("label").objectReferenceValue = label;
-            so.FindProperty("keepColours").boolValue = keepColours;
-            so.ApplyModifiedPropertiesWithoutUndo();
-            return button;
-        }
-
-        /// <summary>An image that fills its masked parent without distortion; the fitter's ratio is set per sprite.</summary>
-        private static Image Cover(RectTransform parent)
-        {
-            var rect = Ui2Builder.Rect("image", parent, parent.sizeDelta.x, parent.sizeDelta.y);
-            var image = rect.gameObject.AddComponent<Image>();
-            image.raycastTarget = false;
-            var fitter = rect.gameObject.AddComponent<AspectRatioFitter>();
-            fitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
-            fitter.aspectRatio = 16f / 9f;
-            return image;
         }
 
         /// <summary>Stretches a graphic over its parent and takes it out of the parent's layout.</summary>
@@ -247,45 +320,6 @@ namespace CosmicSimulation.EditorTools
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
             image.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
-        }
-
-        private static TextMeshProUGUI Text(RectTransform rect, string text, float size, Color colour,
-                                            TextAlignmentOptions alignment, FontWeight weight, bool wrap)
-        {
-            var tmp = rect.gameObject.AddComponent<TextMeshProUGUI>();
-            tmp.font = UiPrefabBuilder.Font();
-            tmp.text = text;
-            tmp.fontSize = size;
-            tmp.color = colour;
-            tmp.alignment = alignment;
-            tmp.fontWeight = weight;
-            tmp.raycastTarget = false;
-            tmp.textWrappingMode = wrap ? TextWrappingModes.Normal : TextWrappingModes.NoWrap;
-            return tmp;
-        }
-
-        private static void Objects(SerializedProperty property, Object[] values)
-        {
-            property.arraySize = values.Length;
-            for (var i = 0; i < values.Length; i++)
-            {
-                property.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
-            }
-        }
-
-        private static void Strings(SerializedProperty property, string[] values)
-        {
-            property.arraySize = values.Length;
-            for (var i = 0; i < values.Length; i++)
-            {
-                property.GetArrayElementAtIndex(i).stringValue = values[i];
-            }
-        }
-
-        private static Color WithAlpha(Color colour, float alpha)
-        {
-            colour.a = alpha;
-            return colour;
         }
     }
 }

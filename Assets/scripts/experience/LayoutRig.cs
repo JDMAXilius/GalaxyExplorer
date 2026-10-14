@@ -190,6 +190,9 @@ namespace CosmicSimulation
 
         public int BodyCount => bodies != null ? bodies.Length : 0;
 
+        /// <summary>The bodies in their authored order, for a picker that lists them (UI 2.0).</summary>
+        public System.Collections.Generic.IReadOnlyList<Body> Bodies => bodies ?? Array.Empty<Body>();
+
         /// <summary>Raised once an arrangement has been asked for, at the start of the move.</summary>
         public event Action<LayoutPreset> LayoutApplied;
 

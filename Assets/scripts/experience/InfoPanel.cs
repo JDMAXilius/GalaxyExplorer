@@ -409,13 +409,14 @@ namespace CosmicSimulation
 
                 // A planet narrates from its own solver when it is pulled; a moon's solver is the plain one, so
                 // its card speaks for it (owner's direction, 27 Sep: every moon says something when chosen).
-                if (want && _narration != null && GalaxyExplorerManager.IsInitialized)
+                if (want && _narration != null && GalaxyExplorerManager.IsInitialized && VOManager.AutoStart)
                 {
                     GalaxyExplorerManager.Instance.VoManager.PlayClip(_narration, allowReplay: true, replaceQueue: true);
                 }
             }
 
-            var wanted = want && !Suppressed ? 1f : 0f;
+            // UI 2.0 replaces the scene panels with its own card; a body's or moon's card stays beside it.
+            var wanted = want && !(Suppressed && Info == null) ? 1f : 0f;
             if (!Mathf.Approximately(_group.alpha, wanted))
             {
                 _group.alpha = fadeSeconds <= 0f

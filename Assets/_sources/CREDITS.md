@@ -161,10 +161,16 @@ every crater and valley is placed at random. Pluto's small moons are irregular, 
 
 Drawn in code for this project with Python Pillow (no third-party artwork), white on transparent, tinted at run time:
 
-- `Assets/ui/figma/icon_explore.png` — planet with ring, the dock's Explore glyph.
-- `Assets/ui/figma/icon_room.png` — cube outline, the dock's Room glyph.
 - `Assets/ui/figma/ui_rounded_r64_fill.png` — rounded rectangle with transparent corners, nine-sliced. The older `ui_rounded_r64.png` has opaque dark corners and is left as it is for the legacy UI.
 - `Assets/ui/figma/ui_rounded_r64_ring.png` — rounded outline ring, nine-sliced.
-- `Assets/ui/figma/icon_play.png`, `icon_compare.png` — button glyphs, drawn in code as above.
 - `Assets/ui/figma/ui_rounded_r64_glow.png` — blurred ring for the selected-state halo, drawn in code, nine-sliced.
 - `Assets/ui/figma/v2_companion.png` — the companion orb for the dock's Guide item, cut out of the owner-approved UI 2.0 concept image `docs/design/v2/screens/08-design-system.png` (image-generated artwork from the design package). Concept art, to be replaced by a final product asset.
+
+## UI 2.0 icons and pictures (13 Oct 2026, second pass)
+
+- `Assets/ui/figma/v2_icon_*.png` — the icon set of the project's own Figma file (`dx6MxAxPqZ9QBSRJqCCVev`, page V2 / 02 Components, `Icon/Glyph` plus the dock, gear and wave glyphs), exported as SVG and rasterised white on transparent. They were drawn for this project; the gear path follows the Lucide gear (ISC licence), as recorded in `docs/design/v2/FIGMA_PROGRESS.md`. These replace the first-pass `icon_explore`, `icon_room`, `icon_play` and `icon_compare`, which are removed.
+- `Assets/ui/figma/icon_pause.png`, `icon_dot.png`, `v2_dock_selected.png` — drawn in code with Python Pillow: the pause glyph, the round knob and selection dot, and the fading outline of the dock's selected Explore item.
+- `Assets/ui/figma/v2_context_*.png` (four rail pictures), `Assets/ui/photos/tile_*.png` (eight picker tiles), `Assets/ui/photos/card_andromeda.png`, `card_earth.png`, `card_orion.png`, `lesson_*.png` (three lesson illustrations) — cut out of the owner-approved UI 2.0 concept images in `docs/design/v2/screens/` (image-generated for this project; the same images the Figma screens use as fills). Illustrations, not observations.
+- `Assets/ui/photos/{sun,mercury,venus,earth,mars,jupiter,saturn,uranus,neptune,pluto}.png` — renders of the app's own bodies, taken in play mode with a temporary camera and composited over a generated star field. Used where the design has no picture of a body.
+- `Assets/ui/photos/{ariel,charon,dione,hydra,kerberos,miranda,nereid,nix,oberon,proteus,rhea,styx,tethys,titania,triton,umbriel}.png` — spheres rendered in Python from the moon maps in `Assets/Textures/moons/` (sources and licences listed above; the generated maps stay generated).
+- `Assets/ui/photos/{crab,helix,homunculus,orion,pillars,ngc1501,trumpler14}.png` — centre crops of the nebula images already in `Assets/Textures/` (sources and licences as listed for those files).

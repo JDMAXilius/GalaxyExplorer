@@ -53,6 +53,9 @@ namespace GalaxyExplorer
             }
         }
 
+        /// <summary>Set by UI 2.0: asked before a marker travels. Returning true means a preview was shown instead.</summary>
+        public static System.Func<ExperienceModule, bool> Preview { get; set; }
+
         /// <summary>The module a click on this marker opens, or null when the original scene path applies.</summary>
         public ExperienceModule Destination
         {
@@ -94,6 +97,12 @@ namespace GalaxyExplorer
             var director = ExperienceDirector.Instance;
             if (module != null && director != null)
             {
+                // UI 2.0 shows a preview card first; the card's own button does the travelling.
+                if (Preview != null && Preview(module))
+                {
+                    return;
+                }
+
                 // Not isCardActive: that would freeze the galaxy's spin and switch every marker's collider off,
                 // which is the wrong answer when Switch refuses (intro still running, a switch in flight) and
                 // the map stays on screen. Switch answers those refusals itself, through SwitchNotice.

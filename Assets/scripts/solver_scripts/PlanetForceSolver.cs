@@ -52,13 +52,19 @@ public class PlanetForceSolver : ForceSolver
         }
     }
 
+    /// <summary>What this body sounds like: the loop that plays quietly while it is out. Used by the UI 2.0 card's Listen.</summary>
+    public AudioClip AmbientClip => planetAmbiantClip;
+
     private void StartAudio()
     {
         if (planetAudioClip != null)
         {
             // Narrate every time the body is pulled, not only the first time in a session.
             GalaxyExplorerManager.Instance.VoManager.Stop(true);
-            GalaxyExplorerManager.Instance.VoManager.PlayClip(planetAudioClip, allowReplay: true, replaceQueue: true);
+            if (VOManager.AutoStart)
+            {
+                GalaxyExplorerManager.Instance.VoManager.PlayClip(planetAudioClip, allowReplay: true, replaceQueue: true);
+            }
         }
 
         if (planetAmbiantClip != null)

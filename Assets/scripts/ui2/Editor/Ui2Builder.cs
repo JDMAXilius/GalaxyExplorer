@@ -1,7 +1,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using CosmicSimulation.UI2;
-using GalaxyExplorer.XR;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -10,70 +9,93 @@ using UnityEngine.UI;
 namespace CosmicSimulation.EditorTools
 {
     /// <summary>
-    /// Builds the UI 2.0 prefabs from code, the way <see cref="UiPrefabBuilder"/> builds the legacy ones, so a
+    /// Builds the UI 2.0 prefab from code, the way <see cref="UiPrefabBuilder"/> builds the legacy ones, so a
     /// change to the design is a change here and a rebuild rather than hand edits to a prefab
     /// (docs/design/v2/UNITY_ROADMAP.md). Menu: Cosmic Simulation > UI 2.
     ///
-    /// Everything here is laid out in the pixels of the approved 1487 x 1058 Figma frame, measured from its
-    /// top-left corner, so numbers copy straight across from the design file. The canvas scale turns one of
-    /// those pixels into <see cref="Ui2Shell.MetresPerPixel"/> of world.
+    /// Everything is laid out in the pixels of the approved 1487 x 1058 Figma frame, measured from its
+    /// top-left corner, so numbers copy straight across from the design file. Each top-level piece is then
+    /// pinned to the edge of the frame it belongs to (rail left, card right, dock bottom), which changes
+    /// nothing at the design size and lets the same prefab fit any window on a monitor.
+    ///
+    /// Hierarchy: ui2_shell / frame / Navigation (Rail, Dock, Settings) | Explore (Breadcrumb, Picker, View,
+    /// Compare, Card) | Panels (Guide, Lesson, Help, Settings) | Feedback (Notice).
     /// </summary>
     public static class Ui2Builder
     {
         private const string SpriteFolder = "Assets/ui/figma/";
-        private const string ThumbFolder = "Assets/ui/thumbnails/";
         private const string OutputFolder = "Assets/prefabs/ui2/Resources";
 
-        private const float FrameWidth = 1487f;
-        private const float FrameHeight = 1058f;
+        internal const float FrameWidth = 1487f;
+        internal const float FrameHeight = 1058f;
 
         // The corner radius of ui_rounded_r64_fill and its ring, in sprite pixels.
         private const float SpriteRadiusPx = 64f;
 
+        internal static readonly Vector2 Left = new Vector2(0f, 0.5f);
+        internal static readonly Vector2 TopRight = new Vector2(1f, 1f);
+        internal static readonly Vector2 Top = new Vector2(0.5f, 1f);
+        internal static readonly Vector2 Bottom = new Vector2(0.5f, 0f);
+        internal static readonly Vector2 BottomRight = new Vector2(1f, 0f);
+
         [MenuItem("Cosmic Simulation/UI 2/Build Shell Prefab")]
         public static void BuildShell()
         {
-            // The fill and ring are nine-sliced by UiSpriteImporter; a first import can predate that rule.
-            AssetDatabase.ImportAsset(SpriteFolder + "ui_rounded_r64_fill.png", ImportAssetOptions.ForceUpdate);
-            AssetDatabase.ImportAsset(SpriteFolder + "ui_rounded_r64_ring.png", ImportAssetOptions.ForceUpdate);
-            AssetDatabase.ImportAsset(SpriteFolder + "ui_rounded_r64_glow.png", ImportAssetOptions.ForceUpdate);
+            // Sprites that arrived since the last import rules ran.
+            foreach (var folder in new[] { "Assets/ui/figma", "Assets/ui/photos" })
+            {
+                foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { folder }))
+                {
+                    var path = AssetDatabase.GUIDToAssetPath(guid);
+                    var name = System.IO.Path.GetFileName(path);
+                    if (AssetDatabase.LoadAssetAtPath<Sprite>(path) == null || name.StartsWith("ui_rounded_r64_"))
+                    {
+                        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+                    }
+                }
+            }
 
             var root = new GameObject("ui2_shell", typeof(RectTransform));
             var canvas = root.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
+
+            // Above the room's dim layer (a camera-attached quad) and the legacy screen canvases (50 to 65).
+            canvas.sortingOrder = 70;
+            UseFontWeights();
             root.AddComponent<CanvasScaler>().dynamicPixelsPerUnit = 4f;
-            var frame = (RectTransform)root.transform;
-            frame.sizeDelta = new Vector2(FrameWidth, FrameHeight);
-            frame.localScale = Vector3.one * Ui2Shell.MetresPerPixel;
+            var canvasRect = (RectTransform)root.transform;
+            canvasRect.sizeDelta = new Vector2(FrameWidth, FrameHeight);
+            canvasRect.localScale = Vector3.one * Ui2Shell.MetresPerPixel;
+
+            var frame = Group("frame", canvasRect);
+            var navigation = Group("Navigation", frame);
+            var exploring = Group("Explore", frame);
+            var panels = Group("Panels", frame);
+            var feedback = Group("Feedback", frame);
 
             var surface = WithAlpha(UiTheme.Deep, 0.94f);
             var edge = new Color(1f, 1f, 1f, 0.18f);
 
             // Rail: the four contexts. Figma: Navigation/Rail at 36, 97, 114 x 583.
-            var rail = Box("rail", frame, 36f, 97f, 114f, 583f);
+            var rail = Box("Rail", navigation, 36f, 97f, 114f, 583f);
             Rounded("plate", rail, 114f, 583f, 26f, surface);
             Ring("edge", rail, 114f, 583f, 26f, edge);
 
             var names = new[] { "Cosmic\nWeb", "Galaxies", "Milky Way", "Solar\nSystem" };
-            var thumbs = new[] { "cosmic_web", "andromeda", "milky_way", "solar_system" };
+            var pictures = new[] { "v2_context_cosmic_web", "v2_context_galaxies", "v2_context_milky_way",
+                                   "v2_context_solar_system" };
             var places = new[]
             {
                 "cosmic_web",
-                "andromeda,galaxies,whirlpool,pinwheel,triangulum",
+                "galaxies,andromeda,whirlpool,pinwheel,triangulum",
                 "milky_way,sagittarius_a,helix,crab,homunculus,orion,pillars,ngc1501,trumpler14",
-                "solar_system_planets,solar_system,hd110067",
+                "solar_system,solar_system_planets,hd110067",
             };
             var items = new UiButton[names.Length];
             for (var i = 0; i < names.Length; i++)
             {
                 var top = 28f + 139f * i; // 122 tall, then 8 + 1 + 8 of divider and gaps
-                var thumb = AssetDatabase.LoadAssetAtPath<Sprite>(ThumbFolder + thumbs[i] + ".png");
-                if (thumb == null)
-                {
-                    Debug.LogWarning("[UI2] no thumbnail for " + thumbs[i] + "; the rail item will be blank.");
-                }
-
-                items[i] = Item("context_" + i, rail, 5f, top, 104f, 122f, 18f, names[i], thumb, 64f, false);
+                items[i] = RailItem("context_" + i, rail, 5f, top, names[i], Icon(pictures[i]));
                 if (i > 0)
                 {
                     Rounded("divider_" + i, Box("line_" + i, rail, 26f, top - 9f, 62f, 1f), 62f, 1f, 0.5f,
@@ -81,17 +103,25 @@ namespace CosmicSimulation.EditorTools
                 }
             }
 
+            Pin(rail, Left);
+
             // Dock: Explore, Guide, Room. Figma: Navigation/Dock at 535, 897, 418 x 93.
-            var dock = Box("dock", frame, 535f, 897f, 418f, 93f);
+            var dock = Box("Dock", navigation, 535f, 897f, 418f, 93f);
             Rounded("plate", dock, 418f, 93f, 46.5f, surface);
             Ring("edge", dock, 418f, 93f, 46.5f, edge);
-            var explore = Item("explore", dock, 5f, 5f, 135f, 83f, 40f, "Explore", Icon("icon_explore"), 46f, true);
-            var guide = Item("guide", dock, 140f, 5f, 135f, 83f, 40f, "Guide", Icon("icon_being"), 40f, true);
+            var explore = Item("explore", dock, 5f, 5f, 135f, 83f, 40f, "Explore", Icon("v2_icon_dock_planet"), 50f);
+
+            // The selected Explore pill is outlined brightly on the left and fades toward the right.
+            var fade = explore.transform.Find("outline").GetComponent<Image>();
+            fade.sprite = Icon("v2_dock_selected");
+            fade.type = Image.Type.Simple;
+
+            var guide = Item("guide", dock, 140f, 5f, 135f, 83f, 40f, "Guide", Icon("v2_companion"), 40f);
+
             // The companion is a picture, not a glyph: it stands up out of the dock as in the design.
             var orb = (RectTransform)guide.transform.Find("icon");
             orb.sizeDelta = new Vector2(88f, 79f);
             orb.anchoredPosition = new Vector2(0f, 83f * 0.5f + 45f - 79f * 0.5f);
-            orb.GetComponent<Image>().sprite = Icon("v2_companion");
             orb.GetComponent<Image>().color = Color.white;
             var guideSo = new SerializedObject(guide);
             guideSo.FindProperty("tintIcon").boolValue = false;
@@ -99,33 +129,41 @@ namespace CosmicSimulation.EditorTools
             ((RectTransform)guide.transform.Find("label")).anchoredPosition = new Vector2(0f, -83f * 0.5f + 9f + 10f);
 
             Rounded("divider", Box("line", dock, 275.5f, 23.5f, 1f, 46f), 1f, 46f, 0.5f, UiTheme.Divider);
-            var room = Item("room", dock, 277f, 5f, 135f, 83f, 40f, "Room", Icon("icon_room"), 38f, true);
+            var room = Item("room", dock, 277f, 5f, 135f, 83f, 40f, "Room", Icon("v2_icon_dock_cube"), 38f);
+            Pin(dock, Bottom);
 
             // Settings sits in its own corner. Figma: Controls/IconButton at 1378, 928, 60 x 60.
-            var corner = Box("settings", frame, 1378f, 928f, 60f, 60f);
-            Rounded("plate", corner, 60f, 60f, 30f, surface);
-            Ring("edge", corner, 60f, 60f, 30f, WithAlpha(UiTheme.Divider, 1f));
-            var settings = Item("button", corner, 0f, 0f, 60f, 60f, 30f, null, Icon("icon_settings"), 30f, true);
+            var corner = Box("Settings", navigation, 1378f, 928f, 60f, 60f);
+            Rounded("plate", corner, 60f, 60f, 30f, WithAlpha(UiTheme.Deep, 0.88f));
+            Ring("edge", corner, 60f, 60f, 30f, UiTheme.Divider);
+            var settings = Item("button", corner, 0f, 0f, 60f, 60f, 30f, null, Icon("v2_icon_gear"), 28f);
+            Pin(corner, BottomRight);
 
-            Ui2ExploreBuilder.Build(frame, root);
+            Ui2ExploreBuilder.Build(exploring, root);
+            Ui2PanelsBuilder.BuildGuide(panels, root);
+            Ui2PanelsBuilder.BuildHelp(panels, root);
+            Ui2PanelsBuilder.BuildSettings(panels, root);
+            Ui2PanelsBuilder.BuildNotice(feedback, out var notice, out var noticeText);
+
+            foreach (var group in new[] { frame, navigation, exploring, panels, feedback })
+            {
+                Stretch(group);
+            }
 
             var shell = root.AddComponent<Ui2Shell>();
             var so = new SerializedObject(shell);
+            so.FindProperty("frame").objectReferenceValue = frame.gameObject;
+            so.FindProperty("notice").objectReferenceValue = notice;
+            so.FindProperty("noticeText").objectReferenceValue = noticeText;
             so.FindProperty("rail").objectReferenceValue = rail.gameObject;
             so.FindProperty("explore").objectReferenceValue = explore;
             so.FindProperty("guide").objectReferenceValue = guide;
             so.FindProperty("room").objectReferenceValue = room;
             so.FindProperty("settings").objectReferenceValue = settings;
-            var itemsProp = so.FindProperty("railItems");
-            var placesProp = so.FindProperty("railPlaces");
-            itemsProp.arraySize = items.Length;
-            placesProp.arraySize = places.Length;
-            for (var i = 0; i < items.Length; i++)
-            {
-                itemsProp.GetArrayElementAtIndex(i).objectReferenceValue = items[i];
-                placesProp.GetArrayElementAtIndex(i).stringValue = places[i];
-            }
-
+            Ui2Kit.Objects(so.FindProperty("railItems"), items);
+            Ui2Kit.Strings(so.FindProperty("railPlaces"), places);
+            Ui2Kit.Strings(so.FindProperty("railNames"),
+                           new[] { "Cosmic Web", "Galaxies", "Milky Way", "Solar System" });
             so.ApplyModifiedPropertiesWithoutUndo();
 
             if (!AssetDatabase.IsValidFolder(OutputFolder))
@@ -134,10 +172,53 @@ namespace CosmicSimulation.EditorTools
                 AssetDatabase.Refresh();
             }
 
-            var path = OutputFolder + "/ui2_shell.prefab";
-            PrefabUtility.SaveAsPrefabAsset(root, path);
+            var output = OutputFolder + "/ui2_shell.prefab";
+            PrefabUtility.SaveAsPrefabAsset(root, output);
             Object.DestroyImmediate(root);
-            Debug.Log("[UI2] built " + path);
+            Debug.Log("[UI2] built " + output);
+        }
+
+        /// <summary>
+        /// Points Selawik's semibold and bold weights at their own font assets, so a label set to SemiBold is
+        /// drawn with the semibold face rather than the regular one.
+        /// </summary>
+        private static void UseFontWeights()
+        {
+            var regular = UiPrefabBuilder.Font();
+            var semibold = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Fonts/selawksb SDF.asset");
+            var bold = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Fonts/selawkb SDF.asset");
+            if (regular == null || semibold == null || bold == null)
+            {
+                Debug.LogWarning("[UI2] Selawik semibold or bold font asset not found; headings will draw regular.");
+                return;
+            }
+
+            var table = regular.fontWeightTable;
+            if (table[6].regularTypeface == semibold && table[7].regularTypeface == bold)
+            {
+                return;
+            }
+
+            // Medium has no face of its own in Selawik and stays regular.
+            table[6].regularTypeface = semibold;
+            table[7].regularTypeface = bold;
+            EditorUtility.SetDirty(regular);
+            AssetDatabase.SaveAssetIfDirty(regular);
+        }
+
+        [MenuItem("Cosmic Simulation/UI 2/Run Check")]
+        public static void RunCheck()
+        {
+            if (!Application.isPlaying)
+            {
+                Debug.LogError("[UI2] enter play mode first; the check presses the running shell.");
+                return;
+            }
+
+            if (!Ui2SelfCheck.Running)
+            {
+                new GameObject("ui2_check").AddComponent<Ui2SelfCheck>();
+            }
         }
 
         [MenuItem("Cosmic Simulation/UI 2/Turn On")]
@@ -155,12 +236,59 @@ namespace CosmicSimulation.EditorTools
         }
 
         /// <summary>
-        /// One pressable: hover/selected wash, outline ring, a glyph or a round picture, and an optional label.
-        /// Collider first, as in <c>UiPrefabBuilder.Pressable</c>: GEInteractable keeps only the colliders already
-        /// on its own GameObject.
+        /// Navigation/RailItem, 104 x 122: the context's picture, its name under it, and when selected a cyan
+        /// outline with a glow and a dot on the rail's left edge.
+        /// </summary>
+        private static UiButton RailItem(string name, RectTransform parent, float x, float y, string text,
+                                         Sprite picture)
+        {
+            const float W = 104f, H = 122f;
+            var root = Box(name, parent, x, y, W, H);
+            var glow = Glow(root, W, H, 18f);
+
+            // The dot straddles the rail's left edge, a little above the item's middle (Figma: 18 px at -11, 36).
+            var dot = Rect("dot", glow.transform, 18f, 18f);
+            dot.anchoredPosition = new Vector2(-W * 0.5f - 2f, H * 0.5f - 45f);
+            var ring = dot.gameObject.AddComponent<Image>();
+            ring.sprite = Icon("icon_dot");
+            ring.color = UiTheme.Accent;
+            ring.raycastTarget = false;
+            var core = Rect("core", dot, 9f, 9f).gameObject.AddComponent<Image>();
+            core.sprite = Icon("icon_dot");
+            core.raycastTarget = false;
+
+            var plate = Rounded("wash", root, W, H, 18f, Color.clear);
+            var outline = Ring("outline", root, W, H, 18f, UiTheme.Accent);
+            outline.enabled = false;
+
+            var lines = text.Contains("\n") ? 2 : 1;
+            var pictureTop = lines == 2 ? 6f : 16f;
+            var aspect = picture != null ? picture.rect.width / picture.rect.height : 1f;
+            var pictureWidth = 64f * Mathf.Max(1f, aspect);
+            var image = Box("picture", root, (W - pictureWidth) * 0.5f, pictureTop, pictureWidth, 64f).gameObject
+                .AddComponent<Image>();
+            image.sprite = picture;
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+
+            var label = Ui2Kit.Text(Box("label", root, 2f, pictureTop + 72f, W - 4f, 20f * lines), text, 16f,
+                                    UiTheme.Ink, TextAlignmentOptions.Center, FontWeight.Medium, false);
+            label.lineSpacing = -14f;
+
+            var button = Ui2Kit.Press(root, W, H, plate, outline, label, image, false);
+            var so = new SerializedObject(button);
+            so.FindProperty("glow").objectReferenceValue = glow;
+            so.FindProperty("tintIcon").boolValue = false;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return button;
+        }
+
+        /// <summary>
+        /// Navigation/DockItem and the settings button: hover and selected wash, an outline, a glyph and an
+        /// optional label under it, sitting together in the middle.
         /// </summary>
         private static UiButton Item(string name, RectTransform parent, float x, float y, float w, float h,
-                                     float radius, string text, Sprite picture, float pictureSize, bool glyph)
+                                     float radius, string text, Sprite glyph, float glyphSize)
         {
             var root = Box(name, parent, x, y, w, h);
 
@@ -170,67 +298,52 @@ namespace CosmicSimulation.EditorTools
             outline.enabled = false;
 
             var hasLabel = !string.IsNullOrEmpty(text);
-            var lines = hasLabel && text.Contains("\n") ? 2 : 1;
-            var labelHeight = 20f * lines;
-
-            // A glyph and its label sit as one block in the middle; a picture sits toward the top with the
-            // label under it, as the rail items do in the design.
-            var pictureTop = !hasLabel ? (h - pictureSize) * 0.5f
-                : glyph ? (h - pictureSize - 4f - labelHeight) * 0.5f
-                : 12f - (lines - 1) * 4f;
-
-            Image icon;
-            if (glyph)
-            {
-                icon = Picture("icon", Box("icon", root, (w - pictureSize) * 0.5f, pictureTop, pictureSize, pictureSize),
-                               picture, UiTheme.Ink, true);
-            }
-            else
-            {
-                // A round picture: a circular mask, and the image scaled to cover it.
-                var maskRect = Box("picture", root, (w - pictureSize) * 0.5f, pictureTop, pictureSize, pictureSize);
-                var mask = Fill(maskRect, "ui_rounded_r64_fill", pictureSize * 0.5f, Color.white);
-                mask.gameObject.AddComponent<Mask>().showMaskGraphic = false;
-                var aspect = picture != null ? picture.rect.width / picture.rect.height : 1f;
-                var imageRect = Rect("image", maskRect, pictureSize * Mathf.Max(1f, aspect),
-                                     pictureSize / Mathf.Min(1f, aspect));
-                icon = Picture("image", imageRect, picture, Color.white, false);
-            }
+            var glyphTop = hasLabel ? (h - glyphSize - 4f - 20f) * 0.5f : (h - glyphSize) * 0.5f;
+            var icon = Box("icon", root, (w - glyphSize) * 0.5f, glyphTop, glyphSize, glyphSize).gameObject
+                .AddComponent<Image>();
+            icon.sprite = glyph;
+            icon.preserveAspect = true;
+            icon.color = UiTheme.Ink;
+            icon.raycastTarget = false;
 
             TMP_Text label = null;
             if (hasLabel)
             {
-                var labelTop = glyph ? pictureTop + pictureSize + 4f : pictureTop + pictureSize + 8f;
-                var tmp = Box("label", root, 2f, labelTop, w - 4f, labelHeight).gameObject
-                    .AddComponent<TextMeshProUGUI>();
-                tmp.font = UiPrefabBuilder.Font();
-                tmp.text = text;
-                tmp.fontSize = 16f;
-                tmp.lineSpacing = -14f;
-                tmp.color = UiTheme.Ink;
-                tmp.alignment = TextAlignmentOptions.Center;
-                tmp.fontWeight = FontWeight.Medium;
-                tmp.raycastTarget = false;
-                tmp.textWrappingMode = TextWrappingModes.NoWrap;
-                label = tmp;
+                label = Ui2Kit.Text(Box("label", root, 2f, glyphTop + glyphSize + 4f, w - 4f, 20f), text, 16f,
+                                    UiTheme.Ink, TextAlignmentOptions.Center, FontWeight.Medium, false);
             }
 
-            var box = root.gameObject.AddComponent<BoxCollider>();
-            box.size = new Vector3(w, h, 3f);
-            var interactable = root.gameObject.AddComponent<GEInteractable>();
-            PokeSupport.AddPokeFilter(root.gameObject, box, interactable);
-            root.gameObject.AddComponent<GEButton>();
-
-            var button = root.gameObject.AddComponent<UiButton>();
+            var button = Ui2Kit.Press(root, w, h, plate, outline, label, icon, false);
             var so = new SerializedObject(button);
-            so.FindProperty("plate").objectReferenceValue = plate;
-            so.FindProperty("outline").objectReferenceValue = outline;
             so.FindProperty("glow").objectReferenceValue = glow;
-            so.FindProperty("icon").objectReferenceValue = icon;
-            so.FindProperty("label").objectReferenceValue = label;
-            so.FindProperty("tintIcon").boolValue = glyph;
             so.ApplyModifiedPropertiesWithoutUndo();
             return button;
+        }
+
+        /// <summary>A named layer the size of the frame. Stretched over its parent once its children are placed.</summary>
+        private static RectTransform Group(string name, RectTransform parent)
+        {
+            return Rect(name, parent, FrameWidth, FrameHeight);
+        }
+
+        private static void Stretch(RectTransform rect)
+        {
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+        }
+
+        /// <summary>
+        /// Re-anchors a placed rect to an edge or corner of its parent without moving it, so it keeps its
+        /// design-frame margin from that edge when the parent is a different size.
+        /// </summary>
+        internal static void Pin(RectTransform rect, Vector2 anchor)
+        {
+            var parent = ((RectTransform)rect.parent).sizeDelta;
+            var held = (rect.anchorMin + rect.anchorMax) * 0.5f;
+            rect.anchoredPosition += new Vector2((held.x - anchor.x) * parent.x, (held.y - anchor.y) * parent.y);
+            rect.anchorMin = rect.anchorMax = anchor;
         }
 
         /// <summary>A rect placed the way Figma states it: x and y of its top-left corner inside its parent.</summary>
@@ -258,10 +371,8 @@ namespace CosmicSimulation.EditorTools
         internal static Image Glow(RectTransform root, float w, float h, float radius)
         {
             var over = radius / 3f;
-            var image = Fill(Rect("glow", root, w + over * 2f, h + over * 2f), "ui_rounded_r64_glow",
-                             radius * 64f / 48f, WithAlpha(UiTheme.Accent, 0.7f));
-            image.enabled = false;
-            return image;
+            return Fill(Rect("selected", root, w + over * 2f, h + over * 2f), "ui_rounded_r64_glow",
+                        radius * 64f / 48f, WithAlpha(UiTheme.Accent, 0.7f));
         }
 
         private static Image Rounded(string name, Transform parent, float w, float h, float radius, Color colour)
@@ -284,17 +395,6 @@ namespace CosmicSimulation.EditorTools
             // unit) canvas units, divided by this multiplier. Solve for the radius asked for.
             var native = image.sprite != null ? SpriteRadiusPx * 100f / image.sprite.pixelsPerUnit : 1f;
             image.pixelsPerUnitMultiplier = native / Mathf.Max(0.1f, radius);
-            image.color = colour;
-            image.raycastTarget = false;
-            return image;
-        }
-
-        private static Image Picture(string name, RectTransform rect, Sprite sprite, Color colour, bool keepAspect)
-        {
-            rect.name = name;
-            var image = rect.gameObject.AddComponent<Image>();
-            image.sprite = sprite;
-            image.preserveAspect = keepAspect;
             image.color = colour;
             image.raycastTarget = false;
             return image;

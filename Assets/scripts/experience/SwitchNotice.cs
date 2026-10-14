@@ -225,6 +225,12 @@ namespace CosmicSimulation
                 return;
             }
 
+            // UI 2.0 draws notices itself; when it takes one, the legacy plate stays down.
+            if (Redirect != null && Redirect(message))
+            {
+                return;
+            }
+
             EnsureBuilt();
             if (_label == null || _root == null)
             {
@@ -238,6 +244,9 @@ namespace CosmicSimulation
             _showing = true;
             _shownFor = 0f;
         }
+
+        /// <summary>Set by UI 2.0 to show a notice in its own style. Returns true when it has taken the message.</summary>
+        public static System.Func<string, bool> Redirect { get; set; }
 
         /// <summary>Fades the notice away now.</summary>
         public void Dismiss() => _showing = false;

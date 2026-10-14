@@ -30,10 +30,41 @@ namespace CosmicSimulation.UI2
         [Tooltip("On for a control with its own fixed colours (a filled primary button): only the wash changes.")]
         private bool keepColours = false;
 
+        [SerializeField]
+        [Tooltip("A segment or menu choice: this fill shows when selected and the label turns dark on it.")]
+        private Image selectedFill = null;
+
         private int _hovering;
         private bool _selected;
+        private bool _interactable = true;
 
         public event Action Clicked;
+
+        private static readonly System.Collections.Generic.List<UiButton> Pressed =
+            new System.Collections.Generic.List<UiButton>();
+
+        /// <summary>
+        /// Delivers the presses of the last frame. A press often hides the control that was pressed, and
+        /// <see cref="GEButton"/> starts its cool-down coroutine straight after its listeners, which is an
+        /// error on an object that has just been switched off; so listeners hear about it a frame later.
+        /// </summary>
+        public static void Deliver()
+        {
+            if (Pressed.Count == 0)
+            {
+                return;
+            }
+
+            var batch = Pressed.ToArray();
+            Pressed.Clear();
+            foreach (var button in batch)
+            {
+                if (button != null)
+                {
+                    button.Clicked?.Invoke();
+                }
+            }
+        }
 
         public bool Selected
         {
@@ -42,6 +73,34 @@ namespace CosmicSimulation.UI2
             {
                 _selected = value;
                 Refresh();
+            }
+        }
+
+        /// <summary>Off: the control stays drawn, dimmed, and cannot be pressed.</summary>
+        public bool Interactable
+        {
+            get => _interactable;
+            set
+            {
+                _interactable = value;
+                foreach (var hit in GetComponents<Collider>())
+                {
+                    hit.enabled = value;
+                }
+
+                var group = GetComponent<CanvasGroup>();
+                if (group != null)
+                {
+                    group.alpha = value ? 1f : 0.45f;
+                }
+            }
+        }
+
+        public void SetIcon(Sprite sprite)
+        {
+            if (icon != null)
+            {
+                icon.sprite = sprite;
             }
         }
 
@@ -55,7 +114,7 @@ namespace CosmicSimulation.UI2
 
         private void Awake()
         {
-            GetComponent<GEButton>().OnClick.AddListener(() => Clicked?.Invoke());
+            GetComponent<GEButton>().OnClick.AddListener(() => Pressed.Add(this));
             Refresh();
         }
 
@@ -86,15 +145,21 @@ namespace CosmicSimulation.UI2
         {
             var hover = _hovering > 0;
             var ink = _selected ? UiTheme.Accent : UiTheme.Ink;
+            if (selectedFill != null)
+            {
+                selectedFill.enabled = _selected;
+                ink = _selected ? UiTheme.Deep : UiTheme.Ink;
+            }
 
             if (plate != null)
             {
-                plate.color = _selected ? UiTheme.SelectedWash : hover ? UiTheme.HoverWash : Color.clear;
+                plate.color = _selected && selectedFill == null ? UiTheme.SelectedWash
+                    : hover && !_selected ? UiTheme.HoverWash : Color.clear;
             }
 
             if (glow != null)
             {
-                glow.enabled = _selected;
+                glow.gameObject.SetActive(_selected);
             }
 
             if (outline != null)

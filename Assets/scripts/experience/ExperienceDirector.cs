@@ -650,7 +650,7 @@ namespace CosmicSimulation
                 // it is the written form of the same words.
                 ShowScenePanel(module);
 
-                if (vo != null && module.Narration != null)
+                if (vo != null && module.Narration != null && VOManager.AutoStart)
                 {
                     vo.PlayClip(module.Narration, allowReplay: true, replaceQueue: true);
                 }
@@ -1464,7 +1464,10 @@ namespace CosmicSimulation
             if (vo != null && destination.Narration != null)
             {
                 vo.Stop(true);
-                vo.PlayClip(destination.Narration, allowReplay: true, replaceQueue: true);
+                if (VOManager.AutoStart)
+                {
+                    vo.PlayClip(destination.Narration, allowReplay: true, replaceQueue: true);
+                }
             }
 
             // A destination's copy is authored in the same place as an experience's, and GDD 8.3 lets several

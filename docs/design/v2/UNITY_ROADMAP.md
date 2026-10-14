@@ -1,6 +1,6 @@
 # UI 2.0 in Unity — approach and roadmap
 
-Written 13 Oct 2026 by the terminal session. Status: **proposal, nothing implemented**. It is based on a read of the code on `quest3-port` (code wins over docs) and on Unity and Meta documentation checked the same day. Nothing here has been tried in the editor or on a headset.
+Written 13 Oct 2026 by the terminal session. Status: **implemented behind the `Ui2` switch through Phase 9, desktop-verified only** (13 Oct 2026; per-phase status in `docs/BACKLOG.md`, U2-P0 to U2-P10). What follows is the original proposal; where the build departs from it, the backlog row says so. It is based on a read of the code on `quest3-port` (code wins over docs) and on Unity and Meta documentation checked the same day. Nothing here has been tried in the editor or on a headset.
 
 The design being implemented is the Figma file `dx6MxAxPqZ9QBSRJqCCVev`, `V2 /` pages, with node IDs in `FIGMA_PROGRESS.md`.
 

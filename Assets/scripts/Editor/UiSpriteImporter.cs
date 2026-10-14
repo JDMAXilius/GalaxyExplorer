@@ -22,6 +22,7 @@ namespace CosmicSimulation.EditorTools
     public class UiSpriteImporter : AssetPostprocessor
     {
         private const string Folder = "Assets/ui/figma/";
+        private const string PhotoFolder = "Assets/ui/photos/";
         private const float PixelsPerMillimetre = 8f;
         private const float PixelsPerUnit = PixelsPerMillimetre * 1000f;
 
@@ -29,6 +30,19 @@ namespace CosmicSimulation.EditorTools
 
         private void OnPreprocessTexture()
         {
+            // Photographs for the UI 2.0 cards and pickers: full-colour sprites, larger and compressed.
+            if (assetPath.StartsWith(PhotoFolder, System.StringComparison.OrdinalIgnoreCase))
+            {
+                var photo = (TextureImporter)assetImporter;
+                photo.textureType = TextureImporterType.Sprite;
+                photo.spriteImportMode = SpriteImportMode.Single;
+                photo.mipmapEnabled = true;
+                photo.wrapMode = TextureWrapMode.Clamp;
+                photo.npotScale = TextureImporterNPOTScale.None;
+                photo.maxTextureSize = 1024;
+                return;
+            }
+
             if (!assetPath.StartsWith(Folder, System.StringComparison.OrdinalIgnoreCase))
             {
                 return;

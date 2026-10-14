@@ -112,6 +112,47 @@ namespace GalaxyExplorer
         private IAudioService audioService;
         
 
+        /// <summary>
+        /// Whether a place or body starts narrating by itself when it opens. UI 2.0 turns this off: there
+        /// narration starts from the card's Listen button.
+        /// </summary>
+        public static bool AutoStart { get; set; } = true;
+
+        /// <summary>True while the current narration is held by <see cref="Pause"/>.</summary>
+        public bool IsPaused { get; private set; }
+
+        /// <summary>Holds the narration where it is. <see cref="Resume"/> carries on from the same word.</summary>
+        public void Pause()
+        {
+            if (audioSource != null && audioSource.isPlaying)
+            {
+                // The clip and the position are kept here: the audio service takes a silent source back into
+                // its pool, so a paused AudioSource cannot be relied on to still be ours.
+                pausedClip = audioSource.clip;
+                pausedAt = audioSource.time;
+                audioSource.Stop();
+                IsPaused = true;
+            }
+        }
+
+        public void Resume()
+        {
+            if (IsPaused && pausedClip != null)
+            {
+                clipQueue.Clear();
+                nextClip = pausedClip;
+                nextClipDelay = 0f;
+                resumeAt = pausedAt;
+            }
+
+            pausedClip = null;
+            IsPaused = false;
+        }
+
+        private AudioClip pausedClip;
+        private float pausedAt;
+        private float resumeAt;
+
         public bool ShouldAudioBlockProgress => blockRemaining > 0f;
         public bool IsPlaying => clipQueue.Count > 0 || nextClip != null || audioSource != null && audioSource.isPlaying;
         public AudioClip CurrentClip => IsPlaying && audioSource != null ? audioSource.clip : null;
@@ -150,12 +191,18 @@ namespace GalaxyExplorer
                     if (audioSource != null)
                     {
                         audioSource.volume *= level;
+                        if (resumeAt > 0f)
+                        {
+                            audioSource.time = Mathf.Min(resumeAt, Mathf.Max(0f, nextClip.length - 0.1f));
+                        }
                     }
+
+                    resumeAt = 0f;
                     nextClip = null;
                     
                 }
             }
-            else if (clipQueue != null && clipQueue.Count > 0 && (audioSource == null || !audioSource.isPlaying))
+            else if (!IsPaused && clipQueue != null && clipQueue.Count > 0 && (audioSource == null || !audioSource.isPlaying))
             {
                 QueuedAudioClip queuedClip = clipQueue.Dequeue();
 
@@ -194,6 +241,8 @@ namespace GalaxyExplorer
                     clipQueue.Clear();
                 }
 
+                IsPaused = false;
+
                 clipQueue.Enqueue(new QueuedAudioClip(clip, delay, allowReplay, audioBlocksProgress));
 
                 clipWillPlay = true;
@@ -211,6 +260,8 @@ namespace GalaxyExplorer
 
             nextClip = null;
             blockRemaining = 0f;
+            IsPaused = false;
+            pausedClip = null;
 
             // Fade out the audio that's currently playing to stop it. Check here to
             // prevent coroutines from stacking up and calling Stop() on audioSource
