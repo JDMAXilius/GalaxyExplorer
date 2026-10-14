@@ -19,7 +19,7 @@
 | Engine | Unity **6000.6.0f1**, Built-in Render Pipeline, Gamma, forward, 4× MSAA, no post stack |
 | XR | OpenXR 1.18.0, Unity OpenXR: Meta 2.6.1, AR Foundation 6.6.2 (passthrough), XR Management 4.7.0 |
 | Interaction | XR Interaction Toolkit 3.6.0, XR Hands 1.9.0 |
-| Input | Input System 1.20.0; Active Input Handling **Both** (XRI on the new system; some legacy paths on the old, CS-354) |
+| Input | Input System 1.20.0; Active Input Handling **Input System only** (CS-354) |
 | UI | uGUI 2.6.0 with TextMesh Pro; Selawik SDF fonts |
 | Other packages | Shader Graph 17.6, Timeline 6.6, Test Framework 1.8 (no test assemblies yet), AI Assistant 2.19.0-pre.2 (the editor MCP relay), AI Navigation 2.0.14 |
 | Vendored | FlowManager (`Assets/external`; TouchScript deleted in CS-353), `Assets/Packages/Layers`, MRTK leftovers (`Assets/third_party`) |
@@ -287,7 +287,7 @@ The rework has its own **Cosmic/** menu (Build Rig, Main Scene, UI, Layouts, Bod
 
 ## 9. Build and test
 
-- **APK:** **Cosmic Simulation → Quest 3 → Build APK**, or batch `-executeMethod GalaxyExplorer.Build.Quest3Build.BuildApk`. It runs Configure Project first, gates on the legal notice files and writes `Builds/Quest3/CosmicSimulationXR.apk`. An Android build raises an "Unsupported Input Handling" modal; answer *Ignore*.
+- **APK:** **Cosmic Simulation → Quest 3 → Build APK**, or batch `-executeMethod GalaxyExplorer.Build.Quest3Build.BuildApk`. It runs Configure Project first, gates on the legal notice files and writes `Builds/Quest3/CosmicSimulationXR.apk`. The old "Unsupported Input Handling" modal is gone since CS-354.
 - **Windows:** `Unity6WindowsBuild.BuildWindows64` (Mono) writes `Builds/Win64/CosmicSimulationXR.exe`.
 - **Editor automation** (`tools/mcp`, through the Unity AI Assistant relay; one client at a time):
   - Commands: `node tools/mcp/umcp.js list | call | run <file.cs>`.

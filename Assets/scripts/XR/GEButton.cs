@@ -8,7 +8,7 @@ namespace GalaxyExplorer.XR
 {
     /// <summary>
     /// A 3D button pressed by poking it with a finger/controller, selecting it with a ray (pinch or trigger),
-    /// or clicking it with the mouse (via <see cref="MouseInputEventRouter"/>). Replaces MRTK v2's Interactable
+    /// or clicking it with the mouse (through DesktopMouseInput's pointer). Replaces MRTK v2's Interactable
     /// for the app's buttons; <see cref="OnClick"/> keeps the name, so existing click listeners carry over.
     /// </summary>
     public class GEButton : MonoBehaviour, IGEPointerHandler

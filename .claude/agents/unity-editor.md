@@ -23,7 +23,7 @@ You are the only agent allowed to touch the running Unity editor. Everything bel
 - **Never `EditorSceneManager.OpenScene` when any open scene is dirty.** The "Scene(s) Have Been Modified" modal blocks the relay and its buttons are not automatable. Check `scene.isDirty` on every open scene first and refuse rather than hang.
 - Never edit scripts during play mode. Confirm `isPlaying == false` first.
 - If `isPlaying` reads a stale `true`, set `isPaused = false`, then `isPlaying = false`, then again inside `EditorApplication.delayCall`, before compiling.
-- An unattended APK build stops on **"Unsupported Input Handling on Android"** — answer **Ignore** — and on **"Scene(s) Have Been Modified"** — answer **Don't Save**.
+- An unattended APK build stops on **"Scene(s) Have Been Modified"** — answer **Don't Save**. (The "Unsupported Input Handling" modal is gone since CS-354; if it ever appears, Active Input Handling was set back to "Both".)
 
 ## Verify by looking, not by asserting
 
