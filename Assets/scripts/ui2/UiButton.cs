@@ -25,6 +25,10 @@ namespace CosmicSimulation.UI2
         [Tooltip("Off for a picture (a thumbnail keeps its own colours when selected).")]
         private bool tintIcon = true;
 
+        [SerializeField]
+        [Tooltip("On for a control with its own fixed colours (a filled primary button): only the wash changes.")]
+        private bool keepColours = false;
+
         private int _hovering;
         private bool _selected;
 
@@ -93,13 +97,13 @@ namespace CosmicSimulation.UI2
                 outline.color = _selected ? UiTheme.Accent : new Color(1f, 1f, 1f, 0.4f);
             }
 
-            if (label != null)
+            if (label != null && !keepColours)
             {
                 label.color = ink;
                 label.fontWeight = _selected ? FontWeight.SemiBold : FontWeight.Medium;
             }
 
-            if (icon != null && tintIcon)
+            if (icon != null && tintIcon && !keepColours)
             {
                 icon.color = ink;
             }

@@ -95,6 +95,8 @@ namespace CosmicSimulation.EditorTools
             Ring("edge", corner, 60f, 60f, 30f, WithAlpha(UiTheme.Divider, 1f));
             var settings = Item("button", corner, 0f, 0f, 60f, 60f, 30f, null, Icon("icon_settings"), 30f, true);
 
+            Ui2ExploreBuilder.Build(frame, root);
+
             var shell = root.AddComponent<Ui2Shell>();
             var so = new SerializedObject(shell);
             so.FindProperty("rail").objectReferenceValue = rail.gameObject;
@@ -218,7 +220,7 @@ namespace CosmicSimulation.EditorTools
         }
 
         /// <summary>A rect placed the way Figma states it: x and y of its top-left corner inside its parent.</summary>
-        private static RectTransform Box(string name, RectTransform parent, float x, float y, float w, float h)
+        internal static RectTransform Box(string name, RectTransform parent, float x, float y, float w, float h)
         {
             var rt = Rect(name, parent, w, h);
             var size = parent.sizeDelta;
@@ -226,7 +228,7 @@ namespace CosmicSimulation.EditorTools
             return rt;
         }
 
-        private static RectTransform Rect(string name, Transform parent, float w, float h)
+        internal static RectTransform Rect(string name, Transform parent, float w, float h)
         {
             var go = new GameObject(name, typeof(RectTransform));
             var rt = (RectTransform)go.transform;
@@ -245,7 +247,7 @@ namespace CosmicSimulation.EditorTools
             return Fill(Rect(name, parent, w, h), "ui_rounded_r64_ring", radius, colour);
         }
 
-        private static Image Fill(RectTransform rect, string sprite, float radius, Color colour)
+        internal static Image Fill(RectTransform rect, string sprite, float radius, Color colour)
         {
             var image = rect.gameObject.AddComponent<Image>();
             image.sprite = Icon(sprite);
