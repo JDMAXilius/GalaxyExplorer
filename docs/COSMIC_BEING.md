@@ -39,7 +39,7 @@ The being is the one voice in the room while it is awake: music and ambience dro
 | `Follow.cs` | Keeps station in the head's yaw-and-pitch frame, faces the head, yields to a hand and re-reads its offset on release |
 | `IHost.cs` | What the app provides: the situation (place, layout, what is held), the three actions, ducking, the tap click, whether a hand holds it |
 | `BeingSettings.cs` | Every number, with its unit in its name |
-| `BeingKeys.cs` | The OpenAI key; blank reads `OPENAI_API_KEY`. The asset is gitignored |
+| `BeingKeys.cs` | The OpenAI key; blank reads `OPENAI_API_KEY` or the project's `.env`, in the editor and Development Builds only (CS-308). The asset is gitignored |
 | `Editor/BeingPrefab.cs` | **Cosmic Simulation → Build Being**: knowledge, mesh, materials, cues, settings, prefab, wired into the old dock prefab |
 | `Editor/Knowledge.cs` | **Cosmic Simulation → Build Being Knowledge**: every place and body asset into `Data/being_knowledge.txt` |
 | `Data/being_prompt.txt` | The system instructions; the knowledge is appended at connect |
@@ -60,7 +60,8 @@ Down: `session.updated`; `input_audio_buffer.speech_started` / `speech_stopped`;
 ## Running it
 
 Paste the key into `Assets/Being/Data/being_keys.asset` (Inspector, *Open Ai Key*), or export `OPENAI_API_KEY`
-on a dev machine. Build the being once from the menu; the dock prefab is wired by that build, the Cosmic scene by
+on a dev machine; the variable and `.env` work in the editor and Development Builds only, never in a release player
+(CS-308). *Build Store APK* refuses a key in the asset (CS-299); a Windows bench build with one needs `-allow-dev-key`. Build the being once from the menu; the dock prefab is wired by that build, the Cosmic scene by
 **Cosmic → Build → Main Scene**. The APK needs the key in the asset; anyone with the APK can read it out, so a
 shipping build wants a short-lived client secret from a small endpoint instead - not done.
 

@@ -627,13 +627,22 @@ namespace CosmicSimulation.UI2
         // ---------- the Milky Way map
 
         // A planet picked on the orbit view, where nothing is pulled and no panel opens: show it on the card and
-        // keep the player where they are (CC-U2-003). Picking it again puts the card away.
+        // keep the player where they are (CC-U2-003). Picking it again puts the card away. Only on the orbit view
+        // with the card on screen; anywhere else nothing is remembered, so the card can never come back later
+        // showing a pick nobody saw. A known body is still consumed there, because the original scene it would
+        // load no longer exists.
         private bool OnBodyMarker(string id)
         {
             var info = Body(id);
             if (info == null)
             {
                 return false;
+            }
+
+            var shell = Ui2Shell.Instance;
+            if (shell == null || !shell.ExploreVisible || _place == null || _place.Id != orbitsPlace)
+            {
+                return true;
             }
 
             _picked = _picked == info ? null : info;

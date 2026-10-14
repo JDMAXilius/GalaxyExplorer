@@ -57,36 +57,36 @@ namespace GalaxyExplorer
         public static System.Func<ExperienceModule, bool> Preview { get; set; }
 
         /// <summary>
-        /// Set by UI 2.0: asked with <see cref="BodyId"/> before a body marker with no destination (the Solar
-        /// System's orbit view) starts the original scene load. Returning true means the body was shown on the card
-        /// instead, and nothing travels (CC-U2-003).
+        /// Set by UI 2.0: asked with each of <see cref="BodyIds"/> before a body marker with no destination (the
+        /// Solar System's orbit view) starts the original scene load. Returning true means the click was handled
+        /// on the card, and nothing travels (CC-U2-003).
         /// </summary>
         public static System.Func<string, bool> Picked { get; set; }
 
         /// <summary>
-        /// The body this marker stands for, matching <see cref="BodyInfo.Id"/>: the original scene name
-        /// ("mars_view_scene") without its suffix, else the marker's own name ("poi_mars_prefab"), else empty.
+        /// The ids this marker may stand for, to match against <see cref="BodyInfo.Id"/>, most reliable first: the
+        /// marker's own prefab name ("poi_mars_prefab"), then its original scene name without "_view_scene". The
+        /// scene names are not uniform (Mercury's is "MercuryViewmercury_view_scene"), so neither alone will do.
         /// </summary>
-        public string BodyId
+        public System.Collections.Generic.IEnumerable<string> BodyIds
         {
             get
             {
-                const string sceneSuffix = "_view_scene";
-                if (!string.IsNullOrEmpty(SceneToLoad) && SceneToLoad.EndsWith(sceneSuffix))
-                {
-                    return SceneToLoad.Substring(0, SceneToLoad.Length - sceneSuffix.Length);
-                }
-
                 for (var t = transform; t != null; t = t.parent)
                 {
                     var name = t.name;
                     if (name.StartsWith("poi_") && name.EndsWith("_prefab") && name.Length > "poi__prefab".Length)
                     {
-                        return name.Substring(4, name.Length - 4 - "_prefab".Length);
+                        yield return name.Substring(4, name.Length - 4 - "_prefab".Length);
+                        break;
                     }
                 }
 
-                return string.Empty;
+                const string sceneSuffix = "_view_scene";
+                if (!string.IsNullOrEmpty(SceneToLoad) && SceneToLoad.EndsWith(sceneSuffix))
+                {
+                    yield return SceneToLoad.Substring(0, SceneToLoad.Length - sceneSuffix.Length);
+                }
             }
         }
 
@@ -144,9 +144,15 @@ namespace GalaxyExplorer
                 return;
             }
 
-            if (Picked != null && Picked(BodyId))
+            if (Picked != null)
             {
-                return;
+                foreach (var id in BodyIds)
+                {
+                    if (Picked(id))
+                    {
+                        return;
+                    }
+                }
             }
 
             StartCoroutine(OnPointerDownRoutine());

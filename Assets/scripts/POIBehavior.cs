@@ -104,6 +104,13 @@ public class POIBehavior : MonoBehaviour
     // own collider to nothing, so a click on its centre met nothing at all.
     private bool IsPointVisible(Vector3 position)
     {
+        // A collider switched off on purpose (CardPOIManager turns every marker's off for a scene transition) is
+        // hidden, not "nothing in front": the rays below would miss it and fade the label back in.
+        if (!boxCollider.enabled)
+        {
+            return false;
+        }
+
         var layerMask = 1 << LayerMask.NameToLayer("POI");
         var origin = cameraObject.transform.position;
         var toPoint = position - origin;
