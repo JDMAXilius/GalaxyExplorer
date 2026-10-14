@@ -1975,6 +1975,44 @@ The owner's Steamworks account (`juandlugopro`) has SDK access only: no partner 
 | CS-319 | TERM | The headset's proximity sensor may be left overridden after an unattended launch (`am broadcast -a com.oculus.vrpowermanager.prox_close`); always end a test with `automation_disable` | — | todo |
 
 
+
+## Phase 10 — Code audit and cleanup (14 Oct 2026, cloud)
+
+The audit, the rules and the plan behind these rows: [CODE_AUDIT.md](CODE_AUDIT.md). Waves R0 (CS-330 to 336) and R1 (337 to 340) can start now; R4 (350 to 352) waits for the owner's UI 2.0 headset walkthrough; CS-352 and the owner decisions in the audit's section 6 are the owner's.
+
+| ID | Track | Title | Depends | Status |
+|---|---|---|---|---|
+| CS-330 | CC | No material leak on pulled bodies (`Ui2Explore.KeepPulledInFront` copies `renderer.materials`) | — | todo |
+| CS-331 | CC | Intro gate resolves once: `IntroFlow` registers; no per-frame scene search in `IntroComplete` | — | todo |
+| CS-332 | CC | `U` and the 0.5 s dock poll stand down under UI 2.0; `Ui2Shell` Escape on the Input System | — | todo |
+| CS-333 | CC | Builder bugs: `?? AddComponent` in `ExperienceWiring`, `string.GetHashCode` seeds, asset-override folder list | — | todo |
+| CS-334 | CC | The rework cannot ship: `COSMIC_REWORK` define on the Cosmic asmdefs; builds refuse unless scene 0 is `main_scene` | — | todo |
+| CS-335 | CC | `Ui2SelfCheck` and `FreeLook` out of the player | — | todo |
+| CS-336 | CC | Hot paths stop allocating and searching (ForceSolver LINQ, ExecuteHierarchy, view pivot, HandLook rescan, XRInputRig subsystems, obsolete FindObjectOfType) | — | todo |
+| CS-337 | CC | Delete unused: DefaultPlayables, RotationPlayable, NuGet, tombstones, Build.cs, LabelTheme | — | todo |
+| CS-338 | CC/TERM | Delete scenes outside the build and what only they use | — | todo |
+| CS-339 | CC | Strip HoloLens-era code paths | — | todo |
+| CS-340 | TERM | Trim XR samples to what the rig uses, a folder per compile | — | todo |
+| CS-341 | CC | Assemblies: vendored, app, app editor, editor kit, tests, references one way | CS-337 | todo |
+| CS-342 | CC | `Registry<T>` replaces runtime scene scans | CS-341 | todo |
+| CS-343 | CC | `ForceSolver.StateChanged` and a `Selection` service; polls and `PlanetPOI` hooks removed | CS-342 | todo |
+| CS-344 | CC | One cached `Settings` store with `Changed` (port the rework's `Prefs`) | CS-341 | todo |
+| CS-345 | CC | One `Notices`, one `Arrangement.Restore`, one mic meter, one input action map | CS-343 | todo |
+| CS-346 | CC/TERM | Unity Test Framework: EditMode and PlayMode suites, run through the relay | CS-341 | todo |
+| CS-347 | CC | Split `ExperienceDirector` | CS-343 | todo |
+| CS-348 | CC | Split `Ui2Explore`; Listen through `AudioService` | CS-343 | todo |
+| CS-349 | CC | Split `DesktopMouseInput` | CS-345 | todo |
+| CS-350 | CC | Extract `DockAnchor` and `Choices`; move `beingPrefab` and the mute hook; `Ui2Kit` off `UiPrefabBuilder.Font` | U2-P10 walkthrough | todo |
+| CS-351 | CC/TERM | Delete the legacy UI, its prefabs and `AppCheck` | CS-350 | todo |
+| CS-352 | OWNER | Palm menu: restyle on `Ui2Kit` or retire | — | todo |
+| CS-353 | CC/TERM | Remove TouchScript behind a `ViewPivot` | CS-337 | todo |
+| CS-354 | CC/TERM | Input System only (closes CS-100) | CS-353 | todo |
+| CS-355 | CC | One `EditorKit`; builders move onto it | CS-341 | todo |
+| CS-356 | CC | Rebuild All, versioned postprocessors, menus regrouped | CS-355 | todo |
+| CS-357 | CC | One build entry point on Build Profiles | CS-355 | todo |
+| CS-358 | CC | Comments say why: history out, file by file | — | todo |
+| CS-359 | CC/OWNER | Segoe font out, LFS for binaries, zips out of docs, history decision | — | todo |
+
 ## UI Version 2.0 — Figma transfer
 
 Owner-approved one-to-one transfer. TERM: read [the handoff](design/v2/TERMINAL_HANDOFF.md) and [full tickets](design/v2/FIGMA_TICKETS.md). Actual image assets are committed under `docs/design/v2/screens/`; exact hashes/dimensions are in `references.json`. Figma work is built and awaiting owner review; status and node IDs are in design/v2/FIGMA_PROGRESS.md. Existing Unity changes are out of scope.
