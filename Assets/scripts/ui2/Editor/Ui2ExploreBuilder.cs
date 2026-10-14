@@ -232,10 +232,10 @@ namespace CosmicSimulation.EditorTools
             var infos = new List<Object>();
             foreach (var guid in AssetDatabase.FindAssets("t:BodyInfo", new[] { "Assets/data" }))
             {
-                var info = AssetDatabase.LoadAssetAtPath<BodyInfo>(AssetDatabase.GUIDToAssetPath(guid));
-                if (info != null)
+                var bodyInfo = AssetDatabase.LoadAssetAtPath<BodyInfo>(AssetDatabase.GUIDToAssetPath(guid));
+                if (bodyInfo != null)
                 {
-                    infos.Add(info);
+                    infos.Add(bodyInfo);
                 }
             }
 
