@@ -384,6 +384,7 @@ namespace GalaxyExplorer
             if (IsDesktop)
             {
                 gameObject.AddComponent<GalaxyExplorer.XR.DesktopMouseInput>();
+                gameObject.AddComponent<GalaxyExplorer.XR.DesktopShortcuts>();
             }
 
             if (MyAppPlatformManagerInitialized != null)

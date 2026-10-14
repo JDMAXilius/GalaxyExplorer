@@ -159,7 +159,7 @@ public class DesktopMenuManager : MonoBehaviour
     /// <summary>
     /// Tab's old job: fold the legacy button row away and back. Retired with the row.
     ///
-    /// <para>Kept as a method because <c>DesktopMouseInput</c> still calls it, but only when there is no
+    /// <para>Kept as a method because <c>DesktopShortcuts</c> still calls it, but only when there is no
     /// <c>DesktopDock</c> in the scene at all — and a scene with no dock should not answer Tab with a menu the
     /// rest of the app has stopped maintaining. Tab belongs to the dock (GDD 5.3).</para>
     /// </summary>
@@ -208,10 +208,7 @@ public class DesktopMenuManager : MonoBehaviour
 
     public void OnResetViewButtonPressed()
     {
-        if (DesktopMouseInput.Instance != null)
-        {
-            DesktopMouseInput.Instance.ResetView();
-        }
+        DesktopCameraRig.Instance?.ResetView();
     }
 
     private void ApplyMute()
