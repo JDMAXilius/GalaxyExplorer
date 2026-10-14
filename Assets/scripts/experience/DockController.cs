@@ -107,6 +107,7 @@ namespace CosmicSimulation
         private readonly List<DockTile> _tiles = new List<DockTile>();
         private UtilityWindow _utility;
         private bool _warnedNoUtility;
+        private bool _uWasDown;
         private Camera _camera;
         private bool _visible = true;
 
@@ -881,11 +882,14 @@ namespace CosmicSimulation
         // dock, and U is not spoken for anywhere else (GDD 5.3).
         private void WatchKeyboard()
         {
+            // "Down now, up last frame" counts too (CS-365): the one-frame edge can be skipped.
             var keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.uKey.wasPressedThisFrame)
+            var uDown = keyboard != null && keyboard.uKey.isPressed;
+            if (keyboard != null && (keyboard.uKey.wasPressedThisFrame || (uDown && !_uWasDown)))
             {
                 ToggleUtility();
             }
+            _uWasDown = uDown;
         }
 
         // ---------- choices
