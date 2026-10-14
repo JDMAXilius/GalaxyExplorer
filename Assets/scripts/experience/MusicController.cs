@@ -9,22 +9,8 @@ using UnityEngine.Audio;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// One looping music bed per room state, crossfaded when the room state changes (GDD 9: "one ambient track
-    /// per environment mode; crossfade 2 s").
-    ///
-    /// It keys off <see cref="EnvironmentController.ModeChanged"/> rather than
-    /// <see cref="ExperienceDirector.ExperienceChanged"/>, because the room state is what the spec names and it
-    /// changes in three places the experience does not: the dock's passthrough toggle, a destination overlay
-    /// opening inside the Milky Way map, and a failed switch handing the room back. The director sets the
-    /// environment at the top of its switch and starts narration at the bottom, so the fade is over — or nearly —
-    /// by the time anyone speaks.
-    ///
-    /// Two sources, not the <see cref="AudioService"/> pool: pooled sources are spatial, are returned when their
-    /// clip ends, refuse the same clip twice within 50 ms and expose no per-source ramp, all of which are right
-    /// for a UI blip and wrong for a bed that must loop for an hour and fade rather than stop. The mixer on
-    /// <c>AudioServiceProfile</c> is not used either — its groups exist to be muted and unmuted by the legacy
-    /// per-view snapshots, which would fight a per-source fade — but <see cref="output"/> is there for the day
-    /// there is a plain Music group to route into.
+    /// One looping bed per room state, crossfaded on <see cref="EnvironmentController.ModeChanged"/> (GDD 9), not
+    /// per experience: the room also changes on the passthrough toggle, overlays and a failed switch.
     /// </summary>
     [DefaultExecutionOrder(-40)]
     public class MusicController : MonoBehaviour
@@ -69,6 +55,8 @@ namespace CosmicSimulation
         [Tooltip("Seconds the duck takes, going down and coming back.")]
         private float duckSeconds = 0.35f;
 
+        // Our own sources, not the AudioService pool (spatial, released when a clip ends, no ramp), and not its
+        // mixer groups, which the legacy per-view snapshots mute and unmute and would fight the fade.
         private readonly AudioSource[] _sources = new AudioSource[2];
         private readonly float[] _level = new float[2];
         private readonly float[] _target = new float[2];
@@ -96,10 +84,8 @@ namespace CosmicSimulation
         {
             EnvironmentController.ModeChanged += HandleModeChanged;
 
-            // Nothing announces the room state on load: EnvironmentController raises ModeChanged only when the
-            // state actually changes, and it starts in Passthrough. So the opening bed is read straight off it.
-            // A null Instance here is legitimate — a scene with no EnvironmentController at all — and Passthrough
-            // is what that controller would have reported anyway.
+            // ModeChanged fires only on a change, so read the opening state. No controller (a legitimate scene)
+            // means Passthrough, which is what it would have started in.
             SetMode(EnvironmentController.Instance != null
                 ? EnvironmentController.Instance.EffectiveMode
                 : EnvironmentMode.Passthrough);
@@ -109,8 +95,7 @@ namespace CosmicSimulation
         {
             EnvironmentController.ModeChanged -= HandleModeChanged;
 
-            // Update is the only thing that moves the levels, so a disabled controller that left a bed running
-            // would leave it running at whatever volume it had reached, for the rest of the session.
+            // Only Update moves the levels, so a bed left running here would stay at its volume for the session.
             Release(0);
             Release(1);
         }
@@ -148,9 +133,8 @@ namespace CosmicSimulation
 
                 if (_level[i] <= 0f && _target[i] <= 0f)
                 {
-                    // All the way out: stop it rather than leave a silent source decoding. Clips over 20 s are
-                    // imported as Streaming on Android, and a stopped source is the only thing that gives the
-                    // stream back.
+                    // Stop rather than leave a silent source decoding: clips over 20 s stream on Android, and
+                    // only a stopped source gives the stream back.
                     Release(i);
                     continue;
                 }
@@ -161,11 +145,7 @@ namespace CosmicSimulation
 
         // ---------- the fade
 
-        /// <summary>
-        /// Crossfades to the bed for a room state. Asking for the state that is already playing does nothing —
-        /// the bed keeps its position, which is the whole point: the dock's passthrough toggle can be poked
-        /// repeatedly and the music never restarts.
-        /// </summary>
+        /// <summary>Crossfades to the bed for a room state. The bed already playing keeps its position, so toggling never restarts it.</summary>
         public void SetMode(EnvironmentMode mode, float fadeSeconds = -1f)
         {
             EnsureSources();
@@ -189,7 +169,6 @@ namespace CosmicSimulation
 
             var other = 1 - _active;
 
-            // Already on this bed: only its level can have changed.
             if (_sources[_active].clip == track.Clip)
             {
                 _target[_active] = track.Volume;
@@ -198,8 +177,7 @@ namespace CosmicSimulation
                 return;
             }
 
-            // The bed we are leaving is the one being asked for again — a toggle flipped back mid-fade. Swap the
-            // roles and let it climb from where it is; restarting it would jump the loop audibly.
+            // A toggle flipped back mid-fade: let the outgoing bed climb from where it is rather than restart it.
             if (_sources[other].clip == track.Clip)
             {
                 _active = other;
@@ -210,17 +188,8 @@ namespace CosmicSimulation
                 return;
             }
 
-            // A genuinely new bed takes whichever source is quieter *right now*, which is not the same as the one
-            // on its way out: for the first half of a crossfade the bed being left is still the louder of the two.
-            //
-            // Three beds inside one fade is not hypothetical. A scene missing from Build Settings makes the
-            // director set the room and then hand it back in the same frame, so FullBlack, Dimmed and Passthrough
-            // can all be asked for before Update has moved a single level. The incoming bed is then at zero and
-            // has not been heard at all, so cutting it is silent; cutting the other one is a hard stop at full
-            // volume, followed by two seconds of nothing underneath the failure notice.
-            //
-            // Two sources still cannot hold three beds, so something is always cut. This picks the cut nobody
-            // hears when there is one, and the smaller of the two when there is not.
+            // A third bed inside one fade (a failed switch hands the room back the same frame) must cut one; cut
+            // the quieter right now, which is not always the outgoing one, so the cut is the least audible.
             var quieter = _level[other] <= _level[_active] ? other : _active;
             var louder = 1 - quieter;
 
@@ -281,11 +250,7 @@ namespace CosmicSimulation
             source.volume = 0f;
         }
 
-        /// <summary>
-        /// Two sources, made on first use rather than only in Awake: a component added with <c>AddComponent</c>
-        /// and driven the same frame has not necessarily had Awake (CLAUDE.md). Two is the whole allocation for
-        /// the session — a switch never makes a third.
-        /// </summary>
+        /// <summary>Made on first use, not only in Awake: a component driven the frame it is added may not have had Awake.</summary>
         private void EnsureSources()
         {
             if (Instance == null)
@@ -321,11 +286,7 @@ namespace CosmicSimulation
 
         // ---------- narration
 
-        /// <summary>
-        /// True while <see cref="VOManager"/> has something to say. Polled rather than subscribed to, because it
-        /// raises no events, and this is two field reads. Nothing here touches the narration itself: the duck is
-        /// applied to our own sources only.
-        /// </summary>
+        /// <summary>True while <see cref="VOManager"/> is speaking; polled because it raises no events.</summary>
         private bool NarrationPlaying()
         {
             if (narrationDuck >= 1f)

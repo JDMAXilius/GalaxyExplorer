@@ -9,19 +9,8 @@ using UnityEngine.UI;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// A name floating over a place you can go: the tags scattered across the Milky Way, and the labels on the
-    /// bodies in the orbit model.
-    ///
-    /// A dark pill with the name in it, a hairline leader running back to the point it belongs to, and three
-    /// states — idle, hover (fifteen per cent larger and filled cyan, with the text going dark so it still
-    /// reads), and selected (a cyan outline, kept while that destination is open). Pinch it, or click it on
-    /// desktop, and it raises <see cref="OnPicked"/>. A label deliberately knows nothing about what it opens:
-    /// <c>DestinationTags</c> (gone since CS-170) subscribes to that event and decides whether the module is a scene to
-    /// switch to or an overlay to spawn.
-    ///
-    /// Hover and click arrive through <see cref="GEInputEvents.ExecuteHierarchy{T}"/> from a
-    /// <see cref="GEInteractable"/> on the collider, the same path every other interactive object uses, so a
-    /// hand ray, a fingertip and the desktop mouse all reach it without special cases.
+    /// A pickable name over a place you can go (Milky Way tags, orbit-model labels). It only raises
+    /// <see cref="OnPicked"/>: whoever listens decides whether that is a scene or an overlay.
     /// </summary>
     [DisallowMultipleComponent]
     public class LabelButton : MonoBehaviour, IGEPointerHandler, IGEFocusHandler
@@ -88,9 +77,8 @@ namespace CosmicSimulation
         {
             EnsureInit();
 
-            // The collider object below is what a fingertip selects, and the poke interactors refuse an
-            // interactable with no XRPokeFilter (CS-276). The prefab carries one; a label assembled any other
-            // way gets it here. Idempotent, so the prefab case costs a lookup.
+            // Poke interactors refuse an interactable with no XRPokeFilter (CS-276); the prefab has one, a label
+            // built any other way gets it here.
             var interactable = GetComponentInChildren<GEInteractable>(true);
             if (interactable != null)
             {
@@ -98,8 +86,7 @@ namespace CosmicSimulation
             }
         }
 
-        // A label is often bound and selected in the same frame it is spawned, and a caller has no way to know
-        // whether Awake has run yet, so every entry point goes through this rather than trusting it has.
+        // Labels are often bound and selected the frame they spawn, before Awake, so every entry point calls this.
         private void EnsureInit()
         {
             if (_ready)
@@ -113,7 +100,7 @@ namespace CosmicSimulation
 
             if (pill != null)
             {
-                // Read the authored colour so a designer can retint a label without touching this script.
+                // Authored colours win, so a label can be retinted in the prefab.
                 _idleFill = pill.color;
             }
 
@@ -138,7 +125,6 @@ namespace CosmicSimulation
             Apply();
         }
 
-        /// <summary>Marks this label as the open destination, or no longer so.</summary>
         public void SetSelected(bool selected)
         {
             if (IsSelected == selected)
@@ -153,20 +139,8 @@ namespace CosmicSimulation
         public void SetDestination(ExperienceModule module) => destination = module;
 
         /// <summary>
-        /// Points the leader line at a world position and sizes it to reach.
-        ///
-        /// For a label whose subject moves relative to it. The Milky Way tags do not use this: they hang a
-        /// fixed distance straight above a fixed point on the disc, so <c>DestinationTagBuilder</c> sizes the
-        /// hairline once, in canvas units, and the billboard about Y keeps it vertical for free.
-        ///
-        /// <para><b>Unused, and it does not work as written.</b> Nothing calls it. It is shaped for a 3D line —
-        /// a cylinder or a LineRenderer — whose length is its local Z: the leader every label actually ships
-        /// is a <see cref="Graphic"/>, a flat quad in the canvas's XY plane, so scaling Z does nothing to its
-        /// length and turning it to face the point lays it edge-on. This matters because a fanned-out card
-        /// layout — the treatment the inherited Milky Way markers used, each card set off to one side on a
-        /// long angled leader — is the natural next step for that map, and this is the method it would call.
-        /// Making it work means sizing the rect's height to the distance and rotating it about Z within the
-        /// canvas, not orienting a transform in the room.</para>
+        /// Unused, and broken for the shipped leader: it scales Z as for a 3D line, but the leader is a flat canvas
+        /// <see cref="Graphic"/>. To fix, size the rect's height to the distance and rotate it about Z in the canvas.
         /// </summary>
         public void PointLeaderAt(Vector3 worldPoint)
         {
@@ -209,8 +183,7 @@ namespace CosmicSimulation
 
             if (pill != null)
             {
-                // Graphic.color rather than a material instance: the canvas batches these, so a label costs
-                // nothing extra to tint, and several tags are on screen at once.
+                // Graphic.color, not a material instance, so the many tags on screen still batch.
                 pill.color = Color.Lerp(_idleFill, _accent, _hover);
             }
 
@@ -222,9 +195,7 @@ namespace CosmicSimulation
 
             if (secondLine != null)
             {
-                // The same journey as the name, from its own dimmer idle colour. Both have to travel or the
-                // subtitle stays pale grey on a cyan fill, which is the one combination in the palette that
-                // does not read.
+                // Must darken with the name: pale grey on the cyan fill does not read.
                 secondLine.color = Color.Lerp(_idleSecondText, _hoverText, _hover);
             }
 
@@ -245,8 +216,7 @@ namespace CosmicSimulation
 
         public void OnFocusEnter(GEFocusEventData eventData)
         {
-            // Guarded on the flag rather than fired blind: both hands can be pointing at the same tag, and the
-            // second one arriving is not a new hover.
+            // Both hands can point at the same tag; the second arriving is not a new hover.
             if (!_hovered)
             {
                 AudioService.Instance?.PlayClip(AudioId.Focus);
@@ -291,7 +261,7 @@ namespace CosmicSimulation
             _lastClick = Time.unscaledTime;
             eventData?.Use();
 
-            // A label is not a GEButton — it handles pointers itself — so it has to sound its own select.
+            // Not a GEButton, so it sounds its own select.
             AudioService.Instance?.PlayClip(AudioId.Select);
             onPicked.Invoke(this);
         }

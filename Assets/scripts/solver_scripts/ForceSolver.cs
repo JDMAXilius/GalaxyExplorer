@@ -15,9 +15,8 @@ public class UnityForceSolverEvent : UnityEvent<ForceSolver>
 }
 
 /// <summary>
-/// Lets the user pull an object to their hand: dwelling on it with a far ray (hand or controller) shows a tractor
-/// beam and then attracts it; selecting it attracts it immediately (desktop clicks pull it in front of the camera);
-/// once close it can be grabbed and manipulated, and it returns to its root when reset.
+/// Force-pull: a far ray dwelling on an object attracts it to the hand, a select attracts it at once, and a desktop
+/// click pulls it in front of the camera. Root, Dwell, Attraction, Free, Manipulation.
 /// </summary>
 public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEPointerHandler
 {
@@ -50,13 +49,13 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
     private PlanetPreviewController planetController;
     private UiPreviewTarget previewTarget;
 
-    // This should now be set through the GalaxyExplorerManager.ForcePullToCamFixedDistance property
+    // Overwritten in Awake from GalaxyExplorerManager.ForcePullToCamFixedDistance; set it there.
     private float _offsetOnPullToCamera = 1f;
 
     public State ForceState { get; private set; }
     public State PreviousForceState { get; private set; }
 
-    /// <summary>Raised on every state change of any body, after the state is set (CS-343).</summary>
+    /// <summary>Raised on every state change of any body, after the state is set.</summary>
     public static event System.Action<ForceSolver> StateChanged;
 
     private void SetState(State next)
@@ -99,7 +98,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
     [Tooltip("Width kept free beside a pulled body for its info card, in metres at text scale 1.")]
     public float CardRoomMetres = 0.2f;
 
-    // Every body in the scene, so a pull to the front of the camera can make room among the ones already out.
+    // Where a newer pull to the camera asked this body to step aside; null when it stays put.
     private Vector3? _aside;
 
     private bool _tapArmed;
@@ -137,8 +136,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
 
         ControllerTracker.AllTrackingLost += OnControllersLost;
 
-        // Every body answers a touch (CS-173). Added here rather than on each prefab so the planets, the Sun and
-        // every moon get it alike; a TouchNudge already on the prefab keeps its own tuning.
+        // Added here, not per prefab, so every body and moon answers a touch; one already on a prefab keeps its tuning.
         if (GetComponent<CosmicSimulation.TouchNudge>() == null)
         {
             gameObject.AddComponent<CosmicSimulation.TouchNudge>();
@@ -159,10 +157,8 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
 
     private void UpdateGoalsAttraction()
     {
-        // make sure has enough info
         if (ForcePullToHandController && _focusers.Count == 0)
         {
-            // lost all focusers
             StartFree();
             return;
         }
@@ -243,7 +239,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
         return false;
     }
 
-    // Loops rather than LINQ: these run every frame of a pull, and Select/Average allocate (CS-336).
+    // Loops rather than LINQ: these run every frame of a pull, and Select/Average allocate.
     private Vector3 AverageFocuserPosition()
     {
         var sum = Vector3.zero;
@@ -439,9 +435,8 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
     }
 
     /// <summary>
-    /// A body pulled to the front of the camera lands where the last one did. Whatever free body is in that spot
-    /// steps one body-and-card to the left and a little back, and makes room there in turn, so pulled bodies and their cards line
-    /// up instead of stacking. Bodies the player has carried elsewhere, and any being held, are left alone.
+    /// Pulls to the camera all land on one spot, so a free body there steps a body-and-card left and back, recursively,
+    /// and they line up instead of stacking. Held bodies and ones the player carried elsewhere stay put.
     /// </summary>
     private static void MakeRoom(Vector3 spot, Vector3 right, Vector3 forward, ForceSolver arriving)
     {
@@ -476,7 +471,6 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
         }
 
         ReleaseAllTractorBeams();
-//        SetActivePointersFocusLocked(false);
         _aside = null;
         SetState(State.Manipulation);
         SolverHandler.TransformTarget = ControllerTracker.transform;
@@ -513,8 +507,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
     {
         StartFree();
 
-        // Thrown rather than put down: the body goes home, as a tap sends it (CS-290). Bodies and moons only:
-        // the intro's orb is placed once and has no arrangement to go back to.
+        // Thrown rather than put down: the body goes home. Not the intro's orb, which has no arrangement to go back to.
         if (FlingSpeed > 0f && !(this is PlacementForceSolver) && _manipulationHandler.ReleaseSpeed >= FlingSpeed)
         {
             ReturnHome();
@@ -622,7 +615,6 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
         // A hand/controller that is already touching the object grabs it instead of force-pulling it.
         if (eventData.NewFocusedObject != null && eventData.NewFocusedObject.transform.IsChildOf(transform) && !eventData.IsNear)
         {
-            // if already listed then ignore
             if (!_focusers.Add(pointer))
             {
                 return;
@@ -682,7 +674,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
     {
         switch (ForceState)
         {
-            // manipulation handler cares about pointer up, if the event was not used, it means it didnt receive it.
+            // The handler is not a pointer handler, so its pointer up has to come through here.
             case State.Manipulation:
                 _manipulationHandler.OnPointerUp(eventData);
                 break;
@@ -698,9 +690,8 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
                 throw new ArgumentOutOfRangeException();
         }
 
-        // A tap on a body that was already out - pressed and let go quickly, without carrying it anywhere - is
-        // the player saying "put it back". Checked after the release above has ended the grab, so the body is
-        // Free again and the walk home starts from where it stands (CS-174).
+        // A quick, still tap on a body already out sends it home. Checked after the release above, so the body is
+        // Free again and walks home from where it stands.
         if (_tapArmed)
         {
             _tapArmed = false;
@@ -715,9 +706,8 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
     }
 
     /// <summary>
-    /// Sends the body back to its arrangement: through its <c>FreePlacementSolver</c>, which walks it home over
-    /// the layout's own time and lands it in Root, or straight to Root for a body without one. A moon's home is
-    /// its orbit anchor under its planet, so a moon goes back to whichever place its planet is in now.
+    /// Sends the body home: walked there by its <c>FreePlacementSolver</c> if it has one, else straight to Root. A
+    /// moon's home is its orbit anchor, so it follows wherever its planet is now.
     /// </summary>
     public void ReturnHome()
     {
@@ -792,9 +782,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
 
             case State.Attraction:
             case State.Free:
-                // Remember where and when this press began: if it ends quickly and the body has not moved, it
-                // was a tap and the body goes home (see OnPointerUp). Only from Free - a body still flying to
-                // the hand is not "out" yet.
+                // Arm the tap-to-return test in OnPointerUp. Only from Free: a body still flying to the hand is not out yet.
                 if (ForceState == State.Free)
                 {
                     _tapArmed = true;
@@ -815,12 +803,8 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
                 break;
 
             case State.Manipulation:
-                // A second hand pinching a body that is already held. In the original app MRTK's
-                // ManipulationHandler was itself a pointer handler, sat on the collider and was enabled for
-                // exactly this state, so the second pinch went straight to it and never came through here -
-                // which is why this case was empty. Our handler is deliberately not a pointer handler (see
-                // ManipulationPointerRouter), so the solver is the only way in and has to pass it on, or two
-                // hands can never scale a body. The handler ignores a pointer it already holds.
+                // A second hand on a held body. The handler is not a pointer handler (see ManipulationPointerRouter),
+                // so without this two hands could never scale a body. It ignores a pointer it already holds.
                 if (eventData.Pointer != null)
                 {
                     _manipulationHandler.OnPointerDown(eventData);
@@ -836,8 +820,8 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
     }
 
     /// <summary>
-    /// Limits a two-handed scale of this body when its manipulation handler has no scale constraint of its own
-    /// (the row bodies carry a <c>ScaleLimits</c>; the orbit-model <c>poi_*</c> bodies do not).
+    /// Scale limit when the handler has no constraint of its own (row bodies carry <c>ScaleLimits</c>; the
+    /// orbit-model <c>poi_*</c> bodies do not).
     /// </summary>
     protected virtual Vector3 ClampHeldScale(Vector3 desiredLocalScale) => desiredLocalScale;
 
