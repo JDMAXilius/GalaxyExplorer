@@ -27,6 +27,10 @@ namespace GalaxyExplorer.XR
         private const float ReachMetres = 0.25f;
         private const float InViewDegrees = 45f;
 
+        // docs/copy/ui.md, Messages: narration_paused, narration_resumed.
+        private const string NarrationPaused = "Narration paused";
+        private const string NarrationResumed = "Narration resumed";
+
         private float _heldFor;
         private bool _latched;
 
@@ -107,6 +111,8 @@ namespace GalaxyExplorer.XR
             return Vector3.Dot(toPalm, head.forward) >= ReachMetres && Vector3.Angle(toPalm, head.forward) <= InViewDegrees;
         }
 
+        // Two things narrate: the narrator (VOManager) and, under UI 2.0, the card's Listen. If either is held the
+        // gesture resumes both; otherwise it holds whichever is sounding. The notice only reports what happened.
         private static void Toggle()
         {
             var narration = GalaxyExplorerManager.Instance != null ? GalaxyExplorerManager.Instance.VoManager : null;
@@ -115,25 +121,41 @@ namespace GalaxyExplorer.XR
                 narration = FindAnyObjectByType<VOManager>();
             }
 
-            if (narration == null)
+            var card = CosmicSimulation.UI2.Ui2Explore.Instance;
+            var held = (narration != null && narration.IsPaused) || (card != null && card.ListenHeld);
+
+            if (held)
             {
+                if (narration != null && narration.IsPaused)
+                {
+                    narration.Resume();
+                }
+
+                if (card != null)
+                {
+                    card.HoldListen(false);
+                }
+
+                SwitchNotice.Say(NarrationResumed);
                 return;
             }
 
-            if (narration.IsPaused)
+            var paused = false;
+            if (narration != null && narration.IsPlaying)
             {
-                narration.Resume();
-                SwitchNotice.Say("Narration resumed");
-            }
-            else if (narration.IsPlaying)
-            {
-                // Pause only holds a clip that is sounding; in the gap between two clips there is nothing to hold,
-                // so say nothing rather than claim a pause that did not happen.
+                // Pause only holds a clip that is sounding; in the gap between two clips there is nothing to hold.
                 narration.Pause();
-                if (narration.IsPaused)
-                {
-                    SwitchNotice.Say("Narration paused");
-                }
+                paused = narration.IsPaused;
+            }
+
+            if (card != null && card.HoldListen(true))
+            {
+                paused = true;
+            }
+
+            if (paused)
+            {
+                SwitchNotice.Say(NarrationPaused);
             }
         }
     }

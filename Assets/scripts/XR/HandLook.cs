@@ -95,6 +95,11 @@ namespace GalaxyExplorer.XR
             set
             {
                 occludeContent = value;
+                if (!isActiveAndEnabled)
+                {
+                    return;
+                }
+
                 var controller = EnvironmentController.Instance;
                 Apply(controller != null ? controller.EffectiveMode : EnvironmentMode.Passthrough);
             }
@@ -145,7 +150,10 @@ namespace GalaxyExplorer.XR
                 _occluder = Resources.Load<Material>(OccluderPath);
             }
 
-            _occlude = occludeContent && mode != EnvironmentMode.FullBlack && _occluder != null;
+            // Where the room really shows: not in full VR, and not on a build that has no passthrough at all (the
+            // Windows player runs the headset in VR whatever the mode says), where the hole would read as black.
+            _occlude = occludeContent && mode != EnvironmentMode.FullBlack &&
+                       ExperienceModeManager.PassthroughAvailable && _occluder != null;
             Scan();
             _leftShown = _rightShown = -1f;
             Show(_left, Strength(_leftPinch), ref _leftShown);

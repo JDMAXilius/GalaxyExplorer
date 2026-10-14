@@ -137,9 +137,9 @@ namespace GalaxyExplorer
 
         public void Resume()
         {
+            // The queue behind the paused clip is kept: it plays on once the resumed clip ends.
             if (IsPaused && pausedClip != null)
             {
-                clipQueue.Clear();
                 nextClip = pausedClip;
                 nextClipDelay = 0f;
                 resumeAt = pausedAt;
@@ -153,7 +153,9 @@ namespace GalaxyExplorer
         private float pausedAt;
         private float resumeAt;
 
-        public bool ShouldAudioBlockProgress => blockRemaining > 0f;
+        // A paused clip neither holds progress nor runs its hold down: the player chose to stop listening, and a gate
+        // that stayed shut until they resumed could leave them stuck. Resume brings back what was left of it.
+        public bool ShouldAudioBlockProgress => blockRemaining > 0f && !IsPaused;
         public bool IsPlaying => clipQueue.Count > 0 || nextClip != null || audioSource != null && audioSource.isPlaying;
         public AudioClip CurrentClip => IsPlaying && audioSource != null ? audioSource.clip : null;
 
@@ -164,7 +166,7 @@ namespace GalaxyExplorer
 
         private void Update()
         {
-            if (blockRemaining > 0f)
+            if (blockRemaining > 0f && !IsPaused)
             {
                 blockRemaining -= Time.deltaTime;
             }
@@ -242,6 +244,7 @@ namespace GalaxyExplorer
                 }
 
                 IsPaused = false;
+                pausedClip = null;
 
                 clipQueue.Enqueue(new QueuedAudioClip(clip, delay, allowReplay, audioBlocksProgress));
 

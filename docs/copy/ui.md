@@ -102,6 +102,8 @@ still carries six Microsoft links, not the two above — see
 | loading | Loading |
 | narration_off | Narration off |
 | narration_on | Narration on |
+| narration_paused | Narration paused |
+| narration_resumed | Narration resumed |
 | layout_restored | Everything back in place |
 | place_not_ready | {0} is not ready yet. It arrives in a later update. |
 | place_failed | {0} did not open. Your room is back - pick another place from the menu. |

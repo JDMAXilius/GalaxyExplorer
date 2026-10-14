@@ -1269,6 +1269,37 @@ namespace CosmicSimulation.UI2
         /// <summary>True while Listen is sounding the selected thing.</summary>
         public bool Listening => _speaker != null && _speaker.isPlaying && _speaker.clip == _sound;
 
+        /// <summary>True while Listen is held on the selected thing (paused, ready to carry on).</summary>
+        public bool ListenHeld => _speaker != null && _held && _speaker.clip == _sound;
+
+        /// <summary>
+        /// Holds or releases Listen from outside the card (the open-palm pause, CS-289). True when it changed
+        /// something; the card's own button and its icon follow on the next frame.
+        /// </summary>
+        public bool HoldListen(bool hold)
+        {
+            if (_speaker == null || _speaker.clip != _sound)
+            {
+                return false;
+            }
+
+            if (hold && _speaker.isPlaying)
+            {
+                _speaker.Pause();
+                _held = true;
+                return true;
+            }
+
+            if (!hold && _held)
+            {
+                _speaker.UnPause();
+                _held = false;
+                return true;
+            }
+
+            return false;
+        }
+
         private void Update()
         {
             var target = new Vector2(-_first * tilePitch, 0f);
