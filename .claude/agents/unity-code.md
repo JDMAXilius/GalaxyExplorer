@@ -24,7 +24,7 @@ If a ticket names a new component that duplicates something above, say so and ex
 - **`Shader.Find` is not safe for built-ins.** A built-in shader no material references can come back null in a player build. Ship your own shader and register it under Always Included Shaders.
 - **`Awake` may not have run.** A component added with `AddComponent` and used the same frame, or bound the frame it spawns, has not necessarily had `Awake`. Initialise lazily from every public entry point. This has already bitten twice.
 - **Nothing snaps back.** Many objects are out at once and none of them move on their own. `PostManipulationResetter` is the old behaviour and is wrong for anything the player arranges — use `FreePlacementSolver`.
-- **Desktop parity.** Every hand interaction needs a mouse or keyboard equivalent in `DesktopMouseInput`.
+- **Desktop parity.** Every hand interaction needs a mouse or keyboard equivalent in `DesktopMouseInput` (mouse) or `DesktopShortcuts` (keys).
 - `Object.GetInstanceID()` does not compile in 6000.6.
 
 ## Comments
