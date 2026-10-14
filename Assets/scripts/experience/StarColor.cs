@@ -6,37 +6,10 @@ using UnityEngine;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// The colour of a star's light, computed from its published effective temperature and nothing else.
-    ///
-    /// <para><b>Why this is code and not a table of colours.</b> D-010 allows modelled appearance and forbids
-    /// presenting it as observation. A star's continuum colour is the one part of a planetary system's
-    /// appearance that is not modelled at all: it follows from a single measured quantity, <c>st_teff</c>, by
-    /// a standard and citable calculation. Computing it means a new system needs no colour decisions from
-    /// anyone — the researcher supplies a temperature and the app derives the rest — and it means the numbers
-    /// in <c>docs/research/exoplanet_systems.md</c> section 4.2 and the numbers on the headset are produced
-    /// the same way instead of being transcribed.</para>
-    ///
-    /// <para><b>The calculation.</b> A Planck spectrum at the star's effective temperature, integrated over
-    /// 360-830 nm against the analytic multi-lobe piecewise-Gaussian fits to the CIE 1931 colour matching
-    /// functions of Wyman, Sloan and Shirley 2013 (<c>https://jcgt.org/published/0002/02/01/</c>), converted
-    /// to linear sRGB with the standard D65 matrix, clipped to gamut, and normalised so the brightest channel
-    /// saturates. Normalising is what makes this a <i>colour</i> rather than a brightness: a star's brightness
-    /// at a planet is a separate published quantity (insolation), and conflating the two is how red dwarfs end
-    /// up drawn as dim little coals.</para>
-    ///
-    /// <para><b>Check values</b>, so a change here is caught rather than admired. From the research note's
-    /// independent run of the same method: the Sun (5772 K) is <c>#FFF1EA</c>, TRAPPIST-1 (2566 K) is
-    /// <c>#FFA94F</c>, Beta Pictoris (8039 K) is <c>#E2E7FF</c>, and the Sun's 400-700 nm fraction is 0.367
-    /// against TRAPPIST-1's 0.039. <c>SystemProfileBuilder</c>'s self-check menu item prints these. As written
-    /// this reproduces <b>all eleven</b> hex values in that table exactly, and its visible fractions to within
-    /// 0.002 — the residual is the integration grid, not the method.</para>
-    ///
-    /// <para><b>The one thing this is not.</b> These are the colours of the light as it arrives, against a D65
-    /// white reference — right for a star seen against black sky, and right for the tint of the light falling
-    /// on a body. They are <i>not</i> what the ground would look like to somebody standing there, because a
-    /// human eye adapts to its only light source and would see a white rock as white. The familiar "everything
-    /// is red" painting of an M-dwarf world is a colorimetric statement dressed up as a perceptual one. This
-    /// app uses the unadapted convention, because everything it draws is seen from outside.</para>
+    /// A star's light colour from its effective temperature (<c>st_teff</c>): Planck spectrum over 360-830 nm
+    /// against the Wyman, Sloan and Shirley 2013 CIE 1931 fits (jcgt.org/published/0002/02/01), D65 sRGB,
+    /// gamut-clipped, brightest channel at 1. Unadapted (seen from outside), so brightness stays separate.
+    /// Check values (docs/research/exoplanet_systems.md 4.2): Sun 5772 K #FFF1EA, TRAPPIST-1 2566 K #FFA94F.
     /// </summary>
     public static class StarColor
     {
@@ -47,31 +20,22 @@ namespace CosmicSimulation
         public const float VisibleLowNm = 400f;
         public const float VisibleHighNm = 700f;
 
-        // Physical constants, SI. Only their combination matters, but writing them out keeps the formula
-        // readable against any textbook.
+        // Physical constants, SI (CODATA 2018 exact values).
         private const double PlanckH = 6.62607015e-34;    // J s
         private const double LightC = 2.99792458e8;       // m / s
         private const double BoltzmannK = 1.380649e-23;   // J / K
         private const double StefanBoltzmann = 5.670374419e-8; // W m^-2 K^-4
 
-        // CIE integration range and step. 1 nm over the full matching-function support: this runs at build
-        // time, a few hundred times at most, so there is no reason to economise and lose a digit.
+        // CIE matching-function support, 1 nm steps: this runs at build time only, so precision beats speed.
         private const int CieLowNm = 360;
         private const int CieHighNm = 830;
 
-        /// <summary>
-        /// Below this the fits and the Planck integral are still arithmetic but the answer stops meaning
-        /// anything — no star this cool exists, and a zero or negative temperature would divide by zero.
-        /// </summary>
+        /// <summary>No star is this cool; the floor also keeps a zero or negative temperature from dividing by zero.</summary>
         private const float MinimumTemperatureK = 500f;
 
         /// <summary>
-        /// The star's continuum colour, gamma-encoded sRGB, brightest channel at 1.
-        ///
-        /// <para>Gamma-encoded is deliberate and it is the project's colour space, not a choice made here:
-        /// this project runs in Gamma colour space (<c>ProjectSettings m_ActiveColorSpace: 0</c>), so a
-        /// material colour is handed to the shader as authored. Write this straight into a material; do not
-        /// linearise it first.</para>
+        /// Continuum colour, gamma-encoded sRGB, brightest channel at 1. The project is in Gamma colour space,
+        /// so write this straight into a material; do not linearise it.
         /// </summary>
         public static Color Srgb(float temperatureK)
         {
@@ -79,10 +43,7 @@ namespace CosmicSimulation
             return new Color(Encode(linear.r), Encode(linear.g), Encode(linear.b), 1f);
         }
 
-        /// <summary>
-        /// The same colour in linear sRGB, brightest channel at 1. For arithmetic — blending two stars of a
-        /// binary, or scaling by a brightness — which has to happen in linear light to mean anything.
-        /// </summary>
+        /// <summary>The same colour in linear sRGB, for blending or scaling, which must happen in linear light.</summary>
         public static Color LinearRgb(float temperatureK)
         {
             var t = Mathf.Max(MinimumTemperatureK, temperatureK);
@@ -96,15 +57,13 @@ namespace CosmicSimulation
                 z += spectral * CieZ(nm);
             }
 
-            // The step is constant and the result is normalised, so dropping the 1 nm width changes nothing.
+            // XYZ to linear sRGB, standard D65 matrix; the constant 1 nm step cancels in the normalisation.
             var r = 3.2404542 * x - 1.5371385 * y - 0.4985314 * z;
             var g = -0.9692660 * x + 1.8760108 * y + 0.0415560 * z;
             var b = 0.0556434 * x - 0.2040259 * y + 1.0572252 * z;
 
-            // Out-of-gamut channels come back negative for the coolest and hottest stars. Clipping to zero is
-            // the standard gamut clip and is why TRAPPIST-1 reads as a saturated amber rather than as a
-            // meaningless colour; the alternative, desaturating toward white, would make every cool star look
-            // more sunlike than it is.
+            // Clip negative (out-of-gamut) channels to zero; desaturating toward white instead would make
+            // cool stars look more sunlike than they are.
             r = Math.Max(0d, r);
             g = Math.Max(0d, g);
             b = Math.Max(0d, b);
@@ -119,23 +78,14 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// The fraction of the star's total output that falls between 400 and 700 nm.
-        ///
-        /// <para>This is the single most commonly dropped fact about cool stars, and the reason it is here
-        /// rather than in a document: TRAPPIST-1 puts 3.9 per cent of its output in the visible band against
-        /// the Sun's 36.7 per cent, so a planet receiving four times Earth's total insolation can still be in
-        /// permanent deep twilight. Any brightness the app derives from insolation has to be multiplied by
-        /// this or it will draw red-dwarf worlds far too bright.</para>
-        ///
-        /// <para>Computed as the band integral over the analytic total, sigma T^4 / pi, so the denominator
-        /// carries no numerical error at all.</para>
+        /// Fraction of total output in 400-700 nm (Sun 0.367, TRAPPIST-1 0.039); multiply any insolation-derived
+        /// brightness by this. Denominator is the analytic total, sigma T^4 / pi.
         /// </summary>
         public static float VisibleBandFraction(float temperatureK)
         {
             var t = Mathf.Max(MinimumTemperatureK, temperatureK);
 
-            // 1 nm steps, midpoint rule, in metres of wavelength: the integrand is smooth over 300 nm and
-            // this agrees with a finer grid to more digits than anyone will read.
+            // 1 nm midpoint rule, width in metres to match the per-metre radiance.
             var band = 0d;
             for (var nm = (int)VisibleLowNm; nm < (int)VisibleHighNm; nm++)
             {
@@ -147,11 +97,8 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// How bright this star's light is in the visible band, relative to the Sun's at Earth, given the
-        /// insolation the archive publishes for the planet. Earth is 1.
-        ///
-        /// <para><c>insolationEarth</c> is a <i>bolometric</i> ratio — all wavelengths — which is why it
-        /// cannot be used as a brightness on its own.</para>
+        /// Visible-band brightness relative to the Sun's at Earth (Earth = 1). <c>insolationEarth</c> is
+        /// bolometric, which is why it cannot be used as a brightness on its own.
         /// </summary>
         public static float VisibleBrightnessEarth(float temperatureK, float insolationEarth)
         {
@@ -180,17 +127,13 @@ namespace CosmicSimulation
 
         // ---------- Planck
 
-        /// <summary>
-        /// Planck's law in wavelength form, per metre of wavelength, for a wavelength given in nanometres:
-        /// 2hc^2 / lambda^5 / (exp(hc / lambda k T) - 1).
-        /// </summary>
+        /// <summary>Planck's law per metre of wavelength, wavelength in nm: 2hc^2 / lambda^5 / (exp(hc / lambda k T) - 1).</summary>
         private static double SpectralRadiance(double nm, double temperatureK)
         {
             var lambda = nm * 1e-9;
             var exponent = PlanckH * LightC / (lambda * BoltzmannK * temperatureK);
 
-            // exp overflows to infinity for short wavelengths at low temperatures, which would give NaN
-            // rather than the zero the physics asks for.
+            // exp overflows for short wavelengths at low temperatures, giving NaN where physics says zero.
             if (exponent > 700d)
             {
                 return 0d;
@@ -206,10 +149,7 @@ namespace CosmicSimulation
         }
 
         // ---------- CIE 1931, analytic
-        //
-        // Wyman, Sloan and Shirley 2013, the multi-lobe piecewise-Gaussian fit. Each lobe is a Gaussian with
-        // a different width either side of its peak, which is what lets three or fewer lobes track curves
-        // that a symmetric Gaussian misses by a long way in the blue.
+        // Wyman, Sloan and Shirley 2013 multi-lobe fit: each lobe is a Gaussian with different widths either side.
 
         private static double CieX(double nm)
         {

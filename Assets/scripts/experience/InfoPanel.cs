@@ -10,19 +10,8 @@ using UnityEngine.UI;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// The text that floats beside whatever the player is looking at.
-    ///
-    /// Three shapes, one component. A **body** panel carries a title, a subtitle in small caps, a paragraph and
-    /// four stats in a two-by-two grid. A **scene** panel drops the stats and takes two or three paragraphs,
-    /// the last of which is an instruction in the secondary colour. A **moon** panel is narrower still: a name,
-    /// one line of numbers, one sentence.
-    ///
-    /// There is no plate behind any of them. Over passthrough a plate would punch a hole in the room, so the
-    /// text is white with a thin dark outline instead, which stays readable against a bright wall and a black
-    /// sky alike (GDD 8.3). Several panels are open at once, so nothing here is a singleton.
-    ///
-    /// This is <c>PlanetInfoCard</c> rebuilt to read <see cref="BodyInfo"/> and <see cref="ExperienceModule"/>
-    /// instead of fields typed into a prefab, and to render mass with a real superscript.
+    /// Body, scene or moon text panel beside its target, filled from <see cref="BodyInfo"/> or
+    /// <see cref="ExperienceModule"/>. No backing plate over passthrough (GDD 8.3); many open at once, so no singleton.
     /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
     public class InfoPanel : MonoBehaviour
@@ -92,7 +81,6 @@ namespace CosmicSimulation
         private Camera _camera;
         private bool _shown;
 
-        // Last value LateUpdate sounded on, so the open/close clip fires on the change and not every frame.
         private bool _sounded;
         private float _side = 1f;
         private List<(RectTransform rect, float y, float height)> _rows;
@@ -103,21 +91,17 @@ namespace CosmicSimulation
         public Variant PanelVariant => variant;
         public Transform Target => target;
 
-        // ---------- text size (GDD 11, contract row F-03)
-        //
-        // The setting scales the whole panel, not the fonts. Every row here is laid out in canvas units against
-        // a fixed width — the paragraph is given seven lines at 161 mm and the stat grid starts directly under
-        // it — so raising fontSize alone would reflow the prose into the stats. Scaling the panel keeps the
-        // design exactly as it was signed off and simply makes it bigger, which is what a player asking for
-        // larger text at arm's length actually wants. The panel keeps its 30 mm gap from the body either way.
+        // ---------- text size (GDD 11, F-03)
+        // Scales the whole panel, not the fonts: rows are laid out at a fixed width, so a bigger font would reflow
+        // the prose into the stats.
         private const string TextScalePrefsKey = "CosmicSimulation.PanelTextScale";
 
         private static float textScale = 1f;
         private static bool textScaleLoaded;
 
         /// <summary>
-        /// How much larger than designed every panel draws. GDD 11 offers x1.0, x1.25 and x1.5; the value is
-        /// read lazily so it is right before any panel's Awake has run, and remembered between sessions.
+        /// Panel scale over the design (GDD 11: x1.0, x1.25, x1.5), persisted. Read lazily so it is right before any
+        /// panel's Awake has run.
         /// </summary>
         public static float TextScale
         {
@@ -163,9 +147,7 @@ namespace CosmicSimulation
 
             if (divider == null)
             {
-                // info_panel_prefab was built before this field existed, so on that prefab the hairline is a
-                // child nothing points at - and a scene panel, which has no stats, would draw a rule across
-                // empty space. Found by name once; harmless the day UiPrefabBuilder assigns the field instead.
+                // Prefabs built before this field existed leave it unassigned; find the hairline by name.
                 var found = transform.Find("divider");
                 divider = found != null ? found.GetComponent<Graphic>() : null;
             }
@@ -190,8 +172,7 @@ namespace CosmicSimulation
 
             if (variant == Variant.Moon)
             {
-                // A moon gets the same grid as a planet (owner's direction, 27 Sep: like the Moon's card). Who it
-                // orbits heads the subtitle, and whatever the grid has no cell for follows it there.
+                // Stats the grid has no cell for overflow into the subtitle, after "MOON OF".
                 var stats = new System.Collections.Generic.List<Stat>();
                 foreach (var stat in info.Stats)
                 {
@@ -251,12 +232,8 @@ namespace CosmicSimulation
             Layout();
         }
 
-        /// <summary>
-        /// Stacks the rows from their measured heights. Each row keeps the place the prefab designed for it and is
-        /// only pushed down when the row above has grown into it - a two-line title, a long subtitle - so a card
-        /// whose copy fits looks exactly as signed off, and one whose copy does not never overlaps. A scene panel's
-        /// prose is as long as the copy deck makes it, so its instruction follows the prose directly.
-        /// </summary>
+        // Each row keeps its designed position unless the row above has grown into it, so copy that fits looks
+        // as designed and copy that does not never overlaps. A scene panel's instruction follows its prose.
         private void Layout()
         {
             if (_rows == null)
@@ -385,7 +362,6 @@ namespace CosmicSimulation
                 return _shown;
             }
 
-            // A body's panel is open exactly while the body is out of its layout.
             switch (body.ForceState)
             {
                 case ForceSolver.State.Attraction:
@@ -401,17 +377,15 @@ namespace CosmicSimulation
 
         private void LateUpdate()
         {
-            // Edge-triggered, not hooked to Show()/Hide(). Those are idempotent setters that callers drive
-            // every frame, and real visibility is this recomputed predicate, so hooking them would sound on
-            // every spawn and stay silent on a body-driven open.
+            // Edge-triggered here, not in Show()/Hide(): callers drive those every frame, and body-driven opens
+            // never call them.
             var want = WantsToShow();
             if (want != _sounded)
             {
                 _sounded = want;
                 AudioService.Instance?.PlayClip(want ? AudioId.CardSelect : AudioId.CardDeselect);
 
-                // A planet narrates from its own solver when it is pulled; a moon's solver is the plain one, so
-                // its card speaks for it (owner's direction, 27 Sep: every moon says something when chosen).
+                // Planets narrate from their own solver; a moon's plain solver does not, so its card does.
                 if (want && _narration != null && GalaxyExplorerManager.IsInitialized && VOManager.AutoStart)
                 {
                     GalaxyExplorerManager.Instance.VoManager.PlayClip(_narration, allowReplay: true, replaceQueue: true);
@@ -455,8 +429,7 @@ namespace CosmicSimulation
             var centre = target.position;
             var radius = TargetRadius();
 
-            // Put the panel on whichever side is closer to the middle of the view, so it does not sit off the
-            // edge of the display, and keep it there until the target has clearly crossed over.
+            // Side nearer the view centre, with hysteresis so it does not flip at the midline.
             var right = camera.right;
             var offsetFromCentre = Vector3.Dot(centre - camera.position, right);
             var wantedSide = offsetFromCentre > SideSwitchDistance ? -1f
@@ -472,10 +445,8 @@ namespace CosmicSimulation
 
             transform.rotation = Quaternion.LookRotation(transform.position - camera.position, camera.up);
 
-            // One physical size whatever the target is scaled to: the panel is not parented to the body, but a
-            // prefab may still sit under a scaled rig. TextScale is folded in here rather than tracked with an
-            // event, because this runs every frame the panel is visible anyway and a panel that is not visible
-            // does not need to have been told.
+            // Constant physical size even under a scaled parent; TextScale is read here because this runs every
+            // visible frame anyway.
             var parentScale = transform.parent != null ? transform.parent.lossyScale.x : 1f;
             var scale = metresPerUnit * TextScale / Mathf.Max(0.0001f, parentScale);
             transform.localScale = new Vector3(scale, scale, scale);
