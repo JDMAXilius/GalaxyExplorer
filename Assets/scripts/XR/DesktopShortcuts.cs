@@ -33,6 +33,9 @@ namespace GalaxyExplorer.XR
         private DesktopMenuManager _desktopMenu;
         private float _menuLookupCooldown;
 
+        // Each key's state last frame, indexed by Key: see Pressed.
+        private readonly bool[] _wasDown = new bool[256];
+
         // A transition turns the mouse off; the keys that change the scene stand down with it.
         private static bool InputEnabled => DesktopMouseInput.Instance == null || DesktopMouseInput.Instance.InputEnabled;
 
@@ -48,68 +51,77 @@ namespace GalaxyExplorer.XR
 
             // GDD 5.3 order. Not gated on GlobalMenuManager availability: that flag belongs to the retired intro flow.
 
-            if (keyboard.rKey.wasPressedThisFrame && InputEnabled)
+            if (Pressed(keyboard, Key.R) && InputEnabled)
             {
                 CosmicSimulation.Arrangement.Restore();
             }
 
-            if (keyboard.homeKey.wasPressedThisFrame)
+            if (Pressed(keyboard, Key.Home))
             {
                 Recenter();
             }
 
-            if (keyboard.cKey.wasPressedThisFrame && InputEnabled)
+            if (Pressed(keyboard, Key.C) && InputEnabled)
             {
                 CosmicSimulation.DockController.Instance?.ToggleBeing();
             }
 
             // P previews passthrough on desktop by toggling the dimming and backdrop. L toggles body and moon labels.
-            if (keyboard.lKey.wasPressedThisFrame)
+            if (Pressed(keyboard, Key.L))
             {
                 CosmicSimulation.MoonLabel.ShowLabels = !CosmicSimulation.MoonLabel.ShowLabels;
             }
 
-            if (keyboard.pKey.wasPressedThisFrame && ExperienceModeManager.PassthroughAvailable)
+            if (Pressed(keyboard, Key.P) && ExperienceModeManager.PassthroughAvailable)
             {
                 CosmicSimulation.EnvironmentController.Instance?.TogglePassthrough();
             }
 
             // Tab belongs to DesktopDock; only without one does it fold the legacy row, so the two never fight.
-            if (keyboard.tabKey.wasPressedThisFrame && CosmicSimulation.DesktopDock.Instance == null &&
+            if (Pressed(keyboard, Key.Tab) && CosmicSimulation.DesktopDock.Instance == null &&
                 _desktopMenu != null)
             {
                 _desktopMenu.OnToggleDesktopButtonVisibility();
             }
 
             // The controls overlay still lives on the legacy desktop HUD.
-            if ((keyboard.hKey.wasPressedThisFrame || keyboard.f1Key.wasPressedThisFrame) && _desktopMenu != null)
+            if ((Pressed(keyboard, Key.H) | Pressed(keyboard, Key.F1)) && _desktopMenu != null)
             {
                 _desktopMenu.OnHelpButtonPressed();
             }
 
-            if (keyboard.escapeKey.wasPressedThisFrame)
+            if (Pressed(keyboard, Key.Escape))
             {
                 CloseTopmost();
             }
 
             for (var i = 0; i < ExperienceKeys.Length; i++)
             {
-                if (keyboard[ExperienceKeys[i]].wasPressedThisFrame)
+                if (Pressed(keyboard, ExperienceKeys[i]))
                 {
                     SwitchExperience(i);
                 }
             }
 
-            if (InputEnabled)
+            // Every key is read every frame, enabled or not, so its last-frame state never goes stale.
+            for (var slot = 0; slot < BodyKeys.Length; slot++)
             {
-                for (var slot = 0; slot < BodyKeys.Length; slot++)
+                if (Pressed(keyboard, BodyKeys[slot]) && InputEnabled)
                 {
-                    if (keyboard[BodyKeys[slot]].wasPressedThisFrame)
-                    {
-                        ToggleBody(slot);
-                    }
+                    ToggleBody(slot);
                 }
             }
+        }
+
+        // A press is also "down now, up last frame": wasPressedThisFrame is a one-frame edge that a hitch or queued
+        // input can skip (CS-365).
+        private bool Pressed(Keyboard keyboard, Key key)
+        {
+            var control = keyboard[key];
+            var down = control.isPressed;
+            var edge = control.wasPressedThisFrame || (down && !_wasDown[(int)key]);
+            _wasDown[(int)key] = down;
+            return edge;
         }
 
         // The legacy HUD's scene loads and unloads under us, so a cached reference goes stale; retry on a timer
