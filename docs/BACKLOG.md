@@ -1996,7 +1996,7 @@ The audit, the rules and the plan behind these rows: [CODE_AUDIT.md](CODE_AUDIT.
 | CS-341 | CC | Assemblies: vendored, app, app editor, editor kit, tests, references one way | CS-337 | todo |
 | CS-342 | CC | `Registry<T>` replaces runtime scene scans | CS-341 | todo |
 | CS-343 | CC | `ForceSolver.StateChanged` and a `Selection` service; polls and `PlanetPOI` hooks removed | CS-342 | todo |
-| CS-344 | CC | One cached `Settings` store with `Changed` (port the rework's `Prefs`) | CS-341 | todo |
+| CS-344 | CC | One cached `Settings` store with `Changed` (port the rework's `Prefs`) | CS-341 | done in part (14 Oct, cloud, not run): scoped to what UI 2.0 needs, since text size, narration and passthrough are already cached by their owners (`InfoPanel`, `VOManager`, `EnvironmentController`). New `CosmicSimulation.Mute` owns the mute flag (cached, `Changed` event, applied at boot); `UtilityWindow` and `DesktopMenuManager` delegate to it and UI 2.0 calls it directly, so the cutover no longer depends on `UtilityWindow`. `Mic.Device`, `Mic.Devices` (refreshed at most once a second) and `Mic.Permitted` (one JNI call a second, refreshed on a permission answer) are cached in the being's own assembly, and every `Microphone.devices` read in the app goes through them. `UiTheme.Enabled` is cached. A wider `Settings` service is not built: after the cutover there is nothing left for it to unify |
 | CS-345 | CC | One `Notices`, one `Arrangement.Restore`, one mic meter, one input action map | CS-343 | todo |
 | CS-346 | CC/TERM | Unity Test Framework: EditMode and PlayMode suites, run through the relay | CS-341 | todo |
 | CS-347 | CC | Split `ExperienceDirector` | CS-343 | todo |
@@ -2012,7 +2012,7 @@ The audit, the rules and the plan behind these rows: [CODE_AUDIT.md](CODE_AUDIT.
 | CS-357 | CC | One build entry point on Build Profiles | CS-355 | todo |
 | CS-358 | CC | Comments say why: history out, file by file | — | todo |
 | CS-359 | CC/OWNER | Segoe font out, LFS for binaries, zips out of docs, history decision | — | todo |
-| CS-360 | TERM | Compile after R0 and R1 (129 files deleted, 17 renamed calls, two new editor files); App Check / `Ui2SelfCheck`; pull and return a planet several times in Solar System Planets and check in the Profiler's memory view that material count does not grow (CS-330); a build with the rework's scene enabled first is refused (CS-334); `U` does nothing under UI 2.0 (CS-332); confirm which non-build scenes are still used (CS-338) | CS-330 to CS-339 | todo |
+| CS-360 | TERM | Compile after R0, R1 and CS-344 (129 files deleted, 17 renamed calls, two new editor files); App Check / `Ui2SelfCheck`; pull and return a planet several times in Solar System Planets and check in the Profiler's memory view that material count does not grow (CS-330); a build with the rework's scene enabled first is refused (CS-334); `U` does nothing under UI 2.0 (CS-332); Settings > Sound mutes and the choice survives a restart, and the microphone page lists devices and its meter moves (CS-344); confirm which non-build scenes are still used (CS-338) | CS-330 to CS-339 | todo |
 
 ## UI Version 2.0 — Figma transfer
 

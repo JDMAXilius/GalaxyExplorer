@@ -81,7 +81,7 @@ namespace CosmicSimulation.UI2
             aboutBack.Clicked += () => Go(Page.Main);
             aboutDone.Clicked += () => Go(Page.Main);
 
-            sound.Clicked += () => UtilityWindow.SetMuted(!UtilityWindow.Muted);
+            sound.Clicked += () => Mute.On = !Mute.On;
             narration.Clicked += () => VOManager.NarrationEnabled = !VOManager.NarrationEnabled;
             for (var i = 0; i < sizes.Length; i++)
             {
@@ -214,7 +214,7 @@ namespace CosmicSimulation.UI2
 
             if (_page == Page.Main)
             {
-                soundSwitch.On = !UtilityWindow.Muted;
+                soundSwitch.On = !Mute.On;
                 narrationSwitch.On = VOManager.NarrationEnabled;
                 for (var i = 0; i < sizes.Length; i++)
                 {
@@ -222,7 +222,7 @@ namespace CosmicSimulation.UI2
                 }
 
                 var device = Cosmic.Companion.Mic.Resolve();
-                microphoneValue.text = Microphone.devices.Length == 0 ? "None found" : device ?? "Default";
+                microphoneValue.text = Cosmic.Companion.Mic.Devices.Length == 0 ? "None found" : device ?? "Default";
             }
             else if (_page == Page.Devices)
             {
@@ -234,7 +234,7 @@ namespace CosmicSimulation.UI2
 
         private void PaintDevices()
         {
-            var found = Microphone.devices;
+            var found = Cosmic.Companion.Mic.Devices;
             var chosen = Cosmic.Companion.Mic.Resolve();
             _shown = new string[Mathf.Min(deviceRows.Length, found.Length + 1)];
             for (var i = 0; i < deviceRows.Length; i++)
@@ -275,7 +275,7 @@ namespace CosmicSimulation.UI2
         private void Meter()
         {
             var value = 0f;
-            if (Cosmic.Companion.Mic.InUse || !Cosmic.Companion.Mic.Permitted || Microphone.devices.Length == 0)
+            if (Cosmic.Companion.Mic.InUse || !Cosmic.Companion.Mic.Permitted || Cosmic.Companion.Mic.Devices.Length == 0)
             {
                 StopMeter();
             }

@@ -16,10 +16,37 @@ namespace Cosmic.Companion
 
         public static bool InUse { get; private set; }
 
+        static string device;
+        static string[] devices = Array.Empty<string>();
+        static float devicesAt = float.NegativeInfinity;
+        static bool permitted;
+        static float permittedAt = float.NegativeInfinity;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            device = null;
+            devicesAt = permittedAt = float.NegativeInfinity;
+        }
+
         public static string Device
         {
-            get => PlayerPrefs.GetString(DeviceKey, "");
-            set { PlayerPrefs.SetString(DeviceKey, value ?? ""); PlayerPrefs.Save(); }
+            get => device ??= PlayerPrefs.GetString(DeviceKey, "");
+            set { device = value ?? ""; PlayerPrefs.SetString(DeviceKey, device); PlayerPrefs.Save(); }
+        }
+
+        public static string[] Devices
+        {
+            get
+            {
+                if (Time.unscaledTime - devicesAt >= 1f)
+                {
+                    devicesAt = Time.unscaledTime;
+                    devices = Microphone.devices;
+                }
+
+                return devices;
+            }
         }
 
         public bool Armed => clip != null;
@@ -40,7 +67,13 @@ namespace Cosmic.Companion
             get
             {
 #if UNITY_ANDROID && !UNITY_EDITOR
-                return UnityEngine.Android.Permission.HasUserAuthorizedPermission(UnityEngine.Android.Permission.Microphone);
+                if (Time.unscaledTime - permittedAt >= 1f)
+                {
+                    permittedAt = Time.unscaledTime;
+                    permitted = UnityEngine.Android.Permission.HasUserAuthorizedPermission(UnityEngine.Android.Permission.Microphone);
+                }
+
+                return permitted;
 #else
                 return true;
 #endif
@@ -58,6 +91,7 @@ namespace Cosmic.Companion
             callbacks.PermissionRequestDismissed += _ => answered = true;
             UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Microphone, callbacks);
             for (var waited = 0f; !answered && waited < 30f; waited += Time.unscaledDeltaTime) yield return null;
+            permittedAt = devicesAt = float.NegativeInfinity;
 #else
             yield break;
 #endif
@@ -67,7 +101,7 @@ namespace Cosmic.Companion
         {
             var wanted = Device;
             if (string.IsNullOrEmpty(wanted)) return null;
-            foreach (var name in Microphone.devices)
+            foreach (var name in Devices)
                 if (name == wanted) return name;
             return null;
         }
@@ -76,7 +110,7 @@ namespace Cosmic.Companion
         public bool Arm()
         {
             if (clip != null) return true;
-            if (!Permitted || Microphone.devices.Length == 0) { Label = Permitted ? "no microphone" : "permission denied"; return false; }
+            if (!Permitted || Devices.Length == 0) { Label = Permitted ? "no microphone" : "permission denied"; return false; }
             device = Resolve();
             Label = device ?? "default";
             if (Microphone.IsRecording(device)) Microphone.End(device);

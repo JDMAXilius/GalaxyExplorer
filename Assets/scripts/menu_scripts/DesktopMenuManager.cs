@@ -21,7 +21,6 @@ using UnityEngine.UI;
 /// </summary>
 public class DesktopMenuManager : MonoBehaviour
 {
-    private const string MutedPrefsKey = "GalaxyExplorer.Muted";
 
     [SerializeField]
     private GameObject _menuParent;
@@ -86,12 +85,8 @@ public class DesktopMenuManager : MonoBehaviour
 
     public static bool IsMuted
     {
-        get => PlayerPrefs.GetInt(MutedPrefsKey, 0) == 1;
-        private set
-        {
-            PlayerPrefs.SetInt(MutedPrefsKey, value ? 1 : 0);
-            PlayerPrefs.Save();
-        }
+        get => CosmicSimulation.Mute.On;
+        private set => CosmicSimulation.Mute.On = value;
     }
 
     private void Start()

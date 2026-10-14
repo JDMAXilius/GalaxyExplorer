@@ -31,12 +31,18 @@ namespace CosmicSimulation.UI2
         /// <summary>Whether the UI 2.0 shell replaces the legacy dock. On unless turned off (Cosmic Simulation > UI 2 > Turn Off).</summary>
         public static bool Enabled
         {
-            get => PlayerPrefs.GetInt(FlagKey, 1) == 1;
+            get => _enabled ??= PlayerPrefs.GetInt(FlagKey, 1) == 1;
             set
             {
+                _enabled = value;
                 PlayerPrefs.SetInt(FlagKey, value ? 1 : 0);
                 PlayerPrefs.Save();
             }
         }
+
+        private static bool? _enabled;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics() => _enabled = null;
     }
 }

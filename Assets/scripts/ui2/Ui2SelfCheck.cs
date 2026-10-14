@@ -169,11 +169,11 @@ namespace CosmicSimulation.UI2
             // Settings
             yield return Press("Navigation/Settings/button", 1f);
             Expect("gear opens Settings", Active("Panels/Settings/main"));
-            var muted = UtilityWindow.Muted;
+            var muted = Mute.On;
             yield return Press("Panels/Settings/main/sound", 1f);
-            Expect("Sound toggles", UtilityWindow.Muted != muted);
+            Expect("Sound toggles", Mute.On != muted);
             yield return Press("Panels/Settings/main/sound", 1f);
-            Expect("and toggles back", UtilityWindow.Muted == muted);
+            Expect("and toggles back", Mute.On == muted);
             var narration = VOManager.NarrationEnabled;
             yield return Press("Panels/Settings/main/narration", 1f);
             Expect("Narration toggles", VOManager.NarrationEnabled != narration);

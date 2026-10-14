@@ -42,7 +42,6 @@ namespace CosmicSimulation
     {
         // The key DesktopMenuManager stores mute under. It is a private const over there and that file belongs
         // to the legacy HUD, so the literal is repeated rather than shared — if one moves, both must.
-        private const string MutedPrefsKey = "GalaxyExplorer.Muted";
 
         // docs/ui/spec.md §1. Repeated here the way DockPopup repeats them: these are the runtime copies of the
         // tokens the builder bakes into the prefab.
@@ -149,38 +148,20 @@ namespace CosmicSimulation
 
         public bool IsOpen => gameObject.activeSelf;
 
-        /// <summary>Whether the whole app is silenced. One stored answer, shared with the legacy desktop HUD.</summary>
-        public static bool Muted => PlayerPrefs.GetInt(MutedPrefsKey, 0) == 1;
+        /// <summary>Whether the whole app is silenced (owned by <see cref="CosmicSimulation.Mute"/>).</summary>
+        public static bool Muted => Mute.On;
 
-        // Nothing else applies the stored mute in a headset: DesktopMenuManager does it in its own Start and
-        // that component only exists in the desktop scenes, so without this a player who muted on the Quest
-        // came back to sound. AfterSceneLoad rather than a component's Awake because this window is not
-        // instantiated until somebody opens it.
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void ApplyStoredMute()
-        {
-            AudioListener.volume = Muted ? 0f : 1f;
-        }
-
-        /// <summary>Silences everything, or brings it back, and remembers which.</summary>
+        /// <summary>Silences everything, or brings it back; the legacy HUD's icon follows through its own button.</summary>
         public static void SetMuted(bool muted)
         {
-            // The legacy HUD owns the preference and its own icon where it exists; going through it keeps the
-            // two from disagreeing. Where it does not exist — the headset — the same key is written directly.
             var menu = FindAnyObjectByType<DesktopMenuManager>();
-            if (menu != null)
+            if (menu != null && DesktopMenuManager.IsMuted != muted)
             {
-                if (DesktopMenuManager.IsMuted != muted)
-                {
-                    menu.OnMuteButtonPressed();
-                }
-
+                menu.OnMuteButtonPressed();
                 return;
             }
 
-            PlayerPrefs.SetInt(MutedPrefsKey, muted ? 1 : 0);
-            PlayerPrefs.Save();
-            AudioListener.volume = muted ? 0f : 1f;
+            Mute.On = muted;
         }
 
         private void Awake() => EnsureInit();

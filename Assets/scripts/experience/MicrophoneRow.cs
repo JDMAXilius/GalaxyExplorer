@@ -63,7 +63,7 @@ namespace CosmicSimulation
         /// <summary>Moves the choice one step through "System default" and the plugged-in devices.</summary>
         public void Step(int direction)
         {
-            var devices = Microphone.devices;
+            var devices = Cosmic.Companion.Mic.Devices;
             var index = -1;
             for (var i = 0; i < devices.Length; i++)
             {
@@ -157,7 +157,7 @@ namespace CosmicSimulation
                 return;
             }
 
-            if (Microphone.devices.Length == 0)
+            if (Cosmic.Companion.Mic.Devices.Length == 0)
             {
                 Say("No microphone found.");
                 return;

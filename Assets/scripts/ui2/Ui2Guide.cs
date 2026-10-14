@@ -154,7 +154,7 @@ namespace CosmicSimulation.UI2
 
         private static void Summon()
         {
-            if (Being.Host.Current == null && Companion.Mic.Permitted && Microphone.devices.Length > 0)
+            if (Being.Host.Current == null && Companion.Mic.Permitted && Cosmic.Companion.Mic.Devices.Length > 0)
             {
                 DockController.Instance?.ToggleBeing();
             }
@@ -167,7 +167,7 @@ namespace CosmicSimulation.UI2
                 return Status.PermissionNeeded;
             }
 
-            if (Microphone.devices.Length == 0)
+            if (Cosmic.Companion.Mic.Devices.Length == 0)
             {
                 return Status.NoMicrophone;
             }
