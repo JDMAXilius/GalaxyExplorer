@@ -213,6 +213,26 @@ namespace CosmicSimulation
         private float _introWatchdogStarted;
         private bool _saidIntroOverran;
 
+        /// <summary>
+        /// True once the intro has really ended (its last stage was reached, or the editor quick start skipped
+        /// it), and also when there is no intro in the scene at all. Unlike <see cref="IntroRunning"/> this does
+        /// not give up after a timeout: it is what says the player is past onboarding, for UI that must not
+        /// appear on top of it.
+        /// </summary>
+        public bool IntroComplete
+        {
+            get
+            {
+                if (_introFinished)
+                {
+                    return true;
+                }
+
+                BindIntro();
+                return _introFlow == null && Time.timeSinceLevelLoad > 3f;
+            }
+        }
+
         // The place a player asked for while the intro was still running. Opened once the intro lets go.
         private ExperienceModule _queuedFromIntro;
 
@@ -315,6 +335,21 @@ namespace CosmicSimulation
             {
                 waited += Time.unscaledDeltaTime;
                 yield return null;
+            }
+
+            // The intro always ends on the galaxy, but asks for it a frame or more after its signal, and until
+            // then the view it last asked for is the solar system it passed through. Adopting at that moment
+            // opened the Solar System while the Milky Way came up on screen. So, unless the editor quick start
+            // opened a view of its own, wait for the start module's view to be the one asked for.
+            if (_introFlow != null && !_introFlow.QuickStarted && startModule != null &&
+                !string.IsNullOrEmpty(startModule.SceneName))
+            {
+                waited = 0f;
+                while (ViewLoader.CurrentView != startModule.SceneName && waited < loadTimeoutSeconds)
+                {
+                    waited += Time.unscaledDeltaTime;
+                    yield return null;
+                }
             }
 
             // The player may already have picked a place in the seconds this waited. Adopting what the intro left

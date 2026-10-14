@@ -252,7 +252,10 @@ namespace CosmicSimulation.UI2
             // "Finished" is held for a moment so the shell does not flash up between two intro stages.
             var director = ExperienceDirector.Instance;
             var manager = GalaxyExplorerManager.IsInitialized ? GalaxyExplorerManager.Instance : null;
-            var intro = director == null || director.IntroRunning || director.Current == null ||
+            // The intro's real end, not IntroRunning, which gives up after a timeout while the player may
+            // still be standing at the intro's OK button.
+            var intro = director == null || !director.IntroComplete || director.Current == null ||
+                        director.IsSwitching ||
                         (manager != null && manager.ViewLoaderScript != null && manager.ViewLoaderScript.IsIntro() &&
                          !string.IsNullOrEmpty(director.Current.SceneName));
             _settled = intro ? 0f : _settled + Time.unscaledDeltaTime;

@@ -31,6 +31,9 @@ namespace GalaxyExplorer
         private const string WelcomeSnapShot = "01_Welcome";
         private const float TransitionTime = 3.8f;
 
+        /// <summary>True when the editor quick start skipped the intro and opened a view directly.</summary>
+        public bool QuickStarted { get; private set; }
+
         public delegate void IntroFinishedCallback();
         public IntroFinishedCallback OnIntroFinished;
 
@@ -218,6 +221,7 @@ namespace GalaxyExplorer
                 return false;
             }
             UnityEditor.SessionState.EraseString(QuickStartViewKey);
+            QuickStarted = true;
             AnchorAhead();
 
             // The solar system and the galactic center are reached from the galaxy, so Back should lead there.
