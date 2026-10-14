@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CosmicSimulation
 {
-    /// <summary>The two transforms under the desktop camera that Home resets (CS-353); replaces TouchScript's camera controller.</summary>
+    /// <summary>The two transforms under the desktop camera that Home puts back to their first pose.</summary>
     public class ViewPivot : MonoBehaviour
     {
         [SerializeField] private Transform pivot = null;

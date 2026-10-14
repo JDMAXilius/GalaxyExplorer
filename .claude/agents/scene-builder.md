@@ -22,7 +22,7 @@ You do not have the live editor — `unity-editor` runs your builder and reports
 
 ## Rules
 
-- **Reuse the existing scenes and prefabs.** Three of the seven places already exist. Derive from them; do not create a new scene where an existing one can be extended, and never touch `Assets/scenes/_backup_original/`.
+- **Reuse the existing scenes and prefabs.** Three of the seven places already exist. Derive from them; do not create a new scene where an existing one can be extended.
 - Small bodies keep a 6 cm invisible grab sphere so they can still be pinched.
 - Everything faces the player; nothing bounces; transitions are 0.35–0.8 s cubic ease-out.
 - Desktop parity: the number keys, `R`, and mouse drag must reach the same content.

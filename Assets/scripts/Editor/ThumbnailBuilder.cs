@@ -150,8 +150,7 @@ namespace CosmicSimulation.EditorTools
             var guids = AssetDatabase.FindAssets($"{sceneName} t:Scene");
             var scenePath = guids
                 .Select(AssetDatabase.GUIDToAssetPath)
-                .FirstOrDefault(p => Path.GetFileNameWithoutExtension(p) == sceneName &&
-                                     !p.Contains("_backup_original"));
+                .FirstOrDefault(p => Path.GetFileNameWithoutExtension(p) == sceneName);
 
             if (scenePath == null)
             {

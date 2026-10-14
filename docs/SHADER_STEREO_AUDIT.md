@@ -64,7 +64,7 @@ So the risk runs the other way from what this document used to claim, and this i
 |---|---|---|
 | `Assets/TextMesh Pro/Shaders/` | 18 | Vendored package. The SDF variants we actually use already carry the macros; upgrading TMP is the correct fix path, not editing them. |
 | `Assets/Samples/XR Interaction Toolkit/3.6.0/` | 5 | Imported XRI samples. Not referenced by any shipping scene except through sample materials. |
-| `Assets/external/TouchScript/` | 7 | Vendored TouchScript, examples and debug shaders. Legacy touchscreen support; none reachable from a build scene. |
+| `Assets/external/TouchScript/` | 7 | Deleted 14 Oct 2026 (CS-353, D-015). |
 | `Assets/third_party/mrtk_assets/.../MixedRealityStandard.shader` | 1 | Vendored MRTK. Already has the macros. |
 
 That leaves **47 project shaders in `Assets/shaders/`** — the audit population.
@@ -228,7 +228,7 @@ comment should be corrected.
 | `Samples/XR Interaction Toolkit/.../Grid.shader`, `UI-NoZTest.shader`, `TunnelingVignette.shader` | ✓ | sample content |
 | `Samples/XR Interaction Toolkit/.../DepthOnly.shader` | ✗ | reachable via a sample material; harmless (depth-only, `ColorMask 0`) |
 | `Samples/XR Interaction Toolkit/.../BiRP_Fresnel.shader` | ✗ | **surface shader**; reachable via a sample material |
-| `external/TouchScript/**` (7) | ✗ | legacy touchscreen; none reachable from a build scene |
+| `external/TouchScript/**` (7) | ✗ | deleted (CS-353) |
 | `third_party/mrtk_assets/.../MixedRealityStandard.shader` | ✓ | reachable |
 
 Two XRI sample shaders (`DepthOnly`, `BiRP_Fresnel`) *are* reachable and *are* missing the macros. They

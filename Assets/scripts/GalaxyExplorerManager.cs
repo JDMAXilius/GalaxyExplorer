@@ -3,7 +3,6 @@
 
 using MRS.FlowManager;
 using System.Collections;
-using TouchScript.Examples.CameraControl;
 using UnityEngine;
 using UnityEngine.XR;
 
@@ -60,11 +59,6 @@ namespace GalaxyExplorer
         }
 
         public CardPOIManager CardPoiManager
-        {
-            get; set;
-        }
-
-        public CameraController CameraControllerHandler
         {
             get; set;
         }
@@ -406,12 +400,9 @@ namespace GalaxyExplorer
             GGVMenuManager = FindFirstObjectByType<GGVMenuManager>();
             ViewLoaderScript = FindFirstObjectByType<ViewLoader>();
             CardPoiManager = FindFirstObjectByType<CardPOIManager>();
-            CameraControllerHandler = FindFirstObjectByType<CameraController>();
-            // CosmicSimulation.ViewPivot replaces TouchScript's CameraController; the fallback goes with TouchScript (CS-353).
             var view = FindFirstObjectByType<CosmicSimulation.ViewPivot>();
-            // Per field, so a half-wired ViewPivot still resets the view while the old controller is in the scene.
-            ViewPivotTransform = view != null && view.Pivot != null ? view.Pivot : CameraControllerHandler != null ? CameraControllerHandler.Pivot : null;
-            ViewEntityTransform = view != null && view.EntityToMove != null ? view.EntityToMove : CameraControllerHandler != null ? CameraControllerHandler.EntityToMove : null;
+            ViewPivotTransform = view != null ? view.Pivot : null;
+            ViewEntityTransform = view != null ? view.EntityToMove : null;
             if (view != null && (view.Pivot == null || view.EntityToMove == null))
             {
                 Debug.LogError("ViewPivot: Pivot and EntityToMove must both be assigned (CS-353).", view);
