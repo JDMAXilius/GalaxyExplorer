@@ -176,6 +176,7 @@ namespace CosmicSimulation.EditorTools
 
             var texts = new[] { "Why does Saturn have rings?", "Take me to Orion." };
             var questions = new UiButton[texts.Length];
+            var questionLabels = new TMP_Text[texts.Length];
             for (var i = 0; i < texts.Length; i++)
             {
                 var q = Ui2Builder.Box("question_" + i, panel, 27f, 304f + 84f * i, 390f, 62f);
@@ -186,10 +187,22 @@ namespace CosmicSimulation.EditorTools
                 var wash = Ui2Builder.Fill(Ui2Builder.Rect("wash", q, 390f, 62f), "ui_rounded_r64_fill", 22f,
                                            Color.clear);
                 Ui2Kit.Glyph(q, "v2_icon_chat", 21f, 17f, 28f, UiTheme.Accent);
-                Ui2Kit.Label(q, "label", 65f, 18f, 310f, 27f, texts[i], 20f, UiTheme.Ink);
+                questionLabels[i] = Ui2Kit.Label(q, "label", 65f, 18f, 310f, 27f, texts[i], 20f, UiTheme.Ink);
                 q.gameObject.AddComponent<CanvasGroup>();
                 questions[i] = Ui2Kit.Press(q, 390f, 62f, wash, null, null, null, true);
             }
+
+            // While the guide answers, the two suggestions give way to what it says (same place, same plate).
+            var transcript = Ui2Builder.Box("transcript", panel, 27f, 304f, 390f, 146f);
+            Ui2Builder.Fill(Ui2Builder.Rect("fill", transcript, 390f, 146f), "ui_rounded_r64_fill", 22f,
+                            Ui2Builder.WithAlpha(UiTheme.Deep, 0.6f));
+            Ui2Builder.Fill(Ui2Builder.Rect("edge", transcript, 390f, 146f), "ui_rounded_r64_ring", 22f,
+                            new Color(1f, 1f, 1f, 0.3f));
+            Ui2Kit.Glyph(transcript, "v2_icon_chat", 21f, 17f, 28f, UiTheme.Accent);
+            var transcriptText = Ui2Kit.Label(transcript, "text", 65f, 16f, 305f, 116f, string.Empty, 18f, UiTheme.Ink,
+                                              FontWeight.Regular, true);
+            transcriptText.overflowMode = TextOverflowModes.Ellipsis;
+            transcript.gameObject.SetActive(false);
 
             var primary = Ui2Kit.Primary(panel, "primary", 27f, 543f, 230f, 60f, "Start listening", "v2_icon_mic",
                                          "Enable microphone");
@@ -203,7 +216,9 @@ namespace CosmicSimulation.EditorTools
             so.FindProperty("helper").objectReferenceValue = helper;
             so.FindProperty("wave").objectReferenceValue = wave;
             Ui2Kit.Objects(so.FindProperty("questions"), questions);
-            Ui2Kit.Strings(so.FindProperty("questionTexts"), texts);
+            Ui2Kit.Objects(so.FindProperty("questionLabels"), questionLabels);
+            so.FindProperty("transcript").objectReferenceValue = transcript.gameObject;
+            so.FindProperty("transcriptText").objectReferenceValue = transcriptText;
             so.FindProperty("primary").objectReferenceValue = primary;
             so.FindProperty("secondary").objectReferenceValue = secondary;
             so.FindProperty("micIcon").objectReferenceValue = Ui2Builder.Icon("v2_icon_mic");

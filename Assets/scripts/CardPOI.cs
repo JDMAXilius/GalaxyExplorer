@@ -272,6 +272,12 @@ namespace GalaxyExplorer
             }
             HideCard();
 
+            // UI 2.0 shows a preview card first; the card's own Enter does the travelling.
+            if (PlanetPOI.Preview != null && PlanetPOI.Preview(module))
+            {
+                return;
+            }
+
             // Switch, and not DockController.Choose: Choose needs a dock tile and opens the layout pop-up beside
             // the dock, which is not where the player is looking when they have just pinched a nebula on the far
             // side of the galaxy. Switch itself answers a refusal - intro running, a switch in flight, a module
