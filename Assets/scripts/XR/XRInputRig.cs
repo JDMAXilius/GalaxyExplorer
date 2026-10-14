@@ -133,11 +133,16 @@ namespace GalaxyExplorer.XR
 
         private void UpdateHands()
         {
-            // Looked for at most once a second: on the desktop there is never one, and asking every frame allocates.
-            if ((_handSubsystem == null || !_handSubsystem.running) && Time.unscaledTime >= _nextSubsystemLook)
+            // A stopped subsystem is let go at once, so its hands untrack this frame; a new one is looked for at most
+            // once a second, because on the desktop there is never one and asking every frame allocates.
+            if (_handSubsystem != null && !_handSubsystem.running)
+            {
+                _handSubsystem = null;
+            }
+
+            if (_handSubsystem == null && Time.unscaledTime >= _nextSubsystemLook)
             {
                 _nextSubsystemLook = Time.unscaledTime + 1f;
-                _handSubsystem = null;
                 SubsystemManager.GetSubsystems(_subsystems);
                 foreach (var subsystem in _subsystems)
                 {

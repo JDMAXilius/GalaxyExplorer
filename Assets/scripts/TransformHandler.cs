@@ -18,7 +18,7 @@ namespace GalaxyExplorer
 
         void Start()
         {
-            TransformSource[] alltrasformSources = FindObjectsByType<TransformSource>(FindObjectsSortMode.InstanceID);
+            TransformSource[] alltrasformSources = FindObjectsByType<TransformSource>(FindObjectsSortMode.None);
             foreach (var currentSource in alltrasformSources)
             {
                 if (currentSource.GetTransformSourceId == TransformSourceId)

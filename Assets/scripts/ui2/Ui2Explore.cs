@@ -403,7 +403,9 @@ namespace CosmicSimulation.UI2
         }
 
         // Puts every pulled body's draw order back: the original materials onto the renderers, the copies made by
-        // KeepPulledInFront destroyed, and the queue restored on copies other scripts own (the Sun's, say).
+        // KeepPulledInFront destroyed, and the queue restored on copies the renderer already owned (made by an earlier
+        // renderer.material call). A material another script assigned with Instantiate, like the Sun's, still counts
+        // as shared and is copied while the body is out, so that script's live updates pause until it goes home.
         private void LowerPulled()
         {
             foreach (var (renderer, before, now) in _copied)

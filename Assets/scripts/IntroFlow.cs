@@ -111,7 +111,7 @@ namespace GalaxyExplorer
             {
                 position += Vector3.down * .5f;
             }
-            FindAnyObjectByType<WorldAnchorHandler>().CreateWorldAnchor(position);
+            FindFirstObjectByType<WorldAnchorHandler>().CreateWorldAnchor(position);
             _anchored = true;
         }
 
@@ -125,7 +125,7 @@ namespace GalaxyExplorer
         public void OnPlacementFinished(Vector3 position)
         {
             // Anchor the content in place
-            FindAnyObjectByType<WorldAnchorHandler>().CreateWorldAnchor(position);
+            FindFirstObjectByType<WorldAnchorHandler>().CreateWorldAnchor(position);
             _anchored = true;
 
             // if its not Desktop platform then skip the next stage and go directly to solar system stage
@@ -181,7 +181,7 @@ namespace GalaxyExplorer
         private IEnumerator Initialization()
         {
             // ViewLoader of CoreSystems scene needs to be loaded and then continue
-            yield return new WaitUntil(() => FindAnyObjectByType<ViewLoader>() != null);
+            yield return new WaitUntil(() => FindFirstObjectByType<ViewLoader>() != null);
 
             // need to wait otherwise the viewloader subscription to callback becomes null in holoLens
             //yield return new WaitForSeconds(1);
@@ -189,7 +189,7 @@ namespace GalaxyExplorer
             
             audioService = AudioService.Instance;
 
-            PlacementControl placement = FindAnyObjectByType<PlacementControl>();
+            PlacementControl placement = FindFirstObjectByType<PlacementControl>();
             if (placement)
             {
                 placement.OnContentPlaced += OnPlacementFinished;

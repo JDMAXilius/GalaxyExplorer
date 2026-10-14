@@ -27,7 +27,7 @@ public class Singleton<T> : MonoBehaviour where T : Singleton<T>
             if (!IsInitialized && searchForInstance)
             {
                 searchForInstance = false;
-                T[] objects = FindObjectsByType<T>(FindObjectsSortMode.InstanceID);
+                T[] objects = FindObjectsByType<T>(FindObjectsSortMode.None);
                 if (objects.Length == 1)
                 {
                     instance = objects[0];

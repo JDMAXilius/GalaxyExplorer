@@ -481,15 +481,15 @@ namespace CosmicSimulation
             return null;
         }
 
+        private GameObject _pivotSource;
+        private CentreOnViewer _pivotCentred;
+        private GalaxyField _pivotField;
+
         /// <summary>
         /// The point the desktop view turns about (CS-172): the open content's own centre - for a place that
         /// centred itself on the player, that is the player, and a drag becomes a look-around - or the content
         /// root for a scene-backed place. False before anything is open.
         /// </summary>
-        private GameObject _pivotSource;
-        private CentreOnViewer _pivotCentred;
-        private GalaxyField _pivotField;
-
         public bool TryGetViewPivot(out Vector3 pivot)
         {
             if (_prefabContent != null)

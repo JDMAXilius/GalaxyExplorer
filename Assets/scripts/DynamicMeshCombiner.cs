@@ -151,7 +151,7 @@ namespace GalaxyExplorer
 
             var mesh = filter.sharedMesh;
 
-            hook = FindObjectsByType<DynamicMeshCombinerHook>(FindObjectsSortMode.InstanceID).FirstOrDefault(h => h.type == type);
+            hook = FindObjectsByType<DynamicMeshCombinerHook>(FindObjectsSortMode.None).FirstOrDefault(h => h.type == type);
             if (!hook)
             {
                 var hookGo = new GameObject("DynamicMeshCombiner: " + type);

@@ -740,7 +740,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
         eventData = eventData ?? new GEPointerEventData(null);
         if (planetController == null)
         {
-            planetController = FindAnyObjectByType<PlanetPreviewController>();
+            planetController = FindFirstObjectByType<PlanetPreviewController>();
         }
         if (ForceState != State.Free)
         {
