@@ -19,10 +19,10 @@
 | Engine | Unity **6000.6.0f1**, Built-in Render Pipeline, Gamma, forward, 4× MSAA, no post stack |
 | XR | OpenXR 1.18.0, Unity OpenXR: Meta 2.6.1, AR Foundation 6.6.2 (passthrough), XR Management 4.7.0 |
 | Interaction | XR Interaction Toolkit 3.6.0, XR Hands 1.9.0 |
-| Input | Input System 1.20.0; Active Input Handling **Both** (XRI on the new system; TouchScript and legacy on the old) |
+| Input | Input System 1.20.0; Active Input Handling **Both** (XRI on the new system; some legacy paths on the old, CS-354) |
 | UI | uGUI 2.6.0 with TextMesh Pro; Selawik SDF fonts |
 | Other packages | Shader Graph 17.6, Timeline 6.6, Test Framework 1.8 (no test assemblies yet), AI Assistant 2.19.0-pre.2 (the editor MCP relay), AI Navigation 2.0.14 |
-| Vendored | TouchScript (`Assets/external`, removal planned in CS-353), FlowManager, `Assets/Packages/Layers`, MRTK leftovers (`Assets/third_party`) |
+| Vendored | TouchScript (`Assets/external`, unused since CS-353; the folder goes after the owner's `_backup_original` decision), FlowManager, `Assets/Packages/Layers`, MRTK leftovers (`Assets/third_party`) |
 | OpenXR features | OculusTouch, MetaQuestTouchPlus, HandInteraction, XR Hands tracking + Meta aim, Meta AR Session, Meta AR Camera (passthrough); Android also MetaQuestFeature + DisplayUtilities (`Quest3ProjectSetup.cs:62-77`) |
 | Stereo | Android **Single Pass Instanced**; Standalone/Link **Multi Pass** (D-008, `docs/SHADER_STEREO_AUDIT.md`) |
 | Android player | IL2CPP, ARM64, min API 32 / target 34, Vulkan only, ASTC, GameActivity, Landscape Left; package `com.jdmaxilius.cosmicsimulationxr`, version 0.9.0; company JDMAXilius, product "Cosmic Simulation XR" |

@@ -302,7 +302,7 @@ namespace GalaxyExplorer
             SceneTransition newTransition = nextSceneContent.GetComponentInChildren<SceneTransition>();
             CurrentActiveScene = nextSceneContent;
 
-            SetActivationOfTouchscript(false);
+            SetDesktopInputEnabled(false);
             DeactivateOrbitUpdater(newTransition, previousTransition, false);
             SetActivePOIRotationAnimator(false, previousTransition, newTransition);
             UpdateActivationOfPOIs(newTransition, false);
@@ -374,7 +374,7 @@ namespace GalaxyExplorer
                 SetCollidersActivation(ZoomInOutBehaviour.GetNextScene.GetComponentsInChildren<Collider>(), true);
             }
 
-            SetActivationOfTouchscript(true);
+            SetDesktopInputEnabled(true);
 
             inTransition = false;
             introStage = (introStage == IntroStage.kLastStageIntro) ? IntroStage.kInactiveIntro : introStage;
@@ -591,13 +591,8 @@ namespace GalaxyExplorer
         }
 
         // The player cannot move, turn or scale the scene mid-transition on desktop.
-        private void SetActivationOfTouchscript(bool enable)
+        private static void SetDesktopInputEnabled(bool enable)
         {
-            if (GalaxyExplorerManager.IsDesktop && GalaxyExplorerManager.Instance.CameraControllerHandler != null)
-            {
-                GalaxyExplorerManager.Instance.CameraControllerHandler.enabled = enable;
-            }
-
             if (GalaxyExplorer.XR.DesktopMouseInput.Instance != null)
             {
                 GalaxyExplorer.XR.DesktopMouseInput.Instance.InputEnabled = enable;
