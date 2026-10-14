@@ -5,20 +5,8 @@ using UnityEngine;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// The star at the centre of a nebula: one blown-out point with a halo and a set of spikes.
-    ///
-    /// <para><b>Why this is its own component and not part of the field.</b> The gas is volumetric and the
-    /// star is not - it is a point source, drawn as a billboard, and trying to express it as density in the
-    /// marched volume would need a resolution the field does not have and could never make a sharp core. Two
-    /// representations because there are two kinds of thing here: one diffuse, one a point.</para>
-    ///
-    /// <para><b>It is the reason the picture is composed.</b> Every reference image for this work is built
-    /// around a central star - the gas is arranged about it, lit by it, thrown outward by it. A nebula without
-    /// one reads as a cloud that happens to glow. This is cheap to draw and it does more for the look than
-    /// anything else of comparable cost.</para>
-    ///
-    /// <para>It needs <see cref="Bloom"/> on the camera. The colour it writes goes well above 1, and bloom is
-    /// what turns that into a halo; without it this is a bright cross and nothing more.</para>
+    /// The star at a nebula's centre, a billboard rather than density, since the marched volume cannot resolve a sharp core.
+    /// Needs <see cref="Bloom"/> on the camera: its colour goes well above 1 and bloom is what makes the halo.
     /// </summary>
     [DisallowMultipleComponent]
     [ExecuteAlways]
@@ -65,13 +53,10 @@ namespace CosmicSimulation
         {
             EnsureRenderer();
 
-            // A missing shader switches us off above, and a subscription made anyway would retry it, and log
-            // it, for every camera on every frame.
+            // A missing shader disables us above; subscribing anyway would retry and log per camera per frame.
             if (!enabled) return;
 
-            // Built at render time as well as on enable, for the same reason NebulaField is: a component
-            // configured by a build script reaches a usable state well after its OnEnable has been and gone,
-            // and edit-mode Update ticks only when the editor feels like ticking.
+            // Also built at render time: a build script configures this after OnEnable, and edit-mode Update is unreliable.
             Camera.onPreRender -= OnCameraPreRender;
             Camera.onPreRender += OnCameraPreRender;
         }
@@ -106,7 +91,7 @@ namespace CosmicSimulation
             if (_renderer != null && _material != null) return;
 
 #if UNITY_EDITOR
-            // Prefabs built before the field existed carry nothing here; in the editor the name still resolves.
+            // Editor fallback only: a player build strips shaders reached by name.
             if (shader == null) shader = Shader.Find(ShaderName);
 #endif
             if (shader == null)
@@ -116,9 +101,7 @@ namespace CosmicSimulation
                 return;
             }
 
-            // Explicit null checks rather than ?? - UnityEngine.Object overloads ==, which ?? never consults,
-            // so ?? keeps a fake-null and the next line throws. That exact mistake cost this feature a whole
-            // session; see the note in NebulaField.
+            // Explicit null checks, not ??: ?? ignores UnityEngine.Object's == and keeps a fake null.
             var filter = GetComponent<MeshFilter>();
             if (filter == null) filter = gameObject.AddComponent<MeshFilter>();
             _filter = filter;
@@ -159,9 +142,8 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// A unit quad. Its bounds are set far larger than the quad itself because the vertex stage moves the
-        /// corners in view space: Unity culls on the bounds it was given, and a half-metre box around a flare
-        /// that is drawn metres wide would pop out of view as the player turned their head.
+        /// A unit quad with oversized bounds: the vertex stage expands it in view space to metres wide, and Unity
+        /// culls on the mesh bounds, so tight bounds would pop it out of view as the head turns.
         /// </summary>
         private static Mesh Quad()
         {

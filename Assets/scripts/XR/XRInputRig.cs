@@ -12,9 +12,8 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 namespace GalaxyExplorer.XR
 {
     /// <summary>
-    /// Lives on the XR Origin. Exposes the tracked controllers and hands to the app (palm poses for hand menus
-    /// and force-pull targets, which input mode is active) and raises <see cref="GEInputEvents.GlobalPointerDown"/>
-    /// for select presses that don't hit anything, which the card system uses to close open cards.
+    /// On the XR Origin: palm poses and input mode for the app, and <see cref="GEInputEvents.GlobalPointerDown"/>
+    /// for select presses that hit nothing (open cards close on it).
     /// </summary>
     public class XRInputRig : MonoBehaviour
     {
@@ -60,7 +59,6 @@ namespace GalaxyExplorer.XR
 
         public bool RightControllerTracked => IsControllerTracked(rightController);
 
-        /// <summary>True when the user is interacting with tracked hands rather than controllers.</summary>
         public bool IsHandTrackingActive => LeftHandTracked || RightHandTracked ||
                                             XRInputModalityManager.currentInputMode.Value == XRInputModalityManager.InputMode.TrackedHand;
 
@@ -166,10 +164,8 @@ namespace GalaxyExplorer.XR
         }
 
         // ---------- "We cannot see your hands" (U2-P8, screen S36)
-        //
-        // Said when a hand leaves the cameras' view in the middle of a grab (the grab is cancelled above, so the
-        // player needs to know why it let go), or when neither hand nor controller has been seen for a few seconds.
-        // Lowered hands are normal, so the second case speaks once per loss and at most once a minute.
+        // Said when a lost hand cancels a grab, or when nothing has been tracked for a few seconds; lowered hands
+        // are normal, so the latter speaks once per loss and at most once a minute.
 
         private const string TrackingLost = "We cannot see your hands. Bring them into view to continue."; // docs/copy/ui.md tracking_lost
         private const float LostSeconds = 3f;
@@ -213,11 +209,8 @@ namespace GalaxyExplorer.XR
         }
 
         /// <summary>
-        /// Tracking loss does not release a grab by itself. XRHandDevice leaves pinchTouched/graspFirm at their
-        /// last value when a hand drops out (only the tracking fields reset), MetaAimHand.indexPressed trusts
-        /// whatever pinch strength the runtime last reported, and XRInputModalityManager only listens for tracking
-        /// *acquired*, so the hand's interactors stay registered with Select still performed. A pinch carried out
-        /// of the cameras' view would hold the body until the hand came back. Cancel it where it is (CS-283).
+        /// Tracking loss does not end a grab by itself: the pinch inputs keep their last value and the modality
+        /// manager only hears tracking acquired, so a pinch carried out of view would hold on (CS-283).
         /// </summary>
         /// <returns>True when the hand was holding or pinching something that had to be let go.</returns>
         private bool ReleaseHand(InteractorHandedness side)
@@ -262,12 +255,8 @@ namespace GalaxyExplorer.XR
         }
 
         /// <summary>
-        /// The direction the palm of a tracked hand faces, in world space, measured from where the joints are
-        /// rather than read off the palm joint's rotation: the normal of the triangle wrist, index knuckle,
-        /// little knuckle. Which of the palm joint's axes points out of the palm is a convention (in OpenXR +Y
-        /// is the back of the hand) and a wrong guess there turns a palm test inside out; three positions have
-        /// no convention to get wrong. The knuckles rather than the metacarpal bases, which sit within a couple
-        /// of centimetres of the wrist and make a triangle too small to be steady.
+        /// World palm normal from the wrist and index/little knuckle positions, which unlike the palm joint's axes have
+        /// no convention to get inside out. Knuckles, as the metacarpal bases are too near the wrist to be steady.
         /// </summary>
         public bool TryGetPalmNormal(bool leftHand, out Vector3 normal)
         {
@@ -316,10 +305,7 @@ namespace GalaxyExplorer.XR
             return true;
         }
 
-        /// <summary>
-        /// How far the four fingers of a tracked hand are curled, 0 flat to 1 fist, averaged. XR Hands' own
-        /// measure (<c>XRFingerShapeMath</c>, in the package runtime; the Gestures sample is not needed).
-        /// </summary>
+        /// <summary>Mean curl of the four fingers, 0 flat to 1 fist, from XR Hands' runtime (no Gestures sample needed).</summary>
         public bool TryGetFingerCurl(bool leftHand, out float curl)
         {
             curl = 0f;
@@ -369,9 +355,8 @@ namespace GalaxyExplorer.XR
         }
 
         /// <summary>
-        /// A pinch that hit nothing. While the other hand holds something it joins that grab as the second
-        /// pointer; with nothing held, the second of two takes hold of the open place. Anything else is the
-        /// global click it always was (false).
+        /// A pinch that hit nothing joins a held grab as its second pointer or, as the second of two, takes the open
+        /// place. False means it is a plain global click.
         /// </summary>
         private bool TakeAirPinch(XRBaseInputInteractor interactor)
         {

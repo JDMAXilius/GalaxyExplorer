@@ -34,8 +34,10 @@ namespace GalaxyExplorer.XR
         private Vector2 _leftPressPosition, _rightPressPosition;
         private bool _orbiting, _panning;
 
-        /// <summary>Left button state last frame, so a press is detected even when wasPressedThisFrame is missed.</summary>
-        private bool _leftWasDown;
+        // Button states last frame: a press or release is also a change from these, because the one-frame edges
+        // (wasPressedThisFrame, wasReleasedThisFrame) can be skipped by a hitch or by queued input (CS-365). Drag
+        // state is only set while a button reads down, so the next frame it reads up always clears it.
+        private bool _leftWasDown, _rightWasDown;
 
         public static DesktopMouseInput Instance { get; private set; }
 
@@ -59,14 +61,17 @@ namespace GalaxyExplorer.XR
 
         private void Update()
         {
+            // With no mouse or no camera the handlers do not run, so a release in the gap would arrive late as a click.
             var mouse = Mouse.current;
             if (mouse == null)
             {
+                CancelInteraction();
                 return;
             }
 
             if (_camera == null)
             {
+                CancelInteraction();
                 _camera = Camera.main;
                 if (_camera == null)
                 {
@@ -83,10 +88,6 @@ namespace GalaxyExplorer.XR
                 CancelInteraction();
                 return;
             }
-
-            // A release we never saw (outside the Game view, swallowed by uGUI) would leave drag state stuck and
-            // block every later interaction; the button, not our bookkeeping, is the authority.
-            ReconcileButtons(mouse);
 
             UpdateGrabPoint(ray);
 
@@ -139,11 +140,11 @@ namespace GalaxyExplorer.XR
         {
             var button = mouse.leftButton;
 
-            // A press is also "down now, up last frame": wasPressedThisFrame is a one-frame edge that a hitch or
-            // queued synthetic input can skip, and a missed edge leaves _leftPressPosition stale and starts an orbit.
-            var pressedNow = button.isPressed && !_leftWasDown;
-            var pressEdge = button.wasPressedThisFrame || pressedNow;
-            _leftWasDown = button.isPressed;
+            // A missed press edge would leave _leftPressPosition stale and start an orbit; a missed release, no click.
+            var down = button.isPressed;
+            var pressEdge = button.wasPressedThisFrame || (down && !_leftWasDown);
+            var releaseEdge = button.wasReleasedThisFrame || (!down && _leftWasDown);
+            _leftWasDown = down;
 
             if (pressEdge)
             {
@@ -172,7 +173,7 @@ namespace GalaxyExplorer.XR
                 _view.Orbit(mouse.delta.ReadValue());
             }
 
-            if (button.wasReleasedThisFrame)
+            if (releaseEdge)
             {
                 _orbiting = false;
                 if (_pressed != null)
@@ -187,7 +188,12 @@ namespace GalaxyExplorer.XR
         private void HandleRightButton(Mouse mouse, Vector2 screenPosition, GEInteractable target)
         {
             var button = mouse.rightButton;
-            if (button.wasPressedThisFrame)
+            var down = button.isPressed;
+            var pressEdge = button.wasPressedThisFrame || (down && !_rightWasDown);
+            var releaseEdge = button.wasReleasedThisFrame || (!down && _rightWasDown);
+            _rightWasDown = down;
+
+            if (pressEdge)
             {
                 _rightPressPosition = screenPosition;
                 var solver = target != null ? target.GetComponentInParent<ForceSolver>() : null;
@@ -215,7 +221,7 @@ namespace GalaxyExplorer.XR
                 }
             }
 
-            if (button.wasReleasedThisFrame)
+            if (releaseEdge)
             {
                 _spinning = null;
                 _spinningHost = null;
@@ -278,36 +284,6 @@ namespace GalaxyExplorer.XR
         {
             var handler = ManipulatedHandler(target);
             return handler != null ? handler.HostTransform : null;
-        }
-
-        /// <summary>Ends any drag whose mouse button is no longer held, so a missed release cannot wedge input.</summary>
-        private void ReconcileButtons(Mouse mouse)
-        {
-            // The wasReleasedThisFrame guard is essential: this runs before HandleLeftButton, and on a normal release
-            // isPressed is already false, so without it every click would become a cancel.
-            var leftLost = !mouse.leftButton.isPressed && !mouse.leftButton.wasReleasedThisFrame;
-            var rightLost = !mouse.rightButton.isPressed && !mouse.rightButton.wasReleasedThisFrame;
-
-            if (_pressed != null && leftLost)
-            {
-                var pressed = _pressed;
-                _pressed = null;
-
-                // A cancel, not a click: we cannot know the release was over the same object.
-                pressed.RaisePointerUp(_pointer, false);
-            }
-
-            if (_orbiting && leftLost)
-            {
-                _orbiting = false;
-            }
-
-            if ((_panning || _spinning != null || _spinningHost != null) && rightLost)
-            {
-                _panning = false;
-                _spinning = null;
-                _spinningHost = null;
-            }
         }
 
         private void CancelInteraction()

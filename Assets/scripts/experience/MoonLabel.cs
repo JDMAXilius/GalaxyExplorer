@@ -6,16 +6,8 @@ using UnityEngine;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// A moon's name, written under it.
-    ///
-    /// Two styles, one label: 5 mm while the moon rides its orbit, 18 mm bold once it has been pulled out and is
-    /// being held (GDD 8.4). Nothing else changes — it is the same word in the same place, so growing it reads as
-    /// "this is the one you have" rather than as a new piece of UI appearing.
-    ///
-    /// Placement is <see cref="InfoPanel"/>'s, deliberately: the label is not parented to the moon but follows it
-    /// in world space, turns to face the player and rescales itself so one canvas unit stays one millimetre
-    /// however large the player has made the moon. Two objects that sit beside the same bodies must agree about
-    /// how that is done, or they drift apart when one is scaled.
+    /// A moon's name under it: 5 mm in orbit, 18 mm bold while held (GDD 8.4), so it reads as "the one you have".
+    /// Placed exactly as <see cref="InfoPanel"/> places itself, or the two drift apart when a moon is scaled.
     /// </summary>
     [DisallowMultipleComponent]
     public class MoonLabel : MonoBehaviour
@@ -75,16 +67,8 @@ namespace CosmicSimulation
         private CanvasGroup _group;
 
         /// <summary>
-        /// Whether name labels are shown at all, across every body and moon at once.
-        /// <para>
-        /// Separate from each label's own <c>_shown</c>, which decides whether <i>this</i> label has anything
-        /// to say right now - a moon's label hides while the moon is tucked against its planet. This is the
-        /// player's preference on top of that, so turning labels off hides them all and turning them back on
-        /// returns each to whatever its own state had decided. The two are ANDed rather than one overwriting
-        /// the other, which is why toggling does not strand a label visible over a hidden moon.
-        /// </para>
-        /// <para>Static because it is one preference for the whole app, not a per-label setting, and because
-        /// a label can be created long after the player set it.</para>
+        /// The player's app-wide label preference, ANDed with each label's own <c>_shown</c> so toggling never strands
+        /// a label over a hidden moon. Static so a label created later still honours it.
         /// </summary>
         public static bool ShowLabels = true;
         private Camera _camera;
@@ -160,8 +144,6 @@ namespace CosmicSimulation
             ApplyStyle();
         }
 
-        // ---------- binding
-
         /// <summary>Names the label. A moon's <see cref="BodyInfo"/> is the same asset its info panel reads.</summary>
         public void Bind(BodyInfo moonInfo)
         {
@@ -212,8 +194,7 @@ namespace CosmicSimulation
             ApplyShown();
         }
 
-        // Without a CanvasGroup there is nothing to fade, so hiding has to switch the text off outright,
-        // otherwise Hide() would silently do nothing on a label built without one.
+        // Without a CanvasGroup there is nothing to fade, so hiding switches the text off outright.
         private void ApplyShown()
         {
             if (_group == null && label != null)
@@ -235,8 +216,6 @@ namespace CosmicSimulation
                 label.text = text;
             }
         }
-
-        // ---------- per frame
 
         private void LateUpdate()
         {

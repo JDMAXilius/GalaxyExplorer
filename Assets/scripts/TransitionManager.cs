@@ -8,10 +8,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Events;
 
-/// <summary>
-/// Handles the transition between scenes. Has the flow that is followed during transitions
-/// Triggers fade, zoom in and out. load and unload.
-/// </summary>
+/// <summary>Runs a change of scene: fade, zoom in and out, load and unload.</summary>
 namespace GalaxyExplorer
 {
     public class TransitionManager : MonoBehaviour
@@ -183,19 +180,18 @@ namespace GalaxyExplorer
             defaultSceneScale = transformSource.transform.localScale;
         }
 
-        // Callback when introduction flow starts. This is hooked up in FlowManager in editor
+        // Wired up on FlowManager in the editor, so no code reference finds the caller.
         public void OnIntroStarted()
         {
             introStage = IntroStage.kActiveIntro;
         }
 
-        // Callback when introduction flow is completed. This is hooked up in FlowManager in editor
+        // Wired up on FlowManager in the editor.
         public void OnIntroFinished()
         {
             introStage = IntroStage.kLastStageIntro;
         }
 
-        // Called when fade is complete
         private void OnFadeComplete(GEFadeManager.FadeType fadeType)
         {
             isFading = false;
@@ -208,7 +204,6 @@ namespace GalaxyExplorer
 
         public void LoadPrevScene()
         {
-            // Check if there is previous scene to go back to
             if (!GalaxyExplorerManager.Instance.ViewLoaderScript.IsTherePreviousScene())
             {
                 Debug.LogWarning("TransitionManager: There is NO previous scene to go back to.");
@@ -241,7 +236,7 @@ namespace GalaxyExplorer
             LoadNextScene(sceneName, true);
         }
 
-        // Load scene that is part of the intro flow so dont keep it in stack
+        // Intro scenes are not kept on the back stack.
         public void LoadNextIntroScene(string sceneName)
         {
             LoadNextScene(sceneName, false);
@@ -274,7 +269,7 @@ namespace GalaxyExplorer
             StartCoroutine(NextSceneLoadedCoroutine());
         }
 
-        // Find top parent entity of new scene that is loaded
+        // The root of the newest scene: any TransformHandler that is not the previous scene's.
         private GameObject FindContent()
         {
             TransformHandler[] parentContent = FindObjectsByType<TransformHandler>(FindObjectsSortMode.None);
@@ -286,24 +281,17 @@ namespace GalaxyExplorer
                 }
             }
 
-            // if the scene didn't have an object with at TransformHandler, we are
-            // in the initial placmenet mode. Look for that script instead.
+            // No TransformHandler means initial placement mode, whose root carries PlacementControl instead.
             PlacementControl placement = FindFirstObjectByType<PlacementControl>();
             return placement?.gameObject;
         }
 
-        /// <summary>
-        /// When a scene has finished all the functionality to unload this is called from scene transition script
-        /// </summary>
         private void OnUnloadComplete()
         {
             Debug.Log("All unload functionality has ended");
         }
 
-        /// <summary>
-        /// Callback when next scene is loaded
-        /// Has the logic of the flow related to previous and next scene
-        /// </summary>
+        /// <summary>Runs the whole transition once the next scene has loaded, forwards or back.</summary>
         private IEnumerator NextSceneLoadedCoroutine()
         {
             GameObject nextSceneContent = FindContent();
@@ -325,17 +313,15 @@ namespace GalaxyExplorer
             float targetSize = newTransition.GetScalar(scaleToFill);
             newTransition.transform.GetChild(0).localScale = Vector3.one * targetSize;
 
-            // Initialize zoom in and out transition properties
             StartCoroutine(ZoomInOutBehaviour.ZoomInOutInitialization(nextSceneContent, prevSceneLoaded));
 
-            // In order for the next scene not being visible while the previous is fading, set scale to zero and deactivate all its colliders
+            // Hidden at zero scale with colliders off, so it is neither seen nor hit while the previous scene fades.
             if (ZoomInOutBehaviour.GetNextScene)
             {
                 ZoomInOutBehaviour.GetNextScene.transform.localScale = Vector3.zero;
                 SetCollidersActivation(ZoomInOutBehaviour.GetNextScene.GetComponentsInChildren<Collider>(), false);
             }
 
-            // Deactivate previous scene's colliders
             if (previousTransition)
             {
                 SetCollidersActivation(previousTransition.GetComponentsInChildren<Collider>(), false);
@@ -345,7 +331,6 @@ namespace GalaxyExplorer
 
             StartCoroutine(ZoomInOutSimultaneouslyFlow(previousTransition, newTransition));
 
-            // wait until prev scene transition finishes
             while (!ZoomInOutBehaviour.ZoomOutIsDone)
             {
                 yield return null;
@@ -354,13 +339,11 @@ namespace GalaxyExplorer
             DeactivateOrbitUpdater(newTransition, previousTransition, true);
             UpdateActivationOfPOIs(newTransition, true);
 
-            // Unload previous scene
             if (prevSceneLoaded != null)
             {
                 UnloadScene(prevSceneLoaded.scene.name, true);
             }
 
-            // Wait until next scene transition is done
             while (!ZoomInOutBehaviour.ZoomInIsDone)
             {
                 yield return null;
@@ -368,7 +351,6 @@ namespace GalaxyExplorer
 
             SetActivePOIRotationAnimator(true, previousTransition, newTransition);
 
-            // Fade in pois of next scene
             if (introStage != IntroStage.kActiveIntro)
             {
                 isFading = true;
@@ -387,7 +369,6 @@ namespace GalaxyExplorer
                 yield return null;
             }
 
-            // Activate colliders of next scene
             if (ZoomInOutBehaviour.GetNextScene && introStage != IntroStage.kActiveIntro)
             {
                 SetCollidersActivation(ZoomInOutBehaviour.GetNextScene.GetComponentsInChildren<Collider>(), true);
@@ -401,14 +382,13 @@ namespace GalaxyExplorer
             yield return null;
         }
 
-        // Flow of transition when previous and new scenes zoom in and out at the same time e.g when going to a planet or when leaving a planet
+        // Both scenes zoom at once, e.g. into or out of a planet.
         private IEnumerator ZoomInOutSimultaneouslyFlow(SceneTransition previousTransition, SceneTransition newTransition)
         {
             GameObject singlePlanet = null;
             GameObject relatedPlanet = null;
             GetRelatedPlanets(out relatedPlanet, out singlePlanet);
 
-            // In previous scene, fade out pois and then fade the rest of the scene
             if (previousTransition)
             {
                 if (introStage == IntroStage.kInactiveIntro)
@@ -428,18 +408,16 @@ namespace GalaxyExplorer
 
             PlayTransitionAudio(newTransition.transform, inForwardTransition);
 
-            // Make invisible one of the two planets that represent the same entity in both scenes
+            // The same body exists in both scenes; hide one copy.
             if (relatedPlanet && singlePlanet)
             {
                 SetRenderersVisibility(newTransition.IsSinglePlanetTransition ? relatedPlanet.transform.parent.gameObject : singlePlanet.transform.parent.gameObject, false);
             }
 
-            // make alpha of pois of next scene equal to zero so they arent visible
             GalaxyExplorerManager.Instance.GeFadeManager.SetAlphaOnFader(newTransition.GetComponentInChildren<POIMaterialsFader>(), 0.0f);
             var faderToExclude = default(Fader);
 
-            // if going back to solar system from a planet then fade in solar system
-            // Dont fade the material of the selected/related planet in the next scene or any poi
+            // Back from a planet: fade the solar system in, except the planet we came from and the POIs.
             if (previousTransition && previousTransition.IsSinglePlanetTransition)
             {
                 Fader[] allFaders = newTransition.GetComponentsInChildren<Fader>();
@@ -487,7 +465,7 @@ namespace GalaxyExplorer
             yield return null;
         }
 
-        // Light transition is necessary in case of Simultaneous transitions in order for sun light position to be the same and transition to look good
+        // Carries the sun's direction across a simultaneous zoom so the lit side does not jump between scenes.
         private IEnumerator LightTransitions(SceneTransition previousTransition, SceneTransition newTransition)
         {
             if (previousTransition == null || newTransition == null)
@@ -499,12 +477,11 @@ namespace GalaxyExplorer
             GameObject relatedPlanet = null;
             GetRelatedPlanets(out relatedPlanet, out singlePlanet);
 
-            // if next scene is a planet then position its light to where sun of previous scene is and move it towards its initial position
+            // Into a planet: start its sun where the previous scene's was and ease it home.
             if (newTransition && newTransition.IsSinglePlanetTransition)
             {
                 SunLightReceiver sunLight = newTransition.GetComponentInChildren<SunLightReceiver>();
                 Transform previousSun = FindByName(previousTransition.transform, "Sun");
-                //previousTransition.transform.Find("Sun");
                 Vector3 initialSunPosition = Vector3.zero;
                 if (sunLight && sunLight.Sun && previousSun)
                 {
@@ -521,9 +498,8 @@ namespace GalaxyExplorer
                     } while (delta < 1.0f);
                 }
             }
-            // in case of previous scene is a single planet scene, find the new scene related planet's SunLightReceivers
-            // and replace their sun to a new gameobject pretending to be a sun. This sun;s starting position is
-            // same as the old scene's sun position and transition to new sun's position
+            // Out of a planet: light the related planet from a stand-in sun that starts at the old scene's sun and
+            // eases to the new one.
             else if (previousTransition && previousTransition.IsSinglePlanetTransition)
             {
                 SunLightReceiver[] allLightReceivers = relatedPlanet.GetComponentsInChildren<SunLightReceiver>();
@@ -533,17 +509,14 @@ namespace GalaxyExplorer
                     GameObject lightPlaceholder = new GameObject();
                     lightPlaceholder.transform.parent = newTransition.ThisSceneObject.transform;
 
-                    // Old scene's light position
                     SunLightReceiver oldLight = previousTransition.GetComponentInChildren<SunLightReceiver>();
                     lightPlaceholder.transform.position = (oldLight && oldLight.Sun) ? oldLight.Sun.transform.position : Vector3.zero;
 
-                    // Replace sun to the placeholder object
                     foreach (var light in allLightReceivers)
                     {
                         light.Sun = lightPlaceholder.transform;
                     }
 
-                    // Move placeholder light position towards sun's position
                     float delta = 0.0f;
                     do
                     {
@@ -558,7 +531,7 @@ namespace GalaxyExplorer
             }
         }
 
-        // Return transform with specific name that lives under a specific entity
+        // Depth-first; matches on a name that contains the given one.
         private Transform FindByName(Transform parent, string name)
         {
             Transform child = null;
@@ -584,8 +557,7 @@ namespace GalaxyExplorer
 
         private void DeactivateOrbitUpdater(SceneTransition newTransition, SceneTransition previousTransition, bool isActive)
         {
-            // If going into a single planet then deactivate the previous scene's planet rotation script
-            // in order to stop the previous planet moving
+            // Stop the related planet orbiting while it zooms into or out of its own scene.
             if (newTransition && newTransition.IsSinglePlanetTransition)
             {
                 GameObject singlePlanet = null;
@@ -618,7 +590,7 @@ namespace GalaxyExplorer
             }
         }
 
-        // In Desktop mode, during transition, deactivate the Touchscript component so user cant interact with the scene and move/rotate/scale it
+        // The player cannot move, turn or scale the scene mid-transition on desktop.
         private void SetActivationOfTouchscript(bool enable)
         {
             if (GalaxyExplorerManager.IsDesktop && GalaxyExplorerManager.Instance.CameraControllerHandler != null)
@@ -644,7 +616,7 @@ namespace GalaxyExplorer
             }
         }
 
-        // When transition starts, the animator that rotates the POIs need to be deactivated as it changes their position
+        // The galaxy's POI rotation animator moves the POIs, so it is paused for the transition.
         private void SetActivePOIRotationAnimator(bool isActive, SceneTransition previousTransition, SceneTransition nextTransition)
         {
             if (previousTransition && previousTransition.gameObject.scene.name == "galaxy_view_scene")
@@ -655,7 +627,6 @@ namespace GalaxyExplorer
                     if (animator.runtimeAnimatorController && animator.runtimeAnimatorController.name.Contains("pois_root_rotation_animator"))
                     {
                         animator.enabled = isActive;
-                        //Debug.Log("Change activation of POIRotation animation to " + isActive);
                         break;
                     }
                 }
@@ -668,7 +639,6 @@ namespace GalaxyExplorer
                     if (animator.runtimeAnimatorController && animator.runtimeAnimatorController.name.Contains("pois_root_rotation_animator"))
                     {
                         animator.enabled = isActive;
-                        //Debug.Log("Change activation of POIRotation animation to " + isActive);
                         break;
                     }
                 }
@@ -702,7 +672,6 @@ namespace GalaxyExplorer
             PlanetPOI[] allPlanets = FindObjectsByType<PlanetPOI>(FindObjectsSortMode.None);
             foreach (var planet in allPlanets)
             {
-                // if this scene is loaded from this planet
                 if (planetView && (planetView.GetSceneName == planet.GetSceneToLoad))
                 {
                     relatedPlanetObject = planet.PlanetObject;
@@ -711,14 +680,13 @@ namespace GalaxyExplorer
             }
         }
 
-        // During transition that doesnt involve single planet so during transition from galaxy to solar or to galactic center
-        // we need to identify the poi that spawned the next scene or if going backwards the poi that we are going into
+        // For transitions with no single planet (galaxy to solar system or galactic centre): the POI that opened the
+        // next scene, or, going back, the POI we return into.
         private void GetRelatedScenes(out GameObject previousRelatedPlanetObjectt, out GameObject nextRelatedPlanetObjectt, SceneTransition previousScene, SceneTransition newScene)
         {
             previousRelatedPlanetObjectt = null;
             nextRelatedPlanetObjectt = null;
 
-            // If a planet of the previous scene loads the new scene then this is the previous focus collider
             PlanetPOI[] allPreviousPlanets = previousScene.GetComponentsInChildren<PlanetPOI>();
             foreach (var planet in allPreviousPlanets)
             {
@@ -729,7 +697,6 @@ namespace GalaxyExplorer
                 }
             }
 
-            // If a planet of the previous scene loads the new scene then this is the previous focus collider
             PlanetPOI[] allNewPlanets = newScene.GetComponentsInChildren<PlanetPOI>();
             foreach (var planet in allNewPlanets)
             {
@@ -885,7 +852,6 @@ namespace GalaxyExplorer
             StartCoroutine(ResetMRSceneToOriginCoroutine());
         }
 
-        // Reset scene to original scale and rotation in MR platform
         private IEnumerator ResetMRSceneToOriginCoroutine()
         {
             Vector3 startScale = transformSource.transform.localScale;
@@ -900,7 +866,6 @@ namespace GalaxyExplorer
 
                 float delta = Mathf.Clamp01(TransitionTimeCameraCurve.Evaluate(timeFraction));
 
-                // Reset camera's parent
                 transformSource.transform.localScale = Vector3.Lerp(startScale, defaultSceneScale, delta);
                 transformSource.transform.rotation = Quaternion.Slerp(startRotation, defaultSceneRotation, delta);
 

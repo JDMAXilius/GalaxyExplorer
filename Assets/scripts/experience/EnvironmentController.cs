@@ -8,16 +8,8 @@ using UnityEngine;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// Decides how much of the player's room is visible, and fades between those states.
-    ///
-    /// Passthrough and full black are the headset's own modes, handled by <see cref="ExperienceModeManager"/>.
-    /// Dimming is ours: a black quad parented to the camera, just past the near plane, drawn after the content and
-    /// before world-space UI. A halo is the same idea in one spot, a soft black disc that sits behind a faint
-    /// object so it reads against a bright room.
-    ///
-    /// The dock's passthrough button overrides whatever the current experience asked for, until the player
-    /// changes it back. That choice is the one saved preference about the room, and this is the one place that
-    /// tells the headset which of its modes to be in.
+    /// How much of the room is visible. Passthrough and full black are the headset's modes (<see cref="ExperienceModeManager"/>);
+    /// dimming and halos are ours. The only place that tells the headset which mode to be in.
     /// </summary>
     [DefaultExecutionOrder(-50)]
     public class EnvironmentController : MonoBehaviour
@@ -67,14 +59,11 @@ namespace CosmicSimulation
         /// <summary>True while the player has forced the room visible from the dock.</summary>
         public bool PassthroughForced { get; private set; }
 
-        /// <summary>The state the room is actually in: what the experience asked for, unless the player overrode it.</summary>
         public EnvironmentMode EffectiveMode => PassthroughForced ? EnvironmentMode.Passthrough : Mode;
 
         /// <summary>
-        /// Raised with <see cref="EffectiveMode"/> when it changes, and only then — <see cref="Set"/> is called on
-        /// every experience switch, including switches that ask for the state the room is already in, and a
-        /// subscriber that re-reacted to those would restart whatever it is driving. Nothing is raised for the
-        /// opening state, since there is no change: late subscribers read <see cref="EffectiveMode"/> instead.
+        /// Raised only when <see cref="EffectiveMode"/> changes: <see cref="Set"/> runs on every switch, and re-reacting
+        /// would restart whatever a subscriber drives. Not raised for the opening state; read <see cref="EffectiveMode"/>.
         /// </summary>
         public static event Action<EnvironmentMode> ModeChanged;
 
@@ -159,9 +148,8 @@ namespace CosmicSimulation
         {
             var effective = EffectiveMode;
 
-            // Full black is the headset's VR mode; everything else keeps passthrough on underneath.
-            // Without passthrough there is no room either: the headset stays in VR (the sky), and there is
-            // nothing to dim or to put a halo against.
+            // Full black is the headset's VR mode. Without passthrough (PC VR, desktop) it stays in VR too, and
+            // there is no room to dim or to put a halo against.
             var room = ExperienceModeManager.PassthroughAvailable;
             var wantsVR = effective == EnvironmentMode.FullBlack || !room;
             if (ExperienceModeManager.Instance != null)
@@ -192,12 +180,9 @@ namespace CosmicSimulation
             }
         }
 
-        // ---------- the dim quad
-
         /// <summary>
-        /// The flat tinted shader both the dim quad and the halo use. Serialized where possible so the build
-        /// keeps it; the name lookup only covers components added at runtime, and it is listed under Always
-        /// Included Shaders so that path survives a player build too.
+        /// Serialized where possible so the build keeps it; the name lookup covers runtime-added components and
+        /// relies on the shader being under Always Included Shaders.
         /// </summary>
         private Shader TintShader()
         {
@@ -267,8 +252,6 @@ namespace CosmicSimulation
             _dimQuad.gameObject.SetActive(_dimCurrent > 0.001f);
             _dimMaterial.color = new Color(0f, 0f, 0f, _dimCurrent);
         }
-
-        // ---------- halos
 
         /// <summary>A soft black disc that follows a faint object so it reads against the room.</summary>
         public BlackHalo SpawnHalo(Transform target, float diameter)

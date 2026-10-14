@@ -4,21 +4,14 @@
 using UnityEngine;
 
 /// <summary>
-/// Singleton behaviour class, used for components that should only have one instance.
-/// <remarks>Singleton classes live on through scene transitions and will mark their
-/// parent root GameObject with <see cref="Object.DontDestroyOnLoad"/></remarks>
+/// A component with one instance; its root GameObject is marked <see cref="Object.DontDestroyOnLoad"/>.
 /// </summary>
-/// <typeparam name="T">The Singleton Type</typeparam>
 public class Singleton<T> : MonoBehaviour where T : Singleton<T>
 {
     private static T instance;
 
     /// <summary>
-    /// Returns the Singleton instance of the classes type.
-    /// If no instance is found, then we search for an instance
-    /// in the scene.
-    /// If more than one instance is found, we throw an error and
-    /// no instance is returned.
+    /// Searches the scene once if Awake has not registered an instance yet; more than one found logs an error and returns null.
     /// </summary>
     public static T Instance
     {
@@ -49,9 +42,6 @@ public class Singleton<T> : MonoBehaviour where T : Singleton<T>
         Debug.Assert(IsInitialized, string.Format("The {0} singleton has not been initialized.", typeof(T).Name));
     }
 
-    /// <summary>
-    /// Returns whether the instance has been initialized or not.
-    /// </summary>
     public static bool IsInitialized
     {
         get
@@ -60,22 +50,14 @@ public class Singleton<T> : MonoBehaviour where T : Singleton<T>
         }
     }
 
-    /// <summary>
-    /// Awake and OnEnable safe way to check if a Singleton is initialized.
-    /// </summary>
-    /// <returns>The value of the Singleton's IsInitialized property</returns>
+    /// <summary>Safe from Awake and OnEnable, where the instance may not have registered itself yet.</summary>
     public static bool ConfirmInitialized()
     {
         T access = Instance;
         return IsInitialized;
     }
 
-    /// <summary>
-    /// Base Awake method that sets the Singleton's unique instance.
-    /// Called by Unity when initializing a MonoBehaviour.
-    /// Scripts that extend Singleton should be sure to call base.Awake() to ensure the
-    /// static Instance reference is properly created.
-    /// </summary>
+    /// <summary>Subclasses must call base.Awake(), or duplicates survive and Instance falls back to a one-off scene search.</summary>
     protected virtual void Awake()
     {
         if (IsInitialized && instance != this)
@@ -99,12 +81,7 @@ public class Singleton<T> : MonoBehaviour where T : Singleton<T>
         }
     }
 
-    /// <summary>
-    /// Base OnDestroy method that destroys the Singleton's unique instance.
-    /// Called by Unity when destroying a MonoBehaviour. Scripts that extend
-    /// Singleton should be sure to call base.OnDestroy() to ensure the
-    /// underlying static Instance reference is properly cleaned up.
-    /// </summary>
+    /// <summary>Subclasses must call base.OnDestroy(), or Instance never searches for a replacement.</summary>
     protected virtual void OnDestroy()
     {
         if (instance == this)

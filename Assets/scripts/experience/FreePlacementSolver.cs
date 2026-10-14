@@ -6,21 +6,10 @@ using UnityEngine;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// Lets a body stay wherever the player leaves it, and brings it home when asked.
-    ///
-    /// This replaces <c>PostManipulationResetter</c> on anything the player is meant to arrange. That component
-    /// slides an object back to its start pose a couple of seconds after every release, which is the opposite of
-    /// what this experience wants: many objects are out at once and none of them move on their own (GDD 5.2).
-    ///
-    /// A body comes home for exactly three reasons: the player asked (layout pop-up, Recenter, or R), the
-    /// experience changed, or the body has wandered somewhere it cannot be reached from — further than
-    /// <see cref="strayRadius"/> from the player, or below the floor — and has stayed there for
-    /// <see cref="strayGrace"/> seconds.
-    ///
-    /// Home is <see cref="ForceSolver.RootTransform"/>, read live so a moving layout stays authoritative, with
-    /// the scale the body had before anyone touched it. Once the animation lands, the force solver is put back
-    /// into its Root state so its own machinery — moons, panel, highlighter — unwinds the way it normally does.
+    /// A body stays wherever the player leaves it (GDD 5.2), coming home only when asked, on an experience change,
+    /// or after straying out of reach. Use instead of <c>PostManipulationResetter</c> on anything the player arranges.
     /// </summary>
+    // Home is ForceSolver.RootTransform, read live so a moving layout stays authoritative.
     [RequireComponent(typeof(ForceSolver))]
     public class FreePlacementSolver : MonoBehaviour
     {
@@ -60,8 +49,7 @@ namespace CosmicSimulation
 
         private void Awake() => EnsureInit();
 
-        // A layout can ask a body to come home in the same frame it is spawned, before Awake has run, so the
-        // entry points resolve the solver themselves rather than trusting it is already there.
+        // A layout can restore a body the frame it spawns, before Awake, so entry points initialise lazily.
         private void EnsureInit()
         {
             if (_force != null)
@@ -80,10 +68,7 @@ namespace CosmicSimulation
             _strayTimer = 0f;
         }
 
-        /// <summary>
-        /// Overrides the scale a body returns to. A <see cref="LayoutPreset"/> uses this when a layout gives a
-        /// body a size of its own, as Relative Size does.
-        /// </summary>
+        /// <summary>Overrides the scale a body returns to, for a <see cref="LayoutPreset"/> that sizes bodies itself.</summary>
         public void SetHomeScale(Vector3 scale) => _homeScale = scale;
 
         /// <summary>Brings the body home. Safe to call when it is already there.</summary>
@@ -132,7 +117,6 @@ namespace CosmicSimulation
                 return;
             }
 
-            // While a body is held it is by definition within reach, so only a released one can stray.
             if (_force.ForceState == ForceSolver.State.Manipulation || !OutOfReach())
             {
                 _strayTimer = 0f;
@@ -189,8 +173,7 @@ namespace CosmicSimulation
 
             _restore = null;
 
-            // Root snaps the pose and unwinds the moons, panel and highlighter, so hand back rather than
-            // setting the final transform here.
+            // Hand back to Root rather than setting the final pose: it also unwinds the moons, panel and highlighter.
             _force.ResetToRoot();
         }
     }

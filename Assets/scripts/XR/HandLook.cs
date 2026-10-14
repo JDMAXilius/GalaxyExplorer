@@ -9,19 +9,11 @@ using UnityEngine.InputSystem;
 namespace GalaxyExplorer.XR
 {
     /// <summary>
-    /// Picks the hand's look for the room it is in: faint over passthrough, where the real hand is visible
-    /// underneath, and more solid in full VR, where it is the only hand there is (D-H3). Lives on the XR rig.
-    /// Applied through property blocks so the shared material asset is never written at run time.
-    ///
-    /// <para>A pinch shows on the hand itself (CS-298): the rim warms toward <see cref="pinchRim"/> and the body
-    /// firms up as the index pinch strength rises, because with the sample affordances off nothing else says the
-    /// pinch registered. Strength comes from the Meta aim device through an Input System path, so a runtime
-    /// without that device simply reads zero.</para>
-    ///
-    /// <para>While the room shows through, the hand meshes also carry a depth-only occluder drawn before the opaque
-    /// content (CS-288), so a real hand in front of a planet hides it. Off in full VR, and switchable with
-    /// <see cref="OccludeContent"/>.</para>
+    /// The hand's look on the XR rig: faint over passthrough where the real hand shows, more solid in full VR,
+    /// warming with the pinch, and occluding content in passthrough. Property blocks keep the shared material unwritten.
     /// </summary>
+    // The pinch glow is the only pinch feedback with the sample affordances off. Strength comes from the Meta aim
+    // device by Input System path, so a runtime without it just reads zero.
     public class HandLook : MonoBehaviour
     {
         [Serializable]
@@ -217,9 +209,8 @@ namespace GalaxyExplorer.XR
             }
         }
 
-        // Appends or removes the occluder as an extra material. A material past the mesh's last submesh draws that
-        // submesh again, so on a one-submesh hand it draws the whole hand, depth only. The renderer's own array is
-        // changed, never the shared material assets.
+        // An extra material past the last submesh redraws that submesh, so a one-submesh hand is drawn again whole,
+        // depth only. Only the renderer's own array changes, never the shared material assets.
         private void SetOccluder(SkinnedMeshRenderer hand, bool on)
         {
             if (_occluder == null)
@@ -227,7 +218,6 @@ namespace GalaxyExplorer.XR
                 return;
             }
 
-            // Checked without allocating; the array is copied only when it has to change.
             hand.GetSharedMaterials(_materials);
             if (on == _materials.Contains(_occluder))
             {

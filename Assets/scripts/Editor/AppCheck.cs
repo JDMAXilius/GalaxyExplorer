@@ -122,6 +122,15 @@ namespace GalaxyExplorer.Editor
                 var clickable = false;
                 Add(0.3f, () =>
                 {
+                    // A hidden dock's tiles are untested, not failed. UI 2.0 hides the legacy docks every frame.
+                    if (!wanted.gameObject.activeInHierarchy)
+                    {
+                        Skip(CosmicSimulation.UI2.Ui2Shell.Instance != null
+                            ? $"the {wanted.Module.Id} tile: UI 2.0 hides the legacy dock (turn UI 2.0 off)"
+                            : $"the {wanted.Module.Id} tile: the dock is hidden (Tab or U shows it)");
+                        return;
+                    }
+
                     clickable = OnScreen(wanted.transform);
                     if (!clickable)
                     {
@@ -176,21 +185,22 @@ namespace GalaxyExplorer.Editor
 
             // 4. A destination marker on the Milky Way (CS-170), clicked with the mouse: it travels there. This is the one the owner asked
             //    about by name, and the one nothing had ever proven.
-            Transform tag = null;
+            // Decided at the aim, not read off the tag afterwards: a click that travels unloads the map and its tag.
+            var aimed = false;
             Add(0.3f, () => _director.Switch("milky_way"));
             Add(SettleSeconds * 2f, () =>
             {
                 Check(Name(_director.Current) == "milky_way", $"the Milky Way opens ({Name(_director.Current)})");
-                tag = FindTag();
-                if (tag == null) { Skip("the destination tag click: no tag with a collider is on screen"); return; }
+                aimed = FindTag() != null;
+                if (!aimed) { Skip("the destination tag click: no tag with a collider is on screen"); return; }
                 _holding = () => Move(_aim);
             });
-            Add(0.5f, () => { if (tag != null) _holding = () => Press(_aim, true); });
-            Add(0.2f, () => { if (tag != null) { _holding = null; Press(_aim, false); } });
-            AddWaitWhile(() => tag != null && _director.IsSwitching, 20f);
+            Add(0.5f, () => { if (aimed) _holding = () => Press(_aim, true); });
+            Add(0.2f, () => { if (aimed) { _holding = null; Press(_aim, false); } });
+            AddWaitWhile(() => aimed && _director.IsSwitching, 20f);
             Add(SettleSeconds * 2f, () =>
             {
-                if (tag == null) return;
+                if (!aimed) return;
                 var travelled = Name(_director.Current) != "milky_way";
                 Check(travelled || _director.HasOpenDestination,
                     $"clicking a marker on the Milky Way travels to it (now {Name(_director.Current)})");
@@ -362,15 +372,17 @@ namespace GalaxyExplorer.Editor
             _cursor = _passes = _total = _errors = 0;
             try { System.IO.File.Delete(LogPath); } catch (Exception) { }
 
-            Transform tag = null;
+            // Decided at the aim: a click that travels unloads the map, and the tag with it.
+            var aimed = false;
             Add(0.5f, () => { Say($"opening the Milky Way (now: {Name(_director.Current)}, intro {_director.IntroRunning})"); _director.Switch("milky_way"); });
             AddWaitWhile(() => _director.IsSwitching || Name(_director.Current) != "milky_way", 20f);
             Add(2.0f, () =>
             {
                 Say($"open: {Name(_director.Current)}; POI markers in scene: {UnityEngine.Object.FindObjectsByType<GalaxyExplorer.PointOfInterest>(FindObjectsSortMode.None).Length}");
-                tag = FindTag();
-                Check(tag != null, "a destination tag is on screen to click");
-                if (tag == null) return;
+                var tag = FindTag();
+                aimed = tag != null;
+                Check(aimed, "a destination tag is on screen to click");
+                if (!aimed) return;
                 // Captured once, not recomputed every frame.
                 //
                 // The tag billboards and the map drifts, so re-aiming at ScreenOf(tag) on every tick moved
@@ -382,20 +394,20 @@ namespace GalaxyExplorer.Editor
             });
             Add(1.0f, () =>
             {
-                if (tag == null) return;
+                if (!aimed) return;
                 Say("with the mouse on it: " + Pointer());
                 _holding = () => Press(_aim, true);
             });
             Add(0.6f, () =>
             {
-                if (tag == null) return;
+                if (!aimed) return;
                 Say("with the button down: " + Pointer());
                 _holding = null;
                 Press(_aim, false);
             });
             Add(1.5f, () =>
             {
-                if (tag == null) return;
+                if (!aimed) return;
                 Say("after the release: " + Pointer());
                 Check(_director.HasOpenDestination || Name(_director.Current) != "milky_way",
                     $"the tag click did something (destination {(_director.OpenDestinationModule == null ? "none" : _director.OpenDestinationModule.Id)}, place {Name(_director.Current)})");

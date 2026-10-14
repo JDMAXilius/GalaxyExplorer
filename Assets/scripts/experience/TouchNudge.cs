@@ -6,26 +6,11 @@ using UnityEngine;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// A body that answers a touch (CS-173). Brush a fingertip, a hand ray or the mouse across a planet or a moon
-    /// without grabbing it and the sphere turns a little with the stroke, then springs back to where it was:
-    /// right to left turns it right to left, left to right the other way. Not a grab and not a spin: the body
-    /// stays exactly where it is and ends exactly as it started, which is what makes it read as a nudge.
-    ///
-    /// <para><b>How it turns without fighting anything.</b> The visual under a body is spun on its axis every frame
-    /// by <c>ConstantRotateAxis</c>, a body at rest is snapped onto its home anchor by <c>ForceSolver</c>, and a held
-    /// body is posed by <c>ManipulationHandler</c>. All of that keeps working because this never writes a rotation:
-    /// it turns the body's tilt node by the <i>change</i> in nudge angle each frame, about the world's up, so the
-    /// axial spin composes with it and when the spring lands back on zero the net rotation is exactly none.</para>
-    ///
-    /// <para><b>What counts as a touch.</b> Focus from any pointer while the body is at rest (Root or Free). A body
-    /// that is being pulled or held ignores the stroke - the hand is moving the whole body then, not brushing it.
-    /// The stroke is the pointer's movement across the body along the camera's right axis: the fingertip itself
-    /// for a near hand, the point on the ray level with the body for a hand ray or the mouse. One radius of
-    /// travel turns the body <see cref="degreesPerRadius"/>, capped at <see cref="maxDegrees"/>.</para>
-    ///
-    /// <para>Added to every <c>ForceSolver</c> at run time (see <c>ForceSolver.Awake</c>), so the planets, the
-    /// Sun and every moon get it without a prefab edit; one placed on a prefab by hand keeps its own tuning.</para>
+    /// A pointer brushing across a body at rest turns it a little with the stroke, then springs it back to exactly where it was.
+    /// Added to every <c>ForceSolver</c> at run time (<c>ForceSolver.Awake</c>); one placed on a prefab keeps its own tuning.
     /// </summary>
+    // Never writes a rotation, only applies the change in angle each frame about world up, so ConstantRotateAxis's
+    // spin, ForceSolver and ManipulationHandler all compose with it and the spring ends at a net rotation of zero.
     [DisallowMultipleComponent]
     public class TouchNudge : MonoBehaviour, IGEFocusHandler
     {
@@ -99,8 +84,7 @@ namespace CosmicSimulation
             _pointer = eventData.Pointer;
             _hasLast = false;
 
-            // Half the body's width, measured once per touch: bodies change size between arrangements and
-            // grow when pulled, and a stroke is judged against the size it has now.
+            // Measured per touch, not once: bodies change size between arrangements and grow when pulled.
             var renderer = GetComponentInChildren<Renderer>();
             if (renderer != null)
             {
@@ -120,7 +104,6 @@ namespace CosmicSimulation
 
         private void OnDisable()
         {
-            // Leave the body exactly as it was: undo whatever part of the nudge is still applied.
             if (target != null && Mathf.Abs(_applied) > 0.0001f)
             {
                 target.Rotate(Vector3.up, -_applied, Space.World);
@@ -144,13 +127,11 @@ namespace CosmicSimulation
                 return;
             }
 
-            // The stroke.
             if (_pointer != null && _pointer.IsActive && AtRest() && _camera != null && TryLateral(out var x))
             {
                 if (_hasLast)
                 {
-                    // Surface moving with the finger: a stroke to the right (+x) turns the front face to the
-                    // right, which is a negative turn about up.
+                    // The surface follows the finger: a stroke to +x turns the front face right, a negative turn about up.
                     _angle = Mathf.Clamp(_angle - (x - _last) / _radius * degreesPerRadius, -maxDegrees, maxDegrees);
                 }
 
@@ -162,8 +143,7 @@ namespace CosmicSimulation
                 _hasLast = false;
             }
 
-            // The spring back to rest, running whether or not a finger is on the body - so a finger that stops
-            // moving feels the body ease back under it.
+            // The spring runs even under a finger, so a finger that stops moving feels the body ease back.
             var acceleration = -stiffness * _angle - damping * _velocity;
             _velocity += acceleration * dt;
             _angle += _velocity * dt;
@@ -182,6 +162,7 @@ namespace CosmicSimulation
             }
         }
 
+        // A pulled or held body ignores strokes: the hand is moving the whole body then, not brushing it.
         private bool AtRest()
         {
             if (_body == null)

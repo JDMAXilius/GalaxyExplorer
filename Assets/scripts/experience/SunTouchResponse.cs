@@ -6,22 +6,11 @@ using UnityEngine;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// Putting a hand inside the Sun. The surface brightens and a low rumble swells while the hand stays there,
-    /// and both ease away when it leaves (GDD 4.1).
-    ///
-    /// The test is a sphere: a palm closer to the centre than the surface radius is inside. The radius comes from
-    /// the renderer's world bounds by default, so it follows the player scaling the Sun up to fill the room.
-    ///
-    /// Brightness is written through a <see cref="MaterialPropertyBlock"/>. The Sun's material is shared with
-    /// whatever else references it, and a per-frame instance would both leak into the asset and cost a draw call
-    /// per body; the block writes per-renderer without touching the material. The property name is serialized
-    /// because the Sun's shader is still changing — point it at whatever that shader exposes, and if it exposes
-    /// nothing by that name this component stays silent and just plays the rumble.
-    ///
-    /// On desktop there is no hand to put anywhere, so the mouse hovering the Sun stands in for one. That arrives
-    /// through the ordinary focus routing, which means this belongs on the same GameObject as the Sun's
-    /// <see cref="ForceSolver"/> — the object <c>GEInputEvents.ExecuteHierarchy</c> already stops at.
+    /// A hand inside the Sun brightens its surface and swells a rumble; both ease away when it leaves (GDD 4.1).
+    /// On desktop the mouse hovering stands in for the hand.
     /// </summary>
+    // Must share the Sun's ForceSolver object: GEInputEvents.ExecuteHierarchy stops at the first handler it finds.
+    // A MaterialPropertyBlock, not a material instance: the material is shared, and an instance would leak into the asset.
     [DisallowMultipleComponent]
     public class SunTouchResponse : MonoBehaviour, IGEFocusHandler
     {
@@ -96,8 +85,7 @@ namespace CosmicSimulation
 
         private void Awake() => EnsureInit();
 
-        // The Sun is spawned and its response driven in the same frame when an experience opens, and a caller has
-        // no way to know whether Awake has run, so every entry point comes through here rather than trusting it.
+        // The Sun can be spawned and driven in the same frame, before Awake, so every entry point comes through here.
         private void EnsureInit()
         {
             if (_ready)
@@ -267,7 +255,7 @@ namespace CosmicSimulation
                 return 0f;
             }
 
-            // World bounds, so scaling the Sun scales what counts as inside it.
+            // World bounds, so the touch radius follows the player scaling the Sun.
             var extents = _radiusSource.bounds.extents;
             return Mathf.Max(extents.x, Mathf.Max(extents.y, extents.z));
         }
@@ -312,8 +300,6 @@ namespace CosmicSimulation
                 _rumble.Stop();
             }
         }
-
-        // ---------- desktop pointer
 
         public void OnFocusEnter(GEFocusEventData eventData)
         {

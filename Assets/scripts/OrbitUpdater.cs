@@ -8,9 +8,7 @@ namespace GalaxyExplorer
 {
     public class OrbitUpdater : MonoBehaviour
     {
-        /// <summary>
-        /// Semi-major axis, km / DistanceScaleFactor
-        /// </summary>
+        /// <summary>Semi-major axis, km / DistanceScaleFactor.</summary>
         public float SemiMajorAxis;
         public float SemiMajorAxisReal;
 
@@ -22,9 +20,6 @@ namespace GalaxyExplorer
             }
         }
 
-        /// <summary>
-        /// Eccentricity
-        /// </summary>
         public float Eccentricity;
         public float EccentricityReal;
 
@@ -36,14 +31,10 @@ namespace GalaxyExplorer
             }
         }
 
-        /// <summary>
-        /// Argument of perigee, radians
-        /// </summary>
+        /// <summary>Radians.</summary>
         public float ArgumentOfPerigee;
 
-        /// <summary>
-        /// Inclination, radians
-        /// </summary>
+        /// <summary>Radians.</summary>
         public float Inclination;
         public float InclinationReal;
 
@@ -55,19 +46,13 @@ namespace GalaxyExplorer
             }
         }
 
-        /// <summary>
-        /// Right ascension of ascending node, radians
-        /// </summary>
+        /// <summary>Radians.</summary>
         public float RightAscensionOfAscendingNode;
 
-        /// <summary>
-        /// Mean anomaly, radians
-        /// </summary>
+        /// <summary>Mean anomaly at <see cref="Epoch"/>, radians.</summary>
         public float MeanAnomaly;
 
-        /// <summary>
-        /// Sidereal period, days
-        /// </summary>
+        /// <summary>Sidereal period, days.</summary>
         public float Period;
         public float PeriodReal;
 
@@ -79,24 +64,15 @@ namespace GalaxyExplorer
             }
         }
 
-        /// <summary>
-        /// Orbital plane
-        /// </summary>
         public Coordinates Plane;
 
-        /// <summary>
-        /// True anomaly, radians
-        /// </summary>
+        /// <summary>Radians; used when the Newton-Raphson solve fails.</summary>
         public float TrueAnomaly;
 
-        /// <summary>
-        /// Epoch, JD
-        /// </summary>
+        /// <summary>Julian date the elements are given at.</summary>
         public float Epoch;
 
-        /// <summary>
-        /// Realilty from 0 (schematic) to 1 (real)
-        /// </summary>
+        /// <summary>Blends each element from its schematic value (0) to its real one (1).</summary>
         [Range(0, 1)]
         public float Reality;
 
@@ -114,18 +90,16 @@ namespace GalaxyExplorer
 
         private bool computed = false;
 
-        // Use this for initialization
         private void Start()
         {
             StartDate = myDateTime = DateTime.Now;
         }
 
-        // Update is called once per frame
         private void Update()
         {
             if (computed && TransitionSpeedMultiplier == 0.0f)
             {
-                // Don't animate the planet rotation during transitions
+                // Frozen during transitions, but only once a first position has been set.
                 return;
             }
 
@@ -141,21 +115,14 @@ namespace GalaxyExplorer
             return CalculatePosition(trueAnomoly);
         }
 
-        /// <summary>
-        /// True anomaly using Newton-Raphson iteration
-        /// </summary>
-        /// <param name="orbit"></param>
-        /// <param name="dateTime"></param>
-        /// <returns></returns>
+        /// <summary>True anomaly by Newton-Raphson; falls back to <see cref="TrueAnomaly"/> if it does not converge.</summary>
         public float CalculateTrueAnomaly(DateTime dateTime)
         {
             const float epsilon = 0.000001f;
             float trueAnomoly;
 
-            // Mean Anomoly
             float meanAnomoly = CalculateMeanAnomaly(dateTime);
 
-            // Eccentric Anomaly
             float eccentricAnomoly, oldEccentricAnomoly, newEccentricAnomoly = meanAnomoly + (CurrentEccentricity / 2);
 
             // Solve [ 0 = E - e sin(E) - M ] for E using Newton-Raphson: Xn+1 = Xn - [ f(Xn) / f'(Xn) ]
@@ -169,7 +136,6 @@ namespace GalaxyExplorer
             }
             while (Mathf.Abs(oldEccentricAnomoly - newEccentricAnomoly) > epsilon && iterations < MaxIterations);
 
-            // Iteractions
             if (iterations == MaxIterations)
             {
                 trueAnomoly = TrueAnomaly;
@@ -189,7 +155,7 @@ namespace GalaxyExplorer
                     trueAnomoly = (Mathf.PI * 2.0f) - trueAnomoly;
                 }
 
-                // Fail
+                // Rounding can push the Acos argument just outside [-1, 1].
                 if (float.IsNaN(trueAnomoly))
                 {
                     trueAnomoly = TrueAnomaly;
@@ -199,18 +165,13 @@ namespace GalaxyExplorer
             return trueAnomoly;
         }
 
-        /// <summary>
-        /// Mean anomaly
-        /// </summary>
-        /// <returns>Mean anomaly, radians (0 to TwoPi)</returns>
+        /// <summary>Mean anomaly, radians (0 to TwoPi).</summary>
         public float CalculateMeanAnomaly(DateTime dateTime)
         {
             float angle = (ElapsedDays(dateTime, Epoch) % CurrentPeriod) / CurrentPeriod * (Mathf.PI * 2) * (-1);
 
-            // Add mean anomaly at defined epoch
             angle += MeanAnomaly;
 
-            // Wrap angle 0-TwoPi
             if (angle > Mathf.PI * 2)
             {
                 angle -= Mathf.PI * 2;
@@ -223,27 +184,19 @@ namespace GalaxyExplorer
             return angle;
         }
 
-        /// <summary>
-        /// Calculate position in orbit relative to orbit origin
-        /// </summary>
-        /// <param name="trueAnomaly">True anomaly, radians</param>
+        /// <summary>Position relative to the orbit origin for a true anomaly in radians.</summary>
         public Vector3 CalculatePosition(float trueAnomaly)
         {
-            // Compute radius from orbit origin
             float radius = CurrentSemiMajorAxis * (1 - CurrentEccentricity * CurrentEccentricity) / (1 + CurrentEccentricity * Mathf.Cos(trueAnomaly));
 
-            // Calculate position relative to orbit origin
-            // XZ-plane is ecliptic, Y towards celestial north pole
+            // XZ-plane is ecliptic, Y towards celestial north pole.
             return new Vector3(
                 radius * (Mathf.Cos(RightAscensionOfAscendingNode) * Mathf.Cos(trueAnomaly + ArgumentOfPerigee) - Mathf.Sin(RightAscensionOfAscendingNode) * Mathf.Sin(trueAnomaly + ArgumentOfPerigee) * Mathf.Cos(CurrentInclination)),
                 radius * (Mathf.Sin(trueAnomaly + ArgumentOfPerigee) * Mathf.Sin(CurrentInclination)),
                 -radius * (Mathf.Sin(RightAscensionOfAscendingNode) * Mathf.Cos(trueAnomaly + ArgumentOfPerigee) + Mathf.Cos(RightAscensionOfAscendingNode) * Mathf.Sin(trueAnomaly + ArgumentOfPerigee) * Mathf.Cos(CurrentInclination)));
         }
 
-        /// <summary>
-        /// Elapsed days since J2000.0
-        /// </summary>
-        /// <returns></returns>
+        /// <summary>Days from <paramref name="epoch"/> (a Julian date) to <paramref name="dateTime"/>.</summary>
         public float ElapsedDays(DateTime dateTime, float epoch)
         {
             return ToJulianDate(dateTime) - epoch;
