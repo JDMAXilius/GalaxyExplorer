@@ -35,7 +35,8 @@ namespace GalaxyExplorer.XR
         private bool _orbiting, _panning;
 
         // Button states last frame: a press or release is also a change from these, because the one-frame edges
-        // (wasPressedThisFrame, wasReleasedThisFrame) can be skipped by a hitch or by queued input (CS-365).
+        // (wasPressedThisFrame, wasReleasedThisFrame) can be skipped by a hitch or by queued input (CS-365). Drag
+        // state is only set while a button reads down, so the next frame it reads up always clears it.
         private bool _leftWasDown, _rightWasDown;
 
         public static DesktopMouseInput Instance { get; private set; }
@@ -60,14 +61,17 @@ namespace GalaxyExplorer.XR
 
         private void Update()
         {
+            // With no mouse or no camera the handlers do not run, so a release in the gap would arrive late as a click.
             var mouse = Mouse.current;
             if (mouse == null)
             {
+                CancelInteraction();
                 return;
             }
 
             if (_camera == null)
             {
+                CancelInteraction();
                 _camera = Camera.main;
                 if (_camera == null)
                 {
@@ -84,10 +88,6 @@ namespace GalaxyExplorer.XR
                 CancelInteraction();
                 return;
             }
-
-            // A release we never saw (outside the Game view, swallowed by uGUI) would leave drag state stuck and
-            // block every later interaction; the button, not our bookkeeping, is the authority.
-            ReconcileButtons(mouse);
 
             UpdateGrabPoint(ray);
 
@@ -284,36 +284,6 @@ namespace GalaxyExplorer.XR
         {
             var handler = ManipulatedHandler(target);
             return handler != null ? handler.HostTransform : null;
-        }
-
-        /// <summary>Ends any drag whose mouse button is no longer held, so a missed release cannot wedge input.</summary>
-        private void ReconcileButtons(Mouse mouse)
-        {
-            // Runs before the button handlers: a release they will see (an edge, or up after down last frame) is
-            // theirs, or every click would become a cancel. Only a button that went up unseen is lost here.
-            var leftLost = !mouse.leftButton.isPressed && !mouse.leftButton.wasReleasedThisFrame && !_leftWasDown;
-            var rightLost = !mouse.rightButton.isPressed && !mouse.rightButton.wasReleasedThisFrame && !_rightWasDown;
-
-            if (_pressed != null && leftLost)
-            {
-                var pressed = _pressed;
-                _pressed = null;
-
-                // A cancel, not a click: we cannot know the release was over the same object.
-                pressed.RaisePointerUp(_pointer, false);
-            }
-
-            if (_orbiting && leftLost)
-            {
-                _orbiting = false;
-            }
-
-            if ((_panning || _spinning != null || _spinningHost != null) && rightLost)
-            {
-                _panning = false;
-                _spinning = null;
-                _spinningHost = null;
-            }
         }
 
         private void CancelInteraction()

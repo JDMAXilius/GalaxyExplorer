@@ -122,10 +122,12 @@ namespace GalaxyExplorer.Editor
                 var clickable = false;
                 Add(0.3f, () =>
                 {
-                    // A dock hidden with Tab stays hidden across runs (PlayerPrefs): its tiles are untested, not failed.
+                    // A hidden dock's tiles are untested, not failed. UI 2.0 hides the legacy docks every frame.
                     if (!wanted.gameObject.activeInHierarchy)
                     {
-                        Skip($"the {wanted.Module.Id} tile: the dock is hidden (Tab shows it)");
+                        Skip(CosmicSimulation.UI2.Ui2Shell.Instance != null
+                            ? $"the {wanted.Module.Id} tile: UI 2.0 hides the legacy dock (turn UI 2.0 off)"
+                            : $"the {wanted.Module.Id} tile: the dock is hidden (Tab or U shows it)");
                         return;
                     }
 

@@ -315,7 +315,8 @@ namespace CosmicSimulation.UI2
 
             if (DesktopDock.Instance != null)
             {
-                DesktopDock.Instance.SetVisible(false);
+                // Not remembered: UI 2.0 hiding the legacy dock is not the player pressing Tab.
+                DesktopDock.Instance.SetVisible(false, remember: false);
             }
 
             if (GalaxyExplorerManager.IsDesktop)

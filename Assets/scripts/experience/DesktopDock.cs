@@ -218,7 +218,8 @@ namespace CosmicSimulation
 
         // ---------- visibility
 
-        public void SetVisible(bool visible)
+        /// <summary>Shows or hides the dock; <paramref name="remember"/> false when it is not the player's choice.</summary>
+        public void SetVisible(bool visible, bool remember = true)
         {
             if (_visible == visible)
             {
@@ -236,8 +237,11 @@ namespace CosmicSimulation
                 popup.Close();
             }
 
-            PlayerPrefs.SetInt(VisiblePrefsKey, visible ? 1 : 0);
-            PlayerPrefs.Save();
+            if (remember)
+            {
+                PlayerPrefs.SetInt(VisiblePrefsKey, visible ? 1 : 0);
+                PlayerPrefs.Save();
+            }
         }
 
         public void Toggle() => SetVisible(!_visible);
