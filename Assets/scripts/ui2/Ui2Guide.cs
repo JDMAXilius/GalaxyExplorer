@@ -1,6 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,9 +10,10 @@ using Companion = Cosmic.Companion;
 namespace CosmicSimulation.UI2
 {
     /// <summary>
-    /// The UI 2.0 guide panel (docs/design/v2, S15 to S22): says what the companion is doing in words, offers
-    /// the one action that fits, and explains a missing microphone or a failed connection. Opening the dock's
-    /// Guide brings the companion out; leaving it sends the companion away.
+    /// The UI 2.0 guide panel (docs/design/v2, S15 to S22): says what the companion is doing in words, keeps the
+    /// conversation on screen, offers suggestions made from what the player has in front of them, and explains a
+    /// missing microphone or a failed connection. Opening the dock's Guide brings the companion out; leaving it
+    /// sends the companion away.
     /// </summary>
     public class Ui2Guide : MonoBehaviour
     {
@@ -23,12 +25,12 @@ namespace CosmicSimulation.UI2
         [SerializeField] private TMP_Text helper = null;
         [SerializeField] private Image wave = null;
         [SerializeField]
-        [Tooltip("Two suggestion buttons: the first asks a question, the second gives a command.")]
+        [Tooltip("Suggestion bubbles, filled by GuideSuggestions from the situation.")]
         private UiButton[] questions = Array.Empty<UiButton>();
 
         [SerializeField] private TMP_Text[] questionLabels = Array.Empty<TMP_Text>();
 
-        [Header("Transcript")]
+        [Header("Conversation")]
         [SerializeField] private GameObject transcript = null;
         [SerializeField] private TMP_Text transcriptText = null;
         [SerializeField] private UiButton primary = null;
@@ -38,59 +40,29 @@ namespace CosmicSimulation.UI2
         [SerializeField] private Sprite retryIcon = null;
         [SerializeField] private Sprite closeIcon = null;
 
-        // What a player can ask. One is picked each time the guide comes out.
-        private static readonly string[] Questions =
-        {
-            "Why does Saturn have rings?",
-            "How big is the Milky Way?",
-            "What is a nebula made of?",
-            "How far away is Andromeda?",
-            "What is at the centre of our galaxy?",
-            "Why is Mars red?",
-            "Could anything live on Europa?",
-            "How old is the Sun?",
-            "What is the Cosmic Web?",
-            "Why does Uranus spin on its side?",
-            "How do stars form?",
-            "What is a planetary nebula?",
-            "How long is a day on Venus?",
-            "What will happen to the Sun?",
-        };
+        // The conversation, kept while the app runs so reopening the guide shows it again. Answers stay until
+        // newer lines push them up and out of the box.
+        private static readonly List<string> Lines = new List<string>();
+        private const int MaxLines = 12;
+        private const string Dim = "<color=#AAB6C2>";
 
-        // What a player can tell it to do. Each line maps to one of the guide's actions (open_place, pull_body,
-        // restore), so every suggestion is something it can really carry out.
-        private static readonly string[] Commands =
-        {
-            "Take me to Orion.",
-            "Take me to the Crab Nebula.",
-            "Show me the Pillars of Creation.",
-            "Take me to Andromeda.",
-            "Show me the Whirlpool Galaxy.",
-            "Open the Solar System.",
-            "Show me the planets in a row.",
-            "Take me to the Galactic Center.",
-            "Show me the Cosmic Web.",
-            "Take me to the Helix Nebula.",
-            "Show me HD 110067.",
-            "Put everything back.",
-        };
-
-        // Only offered when the planets stand in a row, where pulling one out is possible.
-        private static readonly string[] RowCommands =
-        {
-            "Pull out Saturn.",
-            "Show me Jupiter up close.",
-            "Bring Earth over here.",
-            "Pull out Mars.",
-        };
-
-        private readonly string[] _picked = new string[2];
+        private string[] _picked = Array.Empty<string>();
         private string _saidBefore = string.Empty;
+        private string _heardBefore = string.Empty;
+        private int _turnStart = -1;
+        private string _context;
+        private float _nextContextCheck;
         private Status _status = (Status)(-1);
         private bool _wasGuide;
         private bool _requesting;
 
         public Status Current => _status;
+
+        /// <summary>The suggestions on screen now, for a harness.</summary>
+        public IReadOnlyList<string> Suggestions => _picked;
+
+        /// <summary>The conversation as shown, for a harness.</summary>
+        public IReadOnlyList<string> Conversation => Lines;
 
         private void Start()
         {
@@ -99,7 +71,7 @@ namespace CosmicSimulation.UI2
             for (var i = 0; i < questions.Length; i++)
             {
                 var slot = i;
-                questions[i].Clicked += () => Being.Host.Current?.Ask(_picked[slot]);
+                questions[i].Clicked += () => AskSuggestion(slot);
             }
 
             Ui2Shell.Instance.Changed += OnShellChanged;
@@ -122,6 +94,9 @@ namespace CosmicSimulation.UI2
 
             if (guide && !_wasGuide)
             {
+                // A new companion starts a new session: its first words are new, whatever the last one said.
+                _saidBefore = string.Empty;
+                _heardBefore = string.Empty;
                 Pick();
                 Summon();
             }
@@ -133,23 +108,56 @@ namespace CosmicSimulation.UI2
             _wasGuide = guide;
         }
 
-        /// <summary>A new question and a new command, different from the ones shown last time.</summary>
+        /// <summary>Fresh suggestions for what is in front of the player now, avoiding the ones just shown.</summary>
         private void Pick()
         {
-            var director = ExperienceDirector.Instance;
-            var inRow = director != null && director.Current != null && director.Current.Id == "solar_system_planets";
-            _picked[0] = Another(Questions, _picked[0]);
-            _picked[1] = inRow && UnityEngine.Random.value < 0.5f ? Another(RowCommands, _picked[1]) : Another(Commands, _picked[1]);
-            for (var i = 0; i < questionLabels.Length && i < _picked.Length; i++)
+            var s = Being.Host.Read();
+            var explore = Ui2Explore.Instance;
+            var selected = explore != null ? explore.Selected : null;
+            var selectedOut = selected != null && s.held != null && Array.IndexOf(s.held, selected.Id) >= 0;
+            var hasSound = explore != null && explore.SelectionSound != null;
+            var lines = GuideSuggestions.For(s, selected, selectedOut, hasSound, questions.Length);
+
+            _picked = new string[questions.Length];
+            for (var i = 0; i < questions.Length; i++)
             {
-                questionLabels[i].text = _picked[i];
+                _picked[i] = i < lines.Count ? lines[i] : null;
+                if (i < questionLabels.Length)
+                {
+                    questionLabels[i].text = _picked[i] ?? string.Empty;
+                }
             }
+
+            _context = Context(s, selected);
+            PaintSuggestions();
         }
 
-        private static string Another(string[] pool, string last)
+        // What the suggestions were made for: when it changes, they are made again.
+        private static string Context(Companion.Situation s, BodyInfo selected) =>
+            s.placeId + "|" + (selected != null ? selected.Id : "") + "|" + s.previewing + "|" +
+            (s.held != null ? string.Join(",", s.held) : "");
+
+        private void AskSuggestion(int slot)
         {
-            var pick = pool[UnityEngine.Random.Range(0, pool.Length)];
-            return pick == last && pool.Length > 1 ? pool[(Array.IndexOf(pool, pick) + 1) % pool.Length] : pick;
+            var being = Being.Host.Current;
+            var line = slot < _picked.Length ? _picked[slot] : null;
+            if (being == null || string.IsNullOrEmpty(line))
+            {
+                return;
+            }
+
+            Add(Dim + "You: " + line + "</color>");
+            _turnStart = -1;
+            being.Ask(line);
+        }
+
+        private static void Add(string line)
+        {
+            Lines.Add(line);
+            while (Lines.Count > MaxLines)
+            {
+                Lines.RemoveAt(0);
+            }
         }
 
         private static void Summon()
@@ -211,16 +219,29 @@ namespace CosmicSimulation.UI2
                     Pick();
                 }
 
+                // A spoken question's words arrive after it was asked: they go in front of its answer.
                 if (status == Status.Thinking && _status != Status.Speaking)
                 {
-                    _saidBefore = being != null ? being.Said : string.Empty;
+                    _turnStart = Lines.Count;
                 }
 
                 _status = status;
                 Paint();
             }
 
+            Capture(being);
             PaintTranscript();
+
+            // A new selection, place or pulled body while the panel is up: suggestions for that.
+            if (Time.unscaledTime >= _nextContextCheck && status != Status.Thinking && status != Status.Speaking)
+            {
+                _nextContextCheck = Time.unscaledTime + 0.5f;
+                var explore = Ui2Explore.Instance;
+                if (Context(Being.Host.Read(), explore != null ? explore.Selected : null) != _context)
+                {
+                    Pick();
+                }
+            }
 
             // The bars breathe with the microphone while listening and rest otherwise.
             var loud = status == Status.Listening && being != null ? Mathf.Clamp01(being.MicLevel * 8f) : 0f;
@@ -228,13 +249,49 @@ namespace CosmicSimulation.UI2
             wave.rectTransform.localScale = new Vector3(1f, scale, 1f);
         }
 
+        // The companion's newest words into the conversation.
+        private void Capture(Companion.Being being)
+        {
+            if (being == null)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(being.Said) && being.Said != _saidBefore)
+            {
+                _saidBefore = being.Said;
+                Add(being.Said);
+            }
+
+            if (!string.IsNullOrEmpty(being.Heard) && being.Heard != _heardBefore)
+            {
+                _heardBefore = being.Heard;
+                var line = Dim + "You: " + being.Heard + "</color>";
+                if (_turnStart >= 0 && _turnStart <= Lines.Count)
+                {
+                    Lines.Insert(_turnStart, line);
+                    while (Lines.Count > MaxLines)
+                    {
+                        Lines.RemoveAt(0);
+                    }
+                }
+                else
+                {
+                    Add(line);
+                }
+
+                _turnStart = -1;
+            }
+        }
+
+        private bool Trouble => _status == Status.Unavailable || _status == Status.PermissionNeeded ||
+                                _status == Status.NoMicrophone;
+
         private void Paint()
         {
             var active = _status == Status.Listening || _status == Status.Speaking;
-            var trouble = _status == Status.Unavailable || _status == Status.PermissionNeeded ||
-                          _status == Status.NoMicrophone;
             phase.color = active ? UiTheme.Accent : UiTheme.Ink;
-            wave.color = active ? UiTheme.Accent : trouble ? UiTheme.InkSecondary : UiTheme.Ink;
+            wave.color = active ? UiTheme.Accent : Trouble ? UiTheme.InkSecondary : UiTheme.Ink;
 
             string heading, detail, action, other = "Dismiss";
             Sprite icon;
@@ -274,14 +331,14 @@ namespace CosmicSimulation.UI2
                     break;
                 case Status.PermissionNeeded:
                     heading = "Microphone";
-                    detail = "Use your microphone to ask the guide questions. You can keep exploring without it.";
+                    detail = "Use your microphone to ask the guide questions.";
                     action = "Enable microphone";
                     icon = micIcon;
                     other = "Not now";
                     break;
                 case Status.NoMicrophone:
                     heading = "No microphone";
-                    detail = "Your microphone is unavailable. Choose another device or check microphone access.";
+                    detail = "Choose another device or check access.";
                     action = "Choose device";
                     icon = micIcon;
                     other = "Keep exploring";
@@ -304,16 +361,19 @@ namespace CosmicSimulation.UI2
             secondary.Interactable = _status != Status.Listening;
             secondary.GetComponent<CanvasGroup>().alpha = 1f;
 
-            // While the guide is working on an answer or giving it, the suggestions give way to what it says.
-            var answering = _status == Status.Thinking || _status == Status.Speaking;
-            var canAsk = !trouble && _status != Status.Connecting && Being.Host.Current != null;
-            foreach (var question in questions)
-            {
-                question.gameObject.SetActive(!trouble && !answering);
-                question.Interactable = canAsk;
-            }
+            // The conversation and the suggestions stay up through an answer; only a problem replaces them.
+            transcript.SetActive(!Trouble);
+            PaintSuggestions();
+        }
 
-            transcript.SetActive(answering);
+        private void PaintSuggestions()
+        {
+            var canAsk = !Trouble && _status != Status.Connecting && Being.Host.Current != null;
+            for (var i = 0; i < questions.Length; i++)
+            {
+                questions[i].gameObject.SetActive(!Trouble && i < _picked.Length && _picked[i] != null);
+                questions[i].Interactable = canAsk;
+            }
         }
 
         private void PaintTranscript()
@@ -323,17 +383,15 @@ namespace CosmicSimulation.UI2
                 return;
             }
 
-            var being = Being.Host.Current;
-            var heard = being != null ? being.Heard : string.Empty;
-            var said = being != null && being.Said != _saidBefore ? being.Said : string.Empty;
-            var text = (string.IsNullOrEmpty(heard) ? string.Empty : "<color=#AAB6C2>You: " + heard + "</color>\n") +
-                       (string.IsNullOrEmpty(said) ? "<color=#AAB6C2>…</color>" : said);
-
-            // The newest words matter most; a long answer shows its end.
-            const int Room = 260;
-            if (said.Length > Room)
+            var waiting = _status == Status.Thinking;
+            string text;
+            if (Lines.Count == 0 && !waiting)
             {
-                text = "…" + said.Substring(said.Length - Room);
+                text = Dim + "Ask something, or pick a suggestion below.</color>";
+            }
+            else
+            {
+                text = string.Join("\n\n", Lines) + (waiting ? "\n\n" + Dim + "…</color>" : string.Empty);
             }
 
             if (transcriptText.text != text)

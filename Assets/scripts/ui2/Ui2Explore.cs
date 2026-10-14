@@ -1310,6 +1310,24 @@ namespace CosmicSimulation.UI2
             return solver != null && solver.AmbientClip != null ? solver.AmbientClip : info.Narration;
         }
 
+        /// <summary>What Listen would sound for the current selection, worked out even while the card is hidden (Guide).</summary>
+        public AudioClip SelectionSound =>
+            Comparing ? null
+            : _preview != null ? (_preview.Ambience != null ? _preview.Ambience : _preview.Narration)
+            : _body != null ? SoundOf(_body)
+            : _place != null ? (_place.Ambience != null ? _place.Ambience : _place.Narration)
+            : null;
+
+        /// <summary>Starts Listen on the current selection, as the card's button does; the guide's play_sound.</summary>
+        public void PlaySelectionSound()
+        {
+            _sound = SelectionSound;
+            if (_sound != null && !Listening)
+            {
+                ToggleListen();
+            }
+        }
+
         private void ToggleListen()
         {
             if (_sound == null)

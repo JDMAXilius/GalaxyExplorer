@@ -159,54 +159,56 @@ namespace CosmicSimulation.EditorTools
             panel.gameObject.SetActive(false);
         }
 
-        // ---------- Guide. Figma: Guide/Panel at 998, 118, 444 x 632.
+        // ---------- Guide. Figma: Guide/Panel at 998, 118, 444 x 632; grown to 780 tall for a chat that stays on
+        // screen (the owner's ask, 14 Oct 2026): status on one line, the conversation, then three suggestions.
 
         internal static void BuildGuide(RectTransform frame, GameObject root)
         {
-            var panel = Ui2Kit.Panel(frame, "Guide", 998f, 118f, 444f, 632f, 24f);
+            var panel = Ui2Kit.Panel(frame, "Guide", 998f, 118f, 444f, 780f, 24f);
             Ui2Builder.Pin(panel, Ui2Builder.TopRight);
             Ui2Kit.Glyph(panel, "v2_icon_planet", 27f, 31f, 52f, UiTheme.Accent);
             Ui2Kit.Label(panel, "title", 95f, 36f, 320f, 42f, "COSMIC GUIDE", 30f, UiTheme.Ink, FontWeight.SemiBold);
 
-            var wave = Ui2Kit.Glyph(panel, "v2_icon_wave", 186f, 113f, 72f, UiTheme.Accent);
-            var phase = Ui2Kit.Label(panel, "phase", 27f, 195f, 390f, 42f, "Ready to help", 32f, UiTheme.Ink,
-                                     FontWeight.SemiBold, false, TextAlignmentOptions.Top);
-            var helper = Ui2Kit.Label(panel, "helper", 27f, 247f, 390f, 81f, "Ask about what you see.", 20f,
-                                      UiTheme.InkSecondary, FontWeight.Regular, true, TextAlignmentOptions.Top);
+            var wave = Ui2Kit.Glyph(panel, "v2_icon_wave", 27f, 98f, 44f, UiTheme.Accent);
+            var phase = Ui2Kit.Label(panel, "phase", 84f, 96f, 333f, 34f, "Ready to help", 26f, UiTheme.Ink,
+                                     FontWeight.SemiBold);
+            var helper = Ui2Kit.Label(panel, "helper", 84f, 131f, 333f, 24f, "Ask about what you see.", 17f,
+                                      UiTheme.InkSecondary);
 
-            var texts = new[] { "Why does Saturn have rings?", "Take me to Orion." };
+            // The conversation: newest at the bottom, older lines scroll up out of the masked box.
+            var transcript = Ui2Builder.Box("transcript", panel, 27f, 168f, 390f, 330f);
+            Ui2Builder.Fill(Ui2Builder.Rect("fill", transcript, 390f, 330f), "ui_rounded_r64_fill", 22f,
+                            Ui2Builder.WithAlpha(UiTheme.Deep, 0.6f));
+            Ui2Builder.Fill(Ui2Builder.Rect("edge", transcript, 390f, 330f), "ui_rounded_r64_ring", 22f,
+                            new Color(1f, 1f, 1f, 0.3f));
+            var view = Ui2Builder.Box("view", transcript, 18f, 12f, 354f, 306f);
+            view.gameObject.AddComponent<RectMask2D>();
+            var transcriptText = Ui2Kit.Label(view, "text", 0f, 0f, 354f, 306f, string.Empty, 18f, UiTheme.Ink,
+                                              FontWeight.Regular, true, TextAlignmentOptions.BottomLeft);
+            transcriptText.overflowMode = TextOverflowModes.Overflow;
+
+            Ui2Kit.Label(panel, "try", 27f, 510f, 390f, 24f, "Try asking", 16f, UiTheme.InkSecondary);
+            var texts = new[] { "What am I looking at?", "Take me to Orion.", "What should I see next?" };
             var questions = new UiButton[texts.Length];
             var questionLabels = new TMP_Text[texts.Length];
             for (var i = 0; i < texts.Length; i++)
             {
-                var q = Ui2Builder.Box("question_" + i, panel, 27f, 304f + 84f * i, 390f, 62f);
-                Ui2Builder.Fill(Ui2Builder.Rect("fill", q, 390f, 62f), "ui_rounded_r64_fill", 22f,
+                var q = Ui2Builder.Box("question_" + i, panel, 27f, 538f + 52f * i, 390f, 46f);
+                Ui2Builder.Fill(Ui2Builder.Rect("fill", q, 390f, 46f), "ui_rounded_r64_fill", 22f,
                                 Ui2Builder.WithAlpha(UiTheme.Deep, 0.6f));
-                Ui2Builder.Fill(Ui2Builder.Rect("edge", q, 390f, 62f), "ui_rounded_r64_ring", 22f,
+                Ui2Builder.Fill(Ui2Builder.Rect("edge", q, 390f, 46f), "ui_rounded_r64_ring", 22f,
                                 new Color(1f, 1f, 1f, 0.3f));
-                var wash = Ui2Builder.Fill(Ui2Builder.Rect("wash", q, 390f, 62f), "ui_rounded_r64_fill", 22f,
+                var wash = Ui2Builder.Fill(Ui2Builder.Rect("wash", q, 390f, 46f), "ui_rounded_r64_fill", 22f,
                                            Color.clear);
-                Ui2Kit.Glyph(q, "v2_icon_chat", 21f, 17f, 28f, UiTheme.Accent);
-                questionLabels[i] = Ui2Kit.Label(q, "label", 65f, 18f, 310f, 27f, texts[i], 20f, UiTheme.Ink);
+                Ui2Kit.Glyph(q, "v2_icon_chat", 18f, 11f, 24f, UiTheme.Accent);
+                questionLabels[i] = Ui2Kit.Label(q, "label", 56f, 11f, 320f, 24f, texts[i], 18f, UiTheme.Ink);
                 q.gameObject.AddComponent<CanvasGroup>();
-                questions[i] = Ui2Kit.Press(q, 390f, 62f, wash, null, null, null, true);
+                questions[i] = Ui2Kit.Press(q, 390f, 46f, wash, null, null, null, true);
             }
 
-            // While the guide answers, the two suggestions give way to what it says (same place, same plate).
-            var transcript = Ui2Builder.Box("transcript", panel, 27f, 304f, 390f, 146f);
-            Ui2Builder.Fill(Ui2Builder.Rect("fill", transcript, 390f, 146f), "ui_rounded_r64_fill", 22f,
-                            Ui2Builder.WithAlpha(UiTheme.Deep, 0.6f));
-            Ui2Builder.Fill(Ui2Builder.Rect("edge", transcript, 390f, 146f), "ui_rounded_r64_ring", 22f,
-                            new Color(1f, 1f, 1f, 0.3f));
-            Ui2Kit.Glyph(transcript, "v2_icon_chat", 21f, 17f, 28f, UiTheme.Accent);
-            var transcriptText = Ui2Kit.Label(transcript, "text", 65f, 16f, 305f, 116f, string.Empty, 18f, UiTheme.Ink,
-                                              FontWeight.Regular, true);
-            transcriptText.overflowMode = TextOverflowModes.Ellipsis;
-            transcript.gameObject.SetActive(false);
-
-            var primary = Ui2Kit.Primary(panel, "primary", 27f, 543f, 230f, 60f, "Start listening", "v2_icon_mic",
+            var primary = Ui2Kit.Primary(panel, "primary", 27f, 698f, 230f, 60f, "Start listening", "v2_icon_mic",
                                          "Enable microphone");
-            var secondary = Ui2Kit.Secondary(panel, "secondary", 269f, 543f, 148f, 60f, "Dismiss", null,
+            var secondary = Ui2Kit.Secondary(panel, "secondary", 269f, 698f, 148f, 60f, "Dismiss", null,
                                              "Keep exploring");
 
             var guide = root.AddComponent<Ui2Guide>();

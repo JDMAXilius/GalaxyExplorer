@@ -72,10 +72,23 @@ a marker previewed on the UI 2.0 card is named as not yet entered. The shipping 
 markers from every active `CardPOI`/`PlanetPOI` with a destination. With UI 2.0 off there is no card, so only the
 pulled-out bodies say what is selected.
 
-Tools: `open_place` (any place or marker id), `pull_body` (an id listed as pullable here; asked for right after
-`open_place`, it waits up to 15 s for the place to arrive), `send_home` (one body) and `restore` (all). The prompt
+Tools: `open_place` (any place or marker id), `pull_body` (an id listed as pullable here, or a moon of a planet that
+is here - its planet comes out first; asked for right after `open_place`, it waits up to 15 s for the place to
+arrive), `send_home` (one body), `play_sound` (the card's Listen for what it shows) and `restore` (all). A moon in
+the Planets row is the `MoonOrbit` body named by its `BodyInfo`; in the orbit view, the `MoonForceSolver` named by its panel. The prompt
 tells it that "this" means the body on the card, to suggest what is in this place first, and that questions about
 anywhere else are still answered.
+
+## The guide panel (UI 2.0)
+
+`Ui2Guide` keeps the conversation on screen: the player's words (dimmed) and the guide's answers, newest at the
+bottom of a masked box, the last 12 lines kept while the app runs, so an answer stays until newer lines push it up.
+Under it, three suggestion bubbles from `GuideSuggestions`, made from `Host.Read()` - the same situation the guide
+is told. With a body on the card they are about that body: questions (its own first, then general ones) and what
+the guide can do with it (play its sound, show one of its moons, put it back). With nothing selected they come from
+the place: its questions, the markers its map opens, bodies to pull, other places. Lines shown in the last rounds
+are skipped. They are made again after every answer and whenever the place, the selection, a preview or what is
+pulled out changes. A bubble asks the guide in the player's words, so the guide answers or acts with its tools.
 
 ## Running it
 

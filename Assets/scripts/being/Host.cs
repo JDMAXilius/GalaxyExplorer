@@ -84,7 +84,10 @@ namespace CosmicSimulation.Being
 
         public void Click() => AudioService.Instance?.PlayClip(AudioId.Select);
 
-        public Cosmic.Companion.Situation Situation()
+        public Cosmic.Companion.Situation Situation() => Read();
+
+        /// <summary>What the player has in front of them; also read by the guide panel for its suggestions.</summary>
+        public static Cosmic.Companion.Situation Read()
         {
             var director = ExperienceDirector.Instance;
             var current = director != null ? director.Current : null;
@@ -102,7 +105,7 @@ namespace CosmicSimulation.Being
                 {
                     held.Add(id);
                 }
-                else if (force.ForceState == ForceSolver.State.Root && !bodies.Contains(id))
+                else if (force.ForceState == ForceSolver.State.Root && Pullable(force) && !bodies.Contains(id))
                 {
                     bodies.Add(id);
                 }
@@ -159,6 +162,9 @@ namespace CosmicSimulation.Being
                 case "restore":
                     Arrangement.Restore();
                     break;
+                case "play_sound":
+                    UI2.Ui2Explore.Instance?.PlaySelectionSound();
+                    break;
             }
         }
 
@@ -188,6 +194,19 @@ namespace CosmicSimulation.Being
             {
                 return;
             }
+
+            // A moon comes off its planet only while the planet is out: bring the planet out first, then wait.
+            var orbit = force.GetComponent<MoonOrbit>();
+            if ((orbit != null || force is MoonForceSolver) && !Pullable(force))
+            {
+                var planet = orbit != null ? orbit.ParentBody : ((MoonForceSolver)force).ParentPlanet;
+                if (planet != null && planet.ForceState == ForceSolver.State.Root)
+                {
+                    planet.OnPointerDown();
+                }
+                return;
+            }
+
             if (force.ForceState == ForceSolver.State.Root)
             {
                 force.OnPointerDown();
@@ -213,8 +232,40 @@ namespace CosmicSimulation.Being
                     }
                 }
             }
-            // A moon sits under its planet's prefab and would answer to the planet's id.
-            return force is MoonForceSolver ? null : PlanetPOI.BodyIdOf(force.transform);
+            // A moon goes by its own copy: in the row it carries a MoonOrbit; in the orbit view it sits under its
+            // planet's prefab and would answer to the planet's id.
+            var orbit = force.GetComponent<MoonOrbit>();
+            if (orbit != null)
+            {
+                return orbit.Info != null ? orbit.Info.Id : null;
+            }
+            return force is MoonForceSolver ? MoonId(force) : PlanetPOI.BodyIdOf(force.transform);
+        }
+
+        private static string MoonId(ForceSolver force)
+        {
+            foreach (var panel in force.GetComponentsInChildren<InfoPanel>(true))
+            {
+                if (panel.Info != null && panel.Info.IsMoon)
+                {
+                    return panel.Info.Id;
+                }
+            }
+            var up = force.GetComponentInParent<InfoPanel>(true);
+            return up != null && up.Info != null && up.Info.IsMoon ? up.Info.Id : null;
+        }
+
+        // Pullable now: something of it can be pinched. A moon's colliders stay off until its planet is out.
+        private static bool Pullable(ForceSolver force)
+        {
+            foreach (var collider in force.GetComponentsInChildren<Collider>(false))
+            {
+                if (collider.enabled)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static ForceSolver Find(string id)

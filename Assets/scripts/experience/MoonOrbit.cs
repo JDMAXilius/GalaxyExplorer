@@ -91,6 +91,9 @@ namespace CosmicSimulation
         private bool _growing;
         private bool _labelShown;
 
+        /// <summary>The planet this moon belongs to; it comes off only while that planet is out.</summary>
+        public ForceSolver ParentBody => parentBody;
+
         public BodyInfo Info
         {
             get
