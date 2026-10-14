@@ -61,20 +61,8 @@ namespace CosmicSimulation
         /// <summary>How long the intro's own last-stage load is given to appear before we stop waiting for one.</summary>
         private const float IntroSettleGrace = 0.5f;
 
-        /// <summary>Content already centred within this distance is left alone, so authored framing is never nudged.</summary>
-        private const float CentringDeadzone = 0.02f;
-
-        /// <summary>Nothing is fitted nearer than this: a moon a hand's length away is not a view.</summary>
-        private const float MinFitDistanceMetres = 0.6f;
-
         /// <summary>How long a view scene takes to settle into the fitted spot once its own zoom-in is over.</summary>
         private const float ViewSceneFitSeconds = 0.5f;
-
-        /// <summary>A panel whose anchor is nearer the screen's edge than this share of it is moved into view.</summary>
-        private const float PanelViewportMargin = 0.08f;
-
-        /// <summary>Where such a panel goes: centred, this far up the view.</summary>
-        private const float PanelAboveViewportY = 0.8f;
 
         private readonly List<GameObject> _destinationObjects = new List<GameObject>();
         private readonly HashSet<ExperienceModule> _warnedEmpty = new HashSet<ExperienceModule>();
@@ -92,8 +80,7 @@ namespace CosmicSimulation
         private Coroutine _fitting;
         private Coroutine _switching;
         private bool _switchFinished;
-        private IntroFlow _introFlow;
-        private bool _introFinished;
+        private readonly IntroGate _intro = new IntroGate();
 
         public static ExperienceDirector Instance { get; private set; }
 
@@ -121,78 +108,11 @@ namespace CosmicSimulation
         /// <summary>True while a switch is in flight; the dock ignores pokes during one.</summary>
         public bool IsSwitching => _switching != null;
 
-        /// <summary>Backstop on onboarding (about 30 s long); a healthy intro raises its own end event first.</summary>
-        private const float IntroWatchdogSeconds = 45f;
+        /// <summary>True while onboarding has the room; see <see cref="IntroGate.Running"/>.</summary>
+        public bool IntroRunning => _intro.Running;
 
-        /// <summary>
-        /// True while onboarding: an <see cref="IntroFlow"/> exists and has not raised its end event.
-        /// </summary>
-        // Gives up after IntroWatchdogSeconds: if the flow never reaches its last stage (e.g. Play entered with a
-        // view scene open) Switch would otherwise refuse every tile for the whole session, silently.
-        public bool IntroRunning
-        {
-            get
-            {
-                if (_introFinished)
-                {
-                    return false;
-                }
-
-                // Bound lazily as well as in Awake: the IntroFlow (boot scene) and this (core_systems) have no guaranteed load order.
-                BindIntro();
-                if (_introFlow == null)
-                {
-                    return false;
-                }
-
-                // Clock starts on first ask, not Awake, so a slow scene load cannot eat the grace.
-                if (_introWatchdogStarted <= 0f)
-                {
-                    _introWatchdogStarted = Time.unscaledTime;
-                    return true;
-                }
-
-                if (Time.unscaledTime - _introWatchdogStarted < IntroWatchdogSeconds)
-                {
-                    return true;
-                }
-
-                if (!_saidIntroOverran)
-                {
-                    _saidIntroOverran = true;
-                    Debug.LogWarning(
-                        $"ExperienceDirector: the intro has been running for over {IntroWatchdogSeconds:0} s " +
-                        "without raising OnIntroFinished, so it is being treated as over. Every dock tile and " +
-                        "every destination tag was being refused until now. The usual cause is entering play " +
-                        "mode with a view scene already open, which leaves IntroFlow's placement step with " +
-                        "nothing to place.", this);
-                }
-
-                return false;
-            }
-        }
-
-        private float _introWatchdogStarted;
-        private float _nextIntroSearch;
-        private bool _saidIntroOverran;
-
-        /// <summary>
-        /// True once the intro has really ended or there is none. Unlike <see cref="IntroRunning"/> it never times
-        /// out, so UI that must not cover onboarding can rely on it.
-        /// </summary>
-        public bool IntroComplete
-        {
-            get
-            {
-                if (_introFinished)
-                {
-                    return true;
-                }
-
-                BindIntro();
-                return _introFlow == null && Time.timeSinceLevelLoad > 3f;
-            }
-        }
+        /// <summary>True once onboarding has really ended or there is none; never times out.</summary>
+        public bool IntroComplete => _intro.Complete;
 
         // The place a player asked for while the intro was still running. Opened once the intro lets go.
         private ExperienceModule _queuedFromIntro;
@@ -200,7 +120,8 @@ namespace CosmicSimulation
         private void Awake()
         {
             Instance = this;
-            BindIntro();
+            _intro.Finished += HandleIntroFinished;
+            _intro.Bind();
         }
 
         private void OnDestroy()
@@ -210,10 +131,7 @@ namespace CosmicSimulation
                 Instance = null;
             }
 
-            if (_introFlow != null)
-            {
-                _introFlow.OnIntroFinished -= HandleIntroFinished;
-            }
+            _intro.Unbind();
 
             if (_ownsContentRoot && contentRoot != null)
             {
@@ -236,38 +154,8 @@ namespace CosmicSimulation
 
         // ---------- onboarding
 
-        /// <summary>
-        /// Subscribes to <c>IntroFlow.OnIntroFinished</c>, raised on the galaxy stage or by the editor quick start.
-        /// </summary>
-        private void BindIntro()
-        {
-            if (_introFlow != null || _introFinished)
-            {
-                return;
-            }
-
-            // An intro on a still-inactive object has not registered, so search too, at most once a second (CS-331).
-            _introFlow = IntroFlow.Active;
-            if (_introFlow == null && Time.unscaledTime >= _nextIntroSearch)
-            {
-                _nextIntroSearch = Time.unscaledTime + 1f;
-                _introFlow = FindAnyObjectByType<IntroFlow>(FindObjectsInactive.Include);
-            }
-
-            if (_introFlow != null)
-            {
-                _introFlow.OnIntroFinished += HandleIntroFinished;
-            }
-        }
-
         private void HandleIntroFinished()
         {
-            if (_introFinished)
-            {
-                return;
-            }
-
-            _introFinished = true;
             StartCoroutine(OpenStartModuleWhenSettled());
         }
 
@@ -298,7 +186,7 @@ namespace CosmicSimulation
 
             // The intro asks for the galaxy a frame or more after its signal; until then the current view is the
             // solar system it passed through, so wait for the start module's view (unless quick-started).
-            if (_introFlow != null && !_introFlow.QuickStarted && startModule != null &&
+            if (_intro.Flow != null && !_intro.Flow.QuickStarted && startModule != null &&
                 !string.IsNullOrEmpty(startModule.SceneName))
             {
                 waited = 0f;
@@ -464,8 +352,7 @@ namespace CosmicSimulation
             {
                 // A click means the player is done watching: skip the intro and open their pick once the galaxy
                 // load settles (the same wait OpenStartModule does, so the two cannot stack).
-                BindIntro();
-                if (_introFlow != null && _introFlow.Skip())
+                if (_intro.TrySkip())
                 {
                     _queuedFromIntro = module;
                     Debug.Log($"ExperienceDirector: '{module.Id}' asked for during the intro, so the intro is being skipped and it opens next.", this);
@@ -570,7 +457,7 @@ namespace CosmicSimulation
                     _prefabContent.name = module.Id;
 
                     // Before home is captured, because framing is part of where this content belongs.
-                    FrameContent(_prefabContent.transform);
+                    _contentSpanMetres = ContentFramer.Centre(_prefabContent.transform);
                     FitArrangement(_prefabContent.transform, 0f);
                     BindRigFraming(_prefabContent);
 
@@ -667,7 +554,7 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// Scales content up from nothing. <paramref name="keepFramed"/> scales a <see cref="FrameContent"/> offset
+        /// Scales content up from nothing. <paramref name="keepFramed"/> scales a <see cref="ContentFramer.Centre"/> offset
         /// with it, so the middle stays put instead of swelling out from the off-centre pivot.
         /// </summary>
         private static IEnumerator GrowIn(Transform content, float seconds, bool keepFramed = false)
@@ -718,100 +605,16 @@ namespace CosmicSimulation
             }
         }
 
-        // ---------- framing a content prefab on the content root
-
-        /// <summary>
-        /// Offsets a fresh content prefab so the middle of what it shows sits on the content root, as scene content does.
-        /// </summary>
-        // Measured rather than per-place knowledge: Solar Row is authored in room coordinates (1.2 m up). Content with
-        // nothing to measure, or already within CentringDeadzone, is untouched.
-        private void FrameContent(Transform content)
-        {
-            _contentSpanMetres = 0f;
-
-            // A place the player stands inside (the Galaxies shell) is already centred on them; framing would push
-            // it two metres out and the panel off screen (owner's direction).
-            if (SurroundsViewer(content))
-            {
-                return;
-            }
-
-            if (content == null || !TryMeasureContent(content, out var measured))
-            {
-                return;
-            }
-
-            // The root faces the player, so world-axis extents say nothing about own width; the combined horizontal
-            // extent over-estimates, the safe side for a panel clearance.
-            _contentSpanMetres = new Vector2(measured.extents.x, measured.extents.z).magnitude;
-
-            // The fresh instance sits on the content root, so this offset puts the middle there.
-            var offset = content.position - measured.center;
-            if (offset.sqrMagnitude < CentringDeadzone * CentringDeadzone)
-            {
-                return;
-            }
-
-            content.position += offset;
-        }
-
-        private static bool SurroundsViewer(Transform content)
-        {
-            var field = content != null ? content.GetComponentInChildren<GalaxyField>(true) : null;
-            return field != null && field.CentresOnViewer;
-        }
-
         // ---------- keeping a whole arrangement inside the desktop view (CS-171)
 
-        /// <summary>
-        /// Desktop only: pushes the content straight away from the camera until every slot of its arrangement is in view.
-        /// </summary>
-        // A monitor camera never turns, so a 1.9 m row at 2 m is cut off; in a headset the player turns (GDD 4.1).
+        /// <summary>Desktop only: moves the content to where <see cref="ContentFramer.TryFitTarget"/> says it fits.</summary>
         // Later arrangements ease over the preset's time and re-capture home, so Restore returns to the fitted spot.
         private void FitArrangement(Transform content, float seconds)
         {
-            // A place the player stands inside (Galaxies, Cosmic Web) is left exactly as it is (owner's direction).
-            if (content == null || UnityEngine.XR.XRSettings.isDeviceActive || SurroundsViewer(content))
+            if (!ContentFramer.TryFitTarget(content, desktopFitMargin, out var target))
             {
                 return;
             }
-
-            var camera = Camera.main;
-            if (camera == null || !TryFrameCorners(content, out var corners))
-            {
-                return;
-            }
-
-            // In camera space without its scale: centre on the line of sight at the distance where the widest
-            // corner touches the margin. tan(half-angle) turns depth into visible half-width.
-            var view = camera.transform;
-            var toView = Quaternion.Inverse(view.rotation);
-            var centre = Vector3.zero;
-            for (var i = 0; i < corners.Length; i++)
-            {
-                corners[i] = toView * (corners[i] - view.position);
-                centre += corners[i] / corners.Length;
-            }
-
-            var tanVertical = Mathf.Tan(camera.fieldOfView * 0.5f * Mathf.Deg2Rad) * desktopFitMargin;
-            var tanHorizontal = tanVertical * Mathf.Max(0.1f, camera.aspect);
-            var distance = MinFitDistanceMetres;
-            foreach (var corner in corners)
-            {
-                var r = corner - centre;
-                distance = Mathf.Max(distance, Mathf.Abs(r.x) / tanHorizontal - r.z, Mathf.Abs(r.y) / tanVertical - r.z);
-            }
-
-            var offset = view.rotation * (new Vector3(0f, 0f, distance) - centre);
-
-            if (offset.sqrMagnitude < CentringDeadzone * CentringDeadzone)
-            {
-                return;
-            }
-
-            var target = content.parent != null
-                ? content.parent.InverseTransformPoint(content.position + offset)
-                : content.position + offset;
 
             if (_fitting != null)
             {
@@ -826,36 +629,6 @@ namespace CosmicSimulation
             }
 
             _fitting = StartCoroutine(FitRoutine(content, target, seconds));
-        }
-
-        /// <summary>
-        /// World corners of what a place shows: an arrangement's target box from its preset slots, else its renderers.
-        /// </summary>
-        private static bool TryFrameCorners(Transform content, out Vector3[] corners)
-        {
-            corners = new Vector3[8];
-            var rig = content.GetComponentInChildren<LayoutRig>(true);
-            Bounds box;
-            Transform space = null;
-            if (rig != null && rig.TryGetLayoutBounds(rig.PendingOrCurrent, out box))
-            {
-                space = rig.transform;
-            }
-            else if (!TryMeasureRenderers(content, out box))
-            {
-                return false;
-            }
-
-            for (var i = 0; i < 8; i++)
-            {
-                var corner = new Vector3(
-                    (i & 1) == 0 ? box.min.x : box.max.x,
-                    (i & 2) == 0 ? box.min.y : box.max.y,
-                    (i & 4) == 0 ? box.min.z : box.max.z);
-                corners[i] = space != null ? space.TransformPoint(corner) : corner;
-            }
-
-            return true;
         }
 
         private IEnumerator FitViewScene(Transform content)
@@ -936,60 +709,6 @@ namespace CosmicSimulation
             }
 
             FitArrangement(_prefabContent.transform, Mathf.Max(0f, layout.TransitionSeconds));
-        }
-
-        /// <summary>
-        /// The content's world centre and rough size; false when nothing is measurable. Only the centre is exact.
-        /// </summary>
-        private static bool TryMeasureContent(Transform content, out Bounds measured)
-        {
-            // The rig's authored home anchors beat geometry, and are right before its first Start.
-            var rig = content.GetComponentInChildren<LayoutRig>(true);
-            if (rig != null && rig.TryGetArrangementBounds(out measured))
-            {
-                return true;
-            }
-
-            return TryMeasureRenderers(content, out measured);
-        }
-
-        private static bool TryMeasureRenderers(Transform content, out Bounds measured)
-        {
-            measured = default;
-            var found = false;
-
-            foreach (var r in content.GetComponentsInChildren<Renderer>(true))
-            {
-                if (r == null || !r.enabled || !r.gameObject.activeInHierarchy)
-                {
-                    continue;
-                }
-
-                // Effects and text: halos are wider than their body, and panels sit at origin until first shown.
-                if (r is ParticleSystemRenderer || r is LineRenderer || r is TrailRenderer ||
-                    r is SpriteRenderer || r.GetComponentInParent<Canvas>() != null)
-                {
-                    continue;
-                }
-
-                var bounds = r.bounds;
-                if (bounds.size.sqrMagnitude <= 0f)
-                {
-                    continue;
-                }
-
-                if (found)
-                {
-                    measured.Encapsulate(bounds);
-                }
-                else
-                {
-                    measured = bounds;
-                    found = true;
-                }
-            }
-
-            return found;
         }
 
         // ---------- content: a scene, or a prefab under our own root
@@ -1145,29 +864,8 @@ namespace CosmicSimulation
             }
 
             _scenePanelAnchor.localPosition = offset;
-            KeepPanelInView(_scenePanelAnchor);
+            ContentFramer.KeepInView(_scenePanelAnchor);
             return _scenePanelAnchor;
-        }
-
-        /// <summary>
-        /// On a monitor the fitted place can push the panel off screen; such a panel moves above the view's middle at the same depth.
-        /// </summary>
-        private static void KeepPanelInView(Transform anchor)
-        {
-            var camera = Camera.main;
-            if (camera == null || UnityEngine.XR.XRSettings.isDeviceActive)
-            {
-                return;
-            }
-
-            var v = camera.WorldToViewportPoint(anchor.position);
-            if (v.z > 0f && v.x > PanelViewportMargin && v.x < 1f - PanelViewportMargin &&
-                v.y > PanelViewportMargin && v.y < 1f - PanelViewportMargin)
-            {
-                return;
-            }
-
-            anchor.position = camera.ViewportToWorldPoint(new Vector3(0.5f, PanelAboveViewportY, Mathf.Max(v.z, MinFitDistanceMetres)));
         }
 
         /// <summary>

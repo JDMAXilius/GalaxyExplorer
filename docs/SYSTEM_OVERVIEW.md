@@ -104,6 +104,7 @@ Builds/Quest3/CosmicSimulationXR.apk  (gitignored)
 
 ### 4.1 Places: `ExperienceDirector` (`Assets/scripts/experience/ExperienceDirector.cs`)
 - Owns `ExperienceModule[] modules`: 7 dock tiles plus destinations. It exposes `Current`, `IsSwitching`, `IsShowing`, `IntroRunning`, the static `ExperienceChanged` and `DestinationChanged` events, and `Switch(module | id)`.
+- Two helpers carry what is not switching (CS-347): `IntroGate` (a plain object it owns) binds to `IntroFlow`, answers `IntroRunning` (with the 45 s watchdog) and `IntroComplete` (which never times out), skips the intro when a place is picked during it, and raises `Finished` once; `ContentFramer` (static) does the measuring below. Panels and destinations stay in the director, which holds their serialized prefab and offsets.
 - **What a switch does:**
   1. Restores everything and stops narration and ambience.
   2. Sets `EnvironmentController`.
@@ -111,19 +112,19 @@ Builds/Quest3/CosmicSimulationXR.apk  (gitignored)
   4. Destroys the old prefab content and its scene panel.
   5. Loads the new content:
      - **Scene module:** `ViewLoader.LoadViewAsync`, bounded at 20 s; on failure `AbandonSwitch` falls back to passthrough and shows `SwitchNotice.FailedToOpen`.
-     - **Prefab module:** instantiated under the director's own content root (hanging off the `ViewLoader`), then `FrameContent` (middle onto the root), `FitArrangement`, `BindRigFraming` and `FreePlacementAnchor.CaptureHome`.
+     - **Prefab module:** instantiated under the director's own content root (hanging off the `ViewLoader`), then `ContentFramer.Centre` (middle onto the root), `FitArrangement`, `BindRigFraming` and `FreePlacementAnchor.CaptureHome`.
   6. Grows the content in (0.6 s, ease-out).
   7. Shows the scene panel (`InfoPanel`, scene variant), then narration, then the ambience bed.
   8. Raises `ExperienceChanged`.
 - **Scene-backed modules:** milky_way, solar_system, sagittarius_a.
 - **Prefab-backed modules:** cosmic_web, galaxies, andromeda, solar_system_planets. Destinations (Kind 1) are also prefab-backed: whirlpool, pinwheel, triangulum, hd110067, and the 7 nebulae.
-- **Desktop framing** (`FitArrangement`, CS-204):
+- **Desktop framing** (`FitArrangement` with `ContentFramer.TryFitTarget`, CS-204):
   - It runs only when no headset is active and the content does not surround the viewer (a `GalaxyField` with `CentresOnViewer`).
   - It measures the content box: a `LayoutRig`'s preset slots (the destination, not the current pose), or else the renderers, excluding particles, lines, sprites and canvases.
   - In camera space it puts the box centre on the line of sight, at the one distance where the widest corner meets `desktopFitMargin` (0.95); the minimum is 0.6 m.
   - View scenes are fitted by `FitViewScene`, after GE's own zoom-in (`ZoomInOut.ZoomInIsDone`). It moves the root's first child (`AllContent`), because `TransformHandler`/`LocationView` pin the scene root every frame.
   - A layout change re-fits over the preset's transition time.
-  - `KeepPanelInView` moves an off-screen scene panel to the top middle of the view.
+  - `ContentFramer.KeepInView` moves an off-screen scene panel to the top middle of the view.
 - **Inherited view machinery:** `ViewLoader` (additive loads plus a back stack, which is no longer used for navigation). `TransitionManager` and `ZoomInOut` fade and zoom-scale view scenes; `SceneTransition.GetScalar` sizes each scene to the volume.
 
 ### 4.2 Arrangements: `ExperienceModule`, `LayoutPreset`, `LayoutRig`
