@@ -322,7 +322,7 @@ namespace GalaxyExplorer.XR
 
             if (keyboard.rKey.wasPressedThisFrame && InputEnabled)
             {
-                RestoreLayout();
+                CosmicSimulation.Arrangement.Restore();
             }
 
             if (keyboard.homeKey.wasPressedThisFrame)
@@ -401,32 +401,6 @@ namespace GalaxyExplorer.XR
 
             _menuLookupCooldown = MenuLookupSeconds;
             _desktopMenu = FindAnyObjectByType<DesktopMenuManager>();
-        }
-
-        /// <summary>R and the dock's Restore: the current experience's objects return to their arrangement (GDD 5.2).</summary>
-        private static void RestoreLayout()
-        {
-            // First and unconditional: non-body content has no solver or rig, and the rig branch returns (CS-107).
-            CosmicSimulation.FreePlacementAnchor.RestoreAll();
-
-            // The rig animates anchors and walks pulled bodies home together; don't snap bodies behind its back.
-            var restored = false;
-            foreach (var rig in CosmicSimulation.Registry<CosmicSimulation.LayoutRig>.Active)
-            {
-                rig.Restore();
-                restored = true;
-            }
-
-            if (restored)
-            {
-                return;
-            }
-
-            // Pre-CS-060 experiences have no rig; each body's placement solver keeps the 0.8 s ease.
-            foreach (var solver in CosmicSimulation.Registry<ForceSolver>.Active)
-            {
-                RestoreBody(solver);
-            }
         }
 
         /// <summary>Home: the dock re-parks and the desktop camera goes back.</summary>
@@ -620,9 +594,9 @@ namespace GalaxyExplorer.XR
 
         private bool TryGetViewTransforms(out Transform pivot, out Transform entity)
         {
-            var controller = GalaxyExplorerManager.Instance != null ? GalaxyExplorerManager.Instance.CameraControllerHandler : null;
-            pivot = controller != null ? controller.Pivot : null;
-            entity = controller != null ? controller.EntityToMove : null;
+            var manager = GalaxyExplorerManager.Instance;
+            pivot = manager != null ? manager.ViewPivotTransform : null;
+            entity = manager != null ? manager.ViewEntityTransform : null;
             if (pivot == null || entity == null)
             {
                 return false;

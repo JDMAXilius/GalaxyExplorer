@@ -888,11 +888,16 @@ namespace GalaxyExplorer
         // Reset camera to original position and rotation in Desktop platform
         private IEnumerator ResetDesktopCameraToOriginCoroutine()
         {
-            Vector3 startPosition = GalaxyExplorerManager.Instance.CameraControllerHandler.EntityToMove.transform.position;
-            Quaternion startRotation = GalaxyExplorerManager.Instance.CameraControllerHandler.EntityToMove.transform.rotation;
+            if (GalaxyExplorerManager.Instance.ViewEntityTransform == null || GalaxyExplorerManager.Instance.ViewPivotTransform == null)
+            {
+                yield break;
+            }
 
-            Vector3 startPivotPosition = GalaxyExplorerManager.Instance.CameraControllerHandler.Pivot.transform.position;
-            Quaternion startPivotRotation = GalaxyExplorerManager.Instance.CameraControllerHandler.Pivot.transform.rotation;
+            Vector3 startPosition = GalaxyExplorerManager.Instance.ViewEntityTransform.position;
+            Quaternion startRotation = GalaxyExplorerManager.Instance.ViewEntityTransform.rotation;
+
+            Vector3 startPivotPosition = GalaxyExplorerManager.Instance.ViewPivotTransform.position;
+            Quaternion startPivotRotation = GalaxyExplorerManager.Instance.ViewPivotTransform.rotation;
 
             float time = 0.0f;
             float timeFraction = 0.0f;
@@ -904,20 +909,20 @@ namespace GalaxyExplorer
                 float delta = Mathf.Clamp01(TransitionTimeCameraCurve.Evaluate(timeFraction));
 
                 // Reset cameras parent
-                GalaxyExplorerManager.Instance.CameraControllerHandler.EntityToMove.position = Vector3.Lerp(startPosition, Vector3.zero, delta);
-                GalaxyExplorerManager.Instance.CameraControllerHandler.EntityToMove.rotation = Quaternion.Slerp(startRotation, Quaternion.identity, delta);
+                GalaxyExplorerManager.Instance.ViewEntityTransform.position = Vector3.Lerp(startPosition, Vector3.zero, delta);
+                GalaxyExplorerManager.Instance.ViewEntityTransform.rotation = Quaternion.Slerp(startRotation, Quaternion.identity, delta);
 
                 // Reset parent of camera parent
-                GalaxyExplorerManager.Instance.CameraControllerHandler.Pivot.transform.position = Vector3.Lerp(startPivotPosition, Vector3.zero, delta);
-                GalaxyExplorerManager.Instance.CameraControllerHandler.Pivot.transform.rotation = Quaternion.Slerp(startPivotRotation, Quaternion.identity, delta);
+                GalaxyExplorerManager.Instance.ViewPivotTransform.position = Vector3.Lerp(startPivotPosition, Vector3.zero, delta);
+                GalaxyExplorerManager.Instance.ViewPivotTransform.rotation = Quaternion.Slerp(startPivotRotation, Quaternion.identity, delta);
                 yield return null;
             } while (timeFraction < 1f);
 
-            GalaxyExplorerManager.Instance.CameraControllerHandler.EntityToMove.position = Vector3.zero;
-            GalaxyExplorerManager.Instance.CameraControllerHandler.EntityToMove.rotation = Quaternion.identity;
+            GalaxyExplorerManager.Instance.ViewEntityTransform.position = Vector3.zero;
+            GalaxyExplorerManager.Instance.ViewEntityTransform.rotation = Quaternion.identity;
 
-            GalaxyExplorerManager.Instance.CameraControllerHandler.Pivot.transform.position = Vector3.zero;
-            GalaxyExplorerManager.Instance.CameraControllerHandler.Pivot.transform.rotation = Quaternion.identity;
+            GalaxyExplorerManager.Instance.ViewPivotTransform.position = Vector3.zero;
+            GalaxyExplorerManager.Instance.ViewPivotTransform.rotation = Quaternion.identity;
         }
 
         public void ResetMRSceneToOrigin()

@@ -112,11 +112,7 @@ namespace CosmicSimulation.Being
                     Registry<LayoutRig>.First?.Find(id)?.Force?.OnPointerDown();
                     break;
                 case "restore":
-                    FreePlacementAnchor.RestoreAll();
-                    foreach (var rig in Registry<LayoutRig>.Active)
-                    {
-                        rig.Restore();
-                    }
+                    Arrangement.Restore();
                     break;
             }
         }

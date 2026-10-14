@@ -1,0 +1,16 @@
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using UnityEngine;
+
+namespace CosmicSimulation
+{
+    /// <summary>The two transforms the desktop view resets and the mouse turns about (CS-353); replaces TouchScript's camera controller.</summary>
+    public class ViewPivot : MonoBehaviour
+    {
+        [SerializeField] private Transform pivot = null;
+        [SerializeField] private Transform entityToMove = null;
+
+        public Transform Pivot => pivot;
+        public Transform EntityToMove => entityToMove;
+    }
+}

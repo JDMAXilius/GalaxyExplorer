@@ -69,6 +69,11 @@ namespace GalaxyExplorer
             get; set;
         }
 
+        /// <summary>The desktop view's pivot and the transform under it the mouse moves; null in a headset scene without one.</summary>
+        public Transform ViewPivotTransform { get; private set; }
+
+        public Transform ViewEntityTransform { get; private set; }
+
         public FlowManager FlowManagerHandler
         {
             get; set;
@@ -401,6 +406,10 @@ namespace GalaxyExplorer
             ViewLoaderScript = FindFirstObjectByType<ViewLoader>();
             CardPoiManager = FindFirstObjectByType<CardPOIManager>();
             CameraControllerHandler = FindFirstObjectByType<CameraController>();
+            // CosmicSimulation.ViewPivot replaces TouchScript's CameraController; the fallback goes with TouchScript (CS-353).
+            var view = FindFirstObjectByType<CosmicSimulation.ViewPivot>();
+            ViewPivotTransform = view != null ? view.Pivot : CameraControllerHandler != null ? CameraControllerHandler.Pivot : null;
+            ViewEntityTransform = view != null ? view.EntityToMove : CameraControllerHandler != null ? CameraControllerHandler.EntityToMove : null;
             FlowManagerHandler = FindFirstObjectByType<FlowManager>();
         }
 

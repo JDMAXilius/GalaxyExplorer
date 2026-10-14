@@ -183,12 +183,8 @@ namespace CosmicSimulation.UI2
         private static void RestoreScene()
         {
             DockController.Instance?.ResetPlaces();
-            FreePlacementAnchor.RestoreAll();
-            var rig = Registry<LayoutRig>.First;
-            if (rig != null && !(Ui2Explore.Instance != null && Ui2Explore.Instance.Comparing))
-            {
-                rig.Restore();
-            }
+            // A comparison holds two bodies side by side on purpose; walking them home would end it under the player.
+            Arrangement.Restore(bodies: !(Ui2Explore.Instance != null && Ui2Explore.Instance.Comparing));
 
             Ui2Shell.Instance.Notify("Everything is back in place.");
         }
@@ -287,8 +283,14 @@ namespace CosmicSimulation.UI2
                     _meter = Microphone.Start(_meterDevice, true, 1, 16000);
                 }
 
-                var at = _meter != null ? Microphone.GetPosition(_meterDevice) - _window.Length : -1;
-                if (at >= 0)
+                // The clip loops, so the window just behind the write head may start before 0: wrap it (CS-345).
+                var at = _meter != null ? Microphone.GetPosition(_meterDevice) - _window.Length : 0;
+                if (_meter != null && at < 0)
+                {
+                    at += _meter.samples;
+                }
+
+                if (_meter != null && at >= 0)
                 {
                     _meter.GetData(_window, at);
                     var sum = 0f;
