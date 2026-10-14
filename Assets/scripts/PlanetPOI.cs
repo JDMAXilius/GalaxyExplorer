@@ -57,37 +57,22 @@ namespace GalaxyExplorer
         public static System.Func<ExperienceModule, bool> Preview { get; set; }
 
         /// <summary>
-        /// Set by UI 2.0: asked with each of <see cref="BodyIds"/> before a body marker with no destination (the
-        /// Solar System's orbit view) starts the original scene load. Returning true means the click was handled
-        /// on the card, and nothing travels (CC-U2-003).
+        /// The <see cref="BodyInfo.Id"/> a body stands for, read off its <c>poi_&lt;id&gt;_prefab</c> ancestor, or null.
+        /// The orbit view's planets are such prefabs; their scene names are not uniform, so the prefab name is the key.
         /// </summary>
-        public static System.Func<string, bool> Picked { get; set; }
-
-        /// <summary>
-        /// The ids this marker may stand for, to match against <see cref="BodyInfo.Id"/>, most reliable first: the
-        /// marker's own prefab name ("poi_mars_prefab"), then its original scene name without "_view_scene". The
-        /// scene names are not uniform (Mercury's is "MercuryViewmercury_view_scene"), so neither alone will do.
-        /// </summary>
-        public System.Collections.Generic.IEnumerable<string> BodyIds
+        public static string BodyIdOf(Transform body)
         {
-            get
+            const string prefix = "poi_", suffix = "_prefab";
+            for (var t = body; t != null; t = t.parent)
             {
-                for (var t = transform; t != null; t = t.parent)
+                var name = t.name;
+                if (name.StartsWith(prefix) && name.EndsWith(suffix) && name.Length > prefix.Length + suffix.Length)
                 {
-                    var name = t.name;
-                    if (name.StartsWith("poi_") && name.EndsWith("_prefab") && name.Length > "poi__prefab".Length)
-                    {
-                        yield return name.Substring(4, name.Length - 4 - "_prefab".Length);
-                        break;
-                    }
-                }
-
-                const string sceneSuffix = "_view_scene";
-                if (!string.IsNullOrEmpty(SceneToLoad) && SceneToLoad.EndsWith(sceneSuffix))
-                {
-                    yield return SceneToLoad.Substring(0, SceneToLoad.Length - sceneSuffix.Length);
+                    return name.Substring(prefix.Length, name.Length - prefix.Length - suffix.Length);
                 }
             }
+
+            return null;
         }
 
         /// <summary>The module a click on this marker opens, or null when the original scene path applies.</summary>
@@ -142,17 +127,6 @@ namespace GalaxyExplorer
                 // the map stays on screen. Switch answers those refusals itself, through SwitchNotice.
                 director.Switch(module);
                 return;
-            }
-
-            if (Picked != null)
-            {
-                foreach (var id in BodyIds)
-                {
-                    if (Picked(id))
-                    {
-                        return;
-                    }
-                }
             }
 
             StartCoroutine(OnPointerDownRoutine());

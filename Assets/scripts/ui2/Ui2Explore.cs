@@ -205,7 +205,6 @@ namespace CosmicSimulation.UI2
             _menuHome = _menuRect.anchoredPosition;
             ExperienceDirector.ExperienceChanged += OnPlaceChanged;
             PlanetPOI.Preview = OnMarker;
-            PlanetPOI.Picked = OnBodyMarker;
             ForceSolver.StateChanged += OnBodyStateChanged;
             foreach (var solver in Registry<ForceSolver>.Active)
             {
@@ -235,11 +234,6 @@ namespace CosmicSimulation.UI2
             if (PlanetPOI.Preview == OnMarker)
             {
                 PlanetPOI.Preview = null;
-            }
-
-            if (PlanetPOI.Picked == OnBodyMarker)
-            {
-                PlanetPOI.Picked = null;
             }
 
             InfoPanel.Suppressed = false;
@@ -366,6 +360,23 @@ namespace CosmicSimulation.UI2
 
         private void OnBodyStateChanged(ForceSolver solver)
         {
+            // The orbit view's planets have no panel and their POI never hears the click (CS-362): the body a
+            // click pulls out is the one the card shows (CC-U2-003), until it goes home. Only with the card on
+            // screen, so it can never come back later showing a pick nobody saw.
+            if (_place != null && _place.Id == orbitsPlace && solver != null)
+            {
+                var info = Body(PlanetPOI.BodyIdOf(solver.transform));
+                var shell = Ui2Shell.Instance;
+                if (info != null && IsOut(solver) && shell != null && shell.ExploreVisible)
+                {
+                    _picked = info;
+                }
+                else if (info != null && _picked == info)
+                {
+                    _picked = null;
+                }
+            }
+
             var listed = _pulledNow.Contains(solver);
             if (IsOut(solver) != listed)
             {
@@ -707,30 +718,6 @@ namespace CosmicSimulation.UI2
         }
 
         // ---------- the Milky Way map
-
-        // A planet picked on the orbit view, where nothing is pulled and no panel opens: show it on the card and
-        // keep the player where they are (CC-U2-003). Picking it again puts the card away. Only on the orbit view
-        // with the card on screen; anywhere else nothing is remembered, so the card can never come back later
-        // showing a pick nobody saw. A known body is still consumed there, because the original scene it would
-        // load no longer exists.
-        private bool OnBodyMarker(string id)
-        {
-            var info = Body(id);
-            if (info == null)
-            {
-                return false;
-            }
-
-            var shell = Ui2Shell.Instance;
-            if (shell == null || !shell.ExploreVisible || _place == null || _place.Id != orbitsPlace)
-            {
-                return true;
-            }
-
-            _picked = _picked == info ? null : info;
-            Track();
-            return true;
-        }
 
         private BodyInfo Body(string id)
         {
