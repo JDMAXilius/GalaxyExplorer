@@ -71,6 +71,7 @@ namespace CosmicSimulation
         private readonly List<DockTile> _tiles = new List<DockTile>();
         private DesktopMenuManager _menu;
         private bool _visible = true;
+        private bool _tabWasDown;
         private bool _warnedNoHelp;
 
         public static DesktopDock Instance { get; private set; }
@@ -252,11 +253,14 @@ namespace CosmicSimulation
             // there is no DesktopDock in the scene at all, and what it reaches for — the legacy button row — is
             // retired: its root ships switched off and DesktopMenuManager has no path left that switches it back
             // on. So there is one dock on a monitor and one key that shows it (CS-111).
+            // "Down now, up last frame" counts too, as in DesktopShortcuts.Pressed (CS-365): the one-frame edge can be skipped.
             var keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.tabKey.wasPressedThisFrame)
+            var tabDown = keyboard != null && keyboard.tabKey.isPressed;
+            if (keyboard != null && (keyboard.tabKey.wasPressedThisFrame || (tabDown && !_tabWasDown)))
             {
                 Toggle();
             }
+            _tabWasDown = tabDown;
 
             // The room state changes from elsewhere — P, the world dock's own passthrough button — so the
             // toggle reads it rather than remembering it.
