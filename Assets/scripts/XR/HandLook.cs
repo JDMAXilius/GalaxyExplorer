@@ -17,6 +17,10 @@ namespace GalaxyExplorer.XR
     /// firms up as the index pinch strength rises, because with the sample affordances off nothing else says the
     /// pinch registered. Strength comes from the Meta aim device through an Input System path, so a runtime
     /// without that device simply reads zero.</para>
+    ///
+    /// <para>While the room shows through, the hand meshes also carry a depth-only occluder drawn before the opaque
+    /// content (CS-288), so a real hand in front of a planet hides it. Off in full VR, and switchable with
+    /// <see cref="OccludeContent"/>.</para>
     /// </summary>
     public class HandLook : MonoBehaviour
     {
@@ -63,6 +67,12 @@ namespace GalaxyExplorer.XR
         [Range(0f, 0.9f)]
         private float pinchFloor = 0.2f;
 
+        [SerializeField]
+        [Tooltip("Real hands hide the content behind them while the room shows through (CS-288).")]
+        private bool occludeContent = true;
+
+        private const string OccluderPath = "hands/hand_occluder_material";
+
         private static readonly int ColorId = Shader.PropertyToID("_Color");
         private static readonly int RimColorId = Shader.PropertyToID("_RimColor");
         private static readonly int RimPowerId = Shader.PropertyToID("_RimPower");
@@ -75,6 +85,20 @@ namespace GalaxyExplorer.XR
         private readonly List<SkinnedMeshRenderer> _right = new List<SkinnedMeshRenderer>();
         private InputAction _leftPinch, _rightPinch;
         private Look _look;
+        private Material _occluder;
+        private bool _occlude;
+
+        /// <summary>Whether real hands hide the content behind them in passthrough. Applies at once.</summary>
+        public bool OccludeContent
+        {
+            get => occludeContent;
+            set
+            {
+                occludeContent = value;
+                var controller = EnvironmentController.Instance;
+                Apply(controller != null ? controller.EffectiveMode : EnvironmentMode.Passthrough);
+            }
+        }
         private float _leftShown = -1f, _rightShown = -1f, _nextScan;
 
         private void OnEnable()
@@ -93,6 +117,8 @@ namespace GalaxyExplorer.XR
         private void OnDisable()
         {
             EnvironmentController.ModeChanged -= Apply;
+            foreach (var hand in _left) if (hand != null) SetOccluder(hand, false);
+            foreach (var hand in _right) if (hand != null) SetOccluder(hand, false);
             _leftPinch?.Dispose();
             _rightPinch?.Dispose();
             _leftPinch = _rightPinch = null;
@@ -114,6 +140,12 @@ namespace GalaxyExplorer.XR
         private void Apply(EnvironmentMode mode)
         {
             _look = mode == EnvironmentMode.FullBlack ? fullVR : passthrough;
+            if (_occluder == null)
+            {
+                _occluder = Resources.Load<Material>(OccluderPath);
+            }
+
+            _occlude = occludeContent && mode != EnvironmentMode.FullBlack && _occluder != null;
             Scan();
             _leftShown = _rightShown = -1f;
             Show(_left, Strength(_leftPinch), ref _leftShown);
@@ -170,7 +202,40 @@ namespace GalaxyExplorer.XR
                 }
 
                 (IsLeft(hand.transform) ? _left : _right).Add(hand);
+                SetOccluder(hand, _occlude);
             }
+        }
+
+        // Appends or removes the occluder as an extra material. A material past the mesh's last submesh draws that
+        // submesh again, so on a one-submesh hand it draws the whole hand, depth only. The renderer's own array is
+        // changed, never the shared material assets.
+        private void SetOccluder(SkinnedMeshRenderer hand, bool on)
+        {
+            if (_occluder == null)
+            {
+                return;
+            }
+
+            var materials = hand.sharedMaterials;
+            var at = Array.IndexOf(materials, _occluder);
+            if (on == (at >= 0))
+            {
+                return;
+            }
+
+            if (on)
+            {
+                Array.Resize(ref materials, materials.Length + 1);
+                materials[materials.Length - 1] = _occluder;
+            }
+            else
+            {
+                var kept = new List<Material>(materials);
+                kept.RemoveAt(at);
+                materials = kept.ToArray();
+            }
+
+            hand.sharedMaterials = materials;
         }
 
         // The sample rig names its hand roots "Left ..." and "Right ..."; the nearest named ancestor decides.
