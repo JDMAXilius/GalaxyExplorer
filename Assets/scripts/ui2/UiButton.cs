@@ -18,6 +18,7 @@ namespace CosmicSimulation.UI2
     {
         [SerializeField] private Image plate = null;
         [SerializeField] private Image outline = null;
+        [SerializeField] private Image glow = null;
         [SerializeField] private Image icon = null;
         [SerializeField] private TMP_Text label = null;
 
@@ -89,6 +90,11 @@ namespace CosmicSimulation.UI2
             if (plate != null)
             {
                 plate.color = _selected ? UiTheme.SelectedWash : hover ? UiTheme.HoverWash : Color.clear;
+            }
+
+            if (glow != null)
+            {
+                glow.enabled = _selected;
             }
 
             if (outline != null)

@@ -165,4 +165,6 @@ Drawn in code for this project with Python Pillow (no third-party artwork), whit
 - `Assets/ui/figma/icon_room.png` — cube outline, the dock's Room glyph.
 - `Assets/ui/figma/ui_rounded_r64_fill.png` — rounded rectangle with transparent corners, nine-sliced. The older `ui_rounded_r64.png` has opaque dark corners and is left as it is for the legacy UI.
 - `Assets/ui/figma/ui_rounded_r64_ring.png` — rounded outline ring, nine-sliced.
-
+- `Assets/ui/figma/icon_play.png`, `icon_compare.png` — button glyphs, drawn in code as above.
+- `Assets/ui/figma/ui_rounded_r64_glow.png` — blurred ring for the selected-state halo, drawn in code, nine-sliced.
+- `Assets/ui/figma/v2_companion.png` — the companion orb for the dock's Guide item, cut out of the owner-approved UI 2.0 concept image `docs/design/v2/screens/08-design-system.png` (image-generated artwork from the design package). Concept art, to be replaced by a final product asset.

@@ -73,6 +73,26 @@ namespace CosmicSimulation.EditorTools
             line.color = UiTheme.Divider;
             line.raycastTarget = false;
 
+            var facts = Ui2Builder.Rect("facts", card, 344f, 78f);
+            facts.gameObject.AddComponent<LayoutElement>().preferredHeight = 78f;
+            var factLabels = new TMP_Text[2];
+            var factValues = new TMP_Text[2];
+            var factUnits = new TMP_Text[2];
+            for (var i = 0; i < 2; i++)
+            {
+                var x = i * 192f;
+                factLabels[i] = Text(Ui2Builder.Box("label_" + i, facts, x, 0f, 152f, 22f), "Label", 17f,
+                                     UiTheme.InkSecondary, TextAlignmentOptions.TopLeft, FontWeight.Regular, false);
+                factValues[i] = Text(Ui2Builder.Box("value_" + i, facts, x, 23f, 152f, 30f), "Value", 24f,
+                                     UiTheme.Ink, TextAlignmentOptions.TopLeft, FontWeight.SemiBold, false);
+                factUnits[i] = Text(Ui2Builder.Box("unit_" + i, facts, x, 55f, 152f, 22f), "unit", 18f,
+                                    UiTheme.Ink, TextAlignmentOptions.TopLeft, FontWeight.Regular, false);
+            }
+
+            var split = Ui2Builder.Box("split", facts, 171.5f, 4f, 1f, 70f).gameObject.AddComponent<Image>();
+            split.color = UiTheme.Divider;
+            split.raycastTarget = false;
+
             var actions = Ui2Builder.Rect("actions", card, 344f, 60f);
             actions.gameObject.AddComponent<LayoutElement>().preferredHeight = 60f;
             var listen = Primary("listen", actions, 0f, 0f, 167f, 60f, "Listen");
@@ -86,6 +106,10 @@ namespace CosmicSimulation.EditorTools
             so.FindProperty("title").objectReferenceValue = title;
             so.FindProperty("body").objectReferenceValue = body;
             so.FindProperty("listen").objectReferenceValue = listen;
+            so.FindProperty("factsRoot").objectReferenceValue = facts.gameObject;
+            Objects(so.FindProperty("factLabels"), factLabels);
+            Objects(so.FindProperty("factValues"), factValues);
+            Objects(so.FindProperty("factUnits"), factUnits);
             so.FindProperty("picker").objectReferenceValue = picker.gameObject;
             so.FindProperty("crumb").objectReferenceValue = crumb;
 
@@ -132,6 +156,10 @@ namespace CosmicSimulation.EditorTools
 
             Ui2Builder.Fill(Ui2Builder.Box("edge", root, 0f, 0f, 134f, 88f), "ui_rounded_r64_ring", 12f,
                             new Color(1f, 1f, 1f, 0.3f));
+            var glow = Ui2Builder.Glow(picture, 134f, 88f, 12f);
+            glow.transform.SetParent(root, false);
+            glow.rectTransform.anchoredPosition = picture.anchoredPosition;
+            glow.transform.SetAsFirstSibling();
             var outline = Ui2Builder.Fill(Ui2Builder.Box("outline", root, -4f, -4f, 142f, 96f), "ui_rounded_r64_ring",
                                           15f, UiTheme.Accent);
             outline.enabled = false;
@@ -139,7 +167,11 @@ namespace CosmicSimulation.EditorTools
             var label = Text(Ui2Builder.Box("label", root, 0f, 98f, 134f, 20f), text, 16f, UiTheme.Ink,
                              TextAlignmentOptions.Center, FontWeight.Medium, false);
 
-            return Pressable(root, 134f, 118f, null, outline, label, false);
+            var tile = Pressable(root, 134f, 118f, null, outline, label, false);
+            var tileSo = new SerializedObject(tile);
+            tileSo.FindProperty("glow").objectReferenceValue = glow;
+            tileSo.ApplyModifiedPropertiesWithoutUndo();
+            return tile;
         }
 
         private static UiButton Primary(string name, RectTransform parent, float x, float y, float w, float h, string text)
@@ -147,8 +179,9 @@ namespace CosmicSimulation.EditorTools
             var root = Ui2Builder.Box(name, parent, x, y, w, h);
             Ui2Builder.Fill(Ui2Builder.Rect("fill", root, w, h), "ui_rounded_r64_fill", 18f, UiTheme.Accent);
             var wash = Ui2Builder.Fill(Ui2Builder.Rect("wash", root, w, h), "ui_rounded_r64_fill", 18f, Color.clear);
-            var label = Text(Ui2Builder.Rect("label", root, w, 24f), text, 19f, UiTheme.Deep,
-                             TextAlignmentOptions.Center, FontWeight.SemiBold, false);
+            Glyph(root, "icon_play", w * 0.5f - 50f, (h - 22f) * 0.5f, 22f, UiTheme.Deep);
+            var label = Text(Ui2Builder.Box("label", root, w * 0.5f - 18f, (h - 24f) * 0.5f, 90f, 24f), text, 19f,
+                             UiTheme.Deep, TextAlignmentOptions.Left, FontWeight.SemiBold, false);
             return Pressable(root, w, h, wash, null, label, true);
         }
 
@@ -158,9 +191,19 @@ namespace CosmicSimulation.EditorTools
             var root = Ui2Builder.Box(name, parent, x, y, w, h);
             Ui2Builder.Fill(Ui2Builder.Rect("fill", root, w, h), "ui_rounded_r64_fill", 30f, WithAlpha(UiTheme.Deep, 0.6f));
             Ui2Builder.Fill(Ui2Builder.Rect("edge", root, w, h), "ui_rounded_r64_ring", 30f, new Color(1f, 1f, 1f, 0.75f));
-            Text(Ui2Builder.Rect("label", root, w, 24f), text, 19f, UiTheme.Ink, TextAlignmentOptions.Center,
-                 FontWeight.SemiBold, false);
+            Glyph(root, "icon_compare", w * 0.5f - 64f, (h - 28f) * 0.5f, 28f, UiTheme.Ink);
+            Text(Ui2Builder.Box("label", root, w * 0.5f - 28f, (h - 24f) * 0.5f, 100f, 24f), text, 19f, UiTheme.Ink,
+                 TextAlignmentOptions.Left, FontWeight.SemiBold, false);
             root.gameObject.AddComponent<CanvasGroup>().alpha = 0.45f;
+        }
+
+        private static void Glyph(RectTransform parent, string sprite, float x, float y, float size, Color colour)
+        {
+            var image = Ui2Builder.Box("icon", parent, x, y, size, size).gameObject.AddComponent<Image>();
+            image.sprite = Ui2Builder.Icon(sprite);
+            image.preserveAspect = true;
+            image.color = colour;
+            image.raycastTarget = false;
         }
 
         private static UiButton Pressable(RectTransform root, float w, float h, Image wash, Image outline,
@@ -219,6 +262,15 @@ namespace CosmicSimulation.EditorTools
             tmp.raycastTarget = false;
             tmp.textWrappingMode = wrap ? TextWrappingModes.Normal : TextWrappingModes.NoWrap;
             return tmp;
+        }
+
+        private static void Objects(SerializedProperty property, Object[] values)
+        {
+            property.arraySize = values.Length;
+            for (var i = 0; i < values.Length; i++)
+            {
+                property.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+            }
         }
 
         private static void Strings(SerializedProperty property, string[] values)

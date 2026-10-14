@@ -25,7 +25,7 @@ namespace CosmicSimulation.EditorTools
         private const float PixelsPerMillimetre = 8f;
         private const float PixelsPerUnit = PixelsPerMillimetre * 1000f;
 
-        private static readonly Regex RoundedRect = new Regex(@"^ui_rounded_r(\d+)(?:_ring|_fill)?$", RegexOptions.Compiled);
+        private static readonly Regex RoundedRect = new Regex(@"^ui_rounded_r(\d+)(?:_ring|_fill|_glow)?$", RegexOptions.Compiled);
 
         private void OnPreprocessTexture()
         {

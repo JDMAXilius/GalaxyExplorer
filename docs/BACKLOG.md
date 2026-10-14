@@ -2018,7 +2018,7 @@ Approach, reasoning and phase exit criteria: [design/v2/UNITY_ROADMAP.md](design
 | U2-P0 | Ground | Play mode fixed, tree clean, headset distance test, theme and icons exported | CS-300, CS-301, CS-317 | in progress: play mode works (App Check 38/38), tree clean; headset distance test and theme asset still to do |
 | U2-P1 | Foundations | ui2 assembly, UiButton kit, ScreenAnchor, AppModel, adapters, new app check | U2-P0 | in progress: UiTheme, UiButton, Ui2Builder landed; ScreenAnchor, AppModel, adapters, new app check still to do |
 | U2-P2 | Shell | Rail, dock, settings button, room toggle, context catalog | U2-P1 | in progress: rail, dock and settings button run behind the Ui2 switch, driving the legacy app |
-| U2-P3 | Card and picker | Selection service, picker, information card, photo and fact data, Listen | U2-P2 | in progress: place card, galaxy picker, breadcrumb and Listen run behind the Ui2 switch; bodies, moons, two facts, selection service and photo data still to do |
+| U2-P3 | Card and picker | Selection service, picker, information card, photo and fact data, Listen | U2-P2 | in progress: card follows the place or the pulled body/moon with two facts, Listen, galaxy picker, breadcrumb, selected glow; photo data, proper selection service, Solar picker and narration-on-demand still to do |
 | U2-P4 | Milky Way | Pins, preview card, travel, notices, Back to map | U2-P3 | todo |
 | U2-P5 | Solar System | View chip and menu, body picker, moons, other systems | U2-P3 | todo |
 | U2-P6 | Settings | Settings panel, device chooser, About, confirmations | U2-P2 | todo |

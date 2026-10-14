@@ -36,6 +36,7 @@ namespace CosmicSimulation.EditorTools
             // The fill and ring are nine-sliced by UiSpriteImporter; a first import can predate that rule.
             AssetDatabase.ImportAsset(SpriteFolder + "ui_rounded_r64_fill.png", ImportAssetOptions.ForceUpdate);
             AssetDatabase.ImportAsset(SpriteFolder + "ui_rounded_r64_ring.png", ImportAssetOptions.ForceUpdate);
+            AssetDatabase.ImportAsset(SpriteFolder + "ui_rounded_r64_glow.png", ImportAssetOptions.ForceUpdate);
 
             var root = new GameObject("ui2_shell", typeof(RectTransform));
             var canvas = root.AddComponent<Canvas>();
@@ -86,6 +87,17 @@ namespace CosmicSimulation.EditorTools
             Ring("edge", dock, 418f, 93f, 46.5f, edge);
             var explore = Item("explore", dock, 5f, 5f, 135f, 83f, 40f, "Explore", Icon("icon_explore"), 46f, true);
             var guide = Item("guide", dock, 140f, 5f, 135f, 83f, 40f, "Guide", Icon("icon_being"), 40f, true);
+            // The companion is a picture, not a glyph: it stands up out of the dock as in the design.
+            var orb = (RectTransform)guide.transform.Find("icon");
+            orb.sizeDelta = new Vector2(88f, 79f);
+            orb.anchoredPosition = new Vector2(0f, 83f * 0.5f + 45f - 79f * 0.5f);
+            orb.GetComponent<Image>().sprite = Icon("v2_companion");
+            orb.GetComponent<Image>().color = Color.white;
+            var guideSo = new SerializedObject(guide);
+            guideSo.FindProperty("tintIcon").boolValue = false;
+            guideSo.ApplyModifiedPropertiesWithoutUndo();
+            ((RectTransform)guide.transform.Find("label")).anchoredPosition = new Vector2(0f, -83f * 0.5f + 9f + 10f);
+
             Rounded("divider", Box("line", dock, 275.5f, 23.5f, 1f, 46f), 1f, 46f, 0.5f, UiTheme.Divider);
             var room = Item("room", dock, 277f, 5f, 135f, 83f, 40f, "Room", Icon("icon_room"), 38f, true);
 
@@ -152,6 +164,7 @@ namespace CosmicSimulation.EditorTools
         {
             var root = Box(name, parent, x, y, w, h);
 
+            var glow = Glow(root, w, h, radius);
             var plate = Rounded("wash", root, w, h, radius, Color.clear);
             var outline = Ring("outline", root, w, h, radius, UiTheme.Accent);
             outline.enabled = false;
@@ -212,6 +225,7 @@ namespace CosmicSimulation.EditorTools
             var so = new SerializedObject(button);
             so.FindProperty("plate").objectReferenceValue = plate;
             so.FindProperty("outline").objectReferenceValue = outline;
+            so.FindProperty("glow").objectReferenceValue = glow;
             so.FindProperty("icon").objectReferenceValue = icon;
             so.FindProperty("label").objectReferenceValue = label;
             so.FindProperty("tintIcon").boolValue = glyph;
@@ -235,6 +249,19 @@ namespace CosmicSimulation.EditorTools
             rt.SetParent(parent, false);
             rt.sizeDelta = new Vector2(w, h);
             return rt;
+        }
+
+        /// <summary>
+        /// The soft cyan halo behind a selected control. The glow sprite is a blurred ring inset 16 px in a
+        /// 136 px square with a 48 px corner, so the rect overhangs the control by a third of its radius.
+        /// </summary>
+        internal static Image Glow(RectTransform root, float w, float h, float radius)
+        {
+            var over = radius / 3f;
+            var image = Fill(Rect("glow", root, w + over * 2f, h + over * 2f), "ui_rounded_r64_glow",
+                             radius * 64f / 48f, WithAlpha(UiTheme.Accent, 0.7f));
+            image.enabled = false;
+            return image;
         }
 
         private static Image Rounded(string name, Transform parent, float w, float h, float radius, Color colour)
@@ -273,7 +300,7 @@ namespace CosmicSimulation.EditorTools
             return image;
         }
 
-        private static Sprite Icon(string name)
+        internal static Sprite Icon(string name)
         {
             var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(SpriteFolder + name + ".png");
             if (sprite == null)
@@ -284,7 +311,7 @@ namespace CosmicSimulation.EditorTools
             return sprite;
         }
 
-        private static Color WithAlpha(Color colour, float alpha)
+        internal static Color WithAlpha(Color colour, float alpha)
         {
             colour.a = alpha;
             return colour;

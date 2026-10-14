@@ -1,6 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using GalaxyExplorer;
 using TMPro;
 using UnityEngine;
@@ -10,9 +11,8 @@ namespace CosmicSimulation.UI2
 {
     /// <summary>
     /// The exploring half of the UI 2.0 shell (docs/design/v2, U2-P3): the photo-first information card, the
-    /// top picker and the breadcrumb. First slice: the card describes the current place, the picker lists the
-    /// galaxies, and the legacy scene panel is kept down while this is up. Bodies, moons and the two facts
-    /// arrive with the selection service and the photo/fact data.
+    /// top picker and the breadcrumb. The card describes the body or moon the player has pulled out, and the
+    /// current place when nothing is held. While this is up the legacy panels are suppressed.
     /// </summary>
     public class Ui2Explore : MonoBehaviour
     {
@@ -22,6 +22,10 @@ namespace CosmicSimulation.UI2
         [SerializeField] private Image photo = null;
         [SerializeField] private TMP_Text title = null;
         [SerializeField] private TMP_Text body = null;
+        [SerializeField] private GameObject factsRoot = null;
+        [SerializeField] private TMP_Text[] factLabels = Array.Empty<TMP_Text>();
+        [SerializeField] private TMP_Text[] factValues = Array.Empty<TMP_Text>();
+        [SerializeField] private TMP_Text[] factUnits = Array.Empty<TMP_Text>();
         [SerializeField] private UiButton listen = null;
 
         [SerializeField]
@@ -37,7 +41,12 @@ namespace CosmicSimulation.UI2
         [SerializeField] private string pickerName = "Galaxies";
         [SerializeField] private TMP_Text crumb = null;
 
+        private const string Dim = "<color=#AAB6C2>";
+
+        private readonly List<InfoPanel> _open = new List<InfoPanel>();
         private ExperienceModule _place;
+        private BodyInfo _body;
+        private AudioClip _narration;
         private bool _listening;
 
         private void Start()
@@ -50,43 +59,88 @@ namespace CosmicSimulation.UI2
 
             listen.Clicked += ToggleListen;
             ExperienceDirector.ExperienceChanged += OnPlaceChanged;
+            InfoPanel.Suppressed = true;
             OnPlaceChanged(ExperienceDirector.Instance != null ? ExperienceDirector.Instance.Current : null);
 
-            // The legacy scene panel is spawned by the director a moment after a place opens.
-            InvokeRepeating(nameof(HideLegacyPanels), 0.25f, 0.5f);
+            // There is no selection service yet (U2-P3): which body is out is read off the legacy panels,
+            // which already follow each body's ForceSolver.
+            InvokeRepeating(nameof(TrackBody), 0.2f, 0.2f);
         }
 
         private void OnDestroy()
         {
             ExperienceDirector.ExperienceChanged -= OnPlaceChanged;
+            InfoPanel.Suppressed = false;
         }
 
         private void OnPlaceChanged(ExperienceModule module)
         {
             _place = module;
-            card.gameObject.SetActive(module != null);
+            _body = null;
+            _open.Clear();
+            Refresh();
+        }
 
-            var index = module != null ? Array.IndexOf(tileIds, module.Id) : -1;
+        private void TrackBody()
+        {
+            // The most recently opened panel wins, so pulling a moon off a held planet shows the moon.
+            _open.RemoveAll(p => p == null || !p.IsOpen);
+            foreach (var panel in FindObjectsByType<InfoPanel>(FindObjectsSortMode.None))
+            {
+                if (panel.Info != null && panel.IsOpen && !_open.Contains(panel))
+                {
+                    _open.Add(panel);
+                }
+            }
+
+            var current = _open.Count > 0 ? _open[_open.Count - 1].Info : null;
+            if (current != _body)
+            {
+                _body = current;
+                Refresh();
+            }
+        }
+
+        private void Refresh()
+        {
+            card.gameObject.SetActive(_place != null);
+
+            var index = _place != null ? Array.IndexOf(tileIds, _place.Id) : -1;
             picker.SetActive(index >= 0);
             for (var i = 0; i < tiles.Length; i++)
             {
                 tiles[i].Selected = i == index;
             }
 
-            if (module == null)
+            if (_place == null)
             {
                 crumb.text = string.Empty;
                 return;
             }
 
-            var copy = module.Panel;
-            var name = !string.IsNullOrEmpty(module.DisplayName) ? module.DisplayName : copy.Title;
-            crumb.text = index >= 0 ? "<color=#AAB6C2>" + pickerName + "     /</color>     " + name : name;
+            var copy = _place.Panel;
+            var placeName = !string.IsNullOrEmpty(_place.DisplayName) ? _place.DisplayName : copy.Title;
+            Sprite picture;
 
-            title.text = name.ToUpperInvariant();
-            body.text = copy.Paragraphs != null && copy.Paragraphs.Length > 0 ? copy.Paragraphs[0] : string.Empty;
+            if (_body != null)
+            {
+                crumb.text = Dim + placeName + "     /</color>     " + _body.DisplayName;
+                title.text = _body.DisplayName.ToUpperInvariant();
+                body.text = _body.Paragraph;
+                _narration = _body.Narration;
+                picture = null; // no per-body photographs exist yet
+                ShowFacts(_body.Stats);
+            }
+            else
+            {
+                crumb.text = index >= 0 ? Dim + pickerName + "     /</color>     " + placeName : placeName;
+                title.text = placeName.ToUpperInvariant();
+                body.text = copy.Paragraphs != null && copy.Paragraphs.Length > 0 ? copy.Paragraphs[0] : string.Empty;
+                _narration = _place.Narration;
+                picture = PhotoFor(_place);
+                ShowFacts(null); // places carry no stats yet
+            }
 
-            var picture = PhotoFor(module);
             photoRoot.SetActive(picture != null);
             photo.sprite = picture;
             var fitter = photo.GetComponent<AspectRatioFitter>();
@@ -95,8 +149,35 @@ namespace CosmicSimulation.UI2
                 fitter.aspectRatio = picture.rect.width / picture.rect.height;
             }
 
-            listen.gameObject.SetActive(module.Narration != null);
+            listen.gameObject.SetActive(_narration != null);
             LayoutRebuilder.ForceRebuildLayoutImmediate(card);
+        }
+
+        private void ShowFacts(Stat[] stats)
+        {
+            var count = stats != null ? Mathf.Min(stats.Length, factLabels.Length) : 0;
+            factsRoot.SetActive(count > 0);
+            for (var i = 0; i < factLabels.Length; i++)
+            {
+                var has = i < count;
+                factLabels[i].text = has ? Sentence(stats[i].Label) : string.Empty;
+                factValues[i].text = has
+                    ? (stats[i].Exponent == 0 ? stats[i].Value : stats[i].Value + "<sup>" + stats[i].Exponent + "</sup>")
+                    : string.Empty;
+                factUnits[i].text = has ? stats[i].Unit : string.Empty;
+            }
+        }
+
+        // The copy files write stat labels in capitals for the legacy panel; the card uses sentence case.
+        private static string Sentence(string label)
+        {
+            if (string.IsNullOrEmpty(label))
+            {
+                return string.Empty;
+            }
+
+            var lower = label.ToLowerInvariant();
+            return char.ToUpperInvariant(lower[0]) + lower.Substring(1);
         }
 
         private Sprite PhotoFor(ExperienceModule module)
@@ -108,40 +189,29 @@ namespace CosmicSimulation.UI2
         private void ToggleListen()
         {
             var vo = GalaxyExplorerManager.Instance != null ? GalaxyExplorerManager.Instance.VoManager : null;
-            if (vo == null || _place == null || _place.Narration == null)
+            if (vo == null || _narration == null)
             {
                 return;
             }
 
-            if (vo.IsPlaying && vo.CurrentClip == _place.Narration)
+            if (vo.IsPlaying && vo.CurrentClip == _narration)
             {
                 vo.Stop(true);
             }
             else
             {
-                vo.PlayClip(_place.Narration, 0f, true, true);
+                vo.PlayClip(_narration, 0f, true, true);
             }
         }
 
         private void Update()
         {
             var vo = GalaxyExplorerManager.Instance != null ? GalaxyExplorerManager.Instance.VoManager : null;
-            var listening = vo != null && _place != null && vo.IsPlaying && vo.CurrentClip == _place.Narration;
+            var listening = vo != null && _narration != null && vo.IsPlaying && vo.CurrentClip == _narration;
             if (listening != _listening)
             {
                 _listening = listening;
                 listen.SetLabel(listening ? "Stop" : "Listen");
-            }
-        }
-
-        private void HideLegacyPanels()
-        {
-            foreach (var panel in FindObjectsByType<InfoPanel>(FindObjectsSortMode.None))
-            {
-                if (panel.PanelVariant == InfoPanel.Variant.Scene)
-                {
-                    panel.Hide();
-                }
             }
         }
     }

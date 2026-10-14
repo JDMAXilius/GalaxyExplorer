@@ -178,6 +178,7 @@ namespace CosmicSimulation
                 return;
             }
 
+            Info = info;
             variant = info.IsMoon ? Variant.Moon : Variant.Body;
             _narration = info.IsMoon ? info.Narration : null;
 
@@ -352,6 +353,18 @@ namespace CosmicSimulation
 
         // ---------- visibility
 
+        /// <summary>The body or moon this panel describes; null for a scene panel.</summary>
+        public BodyInfo Info { get; private set; }
+
+        /// <summary>Whether the panel is asking to be up right now (a body out of its layout, or shown).</summary>
+        public bool IsOpen => WantsToShow();
+
+        /// <summary>
+        /// Set by the UI 2.0 shell while it is up: every legacy panel stays invisible, because the new
+        /// information card describes the place and the body instead. Sounds and narration are unchanged.
+        /// </summary>
+        public static bool Suppressed { get; set; }
+
         public void Show() => _shown = true;
 
         public void Hide() => _shown = false;
@@ -402,7 +415,7 @@ namespace CosmicSimulation
                 }
             }
 
-            var wanted = want ? 1f : 0f;
+            var wanted = want && !Suppressed ? 1f : 0f;
             if (!Mathf.Approximately(_group.alpha, wanted))
             {
                 _group.alpha = fadeSeconds <= 0f
