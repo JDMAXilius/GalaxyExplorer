@@ -198,6 +198,7 @@ namespace CosmicSimulation
 
         private void Awake()
         {
+            Registry<LayoutRig>.Add(this);
             if (bodies == null)
             {
                 return;
@@ -211,6 +212,8 @@ namespace CosmicSimulation
                 }
             }
         }
+
+        private void OnDestroy() => Registry<LayoutRig>.Remove(this);
 
         private void OnEnable() => DockController.LayoutRequested += OnLayoutRequested;
 

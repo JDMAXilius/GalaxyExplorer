@@ -206,6 +206,15 @@ namespace CosmicSimulation.UI2
             ExperienceDirector.ExperienceChanged += OnPlaceChanged;
             PlanetPOI.Preview = OnMarker;
             PlanetPOI.Picked = OnBodyMarker;
+            ForceSolver.StateChanged += OnBodyStateChanged;
+            foreach (var solver in Registry<ForceSolver>.Active)
+            {
+                if (IsOut(solver))
+                {
+                    _pulledNow.Add(solver);
+                }
+            }
+
             InfoPanel.Suppressed = true;
             if (Ui2Shell.Instance != null)
             {
@@ -220,6 +229,7 @@ namespace CosmicSimulation.UI2
 
         private void OnDestroy()
         {
+            ForceSolver.StateChanged -= OnBodyStateChanged;
             LowerPulled();
             ExperienceDirector.ExperienceChanged -= OnPlaceChanged;
             if (PlanetPOI.Preview == OnMarker)
@@ -269,7 +279,7 @@ namespace CosmicSimulation.UI2
         {
             if (_rig == null && _place != null)
             {
-                _rig = FindAnyObjectByType<LayoutRig>();
+                _rig = Registry<LayoutRig>.First;
                 if (_rig != null)
                 {
                     Refresh();
@@ -304,7 +314,7 @@ namespace CosmicSimulation.UI2
 
             // The most recently opened panel wins, so pulling a moon off a held planet shows the moon.
             _open.RemoveAll(p => p == null || !p.IsOpen);
-            foreach (var panel in FindObjectsByType<InfoPanel>(FindObjectsSortMode.None))
+            foreach (var panel in Registry<InfoPanel>.Active)
             {
                 if (panel.Info != null && panel.IsOpen && !_open.Contains(panel))
                 {
@@ -347,17 +357,48 @@ namespace CosmicSimulation.UI2
         private readonly List<(Renderer renderer, Material[] before, Material[] now)> _copied =
             new List<(Renderer, Material[], Material[])>();
 
-        private void KeepPulledInFront()
+        // Which bodies are out follows ForceSolver.StateChanged rather than a scan of every body each tick
+        // (CS-343). A body destroyed while out (its place unloaded) raises nothing, so it is dropped here.
+        private bool _pulledDirty = true;
+
+        private static bool IsOut(ForceSolver solver) =>
+            solver.ForceState != ForceSolver.State.Root && solver.ForceState != ForceSolver.State.None;
+
+        private void OnBodyStateChanged(ForceSolver solver)
         {
-            _pulledNow.Clear();
-            foreach (var solver in FindObjectsByType<ForceSolver>(FindObjectsSortMode.None))
+            var listed = _pulledNow.Contains(solver);
+            if (IsOut(solver) != listed)
             {
-                if (solver.ForceState != ForceSolver.State.Root && solver.ForceState != ForceSolver.State.None)
+                if (listed)
+                {
+                    _pulledNow.Remove(solver);
+                }
+                else
                 {
                     _pulledNow.Add(solver);
                 }
+
+                _pulledDirty = true;
+            }
+        }
+
+        private void KeepPulledInFront()
+        {
+            for (var i = _pulledNow.Count - 1; i >= 0; i--)
+            {
+                if (_pulledNow[i] == null)
+                {
+                    _pulledNow.RemoveAt(i);
+                    _pulledDirty = true;
+                }
             }
 
+            if (!_pulledDirty)
+            {
+                return;
+            }
+
+            _pulledDirty = false;
             var same = _pulledNow.Count == _pulled.Count;
             for (var i = 0; same && i < _pulledNow.Count; i++)
             {

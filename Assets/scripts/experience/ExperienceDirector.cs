@@ -1583,7 +1583,7 @@ namespace CosmicSimulation
         /// <summary>Puts every body of the open experience back where its arrangement says it belongs.</summary>
         public void RestoreEverything()
         {
-            foreach (var solver in FindObjectsByType<ForceSolver>(FindObjectsSortMode.None))
+            foreach (var solver in Registry<ForceSolver>.Active)
             {
                 solver.ResetToRoot();
                 solver.EnableForce = true;

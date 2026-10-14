@@ -58,9 +58,12 @@ namespace CosmicSimulation
 
         private void Awake()
         {
+            Registry<FreePlacementAnchor>.Add(this);
             Resolve();
             EnsureCaptured();
         }
+
+        private void OnDestroy() => Registry<FreePlacementAnchor>.Remove(this);
 
         private void OnDisable()
         {
@@ -177,7 +180,7 @@ namespace CosmicSimulation
         /// </summary>
         public static void RestoreAll()
         {
-            foreach (var anchor in FindObjectsByType<FreePlacementAnchor>(FindObjectsSortMode.None))
+            foreach (var anchor in Registry<FreePlacementAnchor>.Active)
             {
                 anchor.Restore();
             }
@@ -186,7 +189,7 @@ namespace CosmicSimulation
         /// <summary>The same, without the travel: an experience is being torn down and nobody will see it.</summary>
         public static void RestoreAllImmediate()
         {
-            foreach (var anchor in FindObjectsByType<FreePlacementAnchor>(FindObjectsSortMode.None))
+            foreach (var anchor in Registry<FreePlacementAnchor>.Active)
             {
                 anchor.RestoreImmediate();
             }

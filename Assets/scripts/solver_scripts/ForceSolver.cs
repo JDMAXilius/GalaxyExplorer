@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicSimulation;
 using GalaxyExplorer;
 using GalaxyExplorer.XR;
 using UnityEngine;
@@ -54,6 +55,16 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
 
     public State ForceState { get; private set; }
     public State PreviousForceState { get; private set; }
+
+    /// <summary>Raised on every state change of any body, after the state is set (CS-343).</summary>
+    public static event System.Action<ForceSolver> StateChanged;
+
+    private void SetState(State next)
+    {
+        PreviousForceState = ForceState;
+        ForceState = next;
+        StateChanged?.Invoke(this);
+    }
     
     public bool EnableForce = true;
     [Range(0,10)]
@@ -89,7 +100,6 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
     public float CardRoomMetres = 0.2f;
 
     // Every body in the scene, so a pull to the front of the camera can make room among the ones already out.
-    private static readonly List<ForceSolver> Bodies = new List<ForceSolver>();
     private Vector3? _aside;
 
     private bool _tapArmed;
@@ -108,7 +118,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
         Debug.Assert(_manipulationHandler != null, "Force Solver failed to find a manipulation handler");
         _attractionCollider = AttractionCollider ? AttractionCollider : GetComponentInChildren<Collider>();
         Debug.Assert(_attractionCollider != null, "Force Solver failed to find a attraction collider");
-        Bodies.Add(this);
+        Registry<ForceSolver>.Add(this);
 
         _manipulationHandler.OnManipulationEnded.AddListener(OnManipulationEnd);
 
@@ -143,7 +153,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
 
     private void OnDestroy()
     {
-        Bodies.Remove(this);
+        Registry<ForceSolver>.Remove(this);
         ControllerTracker.AllTrackingLost -= OnControllersLost;
     }
 
@@ -275,8 +285,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
         }
 
         _aside = null;
-        PreviousForceState = ForceState;
-        ForceState = State.Root;
+        SetState(State.Root);
         _manipulationHandler.enabled = false;
         SolverHandler.TransformTarget = RootTransform;
         OnStartRoot();
@@ -294,8 +303,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
             return;
         }
 
-        PreviousForceState = ForceState;
-        ForceState = State.Dwell;
+        SetState(State.Dwell);
         _manipulationHandler.enabled = false;
         SolverHandler.TransformTarget = ControllerTracker.ResolvedTransform;
         Debug.Assert(_attractionDwellRoutine == null);
@@ -405,8 +413,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
             return;
         }
 
-        PreviousForceState = ForceState;
-        ForceState = State.Attraction;
+        SetState(State.Attraction);
         if (forcePullToFrontOfCamera)
         {
             var camera = _mainCamera.transform;
@@ -438,7 +445,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
     /// </summary>
     private static void MakeRoom(Vector3 spot, Vector3 right, Vector3 forward, ForceSolver arriving)
     {
-        foreach (var other in Bodies)
+        foreach (var other in Registry<ForceSolver>.Active)
         {
             if (other == arriving || other == null || other.ForceState != State.Free)
             {
@@ -471,8 +478,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
         ReleaseAllTractorBeams();
 //        SetActivePointersFocusLocked(false);
         _aside = null;
-        PreviousForceState = ForceState;
-        ForceState = State.Manipulation;
+        SetState(State.Manipulation);
         SolverHandler.TransformTarget = ControllerTracker.transform;
         _manipulationHandler.enabled = true;
         _audioService.PlayClip(AudioId.ManipulationStart, out _activeAudioSource);
@@ -486,8 +492,7 @@ public class ForceSolver : Solver, IGEFocusChangedHandler, IGEFocusHandler, IGEP
 
     private void StartFree()
     {
-        PreviousForceState = ForceState;
-        ForceState = State.Free;
+        SetState(State.Free);
         SolverHandler.TransformTarget = ControllerTracker.transform;
         _manipulationHandler.enabled = false;
         if (_activeAudioSource != null)

@@ -76,7 +76,7 @@ namespace GalaxyExplorer
         /// <summary>Fades out and clears whatever is being said, wherever it is being said from.</summary>
         private static void StopAll()
         {
-            foreach (var manager in FindObjectsByType<VOManager>(FindObjectsSortMode.None))
+            foreach (var manager in CosmicSimulation.Registry<VOManager>.Active)
             {
                 // Stop starts a coroutine, which an inactive component cannot do.
                 if (manager != null && manager.isActiveAndEnabled)
@@ -158,6 +158,10 @@ namespace GalaxyExplorer
         public bool ShouldAudioBlockProgress => blockRemaining > 0f && !IsPaused;
         public bool IsPlaying => clipQueue.Count > 0 || nextClip != null || audioSource != null && audioSource.isPlaying;
         public AudioClip CurrentClip => IsPlaying && audioSource != null ? audioSource.clip : null;
+
+        private void Awake() => CosmicSimulation.CosmicSimulation.Registry<VOManager>.Add(this);
+
+        private void OnDestroy() => CosmicSimulation.CosmicSimulation.Registry<VOManager>.Remove(this);
 
         private void Start()
         {

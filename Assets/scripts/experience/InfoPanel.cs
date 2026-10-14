@@ -147,8 +147,11 @@ namespace CosmicSimulation
             }
         }
 
+        private void OnDestroy() => Registry<InfoPanel>.Remove(this);
+
         private void Awake()
         {
+            Registry<InfoPanel>.Add(this);
             _group = GetComponent<CanvasGroup>();
             _group.alpha = 0f;
             _camera = Camera.main;

@@ -84,9 +84,9 @@ namespace CosmicSimulation.Being
         {
             var director = ExperienceDirector.Instance;
             var current = director != null ? director.Current : null;
-            var rig = FindAnyObjectByType<LayoutRig>();
+            var rig = Registry<LayoutRig>.First;
             var held = new List<string>();
-            foreach (var force in FindObjectsByType<ForceSolver>(FindObjectsSortMode.None))
+            foreach (var force in Registry<ForceSolver>.Active)
             {
                 if (force.ForceState == ForceSolver.State.Free || force.ForceState == ForceSolver.State.Manipulation)
                 {
@@ -109,11 +109,11 @@ namespace CosmicSimulation.Being
                     ExperienceDirector.Instance?.Switch(id);
                     break;
                 case "pull_body":
-                    FindAnyObjectByType<LayoutRig>()?.Find(id)?.Force?.OnPointerDown();
+                    Registry<LayoutRig>.First?.Find(id)?.Force?.OnPointerDown();
                     break;
                 case "restore":
                     FreePlacementAnchor.RestoreAll();
-                    foreach (var rig in FindObjectsByType<LayoutRig>(FindObjectsSortMode.None))
+                    foreach (var rig in Registry<LayoutRig>.Active)
                     {
                         rig.Restore();
                     }
@@ -128,7 +128,7 @@ namespace CosmicSimulation.Being
             AmbienceController.Ducked = on;
             if (on)
             {
-                FindAnyObjectByType<VOManager>()?.Stop(true);
+                Registry<VOManager>.First?.Stop(true);
             }
         }
     }

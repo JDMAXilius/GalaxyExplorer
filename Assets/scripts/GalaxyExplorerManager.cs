@@ -393,7 +393,7 @@ namespace GalaxyExplorer
             }
 
             TransitionManager = FindFirstObjectByType<TransitionManager>();
-            VoManager = FindFirstObjectByType<VOManager>();
+            VoManager = CosmicSimulation.Registry<VOManager>.First;
             OnboardingManager = FindFirstObjectByType<OnboardingManager>();
             GeFadeManager = FindFirstObjectByType<GEFadeManager>();
             GGVMenuManager = FindFirstObjectByType<GGVMenuManager>();

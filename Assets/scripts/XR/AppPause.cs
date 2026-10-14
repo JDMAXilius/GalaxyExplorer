@@ -44,7 +44,7 @@ namespace GalaxyExplorer.XR
             _paused = paused;
             AudioListener.pause = paused;
 
-            foreach (var manager in FindObjectsByType<VOManager>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            foreach (var manager in CosmicSimulation.Registry<VOManager>.Active)
             {
                 manager.enabled = !paused;
             }

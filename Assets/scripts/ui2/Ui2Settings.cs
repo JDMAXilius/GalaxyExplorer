@@ -184,7 +184,7 @@ namespace CosmicSimulation.UI2
         {
             DockController.Instance?.ResetPlaces();
             FreePlacementAnchor.RestoreAll();
-            var rig = FindAnyObjectByType<LayoutRig>();
+            var rig = Registry<LayoutRig>.First;
             if (rig != null && !(Ui2Explore.Instance != null && Ui2Explore.Instance.Comparing))
             {
                 rig.Restore();

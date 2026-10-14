@@ -500,7 +500,7 @@ namespace GalaxyExplorer.XR
 
             // Experiences built before CS-060 have no rig. Restoring each body through its own placement solver
             // keeps the 0.8 s ease the GDD asks for; a body without one has nowhere to animate from and snaps.
-            foreach (var solver in FindObjectsByType<ForceSolver>(FindObjectsSortMode.None))
+            foreach (var solver in CosmicSimulation.Registry<ForceSolver>.Active)
             {
                 RestoreBody(solver);
             }
