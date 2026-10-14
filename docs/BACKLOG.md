@@ -1911,8 +1911,8 @@ exist above (CS-282 to CS-299) keep their own status and are only pointed at her
 
 | ID | Track | Title | Depends | Status |
 |---|---|---|---|---|
-| CS-300 | TERM | The editor no longer enters play mode since the Steam S1 changes (uncommitted in the terminal's working tree): `EditorApplication.isPlaying = true` is requested, the OpenXR session goes SYNCHRONIZED -> STOPPING -> EXITING and play never starts, so App Check cannot run. Ruled out: the headset being awake; Standalone `m_InitManagerOnStart` (flipping it back to 1 did not help). Suspects: the three Standalone controller profiles (Index, Vive, WMR) enabled in `OpenXR Package Settings.asset`, and the editor's active build target having been switched to Windows by the Steam build. Bisect, fix, then run App Check | — | todo |
-| CS-301 | TERM | Commit Steam S1 (CS-250 to CS-254: `Launch.cs`, `-vr`/`-desktop`, Standalone controller profiles, `PassthroughAvailable`, `Unity6WindowsBuild` menu items and key guard) once CS-300 is closed and App Check passes. Verified so far: compiles, `Builds/Steam/win64/CosmicSimulationXR.exe -desktop` ran 30 s with no errors and did not wake SteamVR, and the Quest APK built from the same tree boots with passthrough. `-vr` is untested | CS-300 | todo |
+| CS-300 | TERM | The editor no longer enters play mode since the Steam S1 changes (uncommitted in the terminal's working tree): `EditorApplication.isPlaying = true` is requested, the OpenXR session goes SYNCHRONIZED -> STOPPING -> EXITING and play never starts, so App Check cannot run. Ruled out: the headset being awake; Standalone `m_InitManagerOnStart` (flipping it back to 1 did not help). Suspects: the three Standalone controller profiles (Index, Vive, WMR) enabled in `OpenXR Package Settings.asset`, and the editor's active build target having been switched to Windows by the Steam build. Bisect, fix, then run App Check | — | done 13 Oct: play mode enters again and App Check passes 38/38 with the editor's active build target on Android. The Windows target is the likely cause but was not bisected |
+| CS-301 | TERM | Commit Steam S1 (CS-250 to CS-254: `Launch.cs`, `-vr`/`-desktop`, Standalone controller profiles, `PassthroughAvailable`, `Unity6WindowsBuild` menu items and key guard) once CS-300 is closed and App Check passes. Verified so far: compiles, `Builds/Steam/win64/CosmicSimulationXR.exe -desktop` ran 30 s with no errors and did not wake SteamVR, and the Quest APK built from the same tree boots with passthrough. `-vr` is untested | CS-300 | done 13 Oct (6ad31efb). `-vr` on Windows still untested |
 | CS-302 | TERM | Owner's worn pass of the latest Quest build (wave 3 + Start always visible): intro orb pinch-only, Start present from the first moment, palm menu opens and closes with the hand, dock square to the eyes, two-hand and air-pinch zoom on planets and moons, two air pinches on a place, fling, pinch the logo, outlined hands in both eyes. Read logcat afterwards (`adb logcat -G 16M` first; the default 256 KiB buffer loses the app log in minutes) | — | todo |
 
 ### Hand tracking still open (rows above)
@@ -1964,7 +1964,7 @@ The owner's Steamworks account (`juandlugopro`) has SDK access only: no partner 
 
 | ID | Track | Title | Depends | Status |
 |---|---|---|---|---|
-| CS-317 | OWNER | `Assets/scenes/view_scenes/solar_system_view_scene.unity` has a large uncommitted change in the terminal's working tree that predates 6 Oct (about 26,000 added lines; the Solar System moons of CS-202/203 may live only there). Decide: commit it or discard it | — | todo |
+| CS-317 | OWNER | `Assets/scenes/view_scenes/solar_system_view_scene.unity` has a large uncommitted change in the terminal's working tree that predates 6 Oct (about 26,000 added lines; the Solar System moons of CS-202/203 may live only there). Decide: commit it or discard it | — | done 13 Oct (1eb44193): committed rather than discarded; the owner can revert |
 | CS-318 | TERM | `origin/quest3-port` is stale (only `main` has been pushed since 4 Oct); push the branch or delete it on the remote | — | todo |
 | CS-319 | TERM | The headset's proximity sensor may be left overridden after an unattended launch (`am broadcast -a com.oculus.vrpowermanager.prox_close`); always end a test with `automation_disable` | — | todo |
 
@@ -2015,9 +2015,9 @@ Approach, reasoning and phase exit criteria: [design/v2/UNITY_ROADMAP.md](design
 
 | ID | Phase | Goal | Depends | Status |
 |---|---|---|---|---|
-| U2-P0 | Ground | Play mode fixed, tree clean, headset distance test, theme and icons exported | CS-300, CS-301, CS-317 | todo |
-| U2-P1 | Foundations | ui2 assembly, UiButton kit, ScreenAnchor, AppModel, adapters, new app check | U2-P0 | todo |
-| U2-P2 | Shell | Rail, dock, settings button, room toggle, context catalog | U2-P1 | todo |
+| U2-P0 | Ground | Play mode fixed, tree clean, headset distance test, theme and icons exported | CS-300, CS-301, CS-317 | in progress: play mode works (App Check 38/38), tree clean; headset distance test and theme asset still to do |
+| U2-P1 | Foundations | ui2 assembly, UiButton kit, ScreenAnchor, AppModel, adapters, new app check | U2-P0 | in progress: UiTheme, UiButton, Ui2Builder landed; ScreenAnchor, AppModel, adapters, new app check still to do |
+| U2-P2 | Shell | Rail, dock, settings button, room toggle, context catalog | U2-P1 | in progress: rail, dock and settings button run behind the Ui2 switch, driving the legacy app |
 | U2-P3 | Card and picker | Selection service, picker, information card, photo and fact data, Listen | U2-P2 | todo |
 | U2-P4 | Milky Way | Pins, preview card, travel, notices, Back to map | U2-P3 | todo |
 | U2-P5 | Solar System | View chip and menu, body picker, moons, other systems | U2-P3 | todo |

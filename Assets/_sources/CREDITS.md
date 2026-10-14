@@ -156,3 +156,13 @@ The unimaged areas are shown as a flat tone because no spacecraft has photograph
 frames of Proteus and a single dot for Nereid; New Horizons resolved Pluto's four small moons as a handful of
 pixels. The character of each map follows what is known (brightness, colour, cratering, the named features) but
 every crater and valley is placed at random. Pluto's small moons are irregular, and are shaped by `Assets/scripts/Editor/MoonShapes.cs` to their measured New Horizons axes (Nix 50 x 33 x 31 km, Hydra 51 x 36 x 31, Kerberos 19 x 10 x 9 as two lobes, Styx 16 x 9 x 8); the lumps on them are invented.
+
+## UI 2.0 sprites (13 Oct 2026)
+
+Drawn in code for this project with Python Pillow (no third-party artwork), white on transparent, tinted at run time:
+
+- `Assets/ui/figma/icon_explore.png` — planet with ring, the dock's Explore glyph.
+- `Assets/ui/figma/icon_room.png` — cube outline, the dock's Room glyph.
+- `Assets/ui/figma/ui_rounded_r64_fill.png` — rounded rectangle with transparent corners, nine-sliced. The older `ui_rounded_r64.png` has opaque dark corners and is left as it is for the legacy UI.
+- `Assets/ui/figma/ui_rounded_r64_ring.png` — rounded outline ring, nine-sliced.
+
