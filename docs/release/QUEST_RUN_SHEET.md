@@ -48,7 +48,7 @@ proximity sensor is not left overridden (CS-319), and save the log beside the sh
 | B3 | Pinch the logo during the intro | The intro skips | CS-291, CS-304 | | | |
 | B4 | Finish the intro | The UI 2.0 shell appears only after the intro really ends, on the Milky Way | U2-P2 | | | |
 | B5 | First-use lessons (Help) | Lessons play once on first run; Help replays them | U2-P8 | | | |
-| B6 | *(known gap)* Hands out of view during first use | A "We cannot see your hands" notice | U2-P8 | | | |
+| B6 | Drop a hand out of view while holding a planet; separately, lower both hands for 5 s | The grab lets go and "We cannot see your hands…" shows; with hands lowered it shows once, not again within a minute | U2-P8, CS-324 | | | |
 
 ## C. The UI 2.0 shell
 

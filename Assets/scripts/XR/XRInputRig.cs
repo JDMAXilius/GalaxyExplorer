@@ -150,8 +150,57 @@ namespace GalaxyExplorer.XR
             LeftHandTracked = UpdatePalm(_handSubsystem?.leftHand, LeftPalm);
             RightHandTracked = UpdatePalm(_handSubsystem?.rightHand, RightPalm);
 
-            if (leftWasTracked && !LeftHandTracked) ReleaseHand(InteractorHandedness.Left);
-            if (rightWasTracked && !RightHandTracked) ReleaseHand(InteractorHandedness.Right);
+            var dropped = false;
+            if (leftWasTracked && !LeftHandTracked) dropped |= ReleaseHand(InteractorHandedness.Left);
+            if (rightWasTracked && !RightHandTracked) dropped |= ReleaseHand(InteractorHandedness.Right);
+            WatchForLostHands(dropped);
+        }
+
+        // ---------- "We cannot see your hands" (U2-P8, screen S36)
+        //
+        // Said when a hand leaves the cameras' view in the middle of a grab (the grab is cancelled above, so the
+        // player needs to know why it let go), or when neither hand nor controller has been seen for a few seconds.
+        // Lowered hands are normal, so the second case speaks once per loss and at most once a minute.
+
+        private const string TrackingLost = "We cannot see your hands. Bring them into view to continue."; // docs/copy/ui.md tracking_lost
+        private const float LostSeconds = 3f;
+        private const float LostCooldownSeconds = 60f;
+        private float _lostFor;
+        private bool _lostSaid;
+        private float _lostSaidAt = float.NegativeInfinity;
+
+        private void WatchForLostHands(bool dropped)
+        {
+            if (!XRSettings.isDeviceActive)
+            {
+                return;
+            }
+
+            if (dropped)
+            {
+                SayLost();
+            }
+
+            var nothingSeen = !LeftHandTracked && !RightHandTracked && !LeftControllerTracked && !RightControllerTracked;
+            if (!nothingSeen)
+            {
+                _lostFor = 0f;
+                _lostSaid = false;
+                return;
+            }
+
+            _lostFor += Time.unscaledDeltaTime;
+            if (!_lostSaid && _lostFor >= LostSeconds && Time.unscaledTime - _lostSaidAt >= LostCooldownSeconds)
+            {
+                SayLost();
+            }
+        }
+
+        private void SayLost()
+        {
+            _lostSaid = true;
+            _lostSaidAt = Time.unscaledTime;
+            CosmicSimulation.SwitchNotice.Say(TrackingLost);
         }
 
         /// <summary>
@@ -161,8 +210,10 @@ namespace GalaxyExplorer.XR
         /// *acquired*, so the hand's interactors stay registered with Select still performed. A pinch carried out
         /// of the cameras' view would hold the body until the hand came back. Cancel it where it is (CS-283).
         /// </summary>
-        private void ReleaseHand(InteractorHandedness side)
+        /// <returns>True when the hand was holding or pinching something that had to be let go.</returns>
+        private bool ReleaseHand(InteractorHandedness side)
         {
+            var dropped = false;
             XRInteractionManager manager = null;
             foreach (var interactor in selectInteractors)
             {
@@ -178,13 +229,14 @@ namespace GalaxyExplorer.XR
             {
                 if (_airPinches[i] == null || _airPinches[i].handedness == side)
                 {
+                    dropped |= _airPinches[i] != null;
                     ReleaseAirPinch(i);
                 }
             }
 
             if (manager == null)
             {
-                return;
+                return dropped;
             }
 
             manager.GetRegisteredInteractors(_registered);
@@ -193,8 +245,11 @@ namespace GalaxyExplorer.XR
                 if (interactor.handedness == side && interactor is IXRSelectInteractor selector && selector.hasSelection)
                 {
                     manager.CancelInteractorSelection(selector);
+                    dropped = true;
                 }
             }
+
+            return dropped;
         }
 
         /// <summary>

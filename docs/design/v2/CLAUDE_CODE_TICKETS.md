@@ -68,7 +68,7 @@ The owner is sending `docs/design/v2/downloads/ChatGPT-image-tickets.zip` (ticke
 - **U2-P8:**
   - the placement step;
   - restyling what the palm gesture shows (the owner wants the palm menu kept);
-  - the "We cannot see your hands" notice;
+  - the "We cannot see your hands" notice; *code landed 14 Oct (cloud): `XRInputRig.WatchForLostHands`, through `SwitchNotice.Say`; device check BACKLOG CS-324*;
   - running the lessons on device.
 - **U2-P4:** restyle the map markers to `Navigation/MapPin` (Figma `71:395`). They keep their legacy look.
 - **U2-P9:** Compare for galaxies and moons needs the owner's call on what is compared.
