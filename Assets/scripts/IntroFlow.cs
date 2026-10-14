@@ -9,13 +9,10 @@ namespace GalaxyExplorer
 {
     public class IntroFlow : MonoBehaviour
     {
-        /// <summary>The intro, once it has woken; null when there is none (CS-331).</summary>
+        /// <summary>The intro, once it has woken; null when there is none.</summary>
         public static IntroFlow Active { get; private set; }
 
-        /// <summary>
-        /// Editor session key holding the view to open directly, set when Play is pressed inside a view scene
-        /// (see PlayFromViewScene).
-        /// </summary>
+        /// <summary>Editor session key for the view to open directly; set by PlayFromViewScene.</summary>
         public const string QuickStartViewKey = "GalaxyExplorer.QuickStartView";
         private const string GalaxyViewScene = "galaxy_view_scene";
 
@@ -63,14 +60,8 @@ namespace GalaxyExplorer
         }
 
         /// <summary>
-        /// Ends the intro now, as if it had run to its last stage.
-        ///
-        /// The player asking for a place — a dock tile, a destination tag — is the player saying they are done
-        /// watching. Before this existed the director could only refuse such a click while the intro was running,
-        /// and on desktop the intro runs for as long as the onboarding narration plus a two second settle, so the
-        /// app looked dead to every click for most of a minute. Jumping the flow is how the intro already moves
-        /// between its own stages, so the last stage raises OnIntroFinished through the normal path and everything
-        /// downstream of it — the galaxy load, the transition, the director adopting what was opened — still runs.
+        /// Ends the intro as if it had reached its last stage, so OnIntroFinished and everything downstream still run.
+        /// A player asking for a place (dock tile, destination tag) is done watching; refusing the click felt dead.
         /// </summary>
         public bool Skip()
         {
@@ -79,8 +70,7 @@ namespace GalaxyExplorer
                 return false;
             }
 
-            // Skipping past placement used to leave the content root at the world origin, on top of the camera,
-            // with the whole Milky Way above the top of the screen. Anchor it where placement would have.
+            // Skipping placement would leave the content root at the world origin, on top of the camera.
             if (!_anchored)
             {
                 AnchorAhead();
@@ -120,15 +110,12 @@ namespace GalaxyExplorer
             StartCoroutine(Initialization());
         }
 
-        // Position and rotate transform along the WorldAnchor which is the transform that ViewLoader lives
-        // After modifying transform, create world anchor
         public void OnPlacementFinished(Vector3 position)
         {
-            // Anchor the content in place
             FindFirstObjectByType<WorldAnchorHandler>().CreateWorldAnchor(position);
             _anchored = true;
 
-            // if its not Desktop platform then skip the next stage and go directly to solar system stage
+            // A headset skips stage 2, the desktop-only Earth pin, and goes straight to the solar system.
             if (GalaxyExplorerManager.IsDesktop && flowManagerScript)
             {
                 flowManagerScript.AdvanceStage();
@@ -163,7 +150,7 @@ namespace GalaxyExplorer
 
                     if (timer >= LogoDuration)
                     {
-                        // if its Desktop platform then jump to earth pin desktop stage
+                        // Stage 2 is the desktop Earth pin; a headset advances to the MR one.
                         if (GalaxyExplorerManager.IsDesktop && flowManagerScript)
                         {
                             flowManagerScript.JumpToStage(2);
@@ -180,11 +167,9 @@ namespace GalaxyExplorer
 
         private IEnumerator Initialization()
         {
-            // ViewLoader of CoreSystems scene needs to be loaded and then continue
             yield return new WaitUntil(() => FindFirstObjectByType<ViewLoader>() != null);
 
-            // need to wait otherwise the viewloader subscription to callback becomes null in holoLens
-            //yield return new WaitForSeconds(1);
+            // Subscribing to ViewLoader on the frame it appears dropped the callback on HoloLens; wait a frame.
             yield return new WaitForEndOfFrame();
             
             audioService = AudioService.Instance;
@@ -211,7 +196,6 @@ namespace GalaxyExplorer
                 {
                     flowManagerScript.OnStageTransition += OnStageTransition;
 
-                    // The flow manager runs the intro stages; a quick start skips them.
                     if (!TryQuickStart())
                     {
                         flowManagerScript.enabled = true;
