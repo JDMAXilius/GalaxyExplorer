@@ -21,8 +21,6 @@ using UnityEngine.UI;
 /// </summary>
 public class DesktopMenuManager : MonoBehaviour
 {
-    private const string MutedPrefsKey = "GalaxyExplorer.Muted";
-
     [SerializeField]
     private GameObject _menuParent;
 
@@ -86,12 +84,8 @@ public class DesktopMenuManager : MonoBehaviour
 
     public static bool IsMuted
     {
-        get => PlayerPrefs.GetInt(MutedPrefsKey, 0) == 1;
-        private set
-        {
-            PlayerPrefs.SetInt(MutedPrefsKey, value ? 1 : 0);
-            PlayerPrefs.Save();
-        }
+        get => CosmicSimulation.Mute.On;
+        private set => CosmicSimulation.Mute.On = value;
     }
 
     private void Start()
@@ -165,7 +159,7 @@ public class DesktopMenuManager : MonoBehaviour
     /// <summary>
     /// Tab's old job: fold the legacy button row away and back. Retired with the row.
     ///
-    /// <para>Kept as a method because <c>DesktopMouseInput</c> still calls it, but only when there is no
+    /// <para>Kept as a method because <c>DesktopShortcuts</c> still calls it, but only when there is no
     /// <c>DesktopDock</c> in the scene at all — and a scene with no dock should not answer Tab with a menu the
     /// rest of the app has stopped maintaining. Tab belongs to the dock (GDD 5.3).</para>
     /// </summary>
@@ -214,10 +208,7 @@ public class DesktopMenuManager : MonoBehaviour
 
     public void OnResetViewButtonPressed()
     {
-        if (DesktopMouseInput.Instance != null)
-        {
-            DesktopMouseInput.Instance.ResetView();
-        }
+        DesktopCameraRig.Instance?.ResetView();
     }
 
     private void ApplyMute()

@@ -36,11 +36,11 @@ namespace GalaxyExplorer
         {
             originalTransitionAlpha = AsteroidMaterial.GetFloat("_TransitionAlpha");
             originalRealismScale = OrbitsMaterial.GetFloat("_Truthfulness");
-            planets = FindObjectsOfType<OrbitUpdater>().ToArray();
+            planets = FindObjectsByType<OrbitUpdater>(FindObjectsSortMode.None).ToArray();
             originalScales = planets.Select(p => p.transform.localScale.x).ToArray();
             previousRealismScale = -1;
 
-            sunScript = FindObjectOfType<SunBrightnessAdjust>();
+            sunScript = FindFirstObjectByType<SunBrightnessAdjust>();
             ResolveSun();
         }
 

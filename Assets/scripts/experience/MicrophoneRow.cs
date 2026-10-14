@@ -63,7 +63,7 @@ namespace CosmicSimulation
         /// <summary>Moves the choice one step through "System default" and the plugged-in devices.</summary>
         public void Step(int direction)
         {
-            var devices = Microphone.devices;
+            var devices = Cosmic.Companion.Mic.Devices;
             var index = -1;
             for (var i = 0; i < devices.Length; i++)
             {
@@ -150,14 +150,16 @@ namespace CosmicSimulation
                 {
                     _asked = true;
 #if UNITY_ANDROID && !UNITY_EDITOR
-                    UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Microphone);
+                    var callbacks = new UnityEngine.Android.PermissionCallbacks();
+                    callbacks.PermissionGranted += _ => Cosmic.Companion.Mic.Refresh();
+                    UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Microphone, callbacks);
 #endif
                 }
                 Say("Allow the microphone to check it.");
                 return;
             }
 
-            if (Microphone.devices.Length == 0)
+            if (Cosmic.Companion.Mic.Devices.Length == 0)
             {
                 Say("No microphone found.");
                 return;

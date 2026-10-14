@@ -698,7 +698,7 @@ namespace CosmicSimulation.EditorTools
 
             if (spec.DesktopSlot >= 0)
             {
-                // GDD 4.1's desktop line gives the Moon its own key. DesktopMouseInput.ToggleBody finds a body
+                // GDD 4.1's desktop line gives the Moon its own key. DesktopShortcuts.ToggleBody finds a body
                 // by UiPreviewTarget.slotId, so this is the whole of that wiring; the digit keys for the ten
                 // bodies are still owed by CS-049.
                 var preview = moonRoot.AddComponent<UiPreviewTarget>();

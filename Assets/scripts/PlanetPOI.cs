@@ -165,7 +165,7 @@ namespace GalaxyExplorer
 
             yield return new WaitForSeconds(.3f);
             GalaxyExplorerManager.Instance.TransitionManager.LoadNextScene(SceneToLoad);
-            var poiBehaviors = FindObjectsOfType<POIBehavior>();
+            var poiBehaviors = FindObjectsByType<POIBehavior>(FindObjectsSortMode.None);
             if (poiBehaviors != null)
             {
                 foreach (var poiBehavior in poiBehaviors)

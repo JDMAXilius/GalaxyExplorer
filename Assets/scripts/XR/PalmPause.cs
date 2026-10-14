@@ -118,7 +118,7 @@ namespace GalaxyExplorer.XR
             var narration = GalaxyExplorerManager.Instance != null ? GalaxyExplorerManager.Instance.VoManager : null;
             if (narration == null)
             {
-                narration = FindAnyObjectByType<VOManager>();
+                narration = Registry<VOManager>.First;
             }
 
             var card = CosmicSimulation.UI2.Ui2Explore.Instance;

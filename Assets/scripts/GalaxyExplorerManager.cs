@@ -69,6 +69,11 @@ namespace GalaxyExplorer
             get; set;
         }
 
+        /// <summary>The desktop view's pivot and the transform under it; Home puts both back to their first pose. Null without one.</summary>
+        public Transform ViewPivotTransform { get; private set; }
+
+        public Transform ViewEntityTransform { get; private set; }
+
         public FlowManager FlowManagerHandler
         {
             get; set;
@@ -379,6 +384,7 @@ namespace GalaxyExplorer
             if (IsDesktop)
             {
                 gameObject.AddComponent<GalaxyExplorer.XR.DesktopMouseInput>();
+                gameObject.AddComponent<GalaxyExplorer.XR.DesktopShortcuts>();
             }
 
             if (MyAppPlatformManagerInitialized != null)
@@ -392,15 +398,25 @@ namespace GalaxyExplorer
                 Invoke(nameof(SayVRFailed), 1f);
             }
 
-            TransitionManager = FindObjectOfType<TransitionManager>();
-            VoManager = FindObjectOfType<VOManager>();
-            OnboardingManager = FindObjectOfType<OnboardingManager>();
-            GeFadeManager = FindObjectOfType<GEFadeManager>();
-            GGVMenuManager = FindObjectOfType<GGVMenuManager>();
-            ViewLoaderScript = FindObjectOfType<ViewLoader>();
-            CardPoiManager = FindObjectOfType<CardPOIManager>();
-            CameraControllerHandler = FindObjectOfType<CameraController>();
-            FlowManagerHandler = FindObjectOfType<FlowManager>();
+            TransitionManager = FindFirstObjectByType<TransitionManager>();
+            // A scene search, not the registry: this runs in Awake at order -50, before the narrator has woken.
+            VoManager = FindFirstObjectByType<VOManager>();
+            OnboardingManager = FindFirstObjectByType<OnboardingManager>();
+            GeFadeManager = FindFirstObjectByType<GEFadeManager>();
+            GGVMenuManager = FindFirstObjectByType<GGVMenuManager>();
+            ViewLoaderScript = FindFirstObjectByType<ViewLoader>();
+            CardPoiManager = FindFirstObjectByType<CardPOIManager>();
+            CameraControllerHandler = FindFirstObjectByType<CameraController>();
+            // CosmicSimulation.ViewPivot replaces TouchScript's CameraController; the fallback goes with TouchScript (CS-353).
+            var view = FindFirstObjectByType<CosmicSimulation.ViewPivot>();
+            // Per field, so a half-wired ViewPivot still resets the view while the old controller is in the scene.
+            ViewPivotTransform = view != null && view.Pivot != null ? view.Pivot : CameraControllerHandler != null ? CameraControllerHandler.Pivot : null;
+            ViewEntityTransform = view != null && view.EntityToMove != null ? view.EntityToMove : CameraControllerHandler != null ? CameraControllerHandler.EntityToMove : null;
+            if (view != null && (view.Pivot == null || view.EntityToMove == null))
+            {
+                Debug.LogError("ViewPivot: Pivot and EntityToMove must both be assigned (CS-353).", view);
+            }
+            FlowManagerHandler = FindFirstObjectByType<FlowManager>();
         }
 
         private void SayVRFailed()

@@ -206,6 +206,15 @@ namespace CosmicSimulation.UI2
             ExperienceDirector.ExperienceChanged += OnPlaceChanged;
             PlanetPOI.Preview = OnMarker;
             PlanetPOI.Picked = OnBodyMarker;
+            ForceSolver.StateChanged += OnBodyStateChanged;
+            foreach (var solver in Registry<ForceSolver>.Active)
+            {
+                if (IsOut(solver))
+                {
+                    _pulledNow.Add(solver);
+                }
+            }
+
             InfoPanel.Suppressed = true;
             if (Ui2Shell.Instance != null)
             {
@@ -220,6 +229,8 @@ namespace CosmicSimulation.UI2
 
         private void OnDestroy()
         {
+            ForceSolver.StateChanged -= OnBodyStateChanged;
+            LowerPulled();
             ExperienceDirector.ExperienceChanged -= OnPlaceChanged;
             if (PlanetPOI.Preview == OnMarker)
             {
@@ -268,7 +279,7 @@ namespace CosmicSimulation.UI2
         {
             if (_rig == null && _place != null)
             {
-                _rig = FindAnyObjectByType<LayoutRig>();
+                _rig = Registry<LayoutRig>.First;
                 if (_rig != null)
                 {
                     Refresh();
@@ -303,7 +314,7 @@ namespace CosmicSimulation.UI2
 
             // The most recently opened panel wins, so pulling a moon off a held planet shows the moon.
             _open.RemoveAll(p => p == null || !p.IsOpen);
-            foreach (var panel in FindObjectsByType<InfoPanel>(FindObjectsSortMode.None))
+            foreach (var panel in Registry<InfoPanel>.Active)
             {
                 if (panel.Info != null && panel.IsOpen && !_open.Contains(panel))
                 {
@@ -343,18 +354,51 @@ namespace CosmicSimulation.UI2
         private readonly List<ForceSolver> _pulled = new List<ForceSolver>();
         private readonly List<ForceSolver> _pulledNow = new List<ForceSolver>();
         private readonly Dictionary<Material, int> _raised = new Dictionary<Material, int>();
+        private readonly List<(Renderer renderer, Material[] before, Material[] now)> _copied =
+            new List<(Renderer, Material[], Material[])>();
 
-        private void KeepPulledInFront()
+        // Which bodies are out follows ForceSolver.StateChanged rather than a scan of every body each tick
+        // (CS-343). A body destroyed while out (its place unloaded) raises nothing, so it is dropped here.
+        private bool _pulledDirty = true;
+
+        private static bool IsOut(ForceSolver solver) =>
+            solver.ForceState != ForceSolver.State.Root && solver.ForceState != ForceSolver.State.None;
+
+        private void OnBodyStateChanged(ForceSolver solver)
         {
-            _pulledNow.Clear();
-            foreach (var solver in FindObjectsByType<ForceSolver>(FindObjectsSortMode.None))
+            var listed = _pulledNow.Contains(solver);
+            if (IsOut(solver) != listed)
             {
-                if (solver.ForceState != ForceSolver.State.Root && solver.ForceState != ForceSolver.State.None)
+                if (listed)
+                {
+                    _pulledNow.Remove(solver);
+                }
+                else
                 {
                     _pulledNow.Add(solver);
                 }
+
+                _pulledDirty = true;
+            }
+        }
+
+        private void KeepPulledInFront()
+        {
+            for (var i = _pulledNow.Count - 1; i >= 0; i--)
+            {
+                if (_pulledNow[i] == null)
+                {
+                    _pulledNow.RemoveAt(i);
+                    _pulledDirty = true;
+                }
             }
 
+            if (!_pulledDirty)
+            {
+                return;
+            }
+
+            _pulledDirty = false;
             var same = _pulledNow.Count == _pulled.Count;
             for (var i = 0; same && i < _pulledNow.Count; i++)
             {
@@ -366,16 +410,7 @@ namespace CosmicSimulation.UI2
                 return;
             }
 
-            foreach (var pair in _raised)
-            {
-                if (pair.Key != null)
-                {
-                    pair.Key.renderQueue = pair.Value;
-                }
-            }
-
-            _raised.Clear();
-            _pulled.Clear();
+            LowerPulled();
             _pulled.AddRange(_pulledNow);
             foreach (var solver in _pulled)
             {
@@ -387,9 +422,13 @@ namespace CosmicSimulation.UI2
 
                 foreach (var renderer in renderers)
                 {
-                    // Instances, so the shared material assets are never written to.
-                    foreach (var material in renderer.materials)
+                    // renderer.materials copies whatever is still a shared asset, so the assets are never written;
+                    // the copies made here are remembered and destroyed when the body goes home (CS-330).
+                    var before = renderer.sharedMaterials;
+                    var now = renderer.materials;
+                    for (var i = 0; i < now.Length; i++)
                     {
+                        var material = now[i];
                         if (material == null || _raised.ContainsKey(material))
                         {
                             continue;
@@ -398,8 +437,51 @@ namespace CosmicSimulation.UI2
                         _raised[material] = material.renderQueue;
                         material.renderQueue = 3700 + Mathf.Clamp((material.renderQueue - 2000) / 10, 0, 150);
                     }
+
+                    _copied.Add((renderer, before, now));
                 }
             }
+        }
+
+        // Puts every pulled body's draw order back: the original materials onto the renderers, the copies made by
+        // KeepPulledInFront destroyed, and the queue restored on copies the renderer already owned (made by an earlier
+        // renderer.material call). A material another script assigned with Instantiate, like the Sun's, still counts
+        // as shared and is copied while the body is out, so that script's live updates pause until it goes home.
+        private void LowerPulled()
+        {
+            foreach (var (renderer, before, now) in _copied)
+            {
+                var swapped = false;
+                for (var i = 0; i < now.Length; i++)
+                {
+                    var mine = now[i] != null && (i >= before.Length || now[i] != before[i]);
+                    if (!mine)
+                    {
+                        continue;
+                    }
+
+                    _raised.Remove(now[i]);
+                    Destroy(now[i]);
+                    swapped = true;
+                }
+
+                if (swapped && renderer != null)
+                {
+                    renderer.sharedMaterials = before;
+                }
+            }
+
+            foreach (var pair in _raised)
+            {
+                if (pair.Key != null)
+                {
+                    pair.Key.renderQueue = pair.Value;
+                }
+            }
+
+            _copied.Clear();
+            _raised.Clear();
+            _pulled.Clear();
         }
 
         // ---------- picker

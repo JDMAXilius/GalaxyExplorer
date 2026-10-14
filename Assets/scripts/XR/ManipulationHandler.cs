@@ -18,19 +18,15 @@ namespace GalaxyExplorer.XR
     {
     }
 
-    /// <summary>
-    /// Limits how far two hands may scale an object. Put one on the same GameObject as a
-    /// <see cref="ManipulationHandler"/> and it is picked up automatically; without one, scaling is unbounded.
-    /// </summary>
+    /// <summary>Scale limits, picked up from the same GameObject as a <see cref="ManipulationHandler"/>.</summary>
     public interface IManipulationScaleConstraint
     {
         Vector3 ClampScale(Vector3 desiredLocalScale);
     }
 
     /// <summary>
-    /// One- and two-handed move/rotate/scale of <see cref="HostTransform"/> driven by the pointers forwarded to
-    /// <see cref="OnPointerDown"/>/<see cref="OnPointerUp"/>. Replaces MRTK v2's ManipulationHandler; its serialized
-    /// field names and enum values match so existing prefab settings carry over.
+    /// One- and two-handed move/rotate/scale of <see cref="HostTransform"/>. Serialized names and enum values match
+    /// MRTK v2's ManipulationHandler so existing prefab settings carry over.
     /// </summary>
     public class ManipulationHandler : MonoBehaviour
     {
@@ -96,18 +92,16 @@ namespace GalaxyExplorer.XR
         // Every handler with a hand on it, oldest first.
         private static readonly List<ManipulationHandler> Active = new List<ManipulationHandler>();
 
-        // One-handed grab: how fast the hand itself is moving, smoothed, for the fling test on release (CS-290).
-        // The interactor's own position, not the attach point: a far grab's attach point swings on a long lever.
+        // Hand velocity for the release fling test (CS-290), from the interactor, not the attach point: a far
+        // grab's attach point swings on a long lever.
         private const float VelocitySmoothingSeconds = 0.1f;
         private Vector3 _lastPointerPosition, _pointerVelocity;
         private IManipulationScaleConstraint _scaleConstraint;
         private bool _lookedForScaleConstraint;
 
-        // One-handed grab: host pose relative to the grabbing pointer.
         private Vector3 _oneHandPositionOffset;
         private Quaternion _oneHandRotationOffset;
 
-        // Two-handed grab: starting hand configuration and host pose.
         private Vector3 _twoHandStartMidpoint, _twoHandStartVector, _hostStartPosition, _hostStartScale;
         private Quaternion _hostStartRotation;
 
@@ -123,10 +117,8 @@ namespace GalaxyExplorer.XR
                 return hostTransform;
             }
 
-            // Settable because a grab handle is not the thing being moved: the dock's drag bar drags the dock
-            // root (GDD 8.1), and the committed dock prefab predates that, so DockController points this at the
-            // dock on its way up rather than waiting for the UI prefab builder to be re-run. Re-captures the
-            // grab offsets if a hand is already on it, because they were measured against the old host.
+            // Settable so a grab handle can drive another root (the dock's drag bar); re-captures because the
+            // offsets were measured against the old host.
             set
             {
                 if (hostTransform == value)
@@ -143,9 +135,8 @@ namespace GalaxyExplorer.XR
         }
 
         /// <summary>
-        /// How many hands may drive this handler. Settable for the same reason <see cref="HostTransform"/> is,
-        /// and readable because the desktop mirror has to know: right-drag and the wheel stand in for the
-        /// <i>two-handed</i> turn and scale, so a one-handed handle has nothing there to mirror.
+        /// How many hands may drive this handler. Desktop reads it: right-drag and the wheel mirror the two-handed
+        /// turn and scale, so a one-handed handle has nothing to mirror.
         /// </summary>
         public HandMovementType ManipulationType
         {
@@ -175,27 +166,22 @@ namespace GalaxyExplorer.XR
         }
 
         /// <summary>
-        /// The handler that moves the place the player is standing in (a nebula, the Cosmic Web), which no ray
-        /// from inside can hit. Set by whoever spawns the place; two pinches in the air drive it
-        /// (<see cref="BeginAirManipulation"/>).
+        /// The place the player stands inside (a nebula, the Cosmic Web), which no ray from inside can hit; driven
+        /// by two air pinches (<see cref="BeginAirManipulation"/>). Set by whoever spawns the place.
         /// </summary>
         public static ManipulationHandler Place { get; set; }
 
         /// <summary>
-        /// Scale limit used instead of <see cref="ClampScale"/> while only air pinches drive this handler. A
-        /// place's metre limits were written for an object held at arm's length and would crush a room.
+        /// Replaces <see cref="ClampScale"/> during air-only manipulation: arm's-length limits would crush a room.
         /// </summary>
         public Func<Vector3, Vector3> AirScaleClamp { get; set; }
 
-        /// <summary>
-        /// Speed in m/s of the hand that let go last; zero for the mouse, a two-handed release or a lost pointer.
-        /// </summary>
+        /// <summary>Speed in m/s of the hand that let go last; zero for the mouse, a two-handed release or a lost pointer.</summary>
         public float ReleaseSpeed { get; private set; }
 
         /// <summary>
-        /// A pinch in the air by the other hand joins a one-handed grab as its second pointer, so spreading the
-        /// hands scales and turns what is held. It leaves through <see cref="OnPointerUp"/> like any pointer,
-        /// and never holds alone: when the hand that grabbed lets go, it goes too.
+        /// Joins an air pinch to a one-handed grab as its second pointer. It never holds alone: it leaves with
+        /// the grabbing hand.
         /// </summary>
         public bool AddAirPointer(GEPointer pointer)
         {
@@ -212,8 +198,8 @@ namespace GalaxyExplorer.XR
         }
 
         /// <summary>
-        /// Two pinches in the air with nothing held move and scale this handler's host. Ends when either lets
-        /// go. Works on a handler that ships disabled (the nebulae): it is enabled for the gesture and put back.
+        /// Two air pinches with nothing held drive the host. A disabled handler (the nebulae) is enabled for the
+        /// gesture and disabled again after.
         /// </summary>
         public bool BeginAirManipulation(GEPointer first, GEPointer second)
         {
@@ -284,10 +270,7 @@ namespace GalaxyExplorer.XR
             }
         }
 
-        /// <summary>
-        /// Applies this object's scale constraint, if it has one, to a scale someone else worked out. Desktop
-        /// mode scales with the wheel rather than with two hands, and must land inside the same limits.
-        /// </summary>
+        /// <summary>Applies this object's scale limits to an externally computed scale, so desktop wheel scaling obeys them too.</summary>
         public Vector3 ClampScale(Vector3 desiredLocalScale)
         {
             var constraint = ScaleConstraint();
@@ -299,10 +282,7 @@ namespace GalaxyExplorer.XR
             return FallbackScaleClamp != null ? FallbackScaleClamp(desiredLocalScale) : desiredLocalScale;
         }
 
-        /// <summary>
-        /// Used only when there is no <see cref="IManipulationScaleConstraint"/> on this GameObject. A force
-        /// solver sets it for bodies whose prefab carries no ScaleLimits, so they are not scaled without bound.
-        /// </summary>
+        /// <summary>Used when there is no <see cref="IManipulationScaleConstraint"/>; a force solver sets it for unlimited bodies.</summary>
         public Func<Vector3, Vector3> FallbackScaleClamp { get; set; }
 
         public void OnPointerDown(GEPointerEventData eventData)
@@ -341,8 +321,7 @@ namespace GalaxyExplorer.XR
                 return;
             }
 
-            // Zero after a two-handed hold: CaptureGrabState cleared the velocity when the second hand joined.
-            // Zero when the grab was taken away too: a hand dropped fast out of view is not a throw.
+            // A cancelled grab is not a throw: a hand dropped fast out of view would otherwise fling.
             ReleaseSpeed = pointer.IsMouse || eventData.Canceled ? 0f : _pointerVelocity.magnitude;
             DropStrandedAirPointers();
 
@@ -369,15 +348,8 @@ namespace GalaxyExplorer.XR
 
         private void Update()
         {
-            // A pointer can vanish without an OnPointerUp: a hand leaves tracking, a ray loses its target,
-            // the mouse button is released over something that ate the event, or the pointer object is
-            // destroyed. Pruning it silently was a real bug - the grab offsets stayed captured for a grab
-            // that no longer existed, so the object jumped or stuck the moment the remaining pointer moved,
-            // and OnManipulationEnded never fired, so every listener went on believing a manipulation was
-            // still running. That is the "it works at first, then goes buggy once you use everything back
-            // and forth" failure: the stale state accumulates across interactions rather than resetting.
-            //
-            // So a silent loss now ends exactly as a clean release does.
+            // A pointer can vanish without OnPointerUp (tracking lost, pointer destroyed). Treat that exactly like
+            // a release, or stale offsets and a missing OnManipulationEnded accumulate across grabs.
             var before = _pointers.Count;
             _pointers.RemoveAll(p => p == null || !p.IsActive);
             var lost = before - _pointers.Count;
@@ -387,16 +359,13 @@ namespace GalaxyExplorer.XR
                 DropStrandedAirPointers();
                 if (_pointers.Count == 0)
                 {
-                    // Pointer is null because the one that went away is exactly what we no longer have.
-                    // Listeners that match on ManipulationSource still work; those that match on Pointer
-                    // have to tolerate null, which is the honest report of "we do not know which".
+                    // Pointer is null: the lost one is gone, so listeners keyed on Pointer must tolerate null.
                     ReleaseSpeed = 0f;
                     End(null);
                 }
                 else
                 {
-                    // Still held, but by fewer hands than the offsets were captured for. Re-capture, or the
-                    // object snaps as the two-handed midpoint collapses onto one pointer.
+                    // Re-capture, or the object snaps as the two-handed midpoint collapses onto one pointer.
                     CaptureGrabState();
                 }
             }
@@ -442,10 +411,8 @@ namespace GalaxyExplorer.XR
                         : ClampScale(targetScale);
                 }
 
-                // Keep the host where it was relative to the hands' midpoint, rotated with the hands. A place
-                // driven by two air pinches also scales about that midpoint (CS-305): its pivot is usually metres
-                // away, and scaling about the pivot slid the part between the hands out from under them. A held
-                // body keeps scaling about its own centre, which is where the hands already are.
+                // Air-only grabs scale about the hands' midpoint (CS-305): a place's pivot is metres away, and
+                // scaling about it slides the part between the hands out from under them.
                 var startOffset = _hostStartPosition - _twoHandStartMidpoint;
                 if (airOnly && Mathf.Abs(_hostStartScale.x) > 1e-6f)
                 {
@@ -488,8 +455,7 @@ namespace GalaxyExplorer.XR
             }
         }
 
-        // Resolved once and cached, including the "there isn't one" answer: this runs every frame of a two-hand
-        // grab, and GetComponent on an interface is not free.
+        // Cached, including "none": runs every frame of a two-hand grab and interface GetComponent is not free.
         private IManipulationScaleConstraint ScaleConstraint()
         {
             if (!_lookedForScaleConstraint)

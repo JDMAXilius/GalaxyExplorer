@@ -96,9 +96,9 @@ namespace GalaxyExplorer.Build
             EnableFeatures(BuildTargetGroup.Standalone, CommonFeatures.Concat(StandaloneOnlyFeatures), log);
             EnableFeatures(BuildTargetGroup.Android, CommonFeatures.Concat(AndroidOnlyFeatures), log);
 
-            // Quest (Vulkan): multiview. The vertex stage gets each eye's matrices from the view index, so the app's
-            // shaders need no stereo macros. Windows over Link (D3D11): multi-pass, because single-pass instanced
-            // there would need instancing macros in every custom shader; the PC has headroom for it.
+            // Quest: single-pass instanced, so every custom shader needs the stereo macros or one eye draws wrong
+            // (docs/SHADER_STEREO_AUDIT.md). Windows over Link: multi-pass, which hides a missing macro; check stereo
+            // on the device, never over Link.
             OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android).renderMode = OpenXRSettings.RenderMode.SinglePassInstanced;
             OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Standalone).renderMode = OpenXRSettings.RenderMode.MultiPass;
 
@@ -321,7 +321,7 @@ namespace GalaxyExplorer.Build
             try
             {
                 // Quest 3 has memory for 2048 ASTC textures; only the 4096 maps are capped.
-                foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Textures", "Assets/models", "Assets/materials", "Assets/SolarSystem", "Assets/UI" }))
+                foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Textures", "Assets/models", "Assets/materials", "Assets/ui" }))
                 {
                     var path = AssetDatabase.GUIDToAssetPath(guid);
                     if (!(AssetImporter.GetAtPath(path) is TextureImporter importer) || importer.maxTextureSize <= 2048)

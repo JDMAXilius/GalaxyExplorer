@@ -9,6 +9,9 @@ namespace GalaxyExplorer
 {
     public class IntroFlow : MonoBehaviour
     {
+        /// <summary>The intro, once it has woken; null when there is none (CS-331).</summary>
+        public static IntroFlow Active { get; private set; }
+
         /// <summary>
         /// Editor session key holding the view to open directly, set when Play is pressed inside a view scene
         /// (see PlayFromViewScene).
@@ -108,7 +111,7 @@ namespace GalaxyExplorer
             {
                 position += Vector3.down * .5f;
             }
-            FindObjectOfType<WorldAnchorHandler>().CreateWorldAnchor(position);
+            FindFirstObjectByType<WorldAnchorHandler>().CreateWorldAnchor(position);
             _anchored = true;
         }
 
@@ -122,7 +125,7 @@ namespace GalaxyExplorer
         public void OnPlacementFinished(Vector3 position)
         {
             // Anchor the content in place
-            FindObjectOfType<WorldAnchorHandler>().CreateWorldAnchor(position);
+            FindFirstObjectByType<WorldAnchorHandler>().CreateWorldAnchor(position);
             _anchored = true;
 
             // if its not Desktop platform then skip the next stage and go directly to solar system stage
@@ -133,6 +136,16 @@ namespace GalaxyExplorer
             else if (!GalaxyExplorerManager.IsDesktop && flowManagerScript)
             {
                 flowManagerScript.JumpToStage(3);
+            }
+        }
+
+        private void Awake() => Active = this;
+
+        private void OnDestroy()
+        {
+            if (Active == this)
+            {
+                Active = null;
             }
         }
 
@@ -168,7 +181,7 @@ namespace GalaxyExplorer
         private IEnumerator Initialization()
         {
             // ViewLoader of CoreSystems scene needs to be loaded and then continue
-            yield return new WaitUntil(() => FindObjectOfType<ViewLoader>() != null);
+            yield return new WaitUntil(() => FindFirstObjectByType<ViewLoader>() != null);
 
             // need to wait otherwise the viewloader subscription to callback becomes null in holoLens
             //yield return new WaitForSeconds(1);
@@ -176,7 +189,7 @@ namespace GalaxyExplorer
             
             audioService = AudioService.Instance;
 
-            PlacementControl placement = FindObjectOfType<PlacementControl>();
+            PlacementControl placement = FindFirstObjectByType<PlacementControl>();
             if (placement)
             {
                 placement.OnContentPlaced += OnPlacementFinished;

@@ -7,36 +7,10 @@ using UnityEngine;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// Remembers where the spawner put a piece of content, so Restore can bring it back.
-    ///
-    /// <para><b>Why this is not <see cref="FreePlacementSolver"/>.</b> That component says the same thing —
-    /// nothing snaps back on its own, but everything can come home (GDD 5.2) — for a <i>body</i>: it is
-    /// <c>[RequireComponent(typeof(ForceSolver))]</c>, home is the solver's live <c>RootTransform</c>, and it
-    /// reads the solver's state to decide what to do. The three things the player can arrange that are not
-    /// bodies — a nebula overlay opened from the Milky Way map, the Cosmic Web, Andromeda — have no
-    /// <c>ForceSolver</c> and belong to no <see cref="LayoutRig"/>, so neither branch of the desktop's Restore
-    /// nor <see cref="ExperienceDirector.RestoreEverything"/> could reach them at all (CS-107). This is the
-    /// same promise for content whose home is simply the pose it was spawned in.</para>
-    ///
-    /// <para><b>Home is captured, not computed.</b> Nothing on the object knows where it was meant to be: a
-    /// destination overlay is placed by <c>ExperienceDirector.OpenDestination</c> from the tag the player
-    /// pinched, and a <c>ContentPrefab</c> is spawned under <c>experience_content_root</c> at whatever the
-    /// prefab authored. So the spawner hands it over with <see cref="CaptureHome(Transform)"/>, at the one
-    /// moment the pose is the intended one: after the instance is positioned and <b>before the grow-in</b>,
-    /// which writes <c>localScale</c> every frame for its duration and passes through zero. A capture taken
-    /// any later would record a fraction of the real size and Restore would shrink the object to it.</para>
-    ///
-    /// <para><b>The pose is stored in the parent's frame</b>, for the reason <see cref="FreePlacementSolver"/>
-    /// reads its root live: prefab content hangs off the <c>ViewLoader</c>, which the intro moves and rotates
-    /// to place the experience in the room, and a home remembered in world space would send the object back to
-    /// where the room used to be. A destination overlay is spawned unparented, where the two are the same.</para>
-    ///
-    /// <para><b>Deliberately no auto-restore of strays.</b> The fourth rule of GDD 5.2 — out of reach for five
-    /// seconds and it comes back — is a body rule, and <see cref="FreePlacementSolver"/> already carries a
-    /// switch to turn it off "for objects meant to be left far away". All three objects this is built into are
-    /// exactly that: the Cosmic Web is a volume the player stands inside, and a nebula can legitimately be
-    /// pushed out to arm's length and beyond. So this component has no <c>Update</c> at all.</para>
+    /// Remembers where the spawner put non-body content (nebula overlays, Cosmic Web, Andromeda) so Restore can bring it back.
     /// </summary>
+    // Not FreePlacementSolver: that one requires a ForceSolver (CS-107). Home is stored in the parent's frame
+    // because the intro moves the ViewLoader; no stray auto-restore, these are meant to be left far away.
     [DisallowMultipleComponent]
     public class FreePlacementAnchor : MonoBehaviour
     {
@@ -58,15 +32,16 @@ namespace CosmicSimulation
 
         private void Awake()
         {
+            Registry<FreePlacementAnchor>.Add(this);
             Resolve();
             EnsureCaptured();
         }
 
+        private void OnDestroy() => Registry<FreePlacementAnchor>.Remove(this);
+
         private void OnDisable()
         {
-            // Stopped explicitly rather than assumed dead: deactivating the GameObject does kill a running
-            // coroutine, but merely clearing `enabled` does not, and a restore that went on writing the
-            // transform of an object somebody had just switched off would be a ghost nobody could explain.
+            // Clearing `enabled` does not stop a running coroutine (only deactivation does), so stop it here.
             if (_restore != null)
             {
                 StopCoroutine(_restore);
@@ -74,8 +49,7 @@ namespace CosmicSimulation
             }
         }
 
-        // Nothing here may assume Awake has run: this component is also added at spawn time by
-        // CaptureHome(Transform) and used in the same frame, which the project has been bitten by twice.
+        // Must not assume Awake ran: CaptureHome(Transform) adds this component and uses it the same frame.
         private void Resolve()
         {
             if (_resolved)
@@ -85,8 +59,7 @@ namespace CosmicSimulation
 
             _resolved = true;
 
-            // includeInactive, because the answer decides who owns this transform for the object's whole life
-            // and must not depend on which parents happen to be switched off this instant.
+            // includeInactive: ownership must not depend on which parents are switched off right now.
             var solver = GetComponentInParent<ForceSolver>(true);
             if (solver != null)
             {
@@ -102,8 +75,8 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// Records the current local pose as home. Called by the spawner once the object is where it belongs,
-        /// and again by nothing else — a second capture would adopt wherever the player last left it.
+        /// Records the current local pose as home. Call once, before the grow-in scales from zero; a later
+        /// capture would adopt a partial scale or wherever the player left it.
         /// </summary>
         public void CaptureHome()
         {
@@ -135,8 +108,7 @@ namespace CosmicSimulation
             Resolve();
             EnsureCaptured();
 
-            // No capture means Resolve stood this anchor down because a ForceSolver owns the object. Home is
-            // still (0,0,0)/identity/one here, and writing that would fling a body to its parent's origin.
+            // No capture means a ForceSolver owns this; the default home would fling it to the parent's origin.
             if (!_captured || !isActiveAndEnabled)
             {
                 return;
@@ -156,7 +128,7 @@ namespace CosmicSimulation
             Resolve();
             EnsureCaptured();
 
-            // As in Restore: an anchor that never captured has no home to write, only a default one.
+            // As in Restore: never captured means no real home.
             if (!_captured)
             {
                 return;
@@ -171,13 +143,10 @@ namespace CosmicSimulation
             ApplyHome();
         }
 
-        /// <summary>
-        /// Brings home everything the player has arranged that no solver and no rig owns. This is what R, and
-        /// the desktop's Recenter, add to the two passes they already make.
-        /// </summary>
+        /// <summary>Brings home everything the player arranged that no solver and no rig owns (R / Recenter).</summary>
         public static void RestoreAll()
         {
-            foreach (var anchor in FindObjectsByType<FreePlacementAnchor>(FindObjectsSortMode.None))
+            foreach (var anchor in Registry<FreePlacementAnchor>.Active)
             {
                 anchor.Restore();
             }
@@ -186,21 +155,15 @@ namespace CosmicSimulation
         /// <summary>The same, without the travel: an experience is being torn down and nobody will see it.</summary>
         public static void RestoreAllImmediate()
         {
-            foreach (var anchor in FindObjectsByType<FreePlacementAnchor>(FindObjectsSortMode.None))
+            foreach (var anchor in Registry<FreePlacementAnchor>.Active)
             {
                 anchor.RestoreImmediate();
             }
         }
 
         /// <summary>
-        /// Hands a freshly spawned piece of content to this system: every transform in it that a
-        /// <see cref="ManipulationHandler"/> can move, and that no <c>ForceSolver</c> owns, gets an anchor and
-        /// records the pose it is in right now.
-        ///
-        /// <para>The anchor is added when it is missing rather than only being captured, so that content built
-        /// before CS-107 — or rebuilt by a builder nobody has re-run — still comes home. It can only ever land
-        /// on an object that something can move and that nothing else brings back, which is precisely the set
-        /// this ticket is about.</para>
+        /// Adds and captures an anchor on every transform in fresh content that a <see cref="ManipulationHandler"/>
+        /// moves and no <c>ForceSolver</c> owns; added when missing so content from un-rerun builders still comes home.
         /// </summary>
         public static void CaptureHome(Transform content)
         {
@@ -232,8 +195,7 @@ namespace CosmicSimulation
 
                 anchor.CaptureHome();
 
-                // The content root itself is movable: that is the place two pinches in the air take hold of
-                // (CS-282, CS-286). Left alone when this content has none; the last place's handler dies with it.
+                // The content root is the place two air pinches take hold of (CS-282, CS-286).
                 if (host == content)
                 {
                     handler.AirScaleClamp = anchor.ClampToHome;
@@ -263,10 +225,8 @@ namespace CosmicSimulation
             transform.localScale = _homeScale;
         }
 
-        // There is deliberately no "already home, skip it" test. The nebula overlays billboard themselves, so
-        // their rotation never matches the captured one and the test would fire every time; drop rotation from
-        // it and a turned-but-not-moved Andromeda would never be straightened. Running the lerp on an object
-        // that is already home costs nothing anyone can see.
+        // No "already home" early-out: billboarded nebulae never match their captured rotation, and dropping
+        // rotation from the test would leave a turned Andromeda crooked.
         private IEnumerator RestoreRoutine(float seconds)
         {
             var fromPosition = transform.localPosition;
@@ -282,7 +242,7 @@ namespace CosmicSimulation
                     yield break;
                 }
 
-                // Cubic ease-out, the same curve FreePlacementSolver uses. Nothing here bounces (GDD 8.7).
+                // Cubic ease-out, matching FreePlacementSolver; nothing bounces (GDD 8.7).
                 var t = 1f - Mathf.Pow(1f - Mathf.Clamp01(elapsed / seconds), 3f);
                 transform.localPosition = Vector3.Lerp(fromPosition, _homePosition, t);
                 transform.localRotation = Quaternion.Slerp(fromRotation, _homeRotation, t);

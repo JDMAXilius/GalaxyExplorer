@@ -81,7 +81,7 @@ namespace CosmicSimulation.UI2
             aboutBack.Clicked += () => Go(Page.Main);
             aboutDone.Clicked += () => Go(Page.Main);
 
-            sound.Clicked += () => UtilityWindow.SetMuted(!UtilityWindow.Muted);
+            sound.Clicked += () => Mute.On = !Mute.On;
             narration.Clicked += () => VOManager.NarrationEnabled = !VOManager.NarrationEnabled;
             for (var i = 0; i < sizes.Length; i++)
             {
@@ -183,12 +183,8 @@ namespace CosmicSimulation.UI2
         private static void RestoreScene()
         {
             DockController.Instance?.ResetPlaces();
-            FreePlacementAnchor.RestoreAll();
-            var rig = FindAnyObjectByType<LayoutRig>();
-            if (rig != null && !(Ui2Explore.Instance != null && Ui2Explore.Instance.Comparing))
-            {
-                rig.Restore();
-            }
+            // A comparison holds two bodies side by side on purpose; walking them home would end it under the player.
+            Arrangement.Restore(bodies: !(Ui2Explore.Instance != null && Ui2Explore.Instance.Comparing));
 
             Ui2Shell.Instance.Notify("Everything is back in place.");
         }
@@ -214,7 +210,7 @@ namespace CosmicSimulation.UI2
 
             if (_page == Page.Main)
             {
-                soundSwitch.On = !UtilityWindow.Muted;
+                soundSwitch.On = !Mute.On;
                 narrationSwitch.On = VOManager.NarrationEnabled;
                 for (var i = 0; i < sizes.Length; i++)
                 {
@@ -222,7 +218,7 @@ namespace CosmicSimulation.UI2
                 }
 
                 var device = Cosmic.Companion.Mic.Resolve();
-                microphoneValue.text = Microphone.devices.Length == 0 ? "None found" : device ?? "Default";
+                microphoneValue.text = Cosmic.Companion.Mic.Devices.Length == 0 ? "None found" : device ?? "Default";
             }
             else if (_page == Page.Devices)
             {
@@ -234,7 +230,7 @@ namespace CosmicSimulation.UI2
 
         private void PaintDevices()
         {
-            var found = Microphone.devices;
+            var found = Cosmic.Companion.Mic.Devices;
             var chosen = Cosmic.Companion.Mic.Resolve();
             _shown = new string[Mathf.Min(deviceRows.Length, found.Length + 1)];
             for (var i = 0; i < deviceRows.Length; i++)
@@ -275,7 +271,7 @@ namespace CosmicSimulation.UI2
         private void Meter()
         {
             var value = 0f;
-            if (Cosmic.Companion.Mic.InUse || !Cosmic.Companion.Mic.Permitted || Microphone.devices.Length == 0)
+            if (Cosmic.Companion.Mic.InUse || !Cosmic.Companion.Mic.Permitted || Cosmic.Companion.Mic.Devices.Length == 0)
             {
                 StopMeter();
             }
@@ -287,8 +283,14 @@ namespace CosmicSimulation.UI2
                     _meter = Microphone.Start(_meterDevice, true, 1, 16000);
                 }
 
-                var at = _meter != null ? Microphone.GetPosition(_meterDevice) - _window.Length : -1;
-                if (at >= 0)
+                // The clip loops, so the window just behind the write head may start before 0: wrap it (CS-345).
+                var at = _meter != null ? Microphone.GetPosition(_meterDevice) - _window.Length : 0;
+                if (_meter != null && at < 0)
+                {
+                    at += _meter.samples;
+                }
+
+                if (_meter != null && at >= 0)
                 {
                     _meter.GetData(_window, at);
                     var sum = 0f;

@@ -36,7 +36,7 @@ namespace GalaxyExplorer
             _hyperlinkRenderers = SlateContentParent.GetComponentsInChildren<Renderer>(true);
             SetHyperlinksTransitionAplha((0f));
 
-            _zoomInOut = FindObjectOfType<ZoomInOut>();
+            _zoomInOut = FindFirstObjectByType<ZoomInOut>();
 
             transform.localScale = transform.localScale * GalaxyExplorerManager.SlateScaleFactor;
         }

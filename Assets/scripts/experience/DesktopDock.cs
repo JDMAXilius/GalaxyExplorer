@@ -244,7 +244,7 @@ namespace CosmicSimulation
 
         private void Update()
         {
-            // Tab, per GDD 8.5, and Tab belongs to this dock alone. DesktopMouseInput only reaches for it when
+            // Tab, per GDD 8.5, and Tab belongs to this dock alone. DesktopShortcuts only reaches for it when
             // there is no DesktopDock in the scene at all, and what it reaches for — the legacy button row — is
             // retired: its root ships switched off and DesktopMenuManager has no path left that switches it back
             // on. So there is one dock on a monitor and one key that shows it (CS-111).
@@ -303,7 +303,7 @@ namespace CosmicSimulation
             // save is opened in the headset; and the desktop camera goes back to where it started, which is
             // the half of it the player can actually see on a monitor.
             DockController.Instance?.Recenter();
-            DesktopMouseInput.Instance?.ResetView();
+            DesktopCameraRig.Instance?.ResetView();
         }
 
         /// <summary>Opens or closes the settings window. On a monitor it places itself in front of the camera.</summary>

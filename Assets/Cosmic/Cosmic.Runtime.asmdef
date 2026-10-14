@@ -19,7 +19,9 @@
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": false,
-    "defineConstraints": [],
+    "defineConstraints": [
+        "COSMIC_REWORK"
+    ],
     "versionDefines": [],
     "noEngineReferences": false
 }

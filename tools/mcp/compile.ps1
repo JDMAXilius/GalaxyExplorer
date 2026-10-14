@@ -291,16 +291,33 @@ try {
     # Each assembly is compared against its OWN sources, not against every script under Assets/Cosmic.
     # Editor-only files are not part of Cosmic.Runtime, so touching one used to report Runtime stale when it
     # had correctly not been rebuilt - which is most harness edits.
+    # Which assemblies to check (CS-334): the parked rework compiles only with COSMIC_REWORK defined, so without
+    # it the app's own Assembly-CSharp and Assembly-CSharp-Editor are checked against the scripts they build from.
+    $settings = Get-Content (Join-Path $ProjectPath 'ProjectSettings\ProjectSettings.asset') -Raw
+    $rework = $settings -match 'COSMIC_REWORK'
     $editorRoot = Join-Path $ProjectPath 'Assets\Cosmic\Editor'
+    $appRoots = @('Assets\scripts', 'Assets\build_scripts') | ForEach-Object { Join-Path $ProjectPath $_ }
     $stale = @()
-    foreach ($assembly in @('Cosmic.Runtime', 'Cosmic.Editor')) {
+    $checks = if ($rework) { @('Cosmic.Runtime', 'Cosmic.Editor') } else { @('Assembly-CSharp', 'Assembly-CSharp-Editor') }
+    foreach ($assembly in $checks) {
         $dll = Join-Path $ProjectPath "Library\ScriptAssemblies\$assembly.dll"
         if (-not (Test-Path $dll)) { $stale += "$assembly.dll is missing"; continue }
-        $sources = Get-ChildItem (Join-Path $ProjectPath 'Assets\Cosmic') -Recurse -Filter *.cs
-        if ($assembly -eq 'Cosmic.Editor') {
-            $sources = $sources | Where-Object { $_.FullName.StartsWith($editorRoot, 'OrdinalIgnoreCase') }
-        } else {
-            $sources = $sources | Where-Object { -not $_.FullName.StartsWith($editorRoot, 'OrdinalIgnoreCase') }
+        switch ($assembly) {
+            'Cosmic.Editor' {
+                $sources = Get-ChildItem $editorRoot -Recurse -Filter *.cs
+            }
+            'Cosmic.Runtime' {
+                $sources = Get-ChildItem (Join-Path $ProjectPath 'Assets\Cosmic') -Recurse -Filter *.cs |
+                    Where-Object { -not $_.FullName.StartsWith($editorRoot, 'OrdinalIgnoreCase') }
+            }
+            'Assembly-CSharp-Editor' {
+                $sources = $appRoots | ForEach-Object { Get-ChildItem $_ -Recurse -Filter *.cs } |
+                    Where-Object { $_.FullName -match '[\\/]Editor[\\/]' }
+            }
+            default {
+                $sources = Get-ChildItem (Join-Path $ProjectPath 'Assets\scripts') -Recurse -Filter *.cs |
+                    Where-Object { $_.FullName -notmatch '[\\/]Editor[\\/]' }
+            }
         }
         $newest = $sources | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
         if ($newest -and $newest.LastWriteTimeUtc -gt (Get-Item $dll).LastWriteTimeUtc) {
@@ -314,7 +331,7 @@ try {
         exit 1
     }
 
-    Write-Host 'COMPILE CLEAN - no compiler errors since the refresh, none in the console, and the Cosmic assemblies are newer than their sources.' -ForegroundColor Green
+    Write-Host 'COMPILE CLEAN - no compiler errors since the refresh, none in the console, and the checked assemblies are newer than their sources.' -ForegroundColor Green
     if ($warnings.Count -gt 0) {
         Write-Host "$($warnings.Count) warning line(s). The relay would answer NOT-OK for these; they are not errors."
         if ($ShowWarnings) { $warnings | ForEach-Object { Write-Host "  $_" } }

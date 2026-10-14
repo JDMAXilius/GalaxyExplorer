@@ -543,8 +543,7 @@ namespace CosmicSimulation
         // reports failure and Recenter tries again next frame.
         //
         // Desktop is not that case wearing a different hat, it is its own case: there is no head there at all.
-        // The camera never moves — DesktopMouseInput pans, orbits and zooms the content pivot, not the camera —
-        // so measuring down from it with the nominal eye height is a constant, and it puts the dock the same
+        // The nominal eye height, measured down from wherever the desktop camera is, puts the dock the same
         // 0.72 m below the eye line it sits at in a headset. That is deliberate: it is what keeps the world dock
         // out of the desktop frustum, where DesktopDock's screen-space mirror is the dock the player uses. (It
         // did previously sit at a fixed height above world zero instead, which is the same constant offset by
@@ -841,6 +840,12 @@ namespace CosmicSimulation
                 Recenter();
             }
 
+            // Under UI 2.0 this dock is hidden and the shell owns the keys and the buttons (CS-332).
+            if (UI2.Ui2Shell.Instance != null)
+            {
+                return;
+            }
+
             WatchKeyboard();
 
             // Twice a second is plenty for a button, and keeps a scene search out of every frame.
@@ -872,7 +877,7 @@ namespace CosmicSimulation
         }
 
         // The desktop equivalent of the settings button under the dock. Read here rather than in
-        // DesktopMouseInput for the same reason DesktopDock reads Tab for itself: the control belongs to the
+        // DesktopShortcuts for the same reason DesktopDock reads Tab for itself: the control belongs to the
         // dock, and U is not spoken for anywhere else (GDD 5.3).
         private void WatchKeyboard()
         {

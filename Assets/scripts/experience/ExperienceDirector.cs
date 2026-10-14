@@ -10,15 +10,8 @@ using UnityEngine.SceneManagement;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// Takes the player from one place to another. The dock asks for a module; this opens its content, sets how
-    /// much of the room shows, starts its narration and grows the content in. There is no drill-down and no Back:
-    /// every place is one poke away, which is the whole point of the dock.
-    ///
-    /// A place is either a scene or a prefab. Three of the seven were inherited from Galaxy Explorer as scenes and
-    /// keep loading through <see cref="ViewLoader"/>, so the existing content root, faders and camera rig keep
-    /// working. The rest are prefabs spawned under a root this director owns: adding scenes for them would buy
-    /// nothing but load time and four more things to keep in sync. Both kinds go through the same sequence, so
-    /// nothing downstream has to know which it is.
+    /// Switches between places: opens a module's content (a scene via <see cref="ViewLoader"/> or a prefab under our
+    /// own root), sets the environment, starts narration and grows it in. No drill-down and no Back.
     /// </summary>
     public class ExperienceDirector : MonoBehaviour
     {
@@ -68,23 +61,8 @@ namespace CosmicSimulation
         /// <summary>How long the intro's own last-stage load is given to appear before we stop waiting for one.</summary>
         private const float IntroSettleGrace = 0.5f;
 
-        /// <summary>
-        /// Content whose middle is already this close to its own origin is left exactly where it is, so the
-        /// framing below can never nudge an experience that was authored the way the content root expects.
-        /// </summary>
-        private const float CentringDeadzone = 0.02f;
-
-        /// <summary>Nothing is fitted nearer than this, however small it is: a moon a hand's length away is not a view.</summary>
-        private const float MinFitDistanceMetres = 0.6f;
-
         /// <summary>How long a view scene takes to settle into the fitted spot once its own zoom-in is over.</summary>
         private const float ViewSceneFitSeconds = 0.5f;
-
-        /// <summary>A panel whose anchor is nearer the screen's edge than this share of it is moved into view.</summary>
-        private const float PanelViewportMargin = 0.08f;
-
-        /// <summary>Where such a panel goes: centred, this far up the view.</summary>
-        private const float PanelAboveViewportY = 0.8f;
 
         private readonly List<GameObject> _destinationObjects = new List<GameObject>();
         private readonly HashSet<ExperienceModule> _warnedEmpty = new HashSet<ExperienceModule>();
@@ -93,11 +71,7 @@ namespace CosmicSimulation
         private InfoPanel _destinationPanel;
         private Transform _scenePanelAnchor;
 
-        /// <summary>
-        /// Half the width of the open prefab content, in metres, once it has been framed on the content root.
-        /// Zero for a scene-backed place and for content with nothing to measure. Read by the panel anchor so
-        /// the panel parks beside the experience rather than inside it.
-        /// </summary>
+        /// <summary>Half the framed prefab content's width in metres (zero for scenes), so the panel parks beside it.</summary>
         private float _contentSpanMetres;
 
         private bool _warnedNoPanelPrefab;
@@ -106,8 +80,7 @@ namespace CosmicSimulation
         private Coroutine _fitting;
         private Coroutine _switching;
         private bool _switchFinished;
-        private IntroFlow _introFlow;
-        private bool _introFinished;
+        private readonly IntroGate _intro = new IntroGate();
 
         public static ExperienceDirector Instance { get; private set; }
 
@@ -116,8 +89,7 @@ namespace CosmicSimulation
         public ExperienceModule Current { get; private set; }
 
         /// <summary>
-        /// Raised once the new experience's scene is loaded and its content is growing in, and with <c>null</c>
-        /// when a switch was abandoned and nothing is open — so nothing goes on claiming to be the current place.
+        /// Raised once the new experience is loaded and growing in, and with <c>null</c> when a switch was abandoned.
         /// </summary>
         public static event Action<ExperienceModule> ExperienceChanged;
 
@@ -128,110 +100,19 @@ namespace CosmicSimulation
         public bool HasOpenDestination => OpenDestinationModule != null;
 
         /// <summary>
-        /// Raised when a destination opens over the current place, and with <c>null</c> when it closes.
-        ///
-        /// Separate from <see cref="ExperienceChanged"/> because a destination does not change the place: the
-        /// Milky Way map is still <see cref="Current"/> with a nebula floating in front of it. A tag that
-        /// watched the other event would light up when its nebula opened and then never learn it had closed.
+        /// Raised when a destination opens, and with <c>null</c> when it closes. Separate from
+        /// <see cref="ExperienceChanged"/> because a destination does not change <see cref="Current"/>.
         /// </summary>
         public static event Action<ExperienceModule> DestinationChanged;
 
         /// <summary>True while a switch is in flight; the dock ignores pokes during one.</summary>
         public bool IsSwitching => _switching != null;
 
-        /// <summary>
-        /// How long onboarding is allowed to claim the app before this stops believing it, in seconds.
-        ///
-        /// The intro is about half a minute: a logo, a placement step, the solar system, then an 8 s
-        /// auto-transition to the galaxy. Forty-five seconds is comfortably longer than any path through it and
-        /// short enough that a player who has hit the stuck case is not left poking a dead app for a minute and
-        /// a half. It is a backstop, not a schedule - a healthy intro raises its own event and this never fires.
-        /// </summary>
-        private const float IntroWatchdogSeconds = 45f;
+        /// <summary>True while onboarding has the room; see <see cref="IntroGate.Running"/>.</summary>
+        public bool IntroRunning => _intro.Running;
 
-        /// <summary>
-        /// True while the app is still in onboarding. There is no flag anywhere that says so: <see cref="IntroFlow"/>
-        /// keeps its stage in a private field, <c>TransitionManager.IsInIntroFlow</c> is already false on the intro's
-        /// last stage, and <c>ViewLoader.IsIntro()</c> goes false as soon as the intro loads the solar system. What is
-        /// honest is the intro's own end event, so this reads "an IntroFlow exists and it has not raised it yet".
-        ///
-        /// <para><b>With a watchdog, because the honest reading has a failure mode that takes the whole app with
-        /// it.</b> <c>IntroFlow</c> raises its end event from <c>OnStageTransition</c>, which is driven by
-        /// FlowManager's timed stages. If the flow never reaches its galaxy stage - and it does not, for
-        /// instance, when play mode is entered with a view scene already open, so the intro's own placement
-        /// step has nothing to place - the event is never raised, this property is true forever, and
-        /// <see cref="Switch"/> refuses every dock tile and every destination tag for the rest of the session.
-        /// The player sees an app where nothing whatsoever responds and no error anywhere. That is a much worse
-        /// failure than the one refusing a mid-intro switch protects against, so after
-        /// <see cref="IntroWatchdogSeconds"/> this stops waiting and says so once.</para>
-        /// </summary>
-        public bool IntroRunning
-        {
-            get
-            {
-                if (_introFinished)
-                {
-                    return false;
-                }
-
-                // Bound lazily as well as in Awake: an IntroFlow lives in the boot scene while this lives in
-                // core_systems, and nothing guarantees the load order between them stays that way.
-                BindIntro();
-                if (_introFlow == null)
-                {
-                    return false;
-                }
-
-                // The clock starts the first time anybody asks, not at Awake: before that there may be no
-                // IntroFlow to wait for at all, and starting it early would let a slow scene load eat the grace.
-                if (_introWatchdogStarted <= 0f)
-                {
-                    _introWatchdogStarted = Time.unscaledTime;
-                    return true;
-                }
-
-                if (Time.unscaledTime - _introWatchdogStarted < IntroWatchdogSeconds)
-                {
-                    return true;
-                }
-
-                if (!_saidIntroOverran)
-                {
-                    _saidIntroOverran = true;
-                    Debug.LogWarning(
-                        $"ExperienceDirector: the intro has been running for over {IntroWatchdogSeconds:0} s " +
-                        "without raising OnIntroFinished, so it is being treated as over. Every dock tile and " +
-                        "every destination tag was being refused until now. The usual cause is entering play " +
-                        "mode with a view scene already open, which leaves IntroFlow's placement step with " +
-                        "nothing to place.", this);
-                }
-
-                return false;
-            }
-        }
-
-        private float _introWatchdogStarted;
-        private bool _saidIntroOverran;
-
-        /// <summary>
-        /// True once the intro has really ended (its last stage was reached, or the editor quick start skipped
-        /// it), and also when there is no intro in the scene at all. Unlike <see cref="IntroRunning"/> this does
-        /// not give up after a timeout: it is what says the player is past onboarding, for UI that must not
-        /// appear on top of it.
-        /// </summary>
-        public bool IntroComplete
-        {
-            get
-            {
-                if (_introFinished)
-                {
-                    return true;
-                }
-
-                BindIntro();
-                return _introFlow == null && Time.timeSinceLevelLoad > 3f;
-            }
-        }
+        /// <summary>True once onboarding has really ended or there is none; never times out.</summary>
+        public bool IntroComplete => _intro.Complete;
 
         // The place a player asked for while the intro was still running. Opened once the intro lets go.
         private ExperienceModule _queuedFromIntro;
@@ -239,7 +120,8 @@ namespace CosmicSimulation
         private void Awake()
         {
             Instance = this;
-            BindIntro();
+            _intro.Finished += HandleIntroFinished;
+            _intro.Bind();
         }
 
         private void OnDestroy()
@@ -249,10 +131,7 @@ namespace CosmicSimulation
                 Instance = null;
             }
 
-            if (_introFlow != null)
-            {
-                _introFlow.OnIntroFinished -= HandleIntroFinished;
-            }
+            _intro.Unbind();
 
             if (_ownsContentRoot && contentRoot != null)
             {
@@ -275,45 +154,14 @@ namespace CosmicSimulation
 
         // ---------- onboarding
 
-        /// <summary>
-        /// Subscribes to the intro's own end signal, which is also the only thing that says onboarding is over.
-        /// <c>IntroFlow.OnIntroFinished</c> is raised when the flow reaches its galaxy stage — the last stage of
-        /// <c>flow_manager_prefab</c>, reached from the solar-system stage by its 8 s auto-transition on both the
-        /// desktop and the headset path — and by the editor quick start, which skips the flow entirely.
-        /// </summary>
-        private void BindIntro()
-        {
-            if (_introFlow != null || _introFinished)
-            {
-                return;
-            }
-
-            _introFlow = FindAnyObjectByType<IntroFlow>(FindObjectsInactive.Include);
-            if (_introFlow != null)
-            {
-                _introFlow.OnIntroFinished += HandleIntroFinished;
-            }
-        }
-
         private void HandleIntroFinished()
         {
-            if (_introFinished)
-            {
-                return;
-            }
-
-            _introFinished = true;
             StartCoroutine(OpenStartModuleWhenSettled());
         }
 
         /// <summary>
-        /// Opens the first experience once the intro has actually let go of the room.
-        ///
-        /// The intro's last stage raises <c>OnIntroFinished</c> from the stage transition itself, while that same
-        /// stage's own events — <c>TransitionManager.OnIntroFinished</c> and <c>LoadNextScene("galaxy_view_scene")</c>
-        /// — run a frame or more later, because FlowManager fires stage events from a delayed coroutine. Opening the
-        /// start module on the signal alone would race that load and stack two galaxies on each other. So: wait for
-        /// the intro's transition to appear, wait for it to end, and only then adopt what it opened.
+        /// Opens the first experience once the intro's own galaxy load has finished. FlowManager fires stage events
+        /// from a delayed coroutine, so opening on the signal alone would race it and stack two galaxies.
         /// </summary>
         private IEnumerator OpenStartModuleWhenSettled()
         {
@@ -328,8 +176,7 @@ namespace CosmicSimulation
                 yield return null;
             }
 
-            // Bounded, and we open anyway if it expires: a transition that never ends is a broken intro, and
-            // leaving the player in an empty room with no place open is the failure this is here to avoid.
+            // Bounded: a transition that never ends must not leave the player with no place open.
             waited = 0f;
             while (transitions != null && transitions.InTransition && waited < loadTimeoutSeconds)
             {
@@ -337,11 +184,9 @@ namespace CosmicSimulation
                 yield return null;
             }
 
-            // The intro always ends on the galaxy, but asks for it a frame or more after its signal, and until
-            // then the view it last asked for is the solar system it passed through. Adopting at that moment
-            // opened the Solar System while the Milky Way came up on screen. So, unless the editor quick start
-            // opened a view of its own, wait for the start module's view to be the one asked for.
-            if (_introFlow != null && !_introFlow.QuickStarted && startModule != null &&
+            // The intro asks for the galaxy a frame or more after its signal; until then the current view is the
+            // solar system it passed through, so wait for the start module's view (unless quick-started).
+            if (_intro.Flow != null && !_intro.Flow.QuickStarted && startModule != null &&
                 !string.IsNullOrEmpty(startModule.SceneName))
             {
                 waited = 0f;
@@ -352,9 +197,7 @@ namespace CosmicSimulation
                 }
             }
 
-            // The player may already have picked a place in the seconds this waited. Adopting what the intro left
-            // on screen now would land on top of that switch halfway through and leave them in the Solar System
-            // instead of where they asked to go (27 Sep). Their choice wins; a queued one waits its turn.
+            // A place the player picked meanwhile wins over what the intro left on screen.
             while (IsSwitching)
             {
                 yield return null;
@@ -372,13 +215,8 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// Opens the place the app starts in, once onboarding is over.
-        ///
-        /// Whatever the app is already showing wins over <see cref="startModule"/> when it is one of ours. The intro
-        /// ends by opening a place of its own — it loads the galaxy itself — and the editor quick start opens
-        /// whichever view the developer pressed Play in. Running the full switch over either would clear the room
-        /// the intro has just filled, grow its content in from a point a second time and play the module's narration
-        /// on top of the intro's own. So that case is recorded rather than re-opened.
+        /// Opens the start place once onboarding is over; a place of ours already on screen (from the intro or the
+        /// quick start) is adopted rather than re-opened, so it is not cleared, regrown and narrated twice.
         /// </summary>
         public void OpenStartModule()
         {
@@ -400,10 +238,7 @@ namespace CosmicSimulation
             }
         }
 
-        /// <summary>
-        /// Records a place the app is already showing as the open one: the dock highlights its tile, later switches
-        /// know what they are leaving, and the room takes the environment that place asks for. No content moves.
-        /// </summary>
+        /// <summary>Records a place already on screen as the open one, without moving any content.</summary>
         private void Adopt(ExperienceModule module)
         {
             Current = module;
@@ -413,23 +248,17 @@ namespace CosmicSimulation
                 EnvironmentController.Instance.Set(module.Environment);
             }
 
-            // No content moves, but the place is now open, and the two things that describe it belong to the
-            // place rather than to the switch that would otherwise have opened it. Without this the start
-            // module — the one the intro hands over, which is the Milky Way — would be the only experience in
-            // the app that never showed its panel or played its bed.
+            // The panel and the ambient bed belong to the place, not the switch, so the adopted start module needs them too.
             ShowScenePanel(module);
             AmbienceController.PlayBed(module.Ambience);
 
             ExperienceChanged?.Invoke(module);
         }
 
-        /// <summary>The module whose scene is already loaded, if any: the place the app is in fact showing.</summary>
         private ExperienceModule ModuleForOpenScene()
         {
-            // The last view anybody asked for wins, loaded yet or not. The intro passes through the solar system on
-            // its way to the galaxy, and when it hands over the galaxy can still be loading while the solar system is
-            // still loaded: requiring the asked-for view to be loaded adopted the Solar System while the Milky Way
-            // was on screen, and the Solar System tile then did nothing because it was "already open" (27 Sep).
+            // The last view asked for wins, loaded or not: at handover the galaxy may still be loading while the
+            // solar system is loaded, and adopting that would mislabel the open place.
             var asked = FindModuleByScene(ViewLoader.CurrentView);
             if (asked != null)
             {
@@ -472,17 +301,27 @@ namespace CosmicSimulation
             return null;
         }
 
+        private GameObject _pivotSource;
+        private CentreOnViewer _pivotCentred;
+        private GalaxyField _pivotField;
+
         /// <summary>
-        /// The point the desktop view turns about (CS-172): the open content's own centre - for a place that
-        /// centred itself on the player, that is the player, and a drag becomes a look-around - or the content
-        /// root for a scene-backed place. False before anything is open.
+        /// The desktop view's turn point (CS-172): the open content's centre, or the content root for a scene. False before anything is open.
         /// </summary>
         public bool TryGetViewPivot(out Vector3 pivot)
         {
             if (_prefabContent != null)
             {
-                var centred = _prefabContent.GetComponentInChildren<CentreOnViewer>(true);
-                var field = _prefabContent.GetComponentInChildren<GalaxyField>(true);
+                // Resolved once per place, not on every orbit-drag frame (CS-336).
+                if (_pivotSource != _prefabContent)
+                {
+                    _pivotSource = _prefabContent;
+                    _pivotCentred = _prefabContent.GetComponentInChildren<CentreOnViewer>(true);
+                    _pivotField = _prefabContent.GetComponentInChildren<GalaxyField>(true);
+                }
+
+                var centred = _pivotCentred;
+                var field = _pivotField;
                 pivot = centred != null ? centred.transform.position
                     : field != null && field.CentresOnViewer ? field.ShellCentre
                     : _prefabContent.transform.position;
@@ -502,44 +341,30 @@ namespace CosmicSimulation
         /// <summary>Goes to a place. Ignored if it is already open or a switch is running.</summary>
         public void Switch(ExperienceModule module)
         {
-            // "Already open" means already on screen. The intro reports itself finished while the solar system it
-            // passes through is still the current view, and the galaxy it ends on only starts loading seconds later,
-            // so the director could record the Solar System with the Milky Way showing - and then refuse the Solar
-            // System tile as the place that was already open (27 Sep).
+            // "Already open" means already on screen: the intro can report finished while the solar system is still current.
             if (module == null || IsSwitching || (module == Current && IsShowing(module)))
             {
                 return;
             }
 
-            // The dock is meant to be hidden during onboarding, so this is the backstop for the poke that gets
-            // through anyway. A switch mid-intro pulls the placement scene out from under IntroFlow and leaves the
-            // flow driving content that is no longer there. Refused rather than queued: the intro ends by opening a
-            // place of its own, and a poke made a minute earlier arriving on top of that would be a surprise.
+            // A mid-intro switch would pull the placement scene out from under IntroFlow.
             if (IntroRunning)
             {
-                // A click is the player saying they are done watching, so the intro ends here rather than the
-                // click being thrown away. This used to refuse outright, and on desktop the intro lasts as long
-                // as the onboarding narration plus a settle - most of a minute in which every dock tile and every
-                // destination tag did nothing, which reads as a broken app rather than as a busy one. The place
-                // they asked for is opened once the intro's own last stage has finished loading the galaxy, which
-                // is the same wait OpenStartModule already does, so the two cannot stack on each other.
-                BindIntro();
-                if (_introFlow != null && _introFlow.Skip())
+                // A click means the player is done watching: skip the intro and open their pick once the galaxy
+                // load settles (the same wait OpenStartModule does, so the two cannot stack).
+                if (_intro.TrySkip())
                 {
                     _queuedFromIntro = module;
                     Debug.Log($"ExperienceDirector: '{module.Id}' asked for during the intro, so the intro is being skipped and it opens next.", this);
                     return;
                 }
 
-                // Nothing to skip - the flow is gone or already at its end - so the old answer stands.
                 Debug.Log($"ExperienceDirector: '{module.Id}' ignored, the intro is still running.", this);
                 SwitchNotice.Busy(module);
                 return;
             }
 
-            // Refuse before anything moves. Half a switch — room cleared, narration stopped, nothing to look at —
-            // is worse than an unresponsive tile, and the tile stays live for when the content does arrive. Once
-            // per module, or an unfinished tile would fill the log every time the player pokes it.
+            // Refuse before anything moves: half a switch is worse than an unresponsive tile. Logged once per module.
             if (string.IsNullOrEmpty(module.SceneName) && module.ContentPrefab == null)
             {
                 if (_warnedEmpty.Add(module))
@@ -549,18 +374,13 @@ namespace CosmicSimulation
                         "there is nothing to open. Its tile does nothing until one is set.", module);
                 }
 
-                // Outside the once-per-module gate above: the log is for us and repeats are noise, but the
-                // player is owed an answer to every poke, and a tile that answers only the first time reads
-                // as broken. Worded as "not built yet" rather than as a failure, because that is what it is —
-                // four of the seven places are legitimately sceneless until their content lands.
+                // Every poke gets an answer, outside the once-per-module log gate.
                 SwitchNotice.NotReady(module);
                 return;
             }
 
-            // StartCoroutine runs the routine up to its first yield before it hands the handle back, so a switch
-            // that fails that early — ViewLoader throws outright when a scene is missing from Build Settings — has
-            // already run its finally by the time we get here. Storing the handle then would leave IsSwitching true
-            // for the rest of the session and refuse every later poke: the wedge this pair of flags exists to stop.
+            // StartCoroutine runs inline to the first yield, so a switch that fails that early has already run its
+            // finally; storing the handle then would leave IsSwitching true forever.
             _switchFinished = false;
             var routine = StartCoroutine(SwitchRoutine(module));
             _switching = _switchFinished ? null : routine;
@@ -573,9 +393,7 @@ namespace CosmicSimulation
 
         private IEnumerator SwitchRoutine(ExperienceModule module)
         {
-            // Everything below is inside a try/finally purely so that _switching clears on every exit — the timeout,
-            // a throw out of the loader, a throw out of anything the new content runs. A switch that ends without
-            // clearing it takes the dock with it, and the room is already empty by then.
+            // try/finally so _switching clears on every exit, or the dock stays wedged with the room already empty.
             try
             {
                 Current = module;
@@ -590,9 +408,7 @@ namespace CosmicSimulation
                     vo.Stop(true);
                 }
 
-                // The bed goes out with the narration, at the same beat and for the same reason: both describe
-                // the place being left. It fades rather than cuts, and the fade is well over by the time the new
-                // one is asked for at the bottom of this routine.
+                // The bed fades out with the narration; it describes the place being left.
                 AmbienceController.StopBed();
 
                 if (EnvironmentController.Instance != null)
@@ -600,17 +416,12 @@ namespace CosmicSimulation
                     EnvironmentController.Instance.Set(module.Environment);
                 }
 
-                // Everything the last place put in the room goes now, and a prefab instance goes at the same beat a
-                // scene is unloaded. Which module we think was previous is not enough to go on: the original Galaxy
-                // Explorer boot flow opens view scenes of its own, and leaving those behind stacked duplicate content
-                // and duplicate singletons on top of each other.
+                // Unload every other view scene, not just the previous module's: the inherited boot flow opens
+                // its own, and leaving them stacked duplicate content and singletons.
                 var adopted = UnloadOtherViews(module.SceneName);
                 DestroyPrefabContent();
 
-                // The panel is the previous place's, so it goes when the previous place does — not earlier, or
-                // the room would be described by nothing while the old content is still standing there, and not
-                // later, or a switch that fails to load would leave the old place's prose floating over an empty
-                // room. It lives under our own content root, which survives the unload, so it has to be told.
+                // The panel lives under our root, which survives the unload, so it must be torn down explicitly here.
                 DestroyScenePanel();
 
                 if (!string.IsNullOrEmpty(module.SceneName))
@@ -620,8 +431,7 @@ namespace CosmicSimulation
                         var loaded = false;
                         var failure = BeginLoad(module.SceneName, () => loaded = true);
 
-                        // Bounded, because the callback is not guaranteed to arrive at all: ViewLoader raises it from
-                        // inside its own coroutine, and a coroutine that threw is simply never resumed.
+                        // Bounded: ViewLoader raises the callback from its own coroutine, and a coroutine that threw is never resumed.
                         var waited = 0f;
                         while (failure == null && !loaded && waited < loadTimeoutSeconds)
                         {
@@ -647,42 +457,34 @@ namespace CosmicSimulation
                     _prefabContent.name = module.Id;
 
                     // Before home is captured, because framing is part of where this content belongs.
-                    FrameContent(_prefabContent.transform);
+                    _contentSpanMetres = ContentFramer.Centre(_prefabContent.transform);
                     FitArrangement(_prefabContent.transform, 0f);
                     BindRigFraming(_prefabContent);
 
-                    // Where Restore will bring this back to, taken here because here is the only moment the
-                    // pose is the intended one: before the grow-in below, which drives localScale from zero
-                    // every frame for its duration (CS-107).
+                    // Capture home before the grow-in, which drives localScale from zero (CS-107).
                     FreePlacementAnchor.CaptureHome(_prefabContent.transform);
                 }
 
                 yield return null; // let the new content's own Awake/Start run before we touch it
 
                 var content = ResolveContent(adopted);
-                // Found by the scene's own name rather than through ResolveContent, whose fallback is
-                // TransitionManager's CurrentActiveScene and can still be the place just left.
+                // By scene name, not ResolveContent, whose fallback can still be the place just left.
                 var scene = string.IsNullOrEmpty(module.SceneName) ? default : SceneManager.GetSceneByName(module.SceneName);
                 var sceneContent = scene.IsValid() && scene.isLoaded ? FindContent(scene) : null;
                 if (sceneContent != null)
                 {
-                    // A view scene is centred and sized to the view the same way, but only once the old zoom-in
-                    // has finished: TransitionManager scales it up from nothing and sizes it to its volume, and
-                    // until then there is nothing true to measure.
+                    // Fitted only after TransitionManager's zoom-in, which scales the scene up from nothing.
                     StartCoroutine(FitViewScene(sceneContent.transform));
                 }
 
                 if (content != null && growInSeconds > 0f)
                 {
-                    // Only our own instance may have been framed, and only a framed object needs its offset
-                    // driven with the scale; a view scene's root is where its scene put it.
+                    // Only our own framed instance needs its offset driven with the scale.
                     yield return GrowIn(content.transform, growInSeconds, content == _prefabContent);
                 }
 
-                // Both after the grow-in, and both after the only `yield break` in this routine: a switch that
-                // was abandoned because its scene never arrived must not end up narrating, describing or
-                // sounding like a place the player is not in. The panel goes up before the voice starts, because
-                // it is the written form of the same words.
+                // After the only `yield break`, so an abandoned switch never narrates a place the player is not in.
+                // The panel goes up before the voice, as the written form of the same words.
                 ShowScenePanel(module);
 
                 if (vo != null && module.Narration != null && VOManager.AutoStart)
@@ -702,10 +504,8 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// Starts the additive load and reports why it could not start, rather than letting the failure escape.
-        /// <see cref="ViewLoader"/> throws when <c>SceneManager.LoadSceneAsync</c> comes back null — a scene missing
-        /// from Build Settings, or a typo in a module's SceneName — and that throw lands on this stack, because
-        /// StartCoroutine runs a coroutine up to its first yield inline. Returns null when the load is under way.
+        /// Starts the additive load and returns why it could not, or null. Catches <see cref="ViewLoader"/>'s throw
+        /// for a scene missing from Build Settings, which lands on this stack because StartCoroutine runs inline.
         /// </summary>
         private static string BeginLoad(string sceneName, SceneLoaded onLoaded)
         {
@@ -730,13 +530,8 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// Gives up on a switch whose scene never arrived, in one log line naming the scene.
-        ///
-        /// The place the player was in is unloaded well before this point, so going back is not on offer: the best
-        /// state left is the room itself. Passthrough rather than the module's own environment, because the
-        /// alternative is a dimmed or fully black void with nothing in it — on a headset the real room is never
-        /// nothing, and on desktop it is the plainest of the four. <see cref="Current"/> is cleared so that no tile
-        /// reads as open, and so the same tile can be poked again once the scene is put back in Build Settings.
+        /// Gives up on a switch whose scene never arrived: back to passthrough (the old place is already gone) and
+        /// <see cref="Current"/> cleared so the tile can be poked again.
         /// </summary>
         private void AbandonSwitch(ExperienceModule module, string reason)
         {
@@ -745,8 +540,7 @@ namespace CosmicSimulation
                 "Check that it is enabled in Build Settings and that the module's SceneName matches it. Handing the " +
                 "room back in passthrough; the dock stays live and the tile can be poked again.", this);
 
-            // Said out loud as well as logged. This is the case the player cannot make sense of on their own:
-            // the place they were in is gone, the room has come back, and nothing else would explain why.
+            // Shown as well as logged: nothing else would explain why the place is gone.
             SwitchNotice.FailedToOpen(module);
 
             Current = null;
@@ -760,20 +554,12 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// Scales content up from nothing, the one transition this app uses.
-        ///
-        /// <paramref name="keepFramed"/> is for content <see cref="FrameContent"/> has offset so that its middle
-        /// sits on the content root. Such an object's pivot is no longer its middle, so scale alone would swell it
-        /// out of a point somewhere off to one side and walk the middle across the room on the way in. Driving the
-        /// offset by the same factor as the scale keeps the middle still: at factor zero the offset is zero too, so
-        /// everything starts from the content root, which is where the whoosh belongs. Content that was not framed
-        /// has no offset to drive and is left alone, so this is a no-op for every place that already worked.
+        /// Scales content up from nothing. <paramref name="keepFramed"/> scales a <see cref="ContentFramer.Centre"/> offset
+        /// with it, so the middle stays put instead of swelling out from the off-centre pivot.
         /// </summary>
         private static IEnumerator GrowIn(Transform content, float seconds, bool keepFramed = false)
         {
-            // No target transform on purpose: the whoosh belongs to the arrival, not to the object, so it
-            // must outlive content that a second switch destroys mid-grow. The id has no clip yet, and
-            // PlayClip simply does nothing until one is assigned, so this can ship ahead of the sound.
+            // No target transform: the sound must outlive content a second switch destroys mid-grow.
             AudioService.Instance?.PlayClip(AudioId.GrowIn);
 
             var target = content.localScale;
@@ -790,8 +576,7 @@ namespace CosmicSimulation
             {
                 elapsed += Time.deltaTime;
 
-                // A destination the player closed mid-grow is already gone, and Unity's fake-null makes the
-                // next write a MissingReferenceException rather than a quiet no-op.
+                // Unity's fake-null: a destination closed mid-grow would throw on the next write.
                 if (content == null)
                 {
                     yield break;
@@ -820,140 +605,16 @@ namespace CosmicSimulation
             }
         }
 
-        // ---------- framing a content prefab on the content root
-
-        /// <summary>
-        /// Moves a freshly spawned content prefab so that the middle of what it shows sits on the content root.
-        ///
-        /// <para>Every scene-backed place puts its content at the content root's own origin — <c>SolarSystemContent</c>
-        /// and the galaxy view are both at local zero under the <see cref="ViewLoader"/> — and that origin is where
-        /// the room has decided the experience goes: two metres in front of the player and a little below eye
-        /// height, turned to face them. A content prefab authored around its own origin therefore lands correctly
-        /// with nothing done to it, which is why Andromeda and the Cosmic Web have always been in the right place.</para>
-        ///
-        /// <para>The solar row was not. Its arrangement is written in room coordinates — <c>SystemLayoutBuilder</c>
-        /// stands the bodies 1.2 m above the floor and up to two metres out from the player's feet — so spawning it
-        /// at the content root put the planets 1.2 m above and most of a metre beyond the thing the player was
-        /// looking at. On the desktop rig that is far enough above the view to leave the room empty but for the
-        /// experience's own panel, which parks near the root and so stayed visible: the black screen this fixes.</para>
-        ///
-        /// <para>Rather than teach the director which places are authored which way, the content is asked where its
-        /// middle is and then offset by that. Content that has nothing to measure — a point cloud drawn by a command
-        /// buffer has no renderer at all — reports nothing and is not touched, and content already centred on its own
-        /// origin falls inside <see cref="CentringDeadzone"/> and is not touched either.</para>
-        /// </summary>
-        private void FrameContent(Transform content)
-        {
-            _contentSpanMetres = 0f;
-
-            // A place the player stands inside (the Galaxies shell) has already put its middle on their head
-            // when it was instantiated. Framing it would move that middle back out to the content root, two
-            // metres ahead, and measuring it would push the panel past a six-metre shell and off the screen.
-            // Left alone, the player starts in the middle and the panel stays at its authored offset inside the
-            // shell - the same thing the Cosmic Web gets, whose point cloud has no renderer to measure (owner's
-            // direction, 16 Sep).
-            if (SurroundsViewer(content))
-            {
-                return;
-            }
-
-            if (content == null || !TryMeasureContent(content, out var measured))
-            {
-                return;
-            }
-
-            // The content root is turned to face the player, so a box measured on world axes says nothing about
-            // the content's own width. The two horizontal extents combined are the widest the box can be in any
-            // frame turned about the vertical — an over-estimate rather than an under-estimate, which is the
-            // safe direction to be wrong in when the number is only used to keep a panel clear.
-            _contentSpanMetres = new Vector2(measured.extents.x, measured.extents.z).magnitude;
-
-            // Moving the transform by this moves the middle by the same, and the middle then lands exactly where
-            // the transform is now — the content root's origin, since a fresh instance sits on it.
-            var offset = content.position - measured.center;
-            if (offset.sqrMagnitude < CentringDeadzone * CentringDeadzone)
-            {
-                return;
-            }
-
-            content.position += offset;
-        }
-
-        private static bool SurroundsViewer(Transform content)
-        {
-            var field = content != null ? content.GetComponentInChildren<GalaxyField>(true) : null;
-            return field != null && field.CentresOnViewer;
-        }
-
         // ---------- keeping a whole arrangement inside the desktop view (CS-171)
 
-        /// <summary>
-        /// Moves arrangeable content so that every body of its arrangement is inside the camera's view.
-        ///
-        /// <para>Only on a monitor. In a headset the player turns to look along the row, which is what GDD 4.1
-        /// designed the arc for; a desktop camera never turns and never moves — DesktopMouseInput's orbit, pan
-        /// and zoom drive the old touch pivot, which nothing hangs off any more — so the content has to come to
-        /// the view instead. Solar Row stands 1.9 m wide two metres from a 30-degree camera, whose view is 1.9 m
-        /// wide there, and the ends of the arc bow nearer still; Relative Size is five metres wide with a 3 m
-        /// Sun. Both were cut off at Pluto, and the Sun, on every monitor.</para>
-        ///
-        /// <para>The arrangement's box is read off the preset's slots (<see cref="LayoutRig.TryGetLayoutBounds"/>),
-        /// so it is the box the bodies are heading for, not the one they are leaving. The box is centred on the
-        /// content root, as <see cref="FrameContent"/> does for the first arrangement, and then pushed straight
-        /// away from the camera until its eight corners fit inside <see cref="desktopFitMargin"/> of the view.
-        /// Never pulled nearer: an arrangement that already fits stays where the room put it.</para>
-        ///
-        /// <para>A later arrangement (the dock's pop-up, R) moves the content over the preset's own transition
-        /// time with the same ease-out the bodies use, and re-captures the content's home afterwards, so a
-        /// Restore brings the content back to where it fits rather than to where the first arrangement was.</para>
-        /// </summary>
+        /// <summary>Desktop only: moves the content to where <see cref="ContentFramer.TryFitTarget"/> says it fits.</summary>
+        // Later arrangements ease over the preset's time and re-capture home, so Restore returns to the fitted spot.
         private void FitArrangement(Transform content, float seconds)
         {
-            // A place the player stands inside (Galaxies, Cosmic Web) is left exactly as it is (owner's direction).
-            if (content == null || UnityEngine.XR.XRSettings.isDeviceActive || SurroundsViewer(content))
+            if (!ContentFramer.TryFitTarget(content, desktopFitMargin, out var target))
             {
                 return;
             }
-
-            var camera = Camera.main;
-            if (camera == null || !TryFrameCorners(content, out var corners))
-            {
-                return;
-            }
-
-            // In camera space, without the camera's scale. The box's middle goes onto the line of sight and then to
-            // the one distance at which its widest corner touches the margin - pulled nearer when it is small,
-            // pushed back when it is wide - so every place opens centred and filling the view, and Solar Row runs
-            // from one edge of the screen to the other (owner's direction, 27 Sep). tan(half-angle) turns a distance
-            // along the view axis into the half-width visible there.
-            var view = camera.transform;
-            var toView = Quaternion.Inverse(view.rotation);
-            var centre = Vector3.zero;
-            for (var i = 0; i < corners.Length; i++)
-            {
-                corners[i] = toView * (corners[i] - view.position);
-                centre += corners[i] / corners.Length;
-            }
-
-            var tanVertical = Mathf.Tan(camera.fieldOfView * 0.5f * Mathf.Deg2Rad) * desktopFitMargin;
-            var tanHorizontal = tanVertical * Mathf.Max(0.1f, camera.aspect);
-            var distance = MinFitDistanceMetres;
-            foreach (var corner in corners)
-            {
-                var r = corner - centre;
-                distance = Mathf.Max(distance, Mathf.Abs(r.x) / tanHorizontal - r.z, Mathf.Abs(r.y) / tanVertical - r.z);
-            }
-
-            var offset = view.rotation * (new Vector3(0f, 0f, distance) - centre);
-
-            if (offset.sqrMagnitude < CentringDeadzone * CentringDeadzone)
-            {
-                return;
-            }
-
-            var target = content.parent != null
-                ? content.parent.InverseTransformPoint(content.position + offset)
-                : content.position + offset;
 
             if (_fitting != null)
             {
@@ -970,42 +631,9 @@ namespace CosmicSimulation
             _fitting = StartCoroutine(FitRoutine(content, target, seconds));
         }
 
-        /// <summary>
-        /// The eight corners of what a place shows, in the world. An arrangement states its own box from the
-        /// preset's slots, so it is the box the bodies are heading for, not the one they are leaving; anything else
-        /// is measured off its renderers.
-        /// </summary>
-        private static bool TryFrameCorners(Transform content, out Vector3[] corners)
-        {
-            corners = new Vector3[8];
-            var rig = content.GetComponentInChildren<LayoutRig>(true);
-            Bounds box;
-            Transform space = null;
-            if (rig != null && rig.TryGetLayoutBounds(rig.PendingOrCurrent, out box))
-            {
-                space = rig.transform;
-            }
-            else if (!TryMeasureRenderers(content, out box))
-            {
-                return false;
-            }
-
-            for (var i = 0; i < 8; i++)
-            {
-                var corner = new Vector3(
-                    (i & 1) == 0 ? box.min.x : box.max.x,
-                    (i & 2) == 0 ? box.min.y : box.max.y,
-                    (i & 4) == 0 ? box.min.z : box.max.z);
-                corners[i] = space != null ? space.TransformPoint(corner) : corner;
-            }
-
-            return true;
-        }
-
         private IEnumerator FitViewScene(Transform content)
         {
-            // The zoom-in, not the whole transition: TransitionManager stays in transition until the narration
-            // has finished, which would leave the place unframed for as long as the voice speaks.
+            // Just the zoom-in: TransitionManager stays in transition until narration ends.
             var zoom = FindFirstObjectByType<ZoomInOut>();
             var waited = 0f;
             while (content != null && (IsSwitching || (zoom != null && !zoom.ZoomInIsDone)) && waited < loadTimeoutSeconds)
@@ -1016,8 +644,7 @@ namespace CosmicSimulation
 
             if (content != null && content.gameObject.activeInHierarchy)
             {
-                // The scene's root is held where the room put it every frame (TransformHandler/LocationView), so
-                // it is the scene's own content under it that moves.
+                // The scene root is pinned every frame (TransformHandler/LocationView), so move its child.
                 FitArrangement(content.childCount > 0 ? content.GetChild(0) : content, ViewSceneFitSeconds);
             }
         }
@@ -1043,9 +670,7 @@ namespace CosmicSimulation
 
             content.localPosition = target;
 
-            // Home is where Restore brings the content back to. It was captured for the first arrangement;
-            // this one fits somewhere else, and a Restore that pulled it back to the old spot would cut the
-            // row off again.
+            // Re-capture so Restore returns to this fitted spot, not the first arrangement's.
             FreePlacementAnchor.CaptureHome(content);
         }
 
@@ -1077,8 +702,7 @@ namespace CosmicSimulation
 
         private void OnLayoutApplied(LayoutPreset layout)
         {
-            // The rig's own Start applies its first arrangement while the switch is still growing the content
-            // in; that one was fitted at spawn, and GrowIn is driving the content's position for its duration.
+            // The rig's first arrangement lands during the grow-in, which owns the position and was fitted at spawn.
             if (IsSwitching || _prefabContent == null || layout == null)
             {
                 return;
@@ -1087,75 +711,11 @@ namespace CosmicSimulation
             FitArrangement(_prefabContent.transform, Mathf.Max(0f, layout.TransitionSeconds));
         }
 
-        /// <summary>
-        /// Where the content's middle is, in world space, and roughly how far it reaches. False when there is
-        /// nothing honest to measure. Only the centre is relied on to be exact; the size is a clearance.
-        /// </summary>
-        private static bool TryMeasureContent(Transform content, out Bounds measured)
-        {
-            // An arrangeable place states its own arrangement, which beats guessing from geometry: the home
-            // anchors are the authored intent, and they are right even before the rig's first Start has run.
-            var rig = content.GetComponentInChildren<LayoutRig>(true);
-            if (rig != null && rig.TryGetArrangementBounds(out measured))
-            {
-                return true;
-            }
-
-            return TryMeasureRenderers(content, out measured);
-        }
-
-        /// <summary>The box the content's real geometry fills, ignoring everything that is not the thing itself.</summary>
-        private static bool TryMeasureRenderers(Transform content, out Bounds measured)
-        {
-            measured = default;
-            var found = false;
-
-            foreach (var r in content.GetComponentsInChildren<Renderer>(true))
-            {
-                if (r == null || !r.enabled || !r.gameObject.activeInHierarchy)
-                {
-                    continue;
-                }
-
-                // Effects and text say nothing about where the thing is. A halo or a tractor beam is far wider
-                // than what it surrounds, and a panel sits at its prefab's own origin until the first frame it
-                // is shown tells it where to go — measuring those would drag the middle somewhere arbitrary.
-                if (r is ParticleSystemRenderer || r is LineRenderer || r is TrailRenderer ||
-                    r is SpriteRenderer || r.GetComponentInParent<Canvas>() != null)
-                {
-                    continue;
-                }
-
-                var bounds = r.bounds;
-                if (bounds.size.sqrMagnitude <= 0f)
-                {
-                    continue;
-                }
-
-                if (found)
-                {
-                    measured.Encapsulate(bounds);
-                }
-                else
-                {
-                    measured = bounds;
-                    found = true;
-                }
-            }
-
-            return found;
-        }
-
         // ---------- content: a scene, or a prefab under our own root
 
         /// <summary>
-        /// Where a module's <see cref="ExperienceModule.ContentPrefab"/> is spawned.
-        ///
-        /// It has to hang off the <see cref="ViewLoader"/>, not the world origin. View-scene content is not
-        /// origin-relative: the intro places the experience in the room by moving and rotating the Loader
-        /// itself (<c>WorldAnchorHandler.CreateWorldAnchor</c>), and every view scene's root follows it. A
-        /// prefab spawned at identity would appear at the player's feet, unrotated and unanchored, while every
-        /// scene-backed experience sat two metres away facing them.
+        /// Where a <see cref="ExperienceModule.ContentPrefab"/> spawns: under the <see cref="ViewLoader"/>, which the
+        /// intro moves into place in the room, so prefabs land where scene content does.
         /// </summary>
         private Transform ContentRoot()
         {
@@ -1182,30 +742,20 @@ namespace CosmicSimulation
                 Destroy(_prefabContent);
             }
 
-            // Cleared straight away rather than after the deferred Destroy, so the rest of the switch does not
-            // mistake a dying instance for the new content.
+            // Cleared now, not after the deferred Destroy, so the switch never mistakes the dying instance for new content.
             _prefabContent = null;
 
-            // The span described content that has just gone. A scene-backed place never sets it, so leaving the
-            // last prefab's width behind would push that place's panel out into nothing.
+            // A scene-backed place never sets the span, so a stale one would push its panel out.
             _contentSpanMetres = 0f;
         }
 
         // ---------- the open experience's own panel (GDD 3.3, 8.3; contract F-20, F-23, F-25, F-26)
 
-        /// <summary>
-        /// Puts up the panel that describes the place the player has just arrived in: its title, its two or
-        /// three paragraphs and the line telling them what they can do here.
-        ///
-        /// A module with no authored copy gets nothing, silently — that is the normal state of a place whose
-        /// prose has not been written yet, not a fault. The copy is checked rather than the module: a module
-        /// always has a <see cref="ExperienceModule.DisplayName"/>, and <see cref="InfoPanel.Bind"/> falls back
-        /// to it, so testing the module alone would give every place a one-word panel.
-        /// </summary>
+        /// <summary>Puts up the panel for the place the player just arrived in.</summary>
+        // Checks the copy, not the module: InfoPanel.Bind falls back to DisplayName, giving every place a one-word panel.
         private void ShowScenePanel(ExperienceModule module)
         {
-            // Never two for one place. Switch already tore the previous one down; this is the Adopt path, and
-            // the guard against anyone opening the same place twice.
+            // Never two for one place (the Adopt path).
             DestroyScenePanel();
 
             if (module == null || !HasPanelCopy(module))
@@ -1240,26 +790,20 @@ namespace CosmicSimulation
             _scenePanel = null;
         }
 
-        /// <summary>
-        /// Instantiates a panel, binds a module's copy to it and shows it. Shared by the experience's own panel
-        /// and by a destination overlay's, which differ only in what they sit beside.
-        /// </summary>
+        /// <summary>Spawns, binds and shows a panel; shared by experience and destination panels.</summary>
         private InfoPanel SpawnPanel(ExperienceModule module, Transform target, string name)
         {
             var panel = Instantiate(scenePanelPrefab, ContentRoot());
             panel.name = name;
 
-            // Parked where it belongs before its first LateUpdate, so it fades in where it will live rather
-            // than sliding there from the content root's origin.
+            // Parked before its first LateUpdate so it fades in in place rather than sliding from the root's origin.
             panel.transform.position = target.position;
 
             panel.Bind(module);
             panel.SetTarget(target);
             panel.Show();
 
-            // The prefab carries a GraphicRaycaster (UiPrefabBuilder puts one on every world-space canvas it
-            // builds) and this panel has nothing to press. Left raycastable it would be a sheet of text the
-            // player's ray could catch on, between them and the experience it describes.
+            // Not raycastable: it has nothing to press and would catch the ray in front of the experience.
             var group = panel.GetComponent<CanvasGroup>();
             if (group != null)
             {
@@ -1299,10 +843,7 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// What the experience's panel sits beside. An empty object rather than the content itself: a place's
-        /// content is a galaxy or a row of planets, whose first renderer says nothing useful about how wide the
-        /// whole thing is, and <see cref="InfoPanel"/> measures its target's renderers to find the edge to clear.
-        /// An anchor with none falls back to a small radius, so the panel lands where this offset puts it.
+        /// What the experience's panel sits beside: an empty anchor, because <see cref="InfoPanel"/> measures its target's renderers.
         /// </summary>
         private Transform ScenePanelAnchor()
         {
@@ -1312,14 +853,10 @@ namespace CosmicSimulation
                 _scenePanelAnchor.SetParent(ContentRoot(), false);
             }
 
-            // Re-read every time, so the offset can be dragged in the inspector during play and take effect on
-            // the next switch.
+            // Re-read each time so the offset can be tuned in the inspector during play.
             var offset = scenePanelOffset;
 
-            // The authored offset was written when every prefab place was a galaxy a metre or so across sitting on
-            // the content root. A row of ten planets is nearly two metres wide about the same point, and the panel
-            // would stand between Saturn and Uranus. Pushed out to the edge of whatever is actually there, keeping
-            // the side the offset asks for; content narrower than the offset leaves it exactly as authored.
+            // Push the panel past wide content (a row of planets) on the side the offset asks for.
             var wanted = _contentSpanMetres + Mathf.Max(0f, panelClearanceMetres);
             if (_contentSpanMetres > 0f && Mathf.Abs(offset.x) < wanted)
             {
@@ -1327,31 +864,8 @@ namespace CosmicSimulation
             }
 
             _scenePanelAnchor.localPosition = offset;
-            KeepPanelInView(_scenePanelAnchor);
+            ContentFramer.KeepInView(_scenePanelAnchor);
             return _scenePanelAnchor;
-        }
-
-        /// <summary>
-        /// On a monitor a place is fitted to fill the view, so the side the offset puts the panel on can be off the
-        /// screen - Solar Row runs edge to edge. Such a panel goes above the middle of the view instead, at the
-        /// depth it had, where a row leaves the most room (owner's direction, 27 Sep).
-        /// </summary>
-        private static void KeepPanelInView(Transform anchor)
-        {
-            var camera = Camera.main;
-            if (camera == null || UnityEngine.XR.XRSettings.isDeviceActive)
-            {
-                return;
-            }
-
-            var v = camera.WorldToViewportPoint(anchor.position);
-            if (v.z > 0f && v.x > PanelViewportMargin && v.x < 1f - PanelViewportMargin &&
-                v.y > PanelViewportMargin && v.y < 1f - PanelViewportMargin)
-            {
-                return;
-            }
-
-            anchor.position = camera.ViewportToWorldPoint(new Vector3(0.5f, PanelAboveViewportY, Mathf.Max(v.z, MinFitDistanceMetres)));
         }
 
         /// <summary>
@@ -1370,8 +884,7 @@ namespace CosmicSimulation
                     continue;
                 }
 
-                // Adopt the first copy of the target and drop the rest: the boot flow having already opened the
-                // scene is the normal case at startup, and loading it again is what produced two of everything.
+                // Adopt the boot flow's copy of the target; loading it again is what produced two of everything.
                 if (!keep.IsValid() && !string.IsNullOrEmpty(targetSceneName) && scene.name == targetSceneName)
                 {
                     keep = scene;
@@ -1385,16 +898,8 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// Structure, not a place. Mostly derived rather than named: the app boots into the active scene, and
-        /// the scene that loads views — the one holding the ViewLoader, and this director with it — is by
-        /// definition not a place. (<see cref="GalaxyExplorerManager"/> is no help here: <c>Singleton</c> moves
-        /// its root to DontDestroyOnLoad, so it no longer reports the scene it came from.)
-        ///
-        /// The intro scenes have to be named, though. They are additively loaded like a view but the intro flow
-        /// is standing on them: unloading the placement scene pulls <c>PlacementControl</c> out from under
-        /// <c>IntroFlow</c> mid-sequence. <see cref="Switch"/> now refuses outright while <see cref="IntroRunning"/>,
-        /// so this list is the second line of defence rather than the only one — kept because anything that reaches
-        /// an unload without going through Switch would still take the intro's floor away.
+        /// Intro scenes count as structure, not places: unloading the placement scene breaks <c>IntroFlow</c>
+        /// mid-sequence. A backstop for any unload that bypasses Switch's intro guard.
         /// </summary>
         private static readonly string[] IntroScenes =
         {
@@ -1424,8 +929,7 @@ namespace CosmicSimulation
 
             if (_prefabContent != null)
             {
-                // Readers of CurrentActiveScene (StarBackgroundManager, WorldAnchorHandler) would otherwise
-                // still hold the content we destroyed on the way in, and Unity's fake-null slips past `?.`.
+                // CurrentActiveScene readers would still hold the destroyed content, and fake-null slips past `?.`.
                 if (transitions != null)
                 {
                     transitions.CurrentActiveScene = _prefabContent;
@@ -1434,8 +938,7 @@ namespace CosmicSimulation
                 return _prefabContent;
             }
 
-            // A scene we adopted never went through TransitionManager on our account, so its CurrentActiveScene
-            // can still be pointing at content we just unloaded. Find this scene's own root and correct it.
+            // An adopted scene never went through TransitionManager for us, so correct CurrentActiveScene to its own root.
             if (adopted.IsValid() && adopted.isLoaded)
             {
                 var content = FindContent(adopted);
@@ -1484,9 +987,7 @@ namespace CosmicSimulation
             instance.name = destination.Id;
             _destinationObjects.Add(instance);
 
-            // The position above is knowledge only this method has — it comes from the tag the player pinched,
-            // not from the prefab — so home is recorded now. Before the grow-in at the bottom of this method,
-            // which writes localScale from zero every frame and would otherwise be what got remembered.
+            // Home is captured here, the only place that knows the pinched tag's position, and before the grow-in.
             FreePlacementAnchor.CaptureHome(instance.transform);
 
             if (EnvironmentController.Instance != null)
@@ -1505,16 +1006,13 @@ namespace CosmicSimulation
                 }
             }
 
-            // A destination's copy is authored in the same place as an experience's, and GDD 8.3 lets several
-            // panels be open at once, so the map's own panel stays up while this one joins it. It sits beside
-            // the overlay rather than at the experience anchor, and follows it when the player moves it.
+            // The map's panel stays up (GDD 8.3); this one sits beside the overlay and follows it.
             if (scenePanelPrefab != null && HasPanelCopy(destination))
             {
                 _destinationPanel = SpawnPanel(destination, instance.transform, destination.Id + "_panel");
             }
 
-            // Announced after everything that could still have refused, and before the grow-in, so the tag is
-            // already outlined while the cloud is still swelling out of a point.
+            // Announced before the grow-in so the tag is outlined while the cloud swells.
             OpenDestinationModule = destination;
             DestinationChanged?.Invoke(destination);
 
@@ -1547,9 +1045,7 @@ namespace CosmicSimulation
                 EnvironmentController.Instance.Set(Current.Environment);
             }
 
-            // Guarded rather than raised blind: this is called on the way into every OpenDestination and at the
-            // head of every Switch, and a listener that was told "nothing is open" on each of those would spend
-            // most of its life reacting to a state it was already in.
+            // Guarded: this runs at the head of every switch and open, and listeners shouldn't hear "nothing open" each time.
             if (OpenDestinationModule != null)
             {
                 OpenDestinationModule = null;
@@ -1562,15 +1058,13 @@ namespace CosmicSimulation
         /// <summary>Puts every body of the open experience back where its arrangement says it belongs.</summary>
         public void RestoreEverything()
         {
-            foreach (var solver in FindObjectsByType<ForceSolver>(FindObjectsSortMode.None))
+            foreach (var solver in Registry<ForceSolver>.Active)
             {
                 solver.ResetToRoot();
                 solver.EnableForce = true;
             }
 
-            // Content that is not a body — a nebula overlay, the Cosmic Web, Andromeda — has no solver to reset,
-            // so until CS-107 this loop walked straight past it. Snapped rather than eased, to match the line
-            // above: the only caller is a switch, and the place this restores is already being taken apart.
+            // Non-body content (CS-107); snapped because the only caller is a switch tearing the place down.
             FreePlacementAnchor.RestoreAllImmediate();
         }
     }

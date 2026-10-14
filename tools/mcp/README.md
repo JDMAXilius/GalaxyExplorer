@@ -192,3 +192,5 @@ the same call — `smoke.cs` waits up to ten seconds.
 
 Play mode writes runtime values into shared materials (`about_material`, `earth_clouds`, the Jupiter
 clouds). Check `git status` and revert those before committing.
+
+**Since CS-334 (14 Oct 2026)** the parked rework in `Assets/Cosmic` compiles only with `COSMIC_REWORK` in the Scripting Define Symbols. Without it, `smoke.cs` and `rework/*.cs` (the parked P0-P6 walk) report that `Cosmic.Editor` did not compile; that is expected, not a failure. `compile.ps1` checks `Assembly-CSharp` and `Assembly-CSharp-Editor` against their sources instead, and the rework's assemblies only when the define is set. The shipping app's check is `Ui2SelfCheck` (Cosmic Simulation > UI 2 > Run Check) until the Unity Test Framework suites of CS-346 exist.

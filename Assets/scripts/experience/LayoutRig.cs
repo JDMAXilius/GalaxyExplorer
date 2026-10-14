@@ -7,44 +7,8 @@ using UnityEngine;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// Holds the bodies of an arrangeable experience and moves them between its <see cref="LayoutPreset"/>s.
-    /// Solar Row against Relative Size is the case it was written for (GDD 4.1); nothing in it is specific to
-    /// the solar system, so the orbit model's Schematic/Realistic pair can use it too.
-    ///
-    /// <para><b>How a layout is applied.</b> Every body owns a <i>home anchor</i>, an empty transform that is its
-    /// <see cref="ForceSolver.RootTransform"/>. A body sitting in the arrangement is in
-    /// <see cref="ForceSolver.State.Root"/>, and the force solver snaps it onto that anchor every frame, so
-    /// moving the anchor moves the body — no second animation to keep in step, and one authority for where a
-    /// body belongs. Applying a layout therefore animates the <i>anchors</i> from where they are to the new
-    /// slots over the preset's <see cref="LayoutPreset.TransitionSeconds"/>, with the cubic ease-out this app
-    /// uses everywhere and never a bounce (GDD 8.7).</para>
-    ///
-    /// <para>A body the player has pulled out is not on its anchor, so the solver is not carrying it. Those are
-    /// handed to <see cref="FreePlacementSolver.RestoreLayout(float)"/>, which walks them home over the same
-    /// duration and reads the anchor live, so they chase it while it is still moving and land on it. Panels and
-    /// moons unwind on the way, because <c>RestoreLayout</c> finishes by putting the solver back into Root.</para>
-    ///
-    /// <para><b>Scale is a diameter.</b> A <see cref="LayoutSlot.Scale"/> is the body's diameter in metres, which
-    /// only means anything because every body prefab is normalised to a 1 m diameter (CS-041, and the convention
-    /// CS-040 set). So the rig writes it straight into <c>localScale</c> and can read <c>lossyScale</c> back as a
-    /// measurement in metres.</para>
-    ///
-    /// <para><b>Rings are clamped to the arrangement, not to a table.</b> Saturn's ring mesh is 2.26 times the
-    /// planet's own diameter and Uranus's is 1.99, so in an arrangement that stands the bodies 25 cm apart the two
-    /// ring discs pass straight through each other (CS-060). The rings are therefore scaled down to whatever the
-    /// arrangement leaves room for: for each pair the gap between their centres, less
-    /// <see cref="ringClearance"/>, has to hold both bodies' widest extents, and a ring system that does not fit
-    /// is shrunk until it does. Two ring systems in the same gap shrink by the same factor — neither has a better
-    /// claim on the space — while against a solid neighbour, which cannot give, the rings absorb the whole
-    /// shortfall. Nothing is tabulated: the numbers come out of the layout being applied, so a change to the GDD's
-    /// pitch changes the clamp with it, and in an arrangement whose bodies stand well apart (Relative Size) no
-    /// pair is short of room and every ring keeps its true proportions.</para>
-    ///
-    /// <para><b>Two things it keeps true every frame.</b> A body is never smaller to the hand than
-    /// <see cref="minGrabDiameter"/> — GDD 4.1 asks for a 6 cm invisible grab sphere so a 5 mm Pluto can still be
-    /// pinched — which is done by widening the grab collider rather than by adding a second one, so a body has
-    /// one shape and one interactable however large it is. And a body being pulled out grows to
-    /// <see cref="pullDiameter"/> on the way to the hand (GDD 4.1: "grows to 25 cm").</para>
+    /// Moves an experience's bodies between its <see cref="LayoutPreset"/>s by animating each body's home anchor
+    /// (its <see cref="ForceSolver.RootTransform"/>), so the force solver stays the one authority on placement.
     /// </summary>
     public class LayoutRig : MonoBehaviour
     {
@@ -108,11 +72,7 @@ namespace CosmicSimulation
             [NonSerialized] public float FromRingFactor;
             [NonSerialized] public float ToRingFactor;
 
-            /// <summary>
-            /// What the arrangement last left the rings, as a fraction of their true span; 1 is untouched. Read
-            /// it rather than the transform when something else has to agree with the clamp — the ring shadow
-            /// band on the planet's own material is driven separately (CS-048) and will want this factor.
-            /// </summary>
+            /// <summary>Ring clamp as a fraction of true span (1 = untouched); read this, not the transform, to agree with it.</summary>
             [NonSerialized] public float RingFactor = 1f;
 
             /// <summary>True when there is enough here to place.</summary>
@@ -122,11 +82,7 @@ namespace CosmicSimulation
             public bool HasRings => Rings != null && RingSpanRatio > 0.0001f;
         }
 
-        /// <summary>
-        /// One body reduced to what the ring clamp needs to know about it: where an arrangement puts it, how big,
-        /// and how far its geometry reaches. Public so the editor builder can run the same arithmetic against a
-        /// <see cref="LayoutPreset"/> and report the spans a run will actually produce.
-        /// </summary>
+        /// <summary>A body as the ring clamp sees it. Public so the editor builder can run the same arithmetic.</summary>
         public struct Extent
         {
             /// <summary>Where the arrangement puts the body, in the rig's own space.</summary>
@@ -177,8 +133,7 @@ namespace CosmicSimulation
         private float _duration;
         private bool _running;
 
-        // Rebuilt on each layout change rather than allocated there: ten bodies, but a layout can be asked for
-        // from a dock button held down, and this runs the pair loop every time.
+        // Reused across layout changes so a held dock button does not allocate per request.
         private readonly List<Extent> _extents = new List<Extent>();
         private readonly List<int> _extentOwners = new List<int>();
 
@@ -198,6 +153,7 @@ namespace CosmicSimulation
 
         private void Awake()
         {
+            Registry<LayoutRig>.Add(this);
             if (bodies == null)
             {
                 return;
@@ -211,6 +167,8 @@ namespace CosmicSimulation
                 }
             }
         }
+
+        private void OnDestroy() => Registry<LayoutRig>.Remove(this);
 
         private void OnEnable() => DockController.LayoutRequested += OnLayoutRequested;
 
@@ -265,8 +223,7 @@ namespace CosmicSimulation
                 var found = layout.Find(body.Id);
                 if (!found.HasValue)
                 {
-                    // An arrangement that does not name a body leaves it exactly where it is, rather than
-                    // dragging it to the origin — or, worse, back to the slot some earlier arrangement gave it.
+                    // Unnamed bodies stay put rather than returning to a slot an earlier arrangement gave them.
                     body.Moving = false;
                     continue;
                 }
@@ -284,7 +241,6 @@ namespace CosmicSimulation
                 body.ToDiameter = diameter;
                 body.Growing = false;
 
-                // Home is where a released body returns to, and how big it is when it gets there.
                 if (body.Placement != null)
                 {
                     body.Placement.SetHomeScale(Vector3.one * diameter);
@@ -313,8 +269,7 @@ namespace CosmicSimulation
 
                 if (!atHome)
                 {
-                    // Out in the room: walk it home over the same time the anchors take, reading the anchor live
-                    // so it lands on the moving target rather than where the target used to be.
+                    // RestoreLayout reads the anchor live, so the body lands on the moving target.
                     if (body.Placement != null)
                     {
                         body.Placement.RestoreLayout(duration);
@@ -327,8 +282,7 @@ namespace CosmicSimulation
                 }
             }
 
-            // After the loop, because a ring is clamped against where its neighbours are *going*, not where they
-            // happen to be standing halfway through the last change.
+            // After the loop: rings clamp against where neighbours are going, not where they stand mid-move.
             PlanRings();
 
             Current = layout;
@@ -351,19 +305,8 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// The box the arrangement fills right now: <c>center</c> in world space, <c>size</c> measured along the
-        /// rig's own axes. False when there is no arrangement to measure.
-        ///
-        /// <para>It is built from the home anchors and the bodies' own diameters rather than from renderers,
-        /// because those are the authored intent: they are right before the first <see cref="Start"/> has run,
-        /// they still describe the arrangement when the player has carried a body off, and they are unmoved by
-        /// haloes, labels and panels. It is measured on the rig's axes and only then put back into the world so
-        /// that the centre is the middle of the arrangement itself, and not the middle of a world-aligned box
-        /// drawn round a row standing at an angle.</para>
-        ///
-        /// <para><see cref="ExperienceDirector"/> uses it to frame a place on the content root. A rig whose
-        /// bodies are not wired yet reports nothing rather than a box around the origin, so a half-built prefab
-        /// is left where it is instead of being shoved somewhere by a measurement of nothing.</para>
+        /// The box the arrangement fills now: centre in world space, size along the rig's axes. Built from home
+        /// anchors, not renderers, so it is valid before Start and ignores carried-off bodies, haloes and panels.
         /// </summary>
         public bool TryGetArrangementBounds(out Bounds bounds)
         {
@@ -384,9 +327,8 @@ namespace CosmicSimulation
                     continue;
                 }
 
-                // The body's own width, taken from the transform rather than from a slot: a layout may not name
-                // this body at all, and lossyScale is a diameter in metres by the convention CS-040 set. Divided
-                // back out of the rig's own scale, because the box is being built in the rig's units.
+                // From the transform, not a slot (a layout may not name this body); divided by the rig's scale
+                // because the box is in rig units.
                 var width = Mathf.Max(0.0001f, body.Root.lossyScale.x) / rigScale * Mathf.Max(1f, body.SpanRatio);
                 var box = new Bounds(transform.InverseTransformPoint(body.Home.position), Vector3.one * width);
 
@@ -409,14 +351,9 @@ namespace CosmicSimulation
             return found;
         }
 
-        /// <summary>
-        /// The box an arrangement will fill once every body it names has arrived, in the rig's own space. Read
-        /// off the preset's slots rather than the anchors, so it is right at the start of a move as well as at the
-        /// end, and before <see cref="Start"/> has applied anything. Each body counts as its full span (rings
-        /// included) at the diameter the arrangement gives it. False when the preset names none of the bodies.
-        /// </summary>
         private const float FitSpanCapMetres = 0.5f;
 
+        /// <summary>The box <paramref name="layout"/> will fill once its bodies arrive, in rig space, read from its slots.</summary>
         public bool TryGetLayoutBounds(LayoutPreset layout, out Bounds local)
         {
             local = default;
@@ -435,8 +372,7 @@ namespace CosmicSimulation
                     continue;
                 }
 
-                // Capped, so the view is fitted to where the bodies are rather than to the Sun's full 3 m disc: in
-                // Relative Size the Sun stands half out at the edge and the planets stay large enough to see.
+                // Capped so Relative Size frames the planets, not the Sun's full 3 m disc.
                 var width = Mathf.Min(FitSpanCapMetres, Mathf.Max(0.0001f, slot.Scale) * Mathf.Max(1f, body.SpanRatio));
                 var box = new Bounds(slot.LocalPosition, Vector3.one * width);
                 if (found)
@@ -453,10 +389,7 @@ namespace CosmicSimulation
             return found;
         }
 
-        /// <summary>
-        /// The arrangement this rig is in, or the one its <see cref="Start"/> is about to apply when nothing has
-        /// been applied yet. What a framing pass should measure, at any moment in the rig's life.
-        /// </summary>
+        /// <summary>The current arrangement, or the one <see cref="Start"/> will apply; what framing should measure.</summary>
         public LayoutPreset PendingOrCurrent => Current != null ? Current : (startLayout != null ? startLayout : FirstLayout());
 
         private LayoutPreset FirstLayout()
@@ -507,7 +440,6 @@ namespace CosmicSimulation
                     body.Home.localPosition = Vector3.Lerp(body.FromPosition, body.ToPosition, eased);
                     body.Home.localRotation = Quaternion.Slerp(body.FromRotation, body.ToRotation, eased);
 
-                    // A body the player grabbed mid-transition is theirs, not the rig's, until they let go.
                     var stillOurs = body.Force == null || body.Force.ForceState == ForceSolver.State.Root;
                     if (body.ScaleDrivenHere && stillOurs)
                     {
@@ -515,15 +447,11 @@ namespace CosmicSimulation
                     }
                 }
 
-                // Rings follow the arrangement whether or not this body is moving into it, and whether or not the
-                // player is holding it: a body out in the room is one the arrangement will take back, and a
-                // neighbour's move can free up room for a body that never moved itself. Once the change is over
-                // nothing here writes the ring scale again, so a held body simply keeps what the layout gave it.
+                // Rings step even for unmoved or held bodies: a neighbour's move can change the room they have.
                 StepRings(body, eased);
             }
         }
 
-        /// <summary>Moves one body's rings towards the span this arrangement allows them.</summary>
         private static void StepRings(Body body, float eased)
         {
             if (body.Rings == null)
@@ -537,10 +465,6 @@ namespace CosmicSimulation
 
         // ---------- rings
 
-        /// <summary>
-        /// Works out what each ring system is allowed in the arrangement that has just been asked for, and sets
-        /// up the animation to it from wherever the rings are now.
-        /// </summary>
         private void PlanRings()
         {
             _extents.Clear();
@@ -573,19 +497,13 @@ namespace CosmicSimulation
                     continue;
                 }
 
-                // Read the starting factor off the transform rather than off the last one we wrote: it is the
-                // one thing here that cannot be out of date, and it makes an interrupted change animate from
-                // where the rings actually are instead of jumping.
+                // From the transform, not the last value written, so an interrupted change does not jump.
                 var authored = RingBaseScaleOf(body);
                 body.FromRingFactor = authored.x > 0.0001f ? body.Rings.localScale.x / authored.x : 1f;
                 body.ToRingFactor = body.HasRings ? RingFactor(i, _extents, ringClearance) : 1f;
             }
         }
 
-        /// <summary>
-        /// Where this arrangement puts a body and how big it makes it. A body the arrangement does not name is
-        /// staying where it is, so it is measured where it stands.
-        /// </summary>
         private static void TargetOf(Body body, out Vector3 position, out float diameter)
         {
             if (body.Moving)
@@ -599,10 +517,7 @@ namespace CosmicSimulation
             diameter = Mathf.Max(0.0001f, body.Root.localScale.x);
         }
 
-        /// <summary>
-        /// The rings' authored scale. A prefab built before CS-060 serialises none, so it is read off the
-        /// transform the first time it is wanted — which is before anything has written a clamp to it.
-        /// </summary>
+        /// <summary>Lazily read off the transform for prefabs that serialise none, before any clamp is written (CS-060).</summary>
         private static Vector3 RingBaseScaleOf(Body body)
         {
             if (body.RingBaseScale.sqrMagnitude < 0.000001f)
@@ -614,20 +529,8 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// How much of their true span the rings of <paramref name="subject"/> may keep in this arrangement, from
-        /// 0 to 1. Nothing is tabulated: every number comes out of the arrangement, so the clamp follows a change
-        /// to the GDD's spacing with no edit here.
-        ///
-        /// <para>The rule is one constraint per pair — the distance between two bodies, less
-        /// <paramref name="clearance"/>, has to hold both of their widest extents. Where the neighbour also has
-        /// rings the pair shares the shortfall equally, since neither has a better claim on the gap; where it is
-        /// solid geometry that cannot be shrunk, the rings absorb all of it. A pair that already fits imposes
-        /// nothing, which is what keeps an arrangement with room to spare — Relative Size — at true ring
-        /// proportions rather than trimming rings that were never in anyone's way.</para>
-        ///
-        /// <para>The floor is the body itself: rings smaller than the planet they belong to would be hidden
-        /// inside it, and an arrangement tight enough to ask for that is one whose planets already overlap, which
-        /// is a fault in the layout rather than something to hide.</para>
+        /// Fraction (0-1) of true span the rings of <paramref name="subject"/> may keep: each pair's gap less
+        /// <paramref name="clearance"/> must hold both widest extents. Floored at the planet's own diameter.
         /// </summary>
         public static float RingFactor(int subject, IList<Extent> arrangement, float clearance)
         {
@@ -673,14 +576,8 @@ namespace CosmicSimulation
 
         // ---------- reach
 
-        /// <summary>
-        /// Keeps every body pinchable and grows the one being pulled.
-        ///
-        /// The grab sphere is the body's own collider widened, not a second shape: the body prefab is normalised
-        /// to a 1 m diameter, so a radius of 0.5 is exactly its surface and anything above that is the margin a
-        /// small body needs. Because it is recomputed from <c>lossyScale</c> it stays right as the player scales
-        /// the body, and it collapses back to the surface the moment the body is wider than the minimum.
-        /// </summary>
+        // Widens the body's own collider rather than adding a second one; radius 0.5 is the surface of the 1 m
+        // normalised prefab, so anything above is grab margin (GDD 4.1, 6 cm).
         private void KeepBodiesReachable()
         {
             if (bodies == null)
@@ -711,11 +608,8 @@ namespace CosmicSimulation
             }
         }
 
-        /// <summary>
-        /// GDD 4.1: a body pulled out "grows to 25 cm". It only ever grows — shrinking Jupiter on the way to the
-        /// hand would undo the whole point of the Relative Size arrangement — and it stops the moment the player
-        /// takes hold of it, so a two-handed resize is never fought.
-        /// </summary>
+        // GDD 4.1 "grows to 25 cm": only ever grows (never shrinks Jupiter), and stops once held so a two-handed
+        // resize is never fought.
         private void Grow(Body body)
         {
             if (pullDiameter <= 0f || body.Force == null)

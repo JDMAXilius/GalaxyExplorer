@@ -175,9 +175,9 @@ namespace GalaxyExplorer
 
             GalaxyExplorerManager.Instance.GeFadeManager.OnFadeComplete += OnFadeComplete;
 
-            ZoomInOutBehaviour = FindObjectOfType<ZoomInOut>();
-            movingAudio = FindObjectOfType<MovableAudioSource>();
-            transformSource = FindObjectOfType<TransformSource>();
+            ZoomInOutBehaviour = FindFirstObjectByType<ZoomInOut>();
+            movingAudio = FindFirstObjectByType<MovableAudioSource>();
+            transformSource = FindFirstObjectByType<TransformSource>();
 
             defaultSceneRotation = transformSource.transform.rotation;
             defaultSceneScale = transformSource.transform.localScale;
@@ -277,7 +277,7 @@ namespace GalaxyExplorer
         // Find top parent entity of new scene that is loaded
         private GameObject FindContent()
         {
-            TransformHandler[] parentContent = FindObjectsOfType<TransformHandler>();
+            TransformHandler[] parentContent = FindObjectsByType<TransformHandler>(FindObjectsSortMode.None);
             foreach (var parent in parentContent)
             {
                 if (parent.gameObject != prevSceneLoaded)
@@ -288,7 +288,7 @@ namespace GalaxyExplorer
 
             // if the scene didn't have an object with at TransformHandler, we are
             // in the initial placmenet mode. Look for that script instead.
-            PlacementControl placement = FindObjectOfType<PlacementControl>();
+            PlacementControl placement = FindFirstObjectByType<PlacementControl>();
             return placement?.gameObject;
         }
 
@@ -694,12 +694,12 @@ namespace GalaxyExplorer
 
         private void GetRelatedPlanets(out GameObject relatedPlanetObject, out GameObject singlePlanetObject)
         {
-            PlanetView planetView = FindObjectOfType<PlanetView>();
+            PlanetView planetView = FindFirstObjectByType<PlanetView>();
 
             singlePlanetObject = (planetView) ? planetView.gameObject : null;
             relatedPlanetObject = null;
 
-            PlanetPOI[] allPlanets = FindObjectsOfType<PlanetPOI>();
+            PlanetPOI[] allPlanets = FindObjectsByType<PlanetPOI>(FindObjectsSortMode.None);
             foreach (var planet in allPlanets)
             {
                 // if this scene is loaded from this planet
@@ -878,46 +878,6 @@ namespace GalaxyExplorer
                 movingAudio.Setup(newContent.position, Camera.main.transform.position);
                 movingAudio.Activate();
             }
-        }
-
-        public void ResetDesktopCameraToOrigin()
-        {
-            StartCoroutine(ResetDesktopCameraToOriginCoroutine());
-        }
-
-        // Reset camera to original position and rotation in Desktop platform
-        private IEnumerator ResetDesktopCameraToOriginCoroutine()
-        {
-            Vector3 startPosition = GalaxyExplorerManager.Instance.CameraControllerHandler.EntityToMove.transform.position;
-            Quaternion startRotation = GalaxyExplorerManager.Instance.CameraControllerHandler.EntityToMove.transform.rotation;
-
-            Vector3 startPivotPosition = GalaxyExplorerManager.Instance.CameraControllerHandler.Pivot.transform.position;
-            Quaternion startPivotRotation = GalaxyExplorerManager.Instance.CameraControllerHandler.Pivot.transform.rotation;
-
-            float time = 0.0f;
-            float timeFraction = 0.0f;
-            do
-            {
-                time += Time.deltaTime;
-                timeFraction = Mathf.Clamp01(time / TransitionTimeCamera);
-
-                float delta = Mathf.Clamp01(TransitionTimeCameraCurve.Evaluate(timeFraction));
-
-                // Reset cameras parent
-                GalaxyExplorerManager.Instance.CameraControllerHandler.EntityToMove.position = Vector3.Lerp(startPosition, Vector3.zero, delta);
-                GalaxyExplorerManager.Instance.CameraControllerHandler.EntityToMove.rotation = Quaternion.Slerp(startRotation, Quaternion.identity, delta);
-
-                // Reset parent of camera parent
-                GalaxyExplorerManager.Instance.CameraControllerHandler.Pivot.transform.position = Vector3.Lerp(startPivotPosition, Vector3.zero, delta);
-                GalaxyExplorerManager.Instance.CameraControllerHandler.Pivot.transform.rotation = Quaternion.Slerp(startPivotRotation, Quaternion.identity, delta);
-                yield return null;
-            } while (timeFraction < 1f);
-
-            GalaxyExplorerManager.Instance.CameraControllerHandler.EntityToMove.position = Vector3.zero;
-            GalaxyExplorerManager.Instance.CameraControllerHandler.EntityToMove.rotation = Quaternion.identity;
-
-            GalaxyExplorerManager.Instance.CameraControllerHandler.Pivot.transform.position = Vector3.zero;
-            GalaxyExplorerManager.Instance.CameraControllerHandler.Pivot.transform.rotation = Quaternion.identity;
         }
 
         public void ResetMRSceneToOrigin()

@@ -8,52 +8,17 @@ using UnityEngine.Rendering;
 namespace CosmicSimulation
 {
     /// <summary>
-    /// Draws the Cosmic Web (GDD 4.7). Owns the point buffer <see cref="CosmicWebGenerator"/> fills, the
-    /// material instance that reads it, and the command buffer that issues the one draw call.
-    ///
-    /// It is not a second <c>DrawStars</c>. <c>DrawStars</c> is the galaxy's controller: every frame it reads
-    /// <c>SpiralGalaxy</c> for tint, ellipse radii, fuzzy-side scale and transition alpha, orders its three
-    /// layers by creation order, and switches between an eye buffer and three down-scaled render targets. None
-    /// of that exists here, and a <c>SpiralGalaxy</c> stood up to satisfy it would immediately generate a spiral
-    /// of its own in <c>Start</c>. What is genuinely shared is reused verbatim: the
-    /// <see cref="StarVertDescriptor"/> struct and its stride, <c>cginc/StarQuad.cginc</c>'s vertex-stage quad
-    /// expansion, and the <c>CommandBuffer.DrawProcedural</c> call itself.
-    ///
-    /// The command-buffer lifecycle is <c>OrbitalTrail.OrbitsRenderer</c>'s, for the reason recorded there: an
-    /// immediate-mode draw from <c>OnPostRender</c> reaches only one eye on a headset, and a command buffer on
-    /// the camera reaches both.
-    ///
-    /// **Why the points are generated at run time rather than baked.** A baked <c>StarsData</c> asset is how
-    /// the galaxy does it, and at 8 320 stars that asset is already 1.9 MB of YAML; the web is fourteen times
-    /// larger and would be a 28 MB text asset in the repository. Generation is deterministic from
-    /// <see cref="seed"/>, so a run-time build is just as reproducible and costs nothing to store. It is spread
-    /// over frames against a millisecond budget and each finished slice is uploaded as it lands, so the web
-    /// condenses into view over about a second instead of freezing the headset while it is built.
-    ///
-    /// **Nothing here moves the transform.** The GDD's 0.5 deg/min drift of the volume is a shader uniform, not
-    /// a rotation, so it can never fight a two-handed grab, and the object stays wherever the player put it.
+    /// Draws the Cosmic Web (GDD 4.7): one DrawProcedural of the <see cref="CosmicWebGenerator"/> buffer.
     /// </summary>
+    // Shares StarVertDescriptor and StarQuad.cginc with DrawStars but not its SpiralGalaxy-driven controller.
+    // A camera command buffer, not OnPostRender, because an immediate draw reaches only one eye on a headset.
+    // Generated at run time over frames (a baked asset would be ~28 MB of YAML); drift is a shader uniform.
     [DefaultExecutionOrder(55)]
     public class CosmicWebRenderer : MonoBehaviour
     {
         /// <summary>
-        /// Sprites in the whole web, and a tenth of the 400 000 the whole frame is allowed across both eyes
-        /// (Technical Overview 7.4).
-        ///
-        /// It was 120 000, which is thirty percent of the entire frame budget spent on one decorative volume and
-        /// was never measured on a headset. Three reasons for a tenth instead. One decorative object taking a
-        /// tenth of the frame's geometry is defensible with no profile in hand; taking a third is not. It is
-        /// still 2.3x Andromeda's 17 200 points, which is the only point cloud in this app that has been seen
-        /// running well on the device and which reads as a dense galaxy — and Andromeda is looked *at*, where
-        /// the web is stood *inside*, so its points spread across the whole field of view instead of crowding
-        /// into one disc and the same count covers far more screen. And the real cost of an additive sprite
-        /// cloud on a tiled mobile GPU is fill, not count: at roughly 3-4 px across, 40 000 sprites are about
-        /// half a million shaded fragments per eye per frame of pure overdraw, where 120 000 were one and a
-        /// half million.
-        ///
-        /// Nothing clamps to it. It is the default of a serialized field, so any value is still reachable from
-        /// the inspector, and <c>CosmicWebBuilder</c> writes it into the prefab from a constant of its own.
-        /// CS-066 measures frame time on device and moves the number.
+        /// A tenth of the 400 000-sprite frame budget (Technical Overview 7.4); additive fill, not count, is the
+        /// cost on a tiled GPU. A default only, not a clamp; CS-066 profiles it on device.
         /// </summary>
         public const int DefaultPointCount = 40000;
 
@@ -181,10 +146,7 @@ namespace CosmicSimulation
             }
         }
 
-        /// <summary>
-        /// Throws the current web away and builds a new one from the serialized settings. Safe to call the same
-        /// frame the component is added.
-        /// </summary>
+        /// <summary>Discards the web and builds a new one from the serialized settings. Safe the frame it is added.</summary>
         public void Rebuild()
         {
             if (_build != null)
@@ -211,14 +173,10 @@ namespace CosmicSimulation
 
         private void OnEnable()
         {
-            // Awake has not necessarily run when a caller adds this component and uses it the same frame, so
-            // everything initialises from wherever it is first needed rather than from one entry point.
+            // Awake may not have run for a same-frame AddComponent, so initialisation is lazy.
             EnsureMaterial();
 
-            // Unity stops a coroutine when its component is disabled and never restarts it, so a web that was
-            // still building when its experience closed would have stayed frozen at however many points it had
-            // reached. The builder, the staging array and the upload offset are all fields, so this picks the
-            // same build up where it stopped rather than starting a new one.
+            // Disabling stops the coroutine for good; the build state lives in fields so this resumes it.
             if (!_buildComplete && _build == null)
             {
                 _build = StartCoroutine(BuildRoutine());
@@ -256,15 +214,13 @@ namespace CosmicSimulation
                 }
             }
 
-            // Radians, wrapped: at 0.5 deg/min this would otherwise take days to lose precision, but a tuned-up
-            // rate and a long session would get there.
+            // Radians, wrapped, so a fast rate over a long session keeps float precision.
             _age = Mathf.Repeat(_age + Time.deltaTime * rotationDegreesPerMinute * Mathf.Deg2Rad / 60f, Mathf.PI * 2f);
 
             _material.SetFloat(AgeId, _age);
             _material.SetFloat(TransitionAlphaId, TransitionAlpha);
 
-            // The quad is expanded in clip space, so the object matrix never reaches it; the world scale has to
-            // be applied to the sprite size by hand, exactly as DrawStars does for the galaxy.
+            // The quad is expanded in clip space, so world scale is applied to the sprite size by hand, as DrawStars does.
             _material.SetFloat(WsScaleId, pointSizeMetres * transform.lossyScale.x);
 
             EnsureCommandBuffer();
@@ -299,15 +255,13 @@ namespace CosmicSimulation
                 _builder = new CosmicWebGenerator.Builder(settings);
                 _points = new StarVertDescriptor[_builder.Capacity];
 
-                // Tracked separately from _visible: with the reveal off, nothing is drawn until the end, but the
-                // upload offset still has to advance or every slice would land on top of the first one.
+                // Separate from _visible: with the reveal off the upload offset must still advance.
                 _uploaded = 0;
                 _visible = 0;
             }
             else if (_points == null)
             {
-                // Only reachable if a build were interrupted after the staging array was dropped, which cannot
-                // happen today — but indexing a null here would be a crash rather than a slow frame.
+                // Defensive: a null staging array here would crash rather than cost a frame.
                 _points = new StarVertDescriptor[_builder.Capacity];
             }
 
@@ -316,8 +270,7 @@ namespace CosmicSimulation
                 _buffer = new ComputeBuffer(_builder.Capacity, StarVertDescriptor.StructSize);
             }
 
-            // Bound here every time rather than once: a material instance can be made after the buffer (a
-            // resumed build) or before it (a fresh one), and both orders have to end up with the buffer bound.
+            // Bound every time: the material may be made before the buffer (fresh build) or after it (resumed).
             _material.SetBuffer(StarsId, _buffer);
 
             while (!_builder.Done)
@@ -344,8 +297,7 @@ namespace CosmicSimulation
             _visible = _uploaded;
             _buildComplete = true;
 
-            // The staging array is the same size as the buffer; holding it would double the web's memory for
-            // the life of the experience and it is rebuilt from scratch anyway.
+            // Dropped: holding the staging array would double the web's memory for the experience's life.
             _points = null;
 
             if (_builder.RanShort)
@@ -357,9 +309,7 @@ namespace CosmicSimulation
             }
             else
             {
-                // One line, once, naming the number that actually reached the GPU. Nothing else in the app can
-                // say whether this volume is drawing: it has no Renderer, so it appears in no frame debugger
-                // hierarchy and no statistics window count.
+                // With no Renderer, nothing else (frame debugger, stats) shows whether this volume is drawing.
                 Debug.Log($"CosmicWebRenderer on '{name}': {_visible:N0} points built and uploaded.");
             }
 
@@ -393,8 +343,7 @@ namespace CosmicSimulation
                 return;
             }
 
-            // Instanced, because the per-frame age, scale and alpha would otherwise be written into the shared
-            // asset and land in the next commit (see the working rules in CLAUDE.md).
+            // Instanced so per-frame age, scale and alpha never leak into the shared asset.
             _material = new Material(pointsMaterial) { name = pointsMaterial.name + " (web instance)" };
 
             if (_buffer != null)
@@ -403,23 +352,8 @@ namespace CosmicSimulation
             }
         }
 
-        /// <summary>
-        /// Where the draw can actually be inserted on <paramref name="camera"/>.
-        ///
-        /// This is what made the web invisible. The built-in pipeline raises <c>BeforeSkybox</c> and
-        /// <c>AfterSkybox</c> from inside the skybox pass, and that pass only runs when a camera's clear flags
-        /// ask for a skybox. This app's camera never does: <c>main_camera_prefab</c> is authored as
-        /// <c>SolidColor</c>, and <c>ExperienceModeManager.Apply</c> rewrites the clear flags to
-        /// <c>SolidColor</c> on every passthrough/VR switch so Meta's compositor can key on the eye buffer's
-        /// alpha. A command buffer parked on <c>AfterSkybox</c> was therefore attached, recorded and never once
-        /// executed, and the player saw black. <c>DrawStars</c> — the same DrawProcedural path, and the reason
-        /// Andromeda renders — sits on <c>BeforeForwardOpaque</c>, which has no such condition.
-        ///
-        /// <see cref="cameraEvent"/> now defaults to <c>BeforeForwardAlpha</c>, the same place in the frame the
-        /// old value meant (opaque depth laid down, transparents and world-space UI still to come) on a pass
-        /// that always runs. The remap below covers the serialized value in a prefab built before this fix, and
-        /// says so once, because a silently dead command buffer is exactly the failure this is here to prevent.
-        /// </summary>
+        // Before/AfterSkybox fire inside the skybox pass, which never runs on this SolidColor camera (passthrough
+        // keys on its alpha), so those events are remapped to BeforeForwardAlpha rather than silently never drawing.
         private CameraEvent ResolveCameraEvent(Camera camera)
         {
             var needsSkyboxPass = cameraEvent == CameraEvent.BeforeSkybox || cameraEvent == CameraEvent.AfterSkybox;
@@ -432,8 +366,7 @@ namespace CosmicSimulation
             {
                 _saidWhereItDraws = true;
 
-                // Log, not LogWarning: it is a corrected setting, not a fault, and a warning here would fail
-                // the editor relay's NOT-OK check on an otherwise good run.
+                // Log, not LogWarning: a corrected setting, and a warning would fail the relay's NOT-OK check.
                 Debug.Log(
                     $"CosmicWebRenderer on '{name}': camera '{camera.name}' clears to {camera.clearFlags}, so it " +
                     $"runs no skybox pass and nothing on {cameraEvent} would ever execute. Drawing on " +
@@ -469,9 +402,7 @@ namespace CosmicSimulation
 
         private void RemoveCommandBuffer()
         {
-            // Removed from the event it was added with, not from the serialized field: those differ whenever
-            // ResolveCameraEvent has had to step in, and removing from the wrong event leaves the old buffer
-            // attached and drawing for ever.
+            // Removed from the event it was added on, which differs from the field when ResolveCameraEvent remapped it.
             if (_commandBuffer != null && _commandBufferCamera != null)
             {
                 _commandBufferCamera.RemoveCommandBuffer(_commandBufferEvent, _commandBuffer);
@@ -495,8 +426,7 @@ namespace CosmicSimulation
                 return;
             }
 
-            // Six vertices per point: two triangles of a camera-facing quad, expanded from SV_VertexID by
-            // cginc/StarQuad.cginc, because Quest's driver will not run a geometry shader under multiview.
+            // Six vertices per point, expanded from SV_VertexID: no geometry shaders under multiview.
             _commandBuffer.DrawProcedural(transform.localToWorldMatrix, _material, 0, MeshTopology.Triangles, _visible * 6);
         }
 
