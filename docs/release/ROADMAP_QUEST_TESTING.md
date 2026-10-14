@@ -26,8 +26,8 @@ Read from the backlog and the project files, not assumed:
   empty.
 - **The build chain exists:** *Cosmic Simulation → Quest 3 → Configure Project* writes IL2CPP, ARM64, min API 32,
   target API 34, Vulkan, ASTC, id `com.jdmaxilius.cosmicsimulationxr`, version 0.9.0 (code 900); *Build APK*
-  writes `Builds/Quest3/CosmicSimulationXR.apk`; it stops on the modal *Unsupported Input Handling on Android*
-  (answer **Ignore**). The APK is **debug-signed** (`androidUseCustomKeystore: 0`). `Quest3Build.cs` has no
+  writes `Builds/Quest3/CosmicSimulationXR.apk`; the *Unsupported Input Handling on Android* modal is gone
+  since CS-354. The APK is **debug-signed** (`androidUseCustomKeystore: 0`). `Quest3Build.cs` has no
   signing code and no development/release switch; `BuildOptions.None` is a release-type build already.
 - **The Cosmic Being changed the device profile.** `Assets/Being/Mic.cs` requests `Permission.Microphone` through
   Unity's Android permission callbacks; `Realtime.cs` opens a `ClientWebSocket` with a bearer header;
