@@ -98,7 +98,7 @@ before anyone needs it, and one run sheet that every later phase ticks.
 - **Evidence:** one editor session with the simulator reaching the Solar System.
 - **If it fails:** skip; nothing later depends on it.
 
-### CS-213 [CC] The run sheet
+### CS-213 [CC] The run sheet — done 14 Oct 2026: `docs/release/QUEST_RUN_SHEET.md`
 
 - **Goal:** one list of every interaction the app has, so a device session never forgets a line and every
   session is comparable.
