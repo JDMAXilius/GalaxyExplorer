@@ -69,3 +69,8 @@ Menu **Cosmic Simulation → Quest 3**: *Configure Project*, *Build APK* (→ `B
 - Force-pull: `Assets/scripts/solver_scripts/ForceSolver.cs` (Root → Dwell → Attraction → Free → Manipulation), `PlanetForceSolver`, `MoonForceSolver`.
 - Cards: `PlanetInfoCard` on every `poi_<body>_prefab`; desktop HUD `DesktopMenuManager`; passthrough/VR `ExperienceModeManager`; audio `AudioService` + `VOManager`.
 - Body prefab pattern and moon pattern: Technical Overview §6.
+
+
+## Product vision and UI/UX discovery skill
+
+For visual brainstorming, redesign exploration and iterative narrowing before implementation, use `.claude/skills/product-vision-discovery/SKILL.md` (`/product-vision-discovery`). Its Codex counterpart is `.agents/skills/product-vision-discovery/SKILL.md` (`$product-vision-discovery`). Preserve approved choices and exact references; vary unresolved decisions, then verify native designs before implementation handoff. The skill is reusable across products; the Cosmic Simulation XR case is an example, not a universal layout.
