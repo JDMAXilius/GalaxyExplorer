@@ -22,7 +22,6 @@ namespace GalaxyExplorer.Build
     {
         private const string OutputPath = "Builds/Win64/CosmicSimulationXR.exe";
         private const string SteamOutputPath = "Builds/Steam/win64/CosmicSimulationXR.exe";
-        private const string BeingKeysAsset = "Assets/Being/Data/being_keys.asset";
 
         [MenuItem("Cosmic Simulation/Windows/Build")]
         public static void BuildWindows64() => Build(OutputPath);
@@ -35,9 +34,9 @@ namespace GalaxyExplorer.Build
             var args = Environment.GetCommandLineArgs();
 
             // A key typed into the asset is serialized into the player, and a Mono player is trivial to read.
-            if (ShipsBeingKey() && !args.Contains("-allow-dev-key"))
+            if (BeingKeyGuard.ShipsKey() && !args.Contains("-allow-dev-key"))
             {
-                Fail($"{BeingKeysAsset} holds a key, which would ship inside the build. Clear the field " +
+                Fail($"{BeingKeyGuard.KeysAsset} holds a key, which would ship inside the build. Clear the field " +
                      "(the editor still reads OPENAI_API_KEY from the environment or .env), or pass -allow-dev-key for a bench build.");
                 return;
             }
@@ -88,20 +87,6 @@ namespace GalaxyExplorer.Build
 
             File.WriteAllText(Path.Combine(Path.GetDirectoryName(outputPath), "build_info.txt"),
                 $"version {Quest3ProjectSetup.AppVersion}\ncommit {Commit()}\nbackend {backend}\nbuilt {DateTime.UtcNow:u}\n");
-        }
-
-        private static bool ShipsBeingKey()
-        {
-            var keys = AssetDatabase.LoadMainAssetAtPath(BeingKeysAsset);
-            if (keys == null)
-            {
-                return false;
-            }
-
-            // By serialized name, as Quest3ProjectSetup does: the field is private. A renamed field counts as a
-            // key, so this can never pass by no longer looking.
-            var key = new SerializedObject(keys).FindProperty("openAiKey");
-            return key == null || !string.IsNullOrWhiteSpace(key.stringValue);
         }
 
         private static string Commit()

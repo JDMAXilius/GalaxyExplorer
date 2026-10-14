@@ -11,8 +11,9 @@ namespace GalaxyExplorer.XR
     ///
     /// <see cref="AudioListener.pause"/> rather than a per-service call: <c>AudioService</c> has no pause and
     /// <c>VOManager.Stop</c> is a fade-out that forgets the clip, whereas the player expects narration to carry on
-    /// from where it was. The narration queue is driven by <c>VOManager.Update</c> with wall-clock delays, so the
-    /// managers are also disabled, or the queue would advance under the paused listener.
+    /// from where it was. The narration queue counts its delays down in <c>VOManager.Update</c> from
+    /// <c>Time.deltaTime</c>, which keeps running behind the system menu, so the managers are also disabled, or the
+    /// queue would advance under the paused listener.
     /// </summary>
     public class AppPause : MonoBehaviour
     {

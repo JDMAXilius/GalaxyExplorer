@@ -228,6 +228,19 @@ namespace CosmicSimulation.EditorTools
             so.FindProperty("relativeSize").objectReferenceValue = size[1];
             so.FindProperty("cancel").objectReferenceValue = cancel;
 
+            // Every BodyInfo in the project, moons included, for markers that carry no data of their own.
+            var infos = new List<Object>();
+            foreach (var guid in AssetDatabase.FindAssets("t:BodyInfo", new[] { "Assets/data" }))
+            {
+                var info = AssetDatabase.LoadAssetAtPath<BodyInfo>(AssetDatabase.GUIDToAssetPath(guid));
+                if (info != null)
+                {
+                    infos.Add(info);
+                }
+            }
+
+            Ui2Kit.Objects(so.FindProperty("bodies"), infos.ToArray());
+
             // Pictures by id. A card uses card_<id>, a tile uses tile_<id> (both cut from the approved design
             // images); where the design has no picture of something, <id> is the app's own render of it, and a
             // galaxy falls back to its portrait.

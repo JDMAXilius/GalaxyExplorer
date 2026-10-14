@@ -357,8 +357,8 @@ namespace CosmicSimulation.EditorTools
                           "mute glyph. Add Assets/ui/figma/icon_settings.png and re-run to replace it.");
             }
 
-            // Reset and About (CS-277) have no glyph exported yet, so they wear their names until icon_reset.png
-            // and icon_about.png land in Assets/ui/figma/ - the arrangement the settings button had.
+            // Reset and About (CS-277) wear icon_reset.png and icon_about.png (CS-306); if either is ever removed,
+            // the button falls back to its name rather than to an empty plate.
             var being = SquareButton("being_button", underRow, TargetMm, GlyphMm, Load("icon_being"), Plate, Ink);
             ((RectTransform)being.transform).anchoredPosition = new Vector2(-Slot(2), 0f);
 

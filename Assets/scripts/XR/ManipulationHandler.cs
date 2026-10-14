@@ -433,17 +433,26 @@ namespace GalaxyExplorer.XR
                 var deltaRotation = rotate ? Quaternion.FromToRotation(_twoHandStartVector, handVector) : Quaternion.identity;
                 targetRotation = deltaRotation * _hostStartRotation;
 
-                // Keep the host where it was relative to the hands' midpoint, rotated with the hands.
-                var startOffset = _hostStartPosition - _twoHandStartMidpoint;
-                targetPosition = (move ? midpoint : _twoHandStartMidpoint) + deltaRotation * startOffset;
-
+                var airOnly = _airPointers.Count >= 2;
                 if (scale && _twoHandStartVector.sqrMagnitude > 1e-6f)
                 {
                     targetScale = _hostStartScale * (handVector.magnitude / _twoHandStartVector.magnitude);
-                    targetScale = _airPointers.Count >= 2 && AirScaleClamp != null
+                    targetScale = airOnly && AirScaleClamp != null
                         ? AirScaleClamp(targetScale)
                         : ClampScale(targetScale);
                 }
+
+                // Keep the host where it was relative to the hands' midpoint, rotated with the hands. A place
+                // driven by two air pinches also scales about that midpoint (CS-305): its pivot is usually metres
+                // away, and scaling about the pivot slid the part between the hands out from under them. A held
+                // body keeps scaling about its own centre, which is where the hands already are.
+                var startOffset = _hostStartPosition - _twoHandStartMidpoint;
+                if (airOnly && Mathf.Abs(_hostStartScale.x) > 1e-6f)
+                {
+                    startOffset *= targetScale.x / _hostStartScale.x;
+                }
+
+                targetPosition = (move ? midpoint : _twoHandStartMidpoint) + deltaRotation * startOffset;
             }
             else if (manipulationType != HandMovementType.TwoHandedOnly)
             {

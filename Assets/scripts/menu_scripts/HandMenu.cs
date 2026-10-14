@@ -22,6 +22,11 @@ public class HandMenu : MonoBehaviour
     // What the Back button says once it has become the Dock button.
     private const string DockLabel = "Dock";
 
+    // Its glyph, from Assets/Resources/ui, and the name of the icon quads that wear it in the button prefab.
+    private const string DockGlyph = "ui/icon_dock";
+    private const string IconQuadName = "UIButtonSquareIcon";
+    private static readonly int MainTexId = Shader.PropertyToID("_MainTex");
+
     [SerializeField]
     private GameObject _menuParent;
 
@@ -103,6 +108,26 @@ public class HandMenu : MonoBehaviour
         foreach (var label in _backButton.GetComponentsInChildren<TMP_Text>(true))
         {
             label.text = DockLabel;
+        }
+
+        // And its glyph (CS-306): the Back arrow on a button that brings the dock read as "go back". The icon
+        // quads share the back material with the other platforms' Back button, so a property block, not the
+        // material, carries the swap.
+        var glyph = Resources.Load<Texture2D>(DockGlyph);
+        if (glyph != null)
+        {
+            var block = new MaterialPropertyBlock();
+            foreach (var icon in _backButton.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (icon.gameObject.name != IconQuadName)
+                {
+                    continue;
+                }
+
+                icon.GetPropertyBlock(block);
+                block.SetTexture(MainTexId, glyph);
+                icon.SetPropertyBlock(block);
+            }
         }
 
         _backBringsDock = true;

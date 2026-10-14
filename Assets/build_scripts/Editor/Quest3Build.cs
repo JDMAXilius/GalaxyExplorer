@@ -38,6 +38,15 @@ namespace GalaxyExplorer.Build
         [MenuItem("Cosmic Simulation/Quest 3/Build Store APK")]
         public static void BuildStoreApk()
         {
+            // The store build has no bench override: anything serialized into the APK can be read out of it (CS-299).
+            if (BeingKeyGuard.ShipsKey())
+            {
+                Fail($"Store build refused: {BeingKeyGuard.KeysAsset} holds a key, which would ship inside the APK. " +
+                     "Clear the field; the editor still reads OPENAI_API_KEY from the environment or .env.");
+                ExitIfFailed(false);
+                return;
+            }
+
             var keystorePath = Environment.GetEnvironmentVariable(KeystorePathVar);
             var keystorePass = Environment.GetEnvironmentVariable(KeystorePassVar);
             var keyAlias = Environment.GetEnvironmentVariable(KeyAliasVar);

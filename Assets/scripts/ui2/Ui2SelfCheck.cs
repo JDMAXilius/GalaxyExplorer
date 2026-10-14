@@ -75,6 +75,30 @@ namespace CosmicSimulation.UI2
             yield return Press("Explore/Card/back/row", 9f);
             Expect("Back to map returns to the Milky Way", Place() == "milky_way");
 
+            // The same preview reached the way a player reaches it: through a nebula label's own click handler,
+            // CardPOI, which used to travel straight past the card (CC-U2-002).
+            yield return new WaitForSeconds(1f);
+            CardPOI label = null;
+            foreach (var marker in FindObjectsByType<CardPOI>(FindObjectsSortMode.None))
+            {
+                if (marker.isActiveAndEnabled && marker.Destination != null)
+                {
+                    label = marker;
+                    break;
+                }
+            }
+
+            Expect("the map has a nebula label wired to a place", label != null);
+            if (label != null)
+            {
+                label.OnPointerDown(null);
+                yield return new WaitForSeconds(0.5f);
+                Expect($"clicking the {label.Destination.Id} label shows its preview and stays on the map",
+                       Place() == "milky_way" && Active("Explore/Card/actions_preview"));
+                yield return Press("Explore/Card/back/row", 1f);
+                Expect("Back to map closes the label's preview", Title() == "MILKY WAY");
+            }
+
             // Cosmic Web
             yield return Press("Navigation/Rail/context_0", 8f);
             Expect("rail Cosmic Web opens it, with no picker", Place() == "cosmic_web" && !Active("Explore/Picker"));

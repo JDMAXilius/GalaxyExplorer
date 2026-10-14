@@ -221,7 +221,10 @@ Each experience is specified by: what you see, placement and scale, objects, int
 ### 5.1 Hand model (Quest)
 - **Near pinch-grab** (index–thumb within 3 cm of an object): the object attaches to the pinch point; released on un-pinch.
 - **Far pinch (hand ray)**: a ray from the hand shows a soft cursor; pinch selects. For grabbable bodies a far pinch **pulls** the object to the hand (existing force-pull with a 2 s dwell beam retained as the alternative: gaze-free dwell on the ray for 2 s also pulls).
+  *Exception:* the intro's placement orb comes **only on a pinch** with tracked hands. A resting hand ray sits on it most of the time, so a dwell pulled it to the palm unasked (`PlacementForceSolver`).
 - **Two-hand transform**: a second pinch on the same object switches to scale + rotate around the midpoint. Scale limits per object type (bodies 0.05–3 m; models 0.4–4 m; nebulae 0.3–2 m).
+- **Air pinches**: while one hand holds something, a pinch of the other hand in empty air joins the grab as its second hand, so spreading the hands scales it. With nothing held, two pinches in the air take hold of the open place (a nebula, the Cosmic Web) and move and scale it; the place scales about the point between the hands, so what is under the hands stays there.
+- **Fling**: letting go of a pulled body while the hand moves faster than 1.5 m/s sends it home, as a tap does. A cancelled release never flings.
 - **Poke**: fingertip pressing a dock tile, pop-up button, or onboarding card; visual press depth 4 mm; haptics none (hands).
 - **Hover**: ray or fingertip proximity grows labels/tiles and plays a tick.
 - **Release**: object stays; small settle sound.
@@ -334,7 +337,7 @@ All UI is designed in Figma (file *Cosmic Simulation XR — UI*) and exported; s
 - **Order:** Cosmic Web · Galaxies · Milky Way · Andromeda · Solar System · Solar System Planets · Galactic Center.
 - **Passthrough button:** a white tile closing the row, dark camera glyph over the word **Passthrough**; it reads as the one control that changes the room rather than the place.
 - **Under the dock:** a 60 mm white drag bar centred below it moves the whole dock (it re-tilts toward the player), and three small square buttons sit at the right end — **Settings**, **Recenter** and **Help**. Mute lives in the utility window, which the Settings button opens.
-- **Show/hide:** palm-up on the left hand for 0.5 s toggles the dock (Quest); `Tab` on desktop. The dock hides during onboarding cards.
+- **Show/hide:** no gesture shows, hides or moves the dock on Quest. The palm turned toward the face opens the **palm menu**, whose **Dock** button brings the dock back in front of the player; closing the hand puts the palm menu away. `Tab` hides and shows it on desktop. The dock hides during onboarding cards.
 
 ### 8.2 Pop-ups
 - Appear 40 mm above the tile that owns them, 240 × 90 mm, two equal buttons with icon + label: **Schematic / Realistic** (Solar System), **Solar Row / Relative Size** (Planets). The active option is filled cyan.

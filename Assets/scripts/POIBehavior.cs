@@ -28,7 +28,6 @@ public class POIBehavior : MonoBehaviour
     private Color currentColor;
     private PointOfInterest poi;
     
-    RaycastHit[] raycastResults = new RaycastHit[1];
 
     private void Awake()
     {
@@ -99,27 +98,28 @@ public class POIBehavior : MonoBehaviour
         transform.localScale = scale * Vector3.one;
     }
 
+    // Visible when nothing on the POI layer stands between the camera and this point (CS-297). This used to be a
+    // one-slot RaycastNonAlloc of infinite length, and that slot is not guaranteed to hold the nearest hit: a label
+    // on the far side of the galaxy could fill it, the label in front decided it was hidden, faded, and shrank its
+    // own collider to nothing, so a click on its centre met nothing at all.
     private bool IsPointVisible(Vector3 position)
     {
         var layerMask = 1 << LayerMask.NameToLayer("POI");
-        var direction = (position - cameraObject.transform.position).normalized;
-        Debug.DrawRay(cameraObject.transform.position, (position - cameraObject.transform.position)*2, Color.green);
-        if(Physics.RaycastNonAlloc(cameraObject.transform.position, direction, raycastResults, float.PositiveInfinity, layerMask ) > 0)
+        var origin = cameraObject.transform.position;
+        var toPoint = position - origin;
+        var distance = toPoint.magnitude;
+        if (distance < 1e-4f)
         {
-            foreach (var raycastHit in raycastResults)
-            {
-                if (raycastHit.collider != null)
-                {
-                    if (raycastHit.collider.gameObject == gameObject)
-                    {
-                        return true;
-                    }
-                }
-            }
+            return true;
         }
-        return false;
-    }
 
+        if (!Physics.Raycast(origin, toPoint / distance, out var hit, distance + 0.01f, layerMask, QueryTriggerInteraction.Collide))
+        {
+            return true;
+        }
+
+        return hit.collider.gameObject == gameObject;
+    }
 
     public void Fade(bool fadeIn, float overTime = .3f, float alpha = -1)
     {

@@ -25,6 +25,15 @@ Track CC-U2. For the next Claude Code session on `quest3-port` (mirrored to `mai
 
 **Owner's ask, still open:** the guide's own suggestions. The owner wants the guide to be able to suggest things too. One option is a tool call (`suggest(text)`) that fills the suggestion buttons. Propose before building.
 
+**Proposal (cloud session, 14 Oct; not built, waiting for the owner's yes):**
+- **A fourth tool, `suggest`,** with two optional string fields, `question` and `command`, each under 40 characters. The prompt asks the guide to call it at the end of an answer with one follow-up question and one thing it can do (`open_place`, `pull_body` or `restore` in words), never both about the same thing.
+- **Silent.** A `suggest` call gets its `function_call_output` like the others but no `Respond()`: today every tool call triggers another response, which would make the guide speak twice.
+- **Plumbing:** `Session` parses the two fields (its `Args` only knows `id`), raises `Suggested(question, command)`; `Being` keeps the last pair; `Ui2Guide` shows that pair the next time it returns to listening, then falls back to its rotating lists. A command suggestion runs through the same `IHost.Act` as a spoken command; one that maps to no action is shown as a question instead.
+- **Safety:** text only, trimmed and length-capped in `Ui2Guide`; nothing the model sends becomes an action without the player pressing it.
+- **Cost:** one extra small tool call per answer, no audio.
+
+**CC-U2-002 and CC-U2-003, cloud session 14 Oct (code, not run):** `Ui2SelfCheck` now clicks a nebula label through `CardPOI.OnPointerDown` and expects the preview on the map. On the orbit view, `PlanetPOI` asks a new `Picked(BodyId)` hook before its original scene load; `BodyId` is the old scene name without `_view_scene` (else `poi_<id>_prefab`). `Ui2Explore` answers it from a `bodies` catalog that *Build Shell Prefab* fills with every `BodyInfo` under `Assets/data`: the card shows that body and nothing travels; picking it again puts the card away; a pulled body's panel outranks it. Needs *Build Shell Prefab* before it works. Verification: BACKLOG CS-322.
+
 ## CC-U2-002: Map nebula labels open the preview card (code landed, untested)
 
 Clicking a nebula label on the Milky Way map goes through `CardPOI`, not `PlanetPOI`, so it travelled straight to the nebula without the preview card. `CardPOI` now asks `PlanetPOI.Preview` first.

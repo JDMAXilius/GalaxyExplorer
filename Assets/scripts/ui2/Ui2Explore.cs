@@ -37,6 +37,10 @@ namespace CosmicSimulation.UI2
         [SerializeField] private UiButton listen = null;
         [SerializeField] private UiButton compare = null;
         [SerializeField] private GameObject actionsPreview = null;
+
+        [Tooltip("Every body and moon, so a marker that carries no data (the orbit view) can still fill the card. " +
+                 "Filled by Build Shell Prefab.")]
+        [SerializeField] private BodyInfo[] bodies = System.Array.Empty<BodyInfo>();
         [SerializeField] private UiButton enter = null;
         [SerializeField] private UiButton previewListen = null;
         [SerializeField] private GameObject actionsCompare = null;
@@ -108,6 +112,7 @@ namespace CosmicSimulation.UI2
         private ExperienceModule _place;
         private ExperienceModule _preview;
         private BodyInfo _body;
+        private BodyInfo _picked;
         private LayoutRig _rig;
         private AudioClip _sound;
         private AudioSource _speaker;
@@ -200,6 +205,7 @@ namespace CosmicSimulation.UI2
             _menuHome = _menuRect.anchoredPosition;
             ExperienceDirector.ExperienceChanged += OnPlaceChanged;
             PlanetPOI.Preview = OnMarker;
+            PlanetPOI.Picked = OnBodyMarker;
             InfoPanel.Suppressed = true;
             if (Ui2Shell.Instance != null)
             {
@@ -218,6 +224,11 @@ namespace CosmicSimulation.UI2
             if (PlanetPOI.Preview == OnMarker)
             {
                 PlanetPOI.Preview = null;
+            }
+
+            if (PlanetPOI.Picked == OnBodyMarker)
+            {
+                PlanetPOI.Picked = null;
             }
 
             InfoPanel.Suppressed = false;
@@ -239,6 +250,7 @@ namespace CosmicSimulation.UI2
             _place = module;
             _preview = null;
             _body = null;
+            _picked = null;
             _rig = null;
             _first = 0;
             _choosing = false;
@@ -299,7 +311,13 @@ namespace CosmicSimulation.UI2
                 }
             }
 
-            var current = _open.Count > 0 ? _open[_open.Count - 1].Info : null;
+            // A pulled body's panel outranks a body picked on the orbit view, and ends that pick.
+            if (_open.Count > 0)
+            {
+                _picked = null;
+            }
+
+            var current = _open.Count > 0 ? _open[_open.Count - 1].Info : _picked;
             if (current != _body || !Mathf.Approximately(_textScale, InfoPanel.TextScale))
             {
                 if (current != _body && current != null)
@@ -607,6 +625,39 @@ namespace CosmicSimulation.UI2
         }
 
         // ---------- the Milky Way map
+
+        // A planet picked on the orbit view, where nothing is pulled and no panel opens: show it on the card and
+        // keep the player where they are (CC-U2-003). Picking it again puts the card away.
+        private bool OnBodyMarker(string id)
+        {
+            var info = Body(id);
+            if (info == null)
+            {
+                return false;
+            }
+
+            _picked = _picked == info ? null : info;
+            Track();
+            return true;
+        }
+
+        private BodyInfo Body(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return null;
+            }
+
+            foreach (var info in bodies)
+            {
+                if (info != null && info.Id == id)
+                {
+                    return info;
+                }
+            }
+
+            return null;
+        }
 
         private bool OnMarker(ExperienceModule module)
         {

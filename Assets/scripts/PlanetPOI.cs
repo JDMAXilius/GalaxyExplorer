@@ -56,6 +56,40 @@ namespace GalaxyExplorer
         /// <summary>Set by UI 2.0: asked before a marker travels. Returning true means a preview was shown instead.</summary>
         public static System.Func<ExperienceModule, bool> Preview { get; set; }
 
+        /// <summary>
+        /// Set by UI 2.0: asked with <see cref="BodyId"/> before a body marker with no destination (the Solar
+        /// System's orbit view) starts the original scene load. Returning true means the body was shown on the card
+        /// instead, and nothing travels (CC-U2-003).
+        /// </summary>
+        public static System.Func<string, bool> Picked { get; set; }
+
+        /// <summary>
+        /// The body this marker stands for, matching <see cref="BodyInfo.Id"/>: the original scene name
+        /// ("mars_view_scene") without its suffix, else the marker's own name ("poi_mars_prefab"), else empty.
+        /// </summary>
+        public string BodyId
+        {
+            get
+            {
+                const string sceneSuffix = "_view_scene";
+                if (!string.IsNullOrEmpty(SceneToLoad) && SceneToLoad.EndsWith(sceneSuffix))
+                {
+                    return SceneToLoad.Substring(0, SceneToLoad.Length - sceneSuffix.Length);
+                }
+
+                for (var t = transform; t != null; t = t.parent)
+                {
+                    var name = t.name;
+                    if (name.StartsWith("poi_") && name.EndsWith("_prefab") && name.Length > "poi__prefab".Length)
+                    {
+                        return name.Substring(4, name.Length - 4 - "_prefab".Length);
+                    }
+                }
+
+                return string.Empty;
+            }
+        }
+
         /// <summary>The module a click on this marker opens, or null when the original scene path applies.</summary>
         public ExperienceModule Destination
         {
@@ -107,6 +141,11 @@ namespace GalaxyExplorer
                 // which is the wrong answer when Switch refuses (intro still running, a switch in flight) and
                 // the map stays on screen. Switch answers those refusals itself, through SwitchNotice.
                 director.Switch(module);
+                return;
+            }
+
+            if (Picked != null && Picked(BodyId))
+            {
                 return;
             }
 
