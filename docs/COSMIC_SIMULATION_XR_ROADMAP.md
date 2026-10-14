@@ -23,7 +23,7 @@
 | **Reuse first** | Check the project → check public-domain sources (NASA, ESA, USGS) → generate with Higgsfield. New assets only when the first two fail. |
 | **Less is more** | One data-driven `ExperienceModule` per scene instead of bespoke scene scripts. One panel prefab, one label prefab, one dock. |
 | **Keep desktop** | Every hand interaction gets a mouse/keyboard equivalent. Desktop stays testable without a headset. |
-| **Work in the original scenes** | Backups are copies under `Assets/scenes/_backup_original/`; the live scenes are the ones we edit. |
+| **Work in the original scenes** | The live scenes are the ones we edit; the Phase 0 backups were deleted on 14 Oct (D-015) and live on in git. |
 | **Derive, don't start over** | New scenes are created by duplicating the closest existing scene/prefab and changing content. |
 | **Verify in the editor via MCP** | Every phase ends with play-mode checks (synthetic input + screenshots) before commit. |
 | **One commit per task group** | Small, described commits on `quest3-port`; push to `main` on request. |
@@ -146,7 +146,7 @@ Assets/scripts/desktop/
 
 - `main_scene` + `core_systems_scene` stay the bootstrap.
 - Each dock entry maps to an additive scene: **existing** `galaxy_view_scene` (Milky Way), `solar_system_view_scene` (Solar System), `galactic_center_view_scene` (Sagittarius A\*); **new, duplicated from existing**: ~~`solar_row_scene` (from solar_system_view_scene), `andromeda_scene` (from galaxy_view_scene), `galaxies_scene`, `cosmic_web_scene` (from galactic_center_view_scene as the "black" template)~~ **dropped, 12 Sep 2026 — superseded by the content-prefab route CS-036 established.** `ExperienceDirector.Switch` opens a module from its `ContentPrefab` when it names no scene, so Planets (CS-041), Cosmic Web (CS-065/CS-106) and Andromeda (CS-102) shipped as `solar_system_planets_content_prefab`, `cosmic_web_content_prefab` and `andromeda_content_prefab` respectively — no new scene, no new entry in Build Settings, nothing for CS-001's backup rule to catch. Galaxies is the one place still outstanding and should follow the same pattern when it is built, not add `galaxies_scene`. See `docs/TECHNICAL_OVERVIEW.md` §6.
-- Backups: `Assets/scenes/_backup_original/` copies of `main_scene`, `core_systems_scene` and the three view scenes, made once in Phase 0 and never edited.
+- Backups: `Assets/scenes/_backup_original/` copies of `main_scene`, `core_systems_scene` and the three view scenes, made once in Phase 0 and never edited; deleted 14 Oct 2026 (D-015), recoverable from git.
 
 ---
 

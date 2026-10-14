@@ -6,6 +6,20 @@ you change one, update the affected docs in the same commit.
 
 ---
 
+## 2026-10-14 — Code audit
+
+### D-015 — TouchScript and the Phase 0 scene backups are deleted
+**Decision.** `Assets/external/TouchScript` (vendored, 11 MB) and `Assets/scenes/_backup_original/` (the Phase 0
+copies of the five original scenes) are deleted, with the `TouchManager` prefab instance that was still saved in
+`core_systems_scene`. Owner's direction, 14 Oct: delete them as long as the project works; git keeps them.
+**Why.** Nothing in the build used either once `ViewPivot` replaced TouchScript's camera controller (CS-353), and
+the backups were the last thing referencing TouchScript.
+**Consequence.** To bring either back: `git checkout a921ecf -- Assets/external/TouchScript Assets/scenes/_backup_original`
+(and their `.meta` files). The relay's constant `PluginImporter` version warning went with TouchScript's Windows
+touch plugins.
+
+---
+
 ## 2026-10-06 — Meta Horizon Store track
 
 ### D-012 — Store v1: free, 13+, Quest 3 and 3S only, no Meta Platform SDK
