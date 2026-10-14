@@ -358,20 +358,26 @@ namespace CosmicSimulation.UI2
         private static bool IsOut(ForceSolver solver) =>
             solver.ForceState != ForceSolver.State.Root && solver.ForceState != ForceSolver.State.None;
 
+        // Out, but not a far ray merely resting on a body at home: that is Dwell straight from Root, no pinch yet.
+        private static bool IsPulled(ForceSolver solver) =>
+            IsOut(solver) &&
+            !(solver.ForceState == ForceSolver.State.Dwell && solver.PreviousForceState == ForceSolver.State.Root);
+
         private void OnBodyStateChanged(ForceSolver solver)
         {
-            // The orbit view's planets have no panel and their POI never hears the click (CS-362): the body a
+            // The orbit view's planets have no panel and their POI never hears the click (CS-362): the planet a
             // click pulls out is the one the card shows (CC-U2-003), until it goes home. Only with the card on
-            // screen, so it can never come back later showing a pick nobody saw.
-            if (_place != null && _place.Id == orbitsPlace && solver != null)
+            // screen, so it can never come back later showing a pick nobody saw. Moons are skipped: they sit under
+            // their planet's prefab and would answer to its id.
+            if (_place != null && _place.Id == orbitsPlace && solver != null && !(solver is MoonForceSolver))
             {
                 var info = Body(PlanetPOI.BodyIdOf(solver.transform));
                 var shell = Ui2Shell.Instance;
-                if (info != null && IsOut(solver) && shell != null && shell.ExploreVisible)
+                if (info != null && IsPulled(solver) && shell != null && shell.ExploreVisible)
                 {
                     _picked = info;
                 }
-                else if (info != null && _picked == info)
+                else if (info != null && _picked == info && !IsPulled(solver))
                 {
                     _picked = null;
                 }

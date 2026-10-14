@@ -129,6 +129,12 @@ namespace GalaxyExplorer
                 return;
             }
 
+            // The planet view scenes are gone; a press that would load one must not wedge TransitionManager mid-load (CS-362).
+            if (string.IsNullOrEmpty(SceneToLoad) || !Application.CanStreamedLevelBeLoaded(SceneToLoad))
+            {
+                return;
+            }
+
             StartCoroutine(OnPointerDownRoutine());
         }
 
