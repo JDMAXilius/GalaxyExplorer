@@ -487,14 +487,15 @@ namespace GalaxyExplorer.XR
 
             // A rig knows the arrangement, animates the anchors, and walks anything the player pulled out home
             // over the same duration, so ask it rather than snapping bodies to their roots behind its back.
-            var rigs = FindObjectsByType<CosmicSimulation.LayoutRig>(FindObjectsSortMode.None);
-            if (rigs.Length > 0)
+            var restored = false;
+            foreach (var rig in CosmicSimulation.Registry<CosmicSimulation.LayoutRig>.Active)
             {
-                foreach (var rig in rigs)
-                {
-                    rig.Restore();
-                }
+                rig.Restore();
+                restored = true;
+            }
 
+            if (restored)
+            {
                 return;
             }
 
@@ -561,7 +562,7 @@ namespace GalaxyExplorer.XR
             // A body's panel is not closable on its own - it is open exactly while its body is out of the
             // arrangement, so R is what shuts it. Hide() only reaches the panels that are driven by hand, which
             // is the destination and scene panels, and is a no-op on the rest.
-            foreach (var panel in FindObjectsByType<CosmicSimulation.InfoPanel>(FindObjectsSortMode.None))
+            foreach (var panel in CosmicSimulation.Registry<CosmicSimulation.InfoPanel>.Active)
             {
                 panel.Hide();
             }
@@ -607,7 +608,7 @@ namespace GalaxyExplorer.XR
         {
             var id = BodyIds[slot];
 
-            foreach (var rig in FindObjectsByType<CosmicSimulation.LayoutRig>(FindObjectsSortMode.None))
+            foreach (var rig in CosmicSimulation.Registry<CosmicSimulation.LayoutRig>.Active)
             {
                 var body = rig.Find(id);
                 if (body != null && body.Force != null)

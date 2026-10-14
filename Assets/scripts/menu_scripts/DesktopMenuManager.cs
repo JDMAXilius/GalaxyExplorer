@@ -21,7 +21,6 @@ using UnityEngine.UI;
 /// </summary>
 public class DesktopMenuManager : MonoBehaviour
 {
-
     [SerializeField]
     private GameObject _menuParent;
 

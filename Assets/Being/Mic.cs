@@ -16,23 +16,34 @@ namespace Cosmic.Companion
 
         public static bool InUse { get; private set; }
 
-        static string device;
+        static string chosenDevice;
         static string[] devices = Array.Empty<string>();
         static float devicesAt = float.NegativeInfinity;
+#if UNITY_ANDROID && !UNITY_EDITOR
         static bool permitted;
         static float permittedAt = float.NegativeInfinity;
+#endif
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
         {
-            device = null;
-            devicesAt = permittedAt = float.NegativeInfinity;
+            chosenDevice = null;
+            Refresh();
+        }
+
+        /// <summary>Re-reads the device list and the permission on next use, after a permission answer.</summary>
+        public static void Refresh()
+        {
+            devicesAt = float.NegativeInfinity;
+#if UNITY_ANDROID && !UNITY_EDITOR
+            permittedAt = float.NegativeInfinity;
+#endif
         }
 
         public static string Device
         {
-            get => device ??= PlayerPrefs.GetString(DeviceKey, "");
-            set { device = value ?? ""; PlayerPrefs.SetString(DeviceKey, device); PlayerPrefs.Save(); }
+            get => chosenDevice ??= PlayerPrefs.GetString(DeviceKey, "");
+            set { chosenDevice = value ?? ""; PlayerPrefs.SetString(DeviceKey, chosenDevice); PlayerPrefs.Save(); }
         }
 
         public static string[] Devices
@@ -91,7 +102,7 @@ namespace Cosmic.Companion
             callbacks.PermissionRequestDismissed += _ => answered = true;
             UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Microphone, callbacks);
             for (var waited = 0f; !answered && waited < 30f; waited += Time.unscaledDeltaTime) yield return null;
-            permittedAt = devicesAt = float.NegativeInfinity;
+            Refresh();
 #else
             yield break;
 #endif

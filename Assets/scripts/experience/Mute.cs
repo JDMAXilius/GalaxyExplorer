@@ -1,6 +1,5 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System;
 using UnityEngine;
 
 namespace CosmicSimulation
@@ -11,8 +10,6 @@ namespace CosmicSimulation
         private const string Key = "GalaxyExplorer.Muted";
 
         private static bool? _on;
-
-        public static event Action Changed;
 
         public static bool On
         {
@@ -28,7 +25,6 @@ namespace CosmicSimulation
                 PlayerPrefs.SetInt(Key, value ? 1 : 0);
                 PlayerPrefs.Save();
                 AudioListener.volume = value ? 0f : 1f;
-                Changed?.Invoke();
             }
         }
 
@@ -36,7 +32,6 @@ namespace CosmicSimulation
         private static void ResetStatics()
         {
             _on = null;
-            Changed = null;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]

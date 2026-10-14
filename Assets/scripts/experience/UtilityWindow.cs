@@ -40,9 +40,6 @@ namespace CosmicSimulation
     /// </summary>
     public class UtilityWindow : MonoBehaviour, IGEPointerHandler
     {
-        // The key DesktopMenuManager stores mute under. It is a private const over there and that file belongs
-        // to the legacy HUD, so the literal is repeated rather than shared — if one moves, both must.
-
         // docs/ui/spec.md §1. Repeated here the way DockPopup repeats them: these are the runtime copies of the
         // tokens the builder bakes into the prefab.
         private static readonly Color Accent = new Color(0.424f, 0.812f, 0.867f);

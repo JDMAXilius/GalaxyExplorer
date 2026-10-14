@@ -159,9 +159,9 @@ namespace GalaxyExplorer
         public bool IsPlaying => clipQueue.Count > 0 || nextClip != null || audioSource != null && audioSource.isPlaying;
         public AudioClip CurrentClip => IsPlaying && audioSource != null ? audioSource.clip : null;
 
-        private void Awake() => CosmicSimulation.CosmicSimulation.Registry<VOManager>.Add(this);
+        private void Awake() => CosmicSimulation.Registry<VOManager>.Add(this);
 
-        private void OnDestroy() => CosmicSimulation.CosmicSimulation.Registry<VOManager>.Remove(this);
+        private void OnDestroy() => CosmicSimulation.Registry<VOManager>.Remove(this);
 
         private void Start()
         {

@@ -393,7 +393,8 @@ namespace GalaxyExplorer
             }
 
             TransitionManager = FindFirstObjectByType<TransitionManager>();
-            VoManager = CosmicSimulation.Registry<VOManager>.First;
+            // A scene search, not the registry: this runs in Awake at order -50, before the narrator has woken.
+            VoManager = FindFirstObjectByType<VOManager>();
             OnboardingManager = FindFirstObjectByType<OnboardingManager>();
             GeFadeManager = FindFirstObjectByType<GEFadeManager>();
             GGVMenuManager = FindFirstObjectByType<GGVMenuManager>();

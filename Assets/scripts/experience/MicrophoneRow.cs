@@ -150,7 +150,9 @@ namespace CosmicSimulation
                 {
                     _asked = true;
 #if UNITY_ANDROID && !UNITY_EDITOR
-                    UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Microphone);
+                    var callbacks = new UnityEngine.Android.PermissionCallbacks();
+                    callbacks.PermissionGranted += _ => Cosmic.Companion.Mic.Refresh();
+                    UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Microphone, callbacks);
 #endif
                 }
                 Say("Allow the microphone to check it.");
