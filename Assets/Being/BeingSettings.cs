@@ -9,13 +9,23 @@ namespace Cosmic.Companion
         public string voice = "marin";
         public string transcriptionModel = "gpt-4o-transcribe";
         public string language = "en";
+        // Biases the transcriber toward what a player says here, so a mumbled "Europa" is not heard as a word from nowhere.
+        [TextArea(2, 4)]
+        public string transcriptionPrompt =
+            "A player asks a space guide about what they see: the Milky Way, the Solar System, the Sun, Mercury, Venus, " +
+            "Earth, the Moon, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto, moons such as Europa, Titan and Ganymede, " +
+            "nebulae, galaxies, Andromeda, black holes, exoplanets.";
         public TextAsset prompt;
         public TextAsset knowledge;
         public float connectTimeoutSeconds = 6f;
         public bool alwaysListening;
         public float listenWindowSeconds = 3f;
-        public int silenceMs = 600;
-        public float vadThreshold = 0.65f;
+        // The server ends a turn after this much silence; the client ends it itself after endSilenceSeconds if the
+        // server has not (a noisy room can keep the server's VAD from ever calling silence).
+        public int silenceMs = 1000;
+        public float endSilenceSeconds = 1.8f;
+        public float maxTurnSeconds = 20f;
+        public float vadThreshold = 0.6f;
         public float echoTailSeconds = 0.6f;
         public float voiceGain = 1.4f;
         public float spatialBlend = 0.6f;
@@ -37,7 +47,7 @@ namespace Cosmic.Companion
         public float headsetSideMetres = 0.47f;
         public float headsetDropMetres = 0.08f;
         public float followSeconds = 0.4f;
-        public float tapSeconds = 0.4f;
+        public float tapSeconds = 0.5f;
         public float tapMoveMetres = 0.03f;
     }
 }

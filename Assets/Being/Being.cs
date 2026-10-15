@@ -8,9 +8,8 @@ namespace Cosmic.Companion
     {
         public enum Phase { Idle, Listening, Thinking, Speaking }
 
-        // Mic RMS that counts as someone talking, how long it keeps the listen window open after, and the most a noisy
-        // room can stretch the window from when it opened.
-        const float SpeechFloor = 0.02f;
+        // How long the player's own voice (Mic.Voiced) keeps the listen window open after it, and the most a noisy room
+        // can stretch the window from when it opened.
         const float SpeechHoldSeconds = 1f;
         const float MaxHoldSeconds = 10f;
 
@@ -22,7 +21,7 @@ namespace Cosmic.Companion
         readonly Mic mic = new Mic();
         Voice voice;
         Vector3 pressedAt;
-        float pressedTime, window, micPeak, openAt;
+        float pressedTime, window, micPeak, openAt, quietFor, speechAt;
         bool greeting, answerDone, leaving, ready, speechHeard, rearm, relisten, gone;
         string situated;
 
@@ -31,7 +30,10 @@ namespace Cosmic.Companion
         public bool Online => session.IsReady;
         public bool Greeting => greeting;
         public bool AlwaysListening => settings.alwaysListening;
+        /// <summary>The player's words for the latest utterance, growing while the transcription streams in.</summary>
         public string Heard { get; private set; } = "";
+        /// <summary>Which utterance <see cref="Heard"/> belongs to: a new id is a new line, the same id a longer one.</summary>
+        public string HeardId { get; private set; } = "";
         public string Said { get; private set; } = "";
         public float MicLevel => Current == Phase.Listening ? mic.Level : 0f;
         public int StartLatencyMs => voice.StartLatencyMs;
@@ -50,7 +52,12 @@ namespace Cosmic.Companion
         public void Release()
         {
             var quick = Time.unscaledTime - pressedTime <= settings.tapSeconds;
-            var still = (transform.position - pressedAt).sqrMagnitude <= settings.tapMoveMetres * settings.tapMoveMetres;
+            // A pinch jolts a ray by a few centimetres at arm's length, which a fixed 3 cm refused: the allowance grows
+            // with the distance from the eyes (about 6 degrees), so a tap is a tap and a drag is still a drag.
+            var cam = Camera.main;
+            var reach = cam != null ? Vector3.Distance(cam.transform.position, transform.position) : 0f;
+            var allowed = Mathf.Max(settings.tapMoveMetres, reach * 0.1f);
+            var still = (transform.position - pressedAt).sqrMagnitude <= allowed * allowed;
             if (quick && still && !(Host != null && Host.Held)) Tap();
         }
 
@@ -88,6 +95,7 @@ namespace Cosmic.Companion
             Init();
             session.Audio += voice.Enqueue;
             session.Said += OnSaid;
+            session.Hearing += OnHearing;
             session.Heard += OnHeard;
             session.SpeechStarted += OnSpeechStarted;
             session.SpeechStopped += OnSpeechStopped;
@@ -103,6 +111,7 @@ namespace Cosmic.Companion
         {
             session.Audio -= voice.Enqueue;
             session.Said -= OnSaid;
+            session.Hearing -= OnHearing;
             session.Heard -= OnHeard;
             session.SpeechStarted -= OnSpeechStarted;
             session.SpeechStopped -= OnSpeechStopped;
@@ -133,9 +142,17 @@ namespace Cosmic.Companion
                 mic.Start();
             }
             micPeak = Mathf.Max(micPeak, mic.Level);
-            if (speechHeard || settings.alwaysListening) return;
+            if (settings.alwaysListening) return;
+            if (speechHeard)
+            {
+                // The server ends the turn after silenceMs. If it has not — a room whose noise its VAD keeps calling
+                // speech — the client ends it a moment later from its own level, and sends what was said.
+                quietFor = mic.Voiced ? 0f : quietFor + Time.unscaledDeltaTime;
+                if (quietFor >= settings.endSilenceSeconds || Time.unscaledTime - speechAt >= settings.maxTurnSeconds) Stop();
+                return;
+            }
             // Someone is talking but the server has not called it speech yet (a quieter headset mic): hold the window (CS-371).
-            if (mic.Level > SpeechFloor && Time.unscaledTime - openAt < MaxHoldSeconds) window = Mathf.Max(window, SpeechHoldSeconds);
+            if (mic.Voiced && Time.unscaledTime - openAt < MaxHoldSeconds) window = Mathf.Max(window, SpeechHoldSeconds);
             window -= Time.unscaledDeltaTime;
             if (window <= 0f) Stop();
         }
@@ -180,7 +197,7 @@ namespace Cosmic.Companion
             if (!Mic.Asked) yield return Mic.Request();
             mic.Arm();
             var key = keys != null ? keys.OpenAi : "";
-            if (key.Length > 0) session.Connect(key, settings, Instructions());
+            if (key.Length > 0) session.Connect(key, settings, Instructions(), mic.NearField);
             else Debug.Log("Being: no OpenAI key; offline.", this);
             for (var t = 0f; t < settings.connectTimeoutSeconds && !session.IsReady && key.Length > 0; t += Time.unscaledDeltaTime) yield return null;
             greeting = true;
@@ -195,6 +212,7 @@ namespace Cosmic.Companion
             speechHeard = false;
             answerDone = false;
             micPeak = 0f;
+            quietFor = 0f;
             window = settings.listenWindowSeconds;
             Situate();
             var cue = chime && settings.listenChime != null ? settings.listenChime.length + 0.05f : 0f;
@@ -203,13 +221,23 @@ namespace Cosmic.Companion
             Set(Phase.Listening);
         }
 
+        // Closing the mic with speech in the buffer sends it: a tap to stop, or the client's silence check, used to clear
+        // the buffer and throw away what the player had just said.
         void Stop()
         {
             mic.Stop();
-            session.Clear();
             voice.Cue(settings.closeTick);
+            if (speechHeard && session.IsReady)
+            {
+                Debug.Log($"Being: turn ended by the client after {Time.unscaledTime - speechAt:0.0} s, mic peak {micPeak:0.000}, room {mic.NoiseFloor:0.0000} on {mic.Label}.", this);
+                session.Commit();
+                Set(Phase.Thinking);
+                return;
+            }
+
+            session.Clear();
             if (!session.IsReady) Debug.Log($"Being: offline, mic peak {micPeak:0.000} on {mic.Label}.", this);
-            else if (!speechHeard) Debug.Log($"Being: window closed with no speech heard, mic peak {micPeak:0.000} on {mic.Label} (VAD {settings.vadThreshold:0.00}).", this);
+            else Debug.Log($"Being: window closed with no speech heard, mic peak {micPeak:0.000}, room {mic.NoiseFloor:0.0000} on {mic.Label} (VAD {settings.vadThreshold:0.00}).", this);
             Set(Phase.Idle);
         }
 
@@ -225,7 +253,9 @@ namespace Cosmic.Companion
 
         void OnSpeechStarted()
         {
+            if (!speechHeard) speechAt = Time.unscaledTime;
             speechHeard = true;
+            quietFor = 0f;
             // Before the turn this speech becomes: it may have changed since the window opened (always-listening keeps one open).
             Situate();
         }
@@ -234,6 +264,7 @@ namespace Cosmic.Companion
         {
             if (Current != Phase.Listening) return;
             mic.Stop();
+            Debug.Log($"Being: turn ended by the server after {Time.unscaledTime - speechAt:0.0} s, mic peak {micPeak:0.000}, room {mic.NoiseFloor:0.0000} on {mic.Label}.", this);
             Set(Phase.Thinking);
         }
 
@@ -256,8 +287,15 @@ namespace Cosmic.Companion
             else if (answerDone) Listen(false, settings.echoTailSeconds);
         }
 
-        void OnHeard(string text)
+        void OnHearing(string id, string text)
         {
+            HeardId = id;
+            Heard = text;
+        }
+
+        void OnHeard(string id, string text)
+        {
+            HeardId = id;
             Heard = text;
             Debug.Log("Being heard: " + text, this);
         }

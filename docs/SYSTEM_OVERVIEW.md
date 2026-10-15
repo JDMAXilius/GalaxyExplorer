@@ -193,7 +193,7 @@ Builds/Quest3/CosmicSimulationXR.apk  (gitignored)
 
 | File | Responsibility |
 |---|---|
-| `Being.cs` | Phases Idle / Listening / Thinking / Speaking. Press/release decides tap vs drag (0.4 s, 3 cm). Greet on summon, then a 3 s listen window. Tap rules; dismiss. Wires Voice, Mic, Look, Follow, Session. |
+| `Being.cs` | Phases Idle / Listening / Thinking / Speaking. Press/release decides tap vs drag (0.5 s, 10% of its distance from the eyes). Greet on summon, then a 3 s listen window; a turn ends on the server's 1 s of silence, the client's 1.8 s, or a tap, and is sent either way. Tap rules; dismiss. Wires Voice, Mic, Look, Follow, Session. |
 | `Session.cs` | The OpenAI Realtime protocol. Its `session.update` sends: PCM16 24 kHz in/out, voice `marin`, model `gpt-realtime`, `gpt-4o-transcribe` transcription in English, server VAD (threshold 0.65, 600 ms silence), and the tools `open_place`, `pull_body`, `send_home`, `restore`. Handles append/clear/`conversation.item.create`/`response.create`/`response.cancel`; a cancelled response is dropped by id. |
 | `Realtime.cs` | One `System.Net.WebSockets.ClientWebSocket` to `wss://api.openai.com/v1/realtime`, with a Bearer header, 20 s keepalive, serialised sends, a background receive loop and a main-thread inbox pumped each frame. |
 | `Mic.cs` | Unity `Microphone` → resampled 24 kHz PCM16 frames, level meter, remembered device, Android permission. Half-duplex: opens `echoTailSeconds` (0.6 s) after the Being stops speaking. |

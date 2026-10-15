@@ -9,8 +9,10 @@ namespace Cosmic.Companion
     {
         public event Action Ready, SpeechStarted, SpeechStopped, Done;
         public event Action<byte[]> Audio;
-        public event Action<string> Said, Heard, Error;
+        public event Action<string> Said, Error;
         public event Action<string, string> Acted;
+        // The player's words for one utterance (item id, text): Hearing as the transcription streams, Heard once it is final.
+        public event Action<string, string> Hearing, Heard;
 
         const string Url = "wss://api.openai.com/v1/realtime?model=";
         const string Tools =
@@ -20,15 +22,16 @@ namespace Cosmic.Companion
             @"{""type"":""function"",""name"":""play_sound"",""description"":""Play the sound of what the info card shows: the selected body, or the place."",""parameters"":{""type"":""object"",""properties"":{}}}," +
             @"{""type"":""function"",""name"":""restore"",""description"":""Put every body back in its arrangement."",""parameters"":{""type"":""object"",""properties"":{}}}]";
 
-        [Serializable] class Event { public string type, delta, transcript, name, call_id, arguments, response_id; public Fault error; public Reply response; }
+        [Serializable] class Event { public string type, delta, transcript, name, call_id, arguments, response_id, item_id; public Fault error; public Reply response; }
         [Serializable] class Reply { public string id; }
         [Serializable] class Fault { public string message, code; }
         [Serializable] class Args { public string id; }
 
         readonly Realtime link = new Realtime();
+        readonly System.Collections.Generic.Dictionary<string, string> hearing = new System.Collections.Generic.Dictionary<string, string>();
         BeingSettings settings;
         string instructions;
-        bool toolPending;
+        bool toolPending, nearField;
         string current, dropped;
 
         public bool IsReady { get; private set; }
@@ -40,10 +43,12 @@ namespace Cosmic.Companion
             link.Failed += e => { IsReady = false; Error?.Invoke(e); };
         }
 
-        public void Connect(string key, BeingSettings settings, string instructions)
+        /// <param name="nearField">The microphone sits at the mouth (a headset's own); otherwise it is a desk or room mic.</param>
+        public void Connect(string key, BeingSettings settings, string instructions, bool nearField)
         {
             this.settings = settings;
             this.instructions = instructions;
+            this.nearField = nearField;
             link.Connect(Url + Uri.EscapeDataString(settings.model), key);
         }
 
@@ -52,12 +57,24 @@ namespace Cosmic.Companion
         public void Close()
         {
             IsReady = false;
+            hearing.Clear();
             link.Close();
         }
 
         public void Append(byte[] pcm) => link.Send("{\"type\":\"input_audio_buffer.append\",\"audio\":\"" + Convert.ToBase64String(pcm) + "\"}");
 
         public void Clear() => link.Send("{\"type\":\"input_audio_buffer.clear\"}");
+
+        /// <summary>
+        /// Ends the player's turn by hand (a tap, or the client's own silence check): what they said is sent and
+        /// answered rather than thrown away. If the server's VAD ends the same turn as well, its commit is empty and
+        /// its commit_empty error is ignored below.
+        /// </summary>
+        public void Commit()
+        {
+            link.Send("{\"type\":\"input_audio_buffer.commit\"}");
+            Respond();
+        }
 
         public void Situate(string line) => link.Send(Item(line));
 
@@ -86,8 +103,13 @@ namespace Cosmic.Companion
             var s = settings;
             var vad = "{\"type\":\"server_vad\",\"threshold\":" + s.vadThreshold.ToString("0.00", CultureInfo.InvariantCulture) +
                       ",\"prefix_padding_ms\":300,\"silence_duration_ms\":" + s.silenceMs + ",\"create_response\":true,\"interrupt_response\":false}";
+            // Noise reduction runs before the VAD and the transcriber: a quiet desk mic's hiss is what the transcriber
+            // turned into words nobody said. The prompt tells it what the player is likely to say.
+            var noise = "{\"type\":\"" + (nearField ? "near_field" : "far_field") + "\"}";
+            var transcription = "{\"model\":\"" + s.transcriptionModel + "\",\"language\":\"" + s.language + "\"" +
+                                (string.IsNullOrEmpty(s.transcriptionPrompt) ? "" : ",\"prompt\":\"" + Escape(s.transcriptionPrompt) + "\"") + "}";
             link.Send("{\"type\":\"session.update\",\"session\":{\"type\":\"realtime\",\"output_modalities\":[\"audio\"],\"instructions\":\"" + Escape(instructions) +
-                      "\",\"audio\":{\"input\":{\"format\":{\"type\":\"audio/pcm\",\"rate\":24000},\"transcription\":{\"model\":\"" + s.transcriptionModel + "\",\"language\":\"" + s.language + "\"},\"turn_detection\":" + vad +
+                      "\",\"audio\":{\"input\":{\"format\":{\"type\":\"audio/pcm\",\"rate\":24000},\"noise_reduction\":" + noise + ",\"transcription\":" + transcription + ",\"turn_detection\":" + vad +
                       "},\"output\":{\"format\":{\"type\":\"audio/pcm\",\"rate\":24000},\"voice\":\"" + s.voice + "\"}},\"tools\":" + Tools + ",\"tool_choice\":\"auto\"}}");
         }
 
@@ -113,8 +135,18 @@ namespace Cosmic.Companion
                     if (e.response_id == dropped) break;
                     Said?.Invoke(e.transcript ?? "");
                     break;
+                case "conversation.item.input_audio_transcription.delta":
+                {
+                    var key = e.item_id ?? "";
+                    hearing.TryGetValue(key, out var sofar);
+                    sofar = (sofar ?? "") + (e.delta ?? "");
+                    hearing[key] = sofar;
+                    Hearing?.Invoke(key, sofar.Trim());
+                    break;
+                }
                 case "conversation.item.input_audio_transcription.completed":
-                    Heard?.Invoke((e.transcript ?? "").Trim());
+                    hearing.Remove(e.item_id ?? "");
+                    Heard?.Invoke(e.item_id ?? "", (e.transcript ?? "").Trim());
                     break;
                 case "input_audio_buffer.speech_started":
                     SpeechStarted?.Invoke();

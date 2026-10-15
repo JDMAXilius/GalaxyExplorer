@@ -59,6 +59,8 @@ namespace CosmicSimulation.UI2
         private string[] _picked = Array.Empty<string>();
         private string _saidBefore = string.Empty;
         private string _heardBefore = string.Empty;
+        private string _heardId;
+        private string _heardLine;
         private int _turnStart = -1;
         private string _context;
         private Status _status = (Status)(-1);
@@ -144,6 +146,8 @@ namespace CosmicSimulation.UI2
                 // A new companion starts a new session: its first words are new, whatever the last one said.
                 _saidBefore = string.Empty;
                 _heardBefore = string.Empty;
+                _heardId = null;
+                _heardLine = null;
                 Pick();
                 Summon();
             }
@@ -307,6 +311,21 @@ namespace CosmicSimulation.UI2
             {
                 _heardBefore = being.Heard;
                 var line = Dim + "You: " + being.Heard + "</color>";
+
+                // The same utterance again, longer: the transcription is streaming in, so its line grows in place.
+                if (being.HeardId == _heardId && _heardLine != null)
+                {
+                    var at = Lines.LastIndexOf(_heardLine);
+                    if (at >= 0)
+                    {
+                        Lines[at] = line;
+                        _heardLine = line;
+                        return;
+                    }
+                }
+
+                _heardId = being.HeardId;
+                _heardLine = line;
                 if (_turnStart >= 0 && _turnStart <= Lines.Count)
                 {
                     Lines.Insert(_turnStart, line);

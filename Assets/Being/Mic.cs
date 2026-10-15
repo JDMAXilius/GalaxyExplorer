@@ -70,6 +70,27 @@ namespace Cosmic.Companion
         public float Level { get; private set; }
         public string Label { get; private set; } = "default";
 
+        /// <summary>The room's quiet level, followed slowly upward and quickly downward.</summary>
+        public float NoiseFloor { get; private set; } = 0.002f;
+
+        /// <summary>True while the level is clearly above the room's quiet: someone is talking.</summary>
+        public bool Voiced => Level > Mathf.Max(NoiseFloor * 3f, MinVoiceLevel);
+
+        /// <summary>The microphone sits at the mouth: the Quest's own, or the Link headset mic.</summary>
+        public bool NearField
+        {
+            get
+            {
+#if UNITY_ANDROID && !UNITY_EDITOR
+                return device == null || device == Headset(Devices);
+#else
+                return device != null && device == Headset(Devices);
+#endif
+            }
+        }
+
+        const float MinVoiceLevel = 0.004f;
+
         readonly List<short> pending = new List<short>(FrameSamples * 4);
         AudioClip clip;
         string device;
@@ -79,6 +100,8 @@ namespace Cosmic.Companion
         int restarts;
         double phase;
         float lastSample;
+        float[] filtered = new float[0];
+        float[] tail = new float[0];
 
         public static bool Permitted
         {
@@ -170,16 +193,28 @@ namespace Cosmic.Companion
             device = Resolve();
             Label = device ?? "default";
             if (Microphone.IsRecording(device)) Microphone.End(device);
-            clip = Microphone.Start(device, true, RingSeconds, Rate);
+            clip = Microphone.Start(device, true, RingSeconds, CaptureRate(device));
             if (clip == null) { Debug.LogWarning($"Mic: '{Label}' did not start; devices: {string.Join(", ", Devices)}"); return false; }
-            Debug.Log($"Mic: armed '{Label}' at {clip.frequency} Hz; devices: {string.Join(", ", Devices)}");
+            Debug.Log($"Mic: armed '{Label}' at {clip.frequency} Hz (sent at {Rate}), {(NearField ? "near" : "far")} field; devices: {string.Join(", ", Devices)}");
             last = 0;
             phase = 0;
             lastSample = 0f;
+            tail = new float[0];
+            NoiseFloor = 0.002f;
             advancedAt = Time.unscaledTime;
             pending.Clear();
             InUse = true;
             return true;
+        }
+
+        // The rate the device really records at. Asking a 48 kHz-only mic for 24 kHz made Unity decimate it with no
+        // low-pass, and the aliasing it folded into the voice band was part of what the transcriber misheard; this
+        // class downsamples with a filter instead.
+        static int CaptureRate(string device)
+        {
+            Microphone.GetDeviceCaps(device, out var min, out var max);
+            if (max == 0 || (min <= Rate && Rate <= max)) return Rate;
+            return max;
         }
 
         // Android can stop delivering samples while still reporting a recording (after a pause, or a capture started
@@ -251,6 +286,11 @@ namespace Cosmic.Companion
             var sum = 0f;
             for (var i = 0; i < available; i++) sum += read[i] * read[i];
             Level = Mathf.Sqrt(sum / available);
+            var seconds = (float)available / clip.frequency;
+            // Down fast, up slowly, and not at all while someone is talking, or a long question would raise the
+            // floor until the voice no longer cleared it.
+            if (Level < NoiseFloor) NoiseFloor = Mathf.Lerp(NoiseFloor, Level, Mathf.Clamp01(seconds * 4f));
+            else if (!Voiced) NoiseFloor = Mathf.Lerp(NoiseFloor, Level, Mathf.Clamp01(seconds * 0.5f));
             Resample(available, clip.frequency);
             if (!Listening) { pending.Clear(); return; }
             while (pending.Count >= FrameSamples)
@@ -279,17 +319,52 @@ namespace Cosmic.Companion
                 return;
             }
             var step = (double)inputRate / Rate;
+            var src = step >= 1.5 ? LowPass(count, (int)Math.Floor(step)) : read;
             var pos = phase;
             while (pos < count)
             {
                 var i = (int)pos;
-                var a = i == 0 ? lastSample : read[i - 1];
-                var b = read[Math.Min(i, count - 1)];
+                var a = i == 0 ? lastSample : src[i - 1];
+                var b = src[Math.Min(i, count - 1)];
                 pending.Add(Pcm(a + (b - a) * (float)(pos - i)));
                 pos += step;
             }
             phase = pos - count;
-            lastSample = read[count - 1];
+            lastSample = src[count - 1];
+        }
+
+        // A triangular FIR of half-width `half` over the new samples, carried across calls: zero gain at the output
+        // rate's Nyquist and above for a 2:1 decimation, which is what keeps 12-24 kHz out of the voice band.
+        float[] LowPass(int count, int half)
+        {
+            var taps = 2 * half + 1;
+            var keep = taps - 1;
+            if (tail.Length != keep) tail = new float[keep];
+            if (filtered.Length < count) filtered = new float[count];
+            var norm = (float)((half + 1) * (half + 1));
+            for (var i = 0; i < count; i++)
+            {
+                var sum = 0f;
+                for (var k = 0; k < taps; k++)
+                {
+                    var j = i - k;
+                    var x = j >= 0 ? read[j] : tail[keep + j];
+                    sum += (half + 1 - Math.Abs(k - half)) * x;
+                }
+                filtered[i] = sum / norm;
+            }
+
+            if (count >= keep)
+            {
+                Array.Copy(read, count - keep, tail, 0, keep);
+            }
+            else
+            {
+                Array.Copy(tail, count, tail, 0, keep - count);
+                Array.Copy(read, 0, tail, keep - count, count);
+            }
+
+            return filtered;
         }
 
         static short Pcm(float f) => (short)Mathf.RoundToInt(Mathf.Clamp(f, -1f, 1f) * short.MaxValue);

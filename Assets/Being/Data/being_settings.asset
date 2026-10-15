@@ -21,8 +21,10 @@ MonoBehaviour:
   connectTimeoutSeconds: 6
   alwaysListening: 0
   listenWindowSeconds: 3
-  silenceMs: 600
-  vadThreshold: 0.65
+  silenceMs: 1000
+  endSilenceSeconds: 1.8
+  maxTurnSeconds: 20
+  vadThreshold: 0.6
   echoTailSeconds: 0.6
   voiceGain: 1.4
   spatialBlend: 0.6
@@ -39,5 +41,5 @@ MonoBehaviour:
   headsetSideMetres: 0.47
   headsetDropMetres: 0.08
   followSeconds: 0.4
-  tapSeconds: 0.4
+  tapSeconds: 0.5
   tapMoveMetres: 0.03

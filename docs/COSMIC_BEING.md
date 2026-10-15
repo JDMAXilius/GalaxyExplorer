@@ -49,13 +49,26 @@ The being is the one voice in the room while it is awake: music and ambience dro
 ## Protocol
 
 Up: `session.update` once; `input_audio_buffer.append` (base64 PCM16 24 kHz) while listening; `input_audio_buffer.clear`
-when a window closes unused; a `conversation.item.create` user message carrying the situation line before a turn whenever it has changed (see Context);
+when a window closes unused; `input_audio_buffer.commit` + `response.create` when the player's turn is ended by a tap or by the
+client's own silence check (1.8 s under the room's level after speech, or 20 s in all), so what was said is answered, not dropped; a `conversation.item.create` user message carrying the situation line before a turn whenever it has changed (see Context);
 `response.create` for typed questions and the greeting; `response.cancel` on interrupt; `function_call_output` after
 a tool.
 
-Down: `session.updated`; `input_audio_buffer.speech_started` / `speech_stopped`; `conversation.item.input_audio_transcription.completed`;
+Down: `session.updated`; `input_audio_buffer.speech_started` / `speech_stopped`; `conversation.item.input_audio_transcription.delta`
+(the guide panel's "You:" line grows as it streams) and `.completed`;
 `response.output_audio.delta`; `response.output_audio_transcript.done`; `response.function_call_arguments.done`;
 `response.done`; `error`.
+
+## Hearing the player (15 Oct 2026)
+
+The session asks for `noise_reduction` (`near_field` for the Quest or Link headset mic, `far_field` for a desk mic)
+and gives the transcriber `BeingSettings.transcriptionPrompt`, a line of the place and body names a player says. The
+server VAD runs at threshold 0.6 with 1000 ms of silence ending a turn. `Mic` opens the device at a rate it supports
+(a 48 kHz-only desk mic used to be asked for 24 kHz and decimated by Unity with no filter) and downsamples through a
+triangular low-pass; it keeps a running room level (`NoiseFloor`) and `Voiced` = 3x that, at least 0.004. Over Link
+Windows lists no headset mic unless the Quest Link app's microphone is enabled, so the desk mic is what records; the
+transcriber invents words from a near-silent desk mic, which was the "words I never said" report. A tap on the sphere
+counts while it moves less than 10% of its distance from the eyes (at least `tapMoveMetres`) within `tapSeconds` 0.5.
 
 ## Context
 
