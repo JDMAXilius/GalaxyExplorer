@@ -105,6 +105,12 @@ namespace GalaxyExplorer
 
         public override void OnPointerDown(GEPointerEventData eventData)
         {
+            if (IsDoublePress() && Destination != null)
+            {
+                Enter(Destination);
+                return;
+            }
+
             if (isCoolingDown)
             {
                 return;

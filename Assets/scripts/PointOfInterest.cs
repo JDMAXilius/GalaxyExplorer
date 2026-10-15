@@ -49,6 +49,32 @@ namespace GalaxyExplorer
         protected IAudioService audioService;
         
         protected bool isCoolingDown;
+
+        // A second press on the same marker within this time is a double click (or double pinch): it goes straight
+        // in, skipping UI 2.0's preview card. Read before the cool-down, which would otherwise swallow it.
+        private const float DoublePressSeconds = 0.45f;
+        private static PointOfInterest _lastPressed;
+        private static float _lastPressTime = -10f;
+
+        /// <summary>Records this press and says whether it completes a double press on this same marker.</summary>
+        protected bool IsDoublePress()
+        {
+            var now = Time.unscaledTime;
+            var twice = _lastPressed == this && now - _lastPressTime <= DoublePressSeconds;
+            _lastPressed = twice ? null : this;
+            _lastPressTime = now;
+            return twice;
+        }
+
+        /// <summary>Opens a marker's place directly, no preview: what a double press does.</summary>
+        protected static void Enter(CosmicSimulation.ExperienceModule module)
+        {
+            var director = CosmicSimulation.ExperienceDirector.Instance;
+            if (module != null && director != null)
+            {
+                director.Switch(module);
+            }
+        }
         
 
         protected enum POIState

@@ -23,6 +23,9 @@ namespace CosmicSimulation
         /// <summary>Where such a panel goes: centred, this far up the view.</summary>
         private const float PanelAboveViewportY = 0.8f;
 
+        /// <summary>The share of the screen's width UI 2.0 leaves open between its rail and its card.</summary>
+        private const float Ui2OpenShare = 0.64f;
+
         /// <summary>
         /// Offsets a fresh content prefab so the middle of what it shows sits on the content root, as scene content
         /// does, and returns half its width in metres so a panel can park beside it (zero when nothing was measured).
@@ -90,7 +93,9 @@ namespace CosmicSimulation
             }
 
             var tanVertical = Mathf.Tan(camera.fieldOfView * 0.5f * Mathf.Deg2Rad) * margin;
-            var tanHorizontal = tanVertical * Mathf.Max(0.1f, camera.aspect);
+            // UI 2.0's rail and card cover both sides of the screen: fit into the open middle, or a row of planets
+            // hides its ends behind them.
+            var tanHorizontal = tanVertical * Mathf.Max(0.1f, camera.aspect) * (UI2.UiTheme.Enabled ? Ui2OpenShare : 1f);
             var distance = MinFitDistanceMetres;
             foreach (var corner in corners)
             {
