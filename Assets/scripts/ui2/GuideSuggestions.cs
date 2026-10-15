@@ -188,6 +188,18 @@ namespace CosmicSimulation.UI2
             return result;
         }
 
+        /// <summary>True for a line that has the guide do something (travel, pull, play, put back) rather than answer.</summary>
+        public static bool IsAction(string line)
+        {
+            foreach (var verb in ActionVerbs)
+            {
+                if (line.StartsWith(verb, System.StringComparison.Ordinal)) return true;
+            }
+            return false;
+        }
+
+        private static readonly string[] ActionVerbs = { "Play ", "Show me ", "Put ", "Take me ", "Open " };
+
         // A fresh line from the pool if there is one, else the oldest of the recent ones.
         private static void Take(List<string> pool, int n, List<string> into)
         {

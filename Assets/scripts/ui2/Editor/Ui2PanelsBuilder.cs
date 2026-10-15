@@ -191,6 +191,7 @@ namespace CosmicSimulation.EditorTools
             var texts = new[] { "What am I looking at?", "Take me to Orion.", "What should I see next?" };
             var questions = new UiButton[texts.Length];
             var questionLabels = new TMP_Text[texts.Length];
+            var questionIcons = new Image[texts.Length];
             for (var i = 0; i < texts.Length; i++)
             {
                 var q = Ui2Builder.Box("question_" + i, panel, 27f, 538f + 52f * i, 390f, 46f);
@@ -200,8 +201,12 @@ namespace CosmicSimulation.EditorTools
                                 new Color(1f, 1f, 1f, 0.3f));
                 var wash = Ui2Builder.Fill(Ui2Builder.Rect("wash", q, 390f, 46f), "ui_rounded_r64_fill", 22f,
                                            Color.clear);
-                Ui2Kit.Glyph(q, "v2_icon_chat", 18f, 11f, 24f, UiTheme.Accent);
+                questionIcons[i] = Ui2Kit.Glyph(q, "v2_icon_chat", 18f, 11f, 24f, UiTheme.Accent);
                 questionLabels[i] = Ui2Kit.Label(q, "label", 56f, 11f, 320f, 24f, texts[i], 18f, UiTheme.Ink);
+                // Suggestions vary in length: a long one shrinks to fit the bubble rather than running out of it.
+                questionLabels[i].enableAutoSizing = true;
+                questionLabels[i].fontSizeMin = 13f;
+                questionLabels[i].fontSizeMax = 18f;
                 q.gameObject.AddComponent<CanvasGroup>();
                 questions[i] = Ui2Kit.Press(q, 390f, 46f, wash, null, null, null, true);
             }
@@ -219,6 +224,9 @@ namespace CosmicSimulation.EditorTools
             so.FindProperty("wave").objectReferenceValue = wave;
             Ui2Kit.Objects(so.FindProperty("questions"), questions);
             Ui2Kit.Objects(so.FindProperty("questionLabels"), questionLabels);
+            Ui2Kit.Objects(so.FindProperty("questionIcons"), questionIcons);
+            so.FindProperty("askIcon").objectReferenceValue = Ui2Builder.Icon("v2_icon_chat");
+            so.FindProperty("doIcon").objectReferenceValue = Ui2Builder.Icon("v2_icon_action");
             so.FindProperty("transcript").objectReferenceValue = transcript.gameObject;
             so.FindProperty("transcriptText").objectReferenceValue = transcriptText;
             so.FindProperty("primary").objectReferenceValue = primary;
