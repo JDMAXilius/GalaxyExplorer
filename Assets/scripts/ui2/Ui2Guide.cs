@@ -29,6 +29,15 @@ namespace CosmicSimulation.UI2
         private UiButton[] questions = Array.Empty<UiButton>();
 
         [SerializeField] private TMP_Text[] questionLabels = Array.Empty<TMP_Text>();
+        [SerializeField] private Image[] questionIcons = Array.Empty<Image>();
+
+        [SerializeField]
+        [Tooltip("A bubble that asks a question.")]
+        private Sprite askIcon = null;
+
+        [SerializeField]
+        [Tooltip("A bubble that has the guide do something: travel, pull, play a sound, put back.")]
+        private Sprite doIcon = null;
 
         [Header("Conversation")]
         [SerializeField] private GameObject transcript = null;
@@ -125,6 +134,11 @@ namespace CosmicSimulation.UI2
                 if (i < questionLabels.Length)
                 {
                     questionLabels[i].text = _picked[i] ?? string.Empty;
+                }
+
+                if (i < questionIcons.Length && questionIcons[i] != null && _picked[i] != null)
+                {
+                    questionIcons[i].sprite = GuideSuggestions.IsAction(_picked[i]) ? doIcon : askIcon;
                 }
             }
 
