@@ -757,10 +757,6 @@ namespace CosmicSimulation
         // ---------- content: a scene, or a prefab under our own root
 
         /// <summary>
-        /// Where a <see cref="ExperienceModule.ContentPrefab"/> spawns: under the <see cref="ViewLoader"/>, which the
-        /// intro moves into place in the room, so prefabs land where scene content does.
-        /// </summary>
-        /// <summary>
         /// Headset only: puts the view straight ahead of where the player is looking, at its height and distance, facing
         /// them, so a place opens in front of them wherever they have turned since (owner's direction, 14 Oct 2026).
         /// </summary>
@@ -788,6 +784,10 @@ namespace CosmicSimulation
             view.SetPositionAndRotation(position, Quaternion.LookRotation(ahead.normalized, Vector3.up));
         }
 
+        /// <summary>
+        /// Where a <see cref="ExperienceModule.ContentPrefab"/> spawns: under the <see cref="ViewLoader"/>, which the
+        /// intro moves into place in the room, so prefabs land where scene content does.
+        /// </summary>
         private Transform ContentRoot()
         {
             if (contentRoot == null)
