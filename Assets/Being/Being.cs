@@ -175,7 +175,9 @@ namespace Cosmic.Companion
         IEnumerator Boot()
         {
             Set(Phase.Thinking);
-            yield return Mic.Request();
+            // Asked once a session on summon; after that only the guide's Enable microphone asks, so a player who
+            // summons the being twice and says no twice is not locked out by Android's "don't ask again" (CS-373).
+            if (!Mic.Asked) yield return Mic.Request();
             mic.Arm();
             var key = keys != null ? keys.OpenAi : "";
             if (key.Length > 0) session.Connect(key, settings, Instructions());
