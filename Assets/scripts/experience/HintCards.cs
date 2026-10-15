@@ -148,6 +148,7 @@ namespace CosmicSimulation
         private float _elapsed;
         private float _animTime;
         private bool _advanceRequested;
+        private PressEdge _space, _enter, _escape, _click;
         private bool _actionDone;
 
         private ManipulationHandler _held;
@@ -421,11 +422,9 @@ namespace CosmicSimulation
         /// </summary>
         private void ReadInput(HintCard card)
         {
+            // Each read every time, not short-circuited, so no key's last-frame state goes stale (CS-370).
             var keyboard = Keyboard.current;
-            if (keyboard != null &&
-                (keyboard.spaceKey.wasPressedThisFrame ||
-                 keyboard.enterKey.wasPressedThisFrame ||
-                 keyboard.escapeKey.wasPressedThisFrame))
+            if (_space.Read(keyboard?.spaceKey) | _enter.Read(keyboard?.enterKey) | _escape.Read(keyboard?.escapeKey))
             {
                 _advanceRequested = true;
             }
@@ -443,7 +442,7 @@ namespace CosmicSimulation
 
             // On the desktop a left click *is* the grab - DesktopMouseInput pulls what it is over - so the click
             // that answers the first card and the click that dismisses it are the same click either way.
-            if (mouse.leftButton.wasPressedThisFrame)
+            if (_click.Read(mouse.leftButton))
             {
                 _advanceRequested = true;
             }

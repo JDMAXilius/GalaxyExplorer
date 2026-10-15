@@ -21,6 +21,8 @@ namespace GalaxyExplorer.XR
     /// </summary>
     public class PalmPause : MonoBehaviour
     {
+        private PressEdge _toggle;
+
         private const float HoldSeconds = 0.4f;
         private const float FacingDegrees = 35f;
         private const float OpenCurl = 0.25f;
@@ -49,8 +51,7 @@ namespace GalaxyExplorer.XR
 
         private void Update()
         {
-            var keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.nKey.wasPressedThisFrame && !XRSettings.isDeviceActive)
+            if (_toggle.Read(Keyboard.current?.nKey) && !XRSettings.isDeviceActive)
             {
                 Toggle();
                 return;

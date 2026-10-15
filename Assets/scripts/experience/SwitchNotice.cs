@@ -113,6 +113,7 @@ namespace CosmicSimulation
         private bool _built;
         private bool _desktop;
         private bool _showing;
+        private GalaxyExplorer.XR.PressEdge _escape;
         private float _shownFor;
 
         public static SwitchNotice Instance { get; private set; }
@@ -287,9 +288,8 @@ namespace CosmicSimulation
                 // on a time scale the failure may have left somewhere odd.
                 _shownFor += Time.unscaledDeltaTime;
 
-                var keyboard = Keyboard.current;
-                if (_shownFor >= holdSeconds ||
-                    (keyboard != null && keyboard.escapeKey.wasPressedThisFrame))
+                var escape = _escape.Read(Keyboard.current?.escapeKey);
+                if (_shownFor >= holdSeconds || escape)
                 {
                     _showing = false;
                 }
