@@ -407,6 +407,10 @@ namespace CosmicSimulation
                 ClearDestinations();
                 RestoreEverything();
 
+                // Every place opens from the default view, never where the last one was orbited, panned or zoomed to
+                // (owner's direction, 14 Oct 2026): the desktop camera goes home before the new content is framed.
+                GalaxyExplorer.XR.DesktopCameraRig.Instance?.ResetView();
+
                 var vo = GalaxyExplorerManager.IsInitialized ? GalaxyExplorerManager.Instance.VoManager : null;
                 if (vo != null)
                 {
