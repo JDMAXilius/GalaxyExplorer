@@ -219,10 +219,12 @@ namespace CosmicSimulation
                 return;
             }
 
+            // From the saved choice first: Resolve() now names the headset's mic when nothing is chosen (CS-371).
             var chosen = Cosmic.Companion.Mic.Resolve();
-            deviceLabel.text = chosen ?? (string.IsNullOrEmpty(Cosmic.Companion.Mic.Device)
-                ? DefaultName
-                : $"{DefaultName} ({Cosmic.Companion.Mic.Device} is unplugged)");
+            var wanted = Cosmic.Companion.Mic.Device;
+            deviceLabel.text = string.IsNullOrEmpty(wanted) ? $"{DefaultName} ({chosen ?? "system"})"
+                : chosen == wanted ? chosen
+                : $"{DefaultName} ({wanted} is unplugged)";
         }
 
         private void Say(string text)

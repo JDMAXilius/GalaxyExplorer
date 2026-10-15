@@ -325,7 +325,9 @@ namespace GalaxyExplorer.Editor
                 if (Microphone.devices.Length == 0) Skip("the being's listening: this machine has no microphone, so a tap goes straight back to idle");
                 else Check(being.Current == Cosmic.Companion.Being.Phase.Listening && !being.Greeting, $"a tap sets it listening without speaking ({being.Current})");
             });
-            Add(window + 0.8f, () =>
+            // Waited for, not timed: the window now holds while the mic hears sound, up to 10 s (CS-371).
+            AddWaitWhile(() => beingUsable && being != null && being.Current != Cosmic.Companion.Being.Phase.Idle, window + 12f);
+            Add(0.2f, () =>
             {
                 if (!beingUsable) return;
                 Check(being.Current == Cosmic.Companion.Being.Phase.Idle, $"and with nothing said the tap's window closes on its own ({being.Current})");

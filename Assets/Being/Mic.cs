@@ -11,6 +11,9 @@ namespace Cosmic.Companion
         const int FrameSamples = Rate / 20;
         const int RingSeconds = 10;
         const string DeviceKey = "Companion.Microphone";
+        // A capture whose write head stops for this long is restarted, at most MaxRestarts times in a row (CS-371).
+        const float StallSeconds = 2f;
+        const int MaxRestarts = 3;
 
         public event Action<byte[]> Frame;
 
@@ -70,6 +73,8 @@ namespace Cosmic.Companion
         string device;
         float[] read = new float[0];
         int last;
+        float advancedAt;
+        int restarts;
         double phase;
         float lastSample;
 
@@ -91,14 +96,21 @@ namespace Cosmic.Companion
             }
         }
 
+        /// <summary>
+        /// True once the player answered "don't ask again" (on Android 11+ a second deny counts): the system will not
+        /// show the request any more, so only the headset's settings can turn the microphone on (CS-371).
+        /// </summary>
+        public static bool Blocked { get; private set; }
+
         public static IEnumerator Request()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
             if (Permitted) yield break;
             var answered = false;
             var callbacks = new UnityEngine.Android.PermissionCallbacks();
-            callbacks.PermissionGranted += _ => answered = true;
+            callbacks.PermissionGranted += _ => { answered = true; Blocked = false; };
             callbacks.PermissionDenied += _ => answered = true;
+            callbacks.PermissionDeniedAndDontAskAgain += _ => { answered = true; Blocked = true; };
             callbacks.PermissionRequestDismissed += _ => answered = true;
             UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Microphone, callbacks);
             for (var waited = 0f; !answered && waited < 30f; waited += Time.unscaledDeltaTime) yield return null;
@@ -108,13 +120,40 @@ namespace Cosmic.Companion
 #endif
         }
 
+        /// <summary>The player's chosen device while it is plugged in, otherwise <see cref="Headset"/>; null is the system default.</summary>
         public static string Resolve()
         {
+            var list = Devices;
             var wanted = Device;
-            if (string.IsNullOrEmpty(wanted)) return null;
-            foreach (var name in Devices)
-                if (name == wanted) return name;
+            if (!string.IsNullOrEmpty(wanted))
+                foreach (var name in list)
+                    if (name == wanted) return name;
+            return Headset(list);
+        }
+
+        /// <summary>
+        /// The headset's own microphone (CS-371). On the Quest that is "Android audio input"; the camcorder and
+        /// voice-recognition entries are presets of the same mic that fail to start on some headsets. Over Link it is the
+        /// Oculus virtual device, which Windows does not make the default. Null: use the system default.
+        /// </summary>
+        public static string Headset(string[] list)
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            foreach (var name in list)
+                if (name == "Android audio input") return name;
+            foreach (var name in list)
+                if (name.IndexOf("camcorder", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("voice recognition", StringComparison.OrdinalIgnoreCase) < 0) return name;
             return null;
+#else
+            if (!UnityEngine.XR.XRSettings.isDeviceActive) return null;
+            // Two passes: a Bluetooth headset is also called "Headset Microphone (...)" and must not beat the Link mic.
+            foreach (var name in list)
+                if (name.IndexOf("Oculus Virtual Audio Device", StringComparison.OrdinalIgnoreCase) >= 0) return name;
+            foreach (var name in list)
+                if (name.StartsWith("Headset Microphone", StringComparison.OrdinalIgnoreCase)) return name;
+            return null;
+#endif
         }
 
         // Opened once while the being is out, so listening starts on the next frame instead of waiting on the driver.
@@ -126,19 +165,41 @@ namespace Cosmic.Companion
             Label = device ?? "default";
             if (Microphone.IsRecording(device)) Microphone.End(device);
             clip = Microphone.Start(device, true, RingSeconds, Rate);
-            if (clip == null) return false;
+            if (clip == null) { Debug.LogWarning($"Mic: '{Label}' did not start; devices: {string.Join(", ", Devices)}"); return false; }
+            Debug.Log($"Mic: armed '{Label}' at {clip.frequency} Hz; devices: {string.Join(", ", Devices)}");
             last = 0;
             phase = 0;
             lastSample = 0f;
+            advancedAt = Time.unscaledTime;
             pending.Clear();
             InUse = true;
             return true;
+        }
+
+        // Android can stop delivering samples while still reporting a recording (after a pause, or a capture started
+        // before the permission landed); a fresh Start is the only cure.
+        void Restart()
+        {
+            if (++restarts > MaxRestarts)
+            {
+                if (restarts == MaxRestarts + 1) Debug.LogWarning($"Mic: no samples from '{Label}' after {MaxRestarts} restarts; giving up until it is armed again.");
+                advancedAt = Time.unscaledTime;
+                return;
+            }
+
+            Debug.LogWarning($"Mic: '{Label}' stopped delivering samples; restarting it ({restarts}/{MaxRestarts}).");
+            var listening = Listening;
+            var count = restarts;
+            Close();
+            restarts = count;
+            if (Arm() && listening) Start();
         }
 
         public void Start()
         {
             if (Listening || clip == null) return;
             Poll();
+            if (clip == null) return; // the poll restarted a stalled capture and could not arm it again
             pending.Clear();
             Listening = true;
         }
@@ -155,6 +216,7 @@ namespace Cosmic.Companion
         public void Close()
         {
             Listening = false;
+            restarts = 0;
             if (clip != null) Microphone.End(device);
             clip = null;
             Level = 0f;
@@ -165,7 +227,14 @@ namespace Cosmic.Companion
         {
             if (clip == null) return;
             var pos = Microphone.GetPosition(device);
-            if (pos < 0 || pos == last) return;
+            if (pos < 0 || pos == last)
+            {
+                if (Time.unscaledTime - advancedAt > StallSeconds) Restart();
+                return;
+            }
+
+            advancedAt = Time.unscaledTime;
+            restarts = 0;
             var available = pos - last;
             if (available < 0) available += clip.samples;
             if (read.Length < available) read = new float[available];

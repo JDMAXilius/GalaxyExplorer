@@ -3,7 +3,9 @@
 *CS-213. One line per thing the app promises on a headset, so every device session covers the same ground and
 two sessions can be compared. Written 14 Oct 2026 against `main` at `f1ae335` (UI 2.0 on by default, hand
 tracking waves 1–3, the voice guide on OpenAI Realtime). When the app changes, change this sheet in the same
-commit.*
+commit. Revised 15 Oct 2026 (CS-381) against the Quest VR plan, `QUEST_VR_PLAN.md`: rows corrected to what the code does
+today, and rows added for the microphone fixes (CS-371) and the gaps the plan lists. Every row marked *(known gap)*
+names the ticket that closes it.*
 
 **How to use it.** Copy this file to `docs/release/runs/<yyyy-mm-dd>_<version>_<what>.md`, fill the header,
 then mark each row in the **P** (passthrough) and **V** (full VR: Room → full dark) columns with `ok`, `FAIL`,
@@ -58,8 +60,12 @@ proximity sensor is not left overridden (CS-319), and save the log beside the sh
 | C2 | Rail: Cosmic Web, Galaxies, Milky Way, Solar System | Each opens its place; the selected one is marked | U2-P2 | | | |
 | C3 | Dock: Explore, Guide, Room | Each opens its panel or changes the room | U2-P2 | | | |
 | C4 | Settings (gear) | Settings panel opens and closes | U2-P6 | | | |
-| C5 | Poke every button with a fingertip, then pinch it with the ray | Both work everywhere | CS-276 | | | |
+| C5 | Pinch each shell button with the ray; then step forward until the shell is within arm's reach and poke a few with a fingertip | The ray works everywhere. The shell is about 1 m away and 1.15 m wide, out of poke reach from where you start, so poke needs stepping forward; the ray is the expected path (plan section 5, decision 1). Poke working at arm's length is not a failure to report. Note the distance at which poke starts to work | CS-276, CS-377 | | | |
 | C6 | Notices (e.g. pick a place that refuses) | The notice bar shows the message and clears | U2-P4 | | | |
+| C7 | Press the Meta button to recenter, then look at the shell and the dock | *(known gap)* Today the content and the menu do not follow the recenter: they stay where they were in the room. After CS-374 the dock re-parks in front of you. Write what moved | CS-374 | | | |
+| C8 | Turn 180° so the menu is behind you; open the palm menu and press Dock | *(known gap)* The menu stays where it was (world-locked) and nothing says it is behind you. The palm menu's Dock brings it in front of you; that is the way back until CS-375 decides on a cue or a drift back | CS-375 | | | |
+| C9 | Cause a notice while the intro runs, and again during a place switch (for example lower both hands, or pick a place that refuses, while the switch is under way) | *(known gap)* Today the notice is not shown: it lives in the shell frame, which is hidden during the intro, during switches and for the 1.5 s afterwards. After CS-376 it shows below gaze. Note whether it showed | CS-376 | | | |
+| C10 | Pull a planet, then another, with the shell open; look where the being stands | Nothing hides the shell and nothing paints over it. Today the being stands 1.4 m away, behind the 1 m shell, and a pulled body can draw over the shell, so this may fail; write which body, where, and from which side | CS-380 | | | |
 
 ## D. Cosmic Web and Galaxies
 
@@ -128,8 +134,8 @@ proximity sensor is not left overridden (CS-319), and save the log beside the sh
 
 | Id | Step | Expected | Ticket | P | V | Notes |
 |---|---|---|---|---|---|---|
-| I1 | First Guide use | The microphone permission prompt appears once | CS-228 | | | |
-| I2 | Deny the prompt (fresh install) | The guide still opens, greets from the stored clip, and says it cannot hear | CS-228, U2-P7 | | | |
+| I1 | Fresh install. Open the Guide and press Enable microphone | The system microphone prompt comes from Enable microphone, once. Unity may also prompt at launch, before the Guide is opened: write in Notes which happened (at launch, at Enable microphone, or both) | CS-228, CS-371, CS-372 | | | |
+| I2 | Deny the prompt once (fresh install) | *(known gap)* Until CS-373 lands the guide does not open at all without microphone permission: no being, no greeting, no suggestions. The Guide panel shows the Microphone message with Enable microphone instead. After CS-373 it opens, greets from the stored clip, says it cannot hear, and the typed suggestions still work | CS-228, U2-P7, CS-373 | | | |
 | I3 | Guide on Wi-Fi: greeting, ask a question | Status reads listening, thinking, speaking; the transcript shows You: and the answer | CC-U2-001 | | | |
 | I4 | Open and close the Guide several times | The suggested question and command change each time; pressing a command does it | CC-U2-001 | | | |
 | I5 | "Take me to the Crab Nebula", "show me Saturn", "put everything back" | Travels, pulls, restores | CS-200 | | | |
@@ -137,17 +143,23 @@ proximity sensor is not left overridden (CS-319), and save the log beside the sh
 | I7 | Tap it while it talks | It stops and listens; the cancelled answer does not resume | CS-200 | | | |
 | I8 | Airplane mode, open the Guide | Stored greeting, an "unavailable" status, no hang | CS-228 | | | |
 | I9 | Latency: end of question to first word | Write the seconds | CS-228 | | | |
+| I10 | On the first Guide use after permission, read logcat (`adb logcat -s Unity AudioRecord AudioFlinger`) | A line `Mic: armed '...' at N Hz; devices: ...` appears, and the device it names is `Android audio input` (not the camcorder or voice recognition presets). Copy the line, with N and the device list, into Notes | CS-371, CS-372 | | | |
+| I11 | While the Guide is listening, take the headset off, wait 10 s, put it on; then open the Meta system menu while it is listening, close it, and ask again | The guide hears the next question each time. A `Mic:` restart line in logcat is fine; a silent, dead microphone is the failure. Narration and the guide's voice stop while you are away (H3) | CS-371 | | | |
+| I12 | Fresh install: deny the prompt, press Enable microphone, deny again. Then turn the microphone on in the headset's settings for the app and press Try again | After the second deny the Guide says microphone access is off for this app and to turn it on in the headset's settings (button: Try again), not the first-time wording. Once it is on, Try again starts the microphone and the guide hears you. It does not wait 30 s for nothing after the second deny | CS-371, CS-372 | | | |
+| I13 | Build with no key, or with Wi-Fi off, and open the Guide with permission given | The Guide shows Unavailable (Try again, Keep exploring), not a listening state with a dead microphone. Check the APK has `INTERNET` (A1) so this is the key or the network, not the manifest | CS-371 | | | |
+| I14 | Mute the microphone at system level (the headset's own mic mute), then ask the guide | Observe and write down what happens (nothing heard? a stuck listening state? a message?). No fix is expected; this row is to find out what the player would see | CS-371 | | | |
 
 ## J. Settings and room
 
 | Id | Step | Expected | Ticket | P | V | Notes |
 |---|---|---|---|---|---|---|
-| J1 | Text size: the three sizes | Card and panels resize | U2-P6 | | | |
+| J1 | Text size: the three sizes | The card and the in-world InfoPanels resize. The shell's own text (rail, dock, Settings, Guide) does not change; that is a known gap, not a failure | U2-P6, CS-377 | | | |
 | J2 | Microphone device chooser | Cycles devices; the level bar moves when you speak | U2-P6 | | | |
-| J3 | About | Version, our links, credits and licence notices; no Microsoft links | CS-086, CS-114, CS-117 | | | |
+| J3 | About from Settings (UI 2.0), and About from the palm menu | Settings > About shows the version and the source link only; credits and licence notices are not there yet. The palm menu's About opens the old slate instead, which still carries Microsoft links (known gap). Write what each shows | CS-086, CS-114, CS-117, CS-379 | | | |
 | J4 | Quit | Asks once to confirm; quits cleanly to Home | U2-P6 | | | |
 | J5 | Room: passthrough, dimmed, full dark | Each mode looks intended; no black rectangles, hard-edged haloes or sprites hiding the room | CS-083, CS-222 | | | |
 | J6 | Repeat J5 in a dim room | Content not too bright or too faint | CS-222 | | | |
+| J7 | Fresh install, before the Guide has ever been used: Settings > Microphone | The page says microphone access has not been given yet and to open Guide and choose Enable microphone (not the "turned off in settings" wording). The first row is Automatic and its note names the device it would use (`Using Android audio input`). The level meter does not cut off the guide's capture later | CS-371 | | | |
 
 ## K. Review checks (what Meta's reviewers try)
 
@@ -175,3 +187,32 @@ proximity sensor is not left overridden (CS-319), and save the log beside the sh
 | M2 | Mouse: click, drag, orbit, pan, wheel, `Home` | GDD 5.3 behaves | GDD 5.3 | | |
 | M3 | Keys: `1`–`0`, `M`, `L`, `R`, `P`, `Tab`, `H`, `U`, `C`, `N`, `Esc`, `F2`–`F8` | Each does what GDD 5.3 says | GDD 5.3 | | |
 | M4 | Release build with `.env` beside the exe | The guide does not connect (no key read outside the editor and Development Builds) | CS-308, CS-322 | | |
+
+## N. Per eye, controllers and desktop-to-headset parity
+
+*Added 15 Oct 2026 (CS-381). Default Quest 3 builds are Single Pass Instanced and Link is Multi Pass, so a Link
+session cannot show a one-eye fault; these rows need the APK on the headset.*
+
+| Id | Step | Expected | Ticket | P | V | Notes |
+|---|---|---|---|---|---|---|
+| N1 | In every place (Cosmic Web, Galaxies, Milky Way, a nebula, Solar System, Sagittarius A*), with the shell open, close the left eye, then the right | Everything seen with both eyes is there with each eye alone: bodies, orbit lines, star clouds, labels, the shell, hands and rays, the placement orb. Nothing missing, doubled, offset or black in one eye. Write the place and what vanished | CS-216, CS-271 | | | |
+| N2 | A controller-only pass: put the hands away, use Touch controllers for the whole sheet's core path (intro, rail, dock, Settings, a pull, a throw, Guide, Quit) | Everything the hands do works from a controller ray and trigger. Rows needing a palm or a pinch (G2, G6, G8) have a controller equivalent or are noted as hand-only | VRC Input.7 | | | |
+| N3 | Scene places: try to move and to scale the Milky Way, the Solar System and Sagittarius A* by hand | *(known gap)* Desktop can; the headset has no path (scene places get no placement handler). Write what happens. Cosmic Web and nebulae scale with two air pinches (D2, E8) | CS-378 | | | |
+
+**Parity sweep.** One row per key in `DesktopShortcuts.cs`. Do the desktop action in a Windows build (M3), then do
+its headset path here and mark the headset result. `N` (narration pause) and `U` (utility window) are handled in
+other files; their headset paths are G8 and C4.
+
+| Id | Desktop key and action | Headset path expected | Ticket | P | V | Notes |
+|---|---|---|---|---|---|---|
+| N4 | `R`: restore the layout | Settings (gear) > Restore scene, then confirm (F12) | U2-P6 | | | |
+| N5 | `Home`: recenter the view | Settings > Bring menu here, or the palm menu's Dock. The Meta button recenter does not move the menu yet (C7) | CS-374, CS-375 | | | |
+| N6 | `C`: summon or dismiss the Cosmic Being | Dock > Guide (I3) | CC-U2-001 | | | |
+| N7 | `L`: show or hide name labels | *(known gap)* No headset path. A Settings switch is proposed | CS-378 | | | |
+| N8 | `P`: passthrough toggle | Dock > Room (J5). On the headset passthrough is the Room setting; the key is a desktop preview | U2-P2 | | | |
+| N9 | `Tab`: fold the legacy dock row | Desktop only (the legacy HUD does not exist in the headset); mark `n/a` | — | | | |
+| N10 | `H` / `F1`: controls overlay | Settings > Help (B5). Under UI 2.0 the key still opens the legacy overlay on desktop | CS-370 | | | |
+| N11 | `Esc`: close the topmost panel or overlay | Each panel's own close or Back control (K1); nothing in the headset needs a key to get out | VRC Functional.3 | | | |
+| N12 | `F2`-`F8`: switch experience | Rail and Dock tiles (C2, C3) | U2-P2 | | | |
+| N13 | `1`-`9`, `0`: pull the Sun to Pluto | Pinch or ray-dwell on the body (F5), or ask the guide: "show me Saturn" (I5) | P3 | | | |
+| N14 | `M`: pull the Moon | Pull the Earth, then pinch its moon (F6) | CS-202 | | | |

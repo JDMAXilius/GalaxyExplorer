@@ -8,6 +8,12 @@ namespace Cosmic.Companion
     {
         public enum Phase { Idle, Listening, Thinking, Speaking }
 
+        // Mic RMS that counts as someone talking, how long it keeps the listen window open after, and the most a noisy
+        // room can stretch the window from when it opened.
+        const float SpeechFloor = 0.02f;
+        const float SpeechHoldSeconds = 1f;
+        const float MaxHoldSeconds = 10f;
+
         [SerializeField] BeingSettings settings;
         [SerializeField] BeingKeys keys;
         [SerializeField] Look look;
@@ -17,7 +23,7 @@ namespace Cosmic.Companion
         Voice voice;
         Vector3 pressedAt;
         float pressedTime, window, micPeak, openAt;
-        bool greeting, answerDone, leaving, ready, speechHeard;
+        bool greeting, answerDone, leaving, ready, speechHeard, rearm, relisten, gone;
         string situated;
 
         public Phase Current { get; private set; }
@@ -128,8 +134,35 @@ namespace Cosmic.Companion
             }
             micPeak = Mathf.Max(micPeak, mic.Level);
             if (speechHeard || settings.alwaysListening) return;
+            // Someone is talking but the server has not called it speech yet (a quieter headset mic): hold the window (CS-371).
+            if (mic.Level > SpeechFloor && Time.unscaledTime - openAt < MaxHoldSeconds) window = Mathf.Max(window, SpeechHoldSeconds);
             window -= Time.unscaledDeltaTime;
             if (window <= 0f) Stop();
+        }
+
+        // Android stops a paused app's capture and may not give it back, and under the Meta system menu (a focus loss,
+        // not a pause) the room should not stream to the guide: release the mic, and take it again on return (CS-371).
+        void OnApplicationPause(bool paused) => Away(paused);
+
+        void OnApplicationFocus(bool focused)
+        {
+            if (UnityEngine.XR.XRSettings.isDeviceActive) Away(!focused);
+        }
+
+        void Away(bool away)
+        {
+            if (away == gone) return;
+            gone = away;
+            if (away)
+            {
+                rearm = mic.Armed;
+                relisten = mic.Listening;
+                mic.Close();
+            }
+            else if (rearm && mic.Arm() && relisten)
+            {
+                mic.Start();
+            }
         }
 
         void OnDestroy()
@@ -174,6 +207,7 @@ namespace Cosmic.Companion
             session.Clear();
             voice.Cue(settings.closeTick);
             if (!session.IsReady) Debug.Log($"Being: offline, mic peak {micPeak:0.000} on {mic.Label}.", this);
+            else if (!speechHeard) Debug.Log($"Being: window closed with no speech heard, mic peak {micPeak:0.000} on {mic.Label} (VAD {settings.vadThreshold:0.00}).", this);
             Set(Phase.Idle);
         }
 

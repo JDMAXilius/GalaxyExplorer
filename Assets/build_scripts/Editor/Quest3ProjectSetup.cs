@@ -293,7 +293,10 @@ namespace GalaxyExplorer.Build
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.Vulkan });
             PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.GameActivity;
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft; // the only orientation Quest supports
-            log.AppendLine($"[Android] IL2CPP, ARM64, API {PlayerSettings.Android.minSdkVersion}-{PlayerSettings.Android.targetSdkVersion}, Vulkan, ASTC, id {AndroidPackageId}");
+            // The guide's ClientWebSocket is not something Unity's automatic detection reliably sees, and a release
+            // APK without INTERNET reaches nobody: the guide greets from its stored line and never hears (CS-371).
+            PlayerSettings.Android.forceInternetPermission = true;
+            log.AppendLine($"[Android] IL2CPP, ARM64, API {PlayerSettings.Android.minSdkVersion}-{PlayerSettings.Android.targetSdkVersion}, Vulkan, ASTC, id {AndroidPackageId}, INTERNET forced");
         }
 
         private static void ConfigureQuality(StringBuilder log)

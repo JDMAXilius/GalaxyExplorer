@@ -33,9 +33,11 @@ Read from the backlog and the project files, not assumed:
   Unity's Android permission callbacks; `Realtime.cs` opens a `ClientWebSocket` with a bearer header;
   `Session.cs` hard-codes `wss://api.openai.com/v1/realtime?model=`. So the APK now needs `RECORD_AUDIO` and
   `INTERNET`, Wi-Fi, and a key in `being_keys.asset` (gitignored).
-- **Nothing in the app handles pause.** A search for `OnApplicationPause` and `OnApplicationFocus` across
-  `Assets/scripts`, `Assets/Being` and `Assets/Cosmic` finds nothing. Narration keeps talking under the system
-  menu until this is written (Meta's VRC.Quest.Functional.2).
+- **Pause is handled (corrected 15 Oct 2026, CS-381).** `Assets/scripts/XR/AppPause.cs` silences the app on
+  `OnApplicationPause` and `OnApplicationFocus` in a headset (audio paused, narration managers disabled), which is
+  Meta's VRC.Quest.Functional.2. Since CS-371, `Being.OnApplicationPause` also releases the microphone on pause
+  and re-arms it on return. Neither has been run on a device yet (run sheet rows H3 and I11). The later
+  mention of a missing pause handler in T2 step 4 is the pre-fix state.
 - **Automation is desktop-only.** `AppCheck.cs` drives the editor with synthetic input; nothing runs on the device.
 - **Passthrough on PC is for developers only** (Meta enables it over Link behind developer-mode toggles), so the
   real passthrough look is a device-only check.
@@ -221,7 +223,7 @@ reviewers run (hands lost, controllers swapped, system gesture, pause) pass befo
      must receive a press (watch for a tile switching or a body pulled).
   4. **Functional.2 pause:** open the system menu during narration and during the being's answer: narration and
      the being must stop; music may continue at the ducked level; closing the menu resumes the app where it was.
-     (Expected to fail today: no pause handler exists. The pass criterion is the behaviour after CS-238.)
+     (`AppPause` and, for the microphone, CS-371 handle this now; unverified on device.)
   5. **Functional.3 never stuck:** from every scene, the dock and Recenter are reachable; a card can always be
      closed; the Quit path works.
   6. **Functional.5 tracking:** crouch, lean, step sideways; content stays in the room; no drift after Recenter.
@@ -420,7 +422,7 @@ grow during T1 and T2 and shrink during T6.
   shows Galaxies under 72, the cut is content, not a renderer change.
 - **Passthrough alpha.** Any additive shader that writes alpha 1 punches a hole in the room. Only the audit finds
   them.
-- **Pause.** No handler exists; it fails Functional.2 today. CS-221/CS-238 is small but mandatory.
+- **Pause.** Handled by `AppPause` and, for the microphone, `Being.OnApplicationPause` (CS-371); still unverified on device (H3, I11).
 - **The being on battery and Wi-Fi.** A live socket and an open mic cost battery and heat; T4's soak measures it.
 - **Debug signing.** Fine for every phase here; decide the release keystore before T6 so testers see the final
   certificate.
