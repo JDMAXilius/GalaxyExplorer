@@ -28,6 +28,14 @@ namespace Cosmic.Companion
         public float distanceMetres = 1.4f;
         public float sideMetres = 0.32f;
         public float dropMetres = -0.1f;
+        // The headset station. The UI 2.0 shell is a world-locked panel about 0.93 m from the eyes and 1.15 m wide, so
+        // the desktop station (1.4 m out, 13 degrees left) sat behind it whenever the player looked at it. Nearer than
+        // the panel's plane and about 40 degrees left - just past its left edge - the being can cover the panel when
+        // the head turns but never hide behind it. Desktop keeps the far station: its UI is drawn on the screen plane.
+        // Head-frame components like the three above: drop is up-positive.
+        public float headsetDistanceMetres = 0.57f;
+        public float headsetSideMetres = 0.47f;
+        public float headsetDropMetres = 0.08f;
         public float followSeconds = 0.4f;
         public float tapSeconds = 0.4f;
         public float tapMoveMetres = 0.03f;

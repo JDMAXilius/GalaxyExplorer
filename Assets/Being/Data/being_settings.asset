@@ -35,6 +35,9 @@ MonoBehaviour:
   distanceMetres: 1.4
   sideMetres: 0.32
   dropMetres: -0.1
+  headsetDistanceMetres: 0.57
+  headsetSideMetres: 0.47
+  headsetDropMetres: 0.08
   followSeconds: 0.4
   tapSeconds: 0.4
   tapMoveMetres: 0.03
