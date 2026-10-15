@@ -73,6 +73,9 @@ namespace CosmicSimulation.UI2
         private bool _noticeAdopted;
         private readonly ShellTextSize _textSize = new ShellTextSize();
 
+        private GalaxyExplorer.XR.PressEdge _escape;
+
+
         public static Ui2Shell Instance { get; private set; }
 
         public Mode Current { get; private set; } = Mode.Explore;
@@ -307,8 +310,7 @@ namespace CosmicSimulation.UI2
             }
 
             // Esc backs out one step on a keyboard: the overlay first, then the guide.
-            var keyboard = UnityEngine.InputSystem.Keyboard.current;
-            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
+            if (_escape.Read(UnityEngine.InputSystem.Keyboard.current?.escapeKey))
             {
                 if (Open != Overlay.None)
                 {
