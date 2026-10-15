@@ -1,6 +1,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using GalaxyExplorer;
 using TMPro;
 using UnityEngine;
@@ -41,6 +42,19 @@ namespace CosmicSimulation.UI2
         [SerializeField] private GameObject notice = null;
         [SerializeField] private TMP_Text noticeText = null;
 
+        [SerializeField]
+        [Tooltip("Headset: metres from the eyes to the notice. Nearer than the shell, which parks about 0.8 m out, " +
+                 "so a notice in front of the menu is never placed behind it in depth.")]
+        private float noticeDistanceMetres = 0.7f;
+
+        [SerializeField]
+        [Tooltip("Headset: degrees below the gaze the notice sits, so it reads without covering what is looked at.")]
+        private float noticeDropDegrees = 12f;
+
+        [SerializeField]
+        [Tooltip("Headset: degrees the gaze may wander from the notice before it glides back under it.")]
+        private float noticeFollowDegrees = 25f;
+
         /// <summary>World size of one 1487 x 1058 design-frame pixel (rail 88 mm, frame 1.15 m). Provisional until U2-P0.</summary>
         public const float MetresPerPixel = 0.00077f;
 
@@ -54,6 +68,11 @@ namespace CosmicSimulation.UI2
         private bool _screen;
         private float _noticeUntil;
         private string[][] _contexts;
+        private Ui2NoticeAnchor _noticeAnchor;
+        private bool _noticeAdopted;
+        private readonly ShellTextSize _textSize = new ShellTextSize();
+
+        private GalaxyExplorer.XR.PressEdge _escape;
 
         public static Ui2Shell Instance { get; private set; }
 
@@ -67,8 +86,15 @@ namespace CosmicSimulation.UI2
         /// <summary>True when the rail, picker and card should be showing.</summary>
         public bool ExploreVisible => Current == Mode.Explore && Open == Overlay.None;
 
-        /// <summary>True while a notice is up; the breadcrumb gives way to it.</summary>
+        /// <summary>True while a notice is up, wherever it is drawn.</summary>
         public bool NoticeShowing => notice != null && notice.activeSelf;
+
+        /// <summary>True while a notice is up across the top of the frame, where the breadcrumb gives way to it.</summary>
+        public bool NoticeInFrame => NoticeShowing && !_noticeAdopted;
+
+        // GalaxyExplorerManager decides the platform in its Awake; until then Platform reads HoloLensGen1, which is
+        // neither answer, so the notice is not moved out of the frame on a guess.
+        private static bool InHeadset => GalaxyExplorerManager.IsQuest3;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Boot()
@@ -99,6 +125,17 @@ namespace CosmicSimulation.UI2
 
             SwitchNotice.Redirect = TakeNotice;
             frame.SetActive(false);
+
+            // The text-size setting reaches the shell (CS-377), but not the rail's and dock's labels or Explore's
+            // chips. Read before anything resizes text, so the sizes kept are the design's.
+            var fixedLayout = new List<Transform> { rail.transform, explore.transform, guide.transform, room.transform };
+            var exploring = GetComponent<Ui2Explore>();
+            if (exploring != null)
+            {
+                fixedLayout.AddRange(exploring.FixedText);
+            }
+
+            _textSize.Collect(transform, fixedLayout);
         }
 
         private void Start()
@@ -144,6 +181,11 @@ namespace CosmicSimulation.UI2
             {
                 Instance = null;
             }
+
+            if (_noticeAnchor != null)
+            {
+                Destroy(_noticeAnchor.gameObject);
+            }
         }
 
         public void Set(Mode mode)
@@ -160,7 +202,10 @@ namespace CosmicSimulation.UI2
             Apply();
         }
 
-        /// <summary>Shows one line across the top for a few seconds: loading, unavailable, failed, restored.</summary>
+        /// <summary>
+        /// Shows one line for a few seconds: loading, unavailable, failed, restored. Across the top of the frame on a
+        /// monitor; in the headset just below the gaze, so it shows while the frame is hidden (CS-376).
+        /// </summary>
         public void Notify(string message, float seconds = 4f)
         {
             if (notice == null || string.IsNullOrEmpty(message))
@@ -301,6 +346,7 @@ namespace CosmicSimulation.UI2
         private void Update()
         {
             UiButton.Deliver();
+            _textSize.Apply(InfoPanel.TextScale, InHeadset);
 
             if (notice != null && notice.activeSelf && Time.unscaledTime > _noticeUntil)
             {
@@ -309,8 +355,7 @@ namespace CosmicSimulation.UI2
             }
 
             // Esc backs out one step on a keyboard: the overlay first, then the guide.
-            var keyboard = UnityEngine.InputSystem.Keyboard.current;
-            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
+            if (_escape.Read(UnityEngine.InputSystem.Keyboard.current?.escapeKey))
             {
                 if (Open != Overlay.None)
                 {
@@ -363,6 +408,13 @@ namespace CosmicSimulation.UI2
             {
                 // Not remembered: UI 2.0 hiding the legacy dock is not the player pressing Tab.
                 DesktopDock.Instance.SetVisible(false, remember: false);
+            }
+
+            if (!_noticeAdopted && notice != null && InHeadset)
+            {
+                _noticeAdopted = true;
+                _noticeAnchor = Ui2NoticeAnchor.Adopt(notice, GetComponent<Canvas>(), noticeDistanceMetres,
+                                                      noticeDropDegrees, noticeFollowDegrees);
             }
 
             if (GalaxyExplorerManager.IsDesktop)

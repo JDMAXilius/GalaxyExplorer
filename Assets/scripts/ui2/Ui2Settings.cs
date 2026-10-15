@@ -8,7 +8,7 @@ using UnityEngine;
 namespace CosmicSimulation.UI2
 {
     /// <summary>
-    /// The UI 2.0 settings panel (docs/design/v2, S23 to S27): sound, narration, text size, microphone,
+    /// The UI 2.0 settings panel (docs/design/v2, S23 to S27): sound, narration, labels, text size, microphone,
     /// Help, About, Bring menu here, Restore scene and Quit. It writes the same preferences the legacy
     /// utility window wrote, so the two never disagree.
     /// </summary>
@@ -27,6 +27,8 @@ namespace CosmicSimulation.UI2
         [SerializeField] private UiSwitch soundSwitch = null;
         [SerializeField] private UiButton narration = null;
         [SerializeField] private UiSwitch narrationSwitch = null;
+        [SerializeField] private UiButton labels = null;
+        [SerializeField] private UiSwitch labelsSwitch = null;
         [SerializeField] private UiButton[] sizes = Array.Empty<UiButton>();
         [SerializeField] private float[] sizeValues = { 1f, 1.25f, 1.5f };
         [SerializeField] private UiButton microphone = null;
@@ -46,6 +48,10 @@ namespace CosmicSimulation.UI2
         [SerializeField] private float levelWidth = 431f;
         [SerializeField] private TMP_Text empty = null;
         [SerializeField] private UiButton devicesDone = null;
+
+        [SerializeField]
+        [Tooltip("Asks the system for the microphone. Shown only while it has not been given and can still be asked for.")]
+        private UiButton allow = null;
 
         [Header("About")]
         [SerializeField] private UiButton aboutBack = null;
@@ -69,20 +75,39 @@ namespace CosmicSimulation.UI2
         private AudioClip _meter;
         private string _meterDevice;
         private readonly float[] _window = new float[512];
+        private bool _requesting;
+        private bool _paintedPermitted;
+        private static Ui2Settings _instance;
 
         private void Start()
         {
+            _instance = this;
             var shell = Ui2Shell.Instance;
             close.Clicked += Close;
             devicesClose.Clicked += Close;
             aboutClose.Clicked += Close;
             devicesBack.Clicked += () => Go(Page.Main);
             devicesDone.Clicked += () => Go(Page.Main);
+            // Null until Build Shell Prefab is rerun after CS-373/CS-378; the page must not throw in between.
+            if (allow != null)
+            {
+                allow.Clicked += () =>
+                {
+                    if (!_requesting)
+                    {
+                        StartCoroutine(AllowMicrophone());
+                    }
+                };
+            }
             aboutBack.Clicked += () => Go(Page.Main);
             aboutDone.Clicked += () => Go(Page.Main);
 
             sound.Clicked += () => Mute.On = !Mute.On;
             narration.Clicked += () => VOManager.NarrationEnabled = !VOManager.NarrationEnabled;
+            if (labels != null)
+            {
+                labels.Clicked += () => MoonLabel.ShowLabels = !MoonLabel.ShowLabels;
+            }
             for (var i = 0; i < sizes.Length; i++)
             {
                 var value = sizeValues[i];
@@ -94,7 +119,8 @@ namespace CosmicSimulation.UI2
             aboutRow.Clicked += () => Go(Page.About);
             bring.Clicked += () =>
             {
-                DockController.Instance?.BringToPlayer();
+                // The menu only: the palm Dock and the headset's recenter also send moved content home (CS-374).
+                DockController.Instance?.ParkMenu();
                 shell.Notify("Menu moved in front of you.");
             };
             restore.Clicked += () => Ask("Put everything back?",
@@ -131,6 +157,22 @@ namespace CosmicSimulation.UI2
         }
 
         private static void Close() => Ui2Shell.Instance.Show(Ui2Shell.Overlay.None);
+
+        /// <summary>Opens Settings on its About page: the palm menu's About under UI 2.0 (CS-379).</summary>
+        public static void ShowAbout()
+        {
+            if (Ui2Shell.Instance == null)
+            {
+                return;
+            }
+
+            // Opening Settings lands on its main page (OnShellChanged), so the About page is chosen after.
+            Ui2Shell.Instance.Show(Ui2Shell.Overlay.Settings);
+            if (_instance != null)
+            {
+                _instance.Go(Page.About);
+            }
+        }
 
         private void OnShellChanged()
         {
@@ -212,6 +254,10 @@ namespace CosmicSimulation.UI2
             {
                 soundSwitch.On = !Mute.On;
                 narrationSwitch.On = VOManager.NarrationEnabled;
+                if (labelsSwitch != null)
+                {
+                    labelsSwitch.On = MoonLabel.ShowLabels;
+                }
                 for (var i = 0; i < sizes.Length; i++)
                 {
                     sizes[i].Selected = Mathf.Approximately(InfoPanel.TextScale, sizeValues[i]);
@@ -219,10 +265,17 @@ namespace CosmicSimulation.UI2
 
                 var device = Cosmic.Companion.Mic.Resolve();
                 microphoneValue.overflowMode = TextOverflowModes.Ellipsis;
-                microphoneValue.text = Cosmic.Companion.Mic.Devices.Length == 0 ? "None found" : Friendly(device) ?? "Default";
+                microphoneValue.text = !Cosmic.Companion.Mic.Permitted ? "Access off"
+                    : Cosmic.Companion.Mic.Devices.Length == 0 ? "None found" : Friendly(device) ?? "Default";
             }
             else if (_page == Page.Devices)
             {
+                // Access can also arrive from the headset's own settings while this page is up.
+                if (Cosmic.Companion.Mic.Permitted != _paintedPermitted)
+                {
+                    PaintDevices();
+                }
+
                 Meter();
             }
         }
@@ -255,12 +308,30 @@ namespace CosmicSimulation.UI2
                     : i == 0 ? "Using " + (Friendly(chosen) ?? "the system default") : "Current device";
             }
 
-            empty.text = !Cosmic.Companion.Mic.Permitted
+            _paintedPermitted = Cosmic.Companion.Mic.Permitted;
+            empty.text = !_paintedPermitted
                 ? Cosmic.Companion.Mic.Blocked
                     ? "Microphone access is off. Turn it on in the headset's settings for this app to talk to the guide."
-                    : "Microphone access has not been given yet. Open Guide and choose Enable microphone."
+                    : "Microphone access has not been given yet. Choose Allow microphone to talk to the guide."
                 : found.Length == 0 ? "No microphone found. Connect one or check microphone access." : string.Empty;
+
+            // After "don't ask again" the system shows nothing, so the button would do nothing (CS-371).
+            if (allow != null)
+            {
+                allow.gameObject.SetActive(!_paintedPermitted && !Cosmic.Companion.Mic.Blocked);
+            }
             StopMeter();
+        }
+
+        private System.Collections.IEnumerator AllowMicrophone()
+        {
+            _requesting = true;
+            yield return Cosmic.Companion.Mic.Request();
+            _requesting = false;
+            if (_page == Page.Devices && panel.activeSelf)
+            {
+                PaintDevices();
+            }
         }
 
         // The headset's mic by what it is, not by its driver name (the Link one does not fit a row).

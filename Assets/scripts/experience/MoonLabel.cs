@@ -68,9 +68,32 @@ namespace CosmicSimulation
 
         /// <summary>
         /// The player's app-wide label preference, ANDed with each label's own <c>_shown</c> so toggling never strands
-        /// a label over a hidden moon. Static so a label created later still honours it.
+        /// a label over a hidden moon. Static so a label created later still honours it. Kept across sessions, like
+        /// <see cref="Mute"/>: the desktop L key and the Settings switch both write it (CS-378).
         /// </summary>
-        public static bool ShowLabels = true;
+        public static bool ShowLabels
+        {
+            // Read lazily: PlayerPrefs throws from a static initialiser, which runs before the engine is up.
+            get => _showLabels ??= PlayerPrefs.GetInt(ShowLabelsKey, 1) == 1;
+            set
+            {
+                if (ShowLabels == value)
+                {
+                    return;
+                }
+
+                _showLabels = value;
+                PlayerPrefs.SetInt(ShowLabelsKey, value ? 1 : 0);
+                PlayerPrefs.Save();
+            }
+        }
+
+        private const string ShowLabelsKey = "CosmicSimulation.ShowLabels";
+        private static bool? _showLabels;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics() => _showLabels = null;
+
         private Camera _camera;
         private FontStyles _baseStyle;
         private float _style;          // 0 small, 1 large

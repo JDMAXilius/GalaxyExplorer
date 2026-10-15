@@ -13,7 +13,8 @@ namespace CosmicSimulation.UI2
     /// The UI 2.0 guide panel (docs/design/v2, S15 to S22): says what the companion is doing in words, keeps the
     /// conversation on screen, offers suggestions made from what the player has in front of them, and explains a
     /// missing microphone or a failed connection. Opening the dock's Guide brings the companion out; leaving it
-    /// sends the companion away.
+    /// sends the companion away. Only listening needs the microphone: without one the companion still comes out
+    /// and answers the suggestions (CS-373).
     /// </summary>
     public class Ui2Guide : MonoBehaviour
     {
@@ -211,9 +212,10 @@ namespace CosmicSimulation.UI2
             }
         }
 
+        // Whatever the microphone: Being.Ask is text, so suggestions work without one (CS-373).
         private static void Summon()
         {
-            if (Being.Host.Current == null && Companion.Mic.Permitted && Cosmic.Companion.Mic.Devices.Length > 0)
+            if (Being.Host.Current == null)
             {
                 DockController.Instance?.ToggleBeing();
             }
@@ -221,16 +223,6 @@ namespace CosmicSimulation.UI2
 
         private static Status Read()
         {
-            if (!Companion.Mic.Permitted)
-            {
-                return Status.PermissionNeeded;
-            }
-
-            if (Cosmic.Companion.Mic.Devices.Length == 0)
-            {
-                return Status.NoMicrophone;
-            }
-
             var being = Being.Host.Current;
             if (being == null)
             {
@@ -248,8 +240,16 @@ namespace CosmicSimulation.UI2
                 case Companion.Being.Phase.Listening: return Status.Listening;
                 case Companion.Being.Phase.Thinking: return Status.Thinking;
                 case Companion.Being.Phase.Speaking: return Status.Speaking;
-                default: return Status.Idle;
             }
+
+            // A missing microphone only matters at rest, where the next thing would be to listen: it is a note in
+            // place of "Start listening", not a state that takes the guide away.
+            if (!Companion.Mic.Permitted)
+            {
+                return Status.PermissionNeeded;
+            }
+
+            return Companion.Mic.Devices.Length == 0 ? Status.NoMicrophone : Status.Idle;
         }
 
         private void Update()
@@ -263,9 +263,9 @@ namespace CosmicSimulation.UI2
             var status = Read();
             if (status != _status)
             {
-                // Back to listening after an answer: fresh suggestions for the next question.
+                // Back to listening, or to rest, after an answer: fresh suggestions for the next question.
                 if ((_status == Status.Speaking || _status == Status.Thinking) &&
-                    (status == Status.Listening || status == Status.Idle))
+                    (status == Status.Listening || status == Status.Idle || MicOff(status)))
                 {
                     Pick();
                 }
@@ -324,14 +324,16 @@ namespace CosmicSimulation.UI2
             }
         }
 
-        private bool Trouble => _status == Status.Unavailable || _status == Status.PermissionNeeded ||
-                                _status == Status.NoMicrophone;
+        // Only a companion that cannot answer replaces the conversation; a missing microphone does not (CS-373).
+        private bool Trouble => _status == Status.Unavailable;
+
+        private static bool MicOff(Status status) => status == Status.PermissionNeeded || status == Status.NoMicrophone;
 
         private void Paint()
         {
             var active = _status == Status.Listening || _status == Status.Speaking;
             phase.color = active ? UiTheme.Accent : UiTheme.Ink;
-            wave.color = active ? UiTheme.Accent : Trouble ? UiTheme.InkSecondary : UiTheme.Ink;
+            wave.color = active ? UiTheme.Accent : Trouble || MicOff(_status) ? UiTheme.InkSecondary : UiTheme.Ink;
 
             string heading, detail, action, other = "Dismiss";
             Sprite icon;
@@ -370,21 +372,19 @@ namespace CosmicSimulation.UI2
                     other = "Keep exploring";
                     break;
                 case Status.PermissionNeeded:
-                    heading = "Microphone";
+                    heading = "Microphone off";
                     // After "don't ask again" the system shows no request, so the button alone cannot help (CS-371).
                     detail = Companion.Mic.Blocked
                         ? "Microphone access is off for this app. Turn it on in the headset's settings for this app, then try again."
-                        : "Use your microphone to ask the guide questions.";
+                        : "Tap a suggestion, or enable the microphone.";
                     action = Companion.Mic.Blocked ? "Try again" : "Enable microphone";
                     icon = micIcon;
-                    other = "Not now";
                     break;
                 case Status.NoMicrophone:
                     heading = "No microphone";
-                    detail = "Choose another device or check access.";
+                    detail = "Tap a suggestion, or choose a microphone in Settings.";
                     action = "Choose device";
                     icon = micIcon;
-                    other = "Keep exploring";
                     break;
                 default:
                     heading = "Ready to help";
@@ -404,14 +404,16 @@ namespace CosmicSimulation.UI2
             secondary.Interactable = _status != Status.Listening;
             secondary.GetComponent<CanvasGroup>().alpha = 1f;
 
-            // The conversation and the suggestions stay up through an answer; only a problem replaces them.
+            // The conversation and the suggestions stay up through an answer and without a microphone; only a
+            // companion that could not connect replaces them.
             transcript.SetActive(!Trouble);
             PaintSuggestions();
         }
 
         private void PaintSuggestions()
         {
-            var canAsk = !Trouble && _status != Status.Connecting && Being.Host.Current != null;
+            var being = Being.Host.Current;
+            var canAsk = being != null && being.Online;
             for (var i = 0; i < questions.Length; i++)
             {
                 questions[i].gameObject.SetActive(!Trouble && i < _picked.Length && _picked[i] != null);
@@ -430,7 +432,8 @@ namespace CosmicSimulation.UI2
             string text;
             if (Lines.Count == 0 && !waiting)
             {
-                text = Dim + "Ask something, or pick a suggestion below.</color>";
+                text = Dim + (MicOff(_status) ? "Pick a suggestion below." : "Ask something, or pick a suggestion below.") +
+                       "</color>";
             }
             else
             {
@@ -497,10 +500,11 @@ namespace CosmicSimulation.UI2
             _requesting = true;
             yield return Companion.Mic.Request();
             _requesting = false;
-            if (Companion.Mic.Permitted)
-            {
-                Summon();
-            }
+
+            // The answer may leave the status as it was but change its wording (a refusal that became "don't ask
+            // again"), which Update would not repaint. The companion arms the microphone itself on its next listen.
+            Paint();
+            Summon();
         }
 
         private static void OnSecondary() => Ui2Shell.Instance.Set(Ui2Shell.Mode.Explore);

@@ -51,7 +51,10 @@ namespace Cosmic.Companion
             if (ready) return;
             ready = true;
             being = GetComponent<Being>();
-            offset = new Vector3(-settings.sideMetres, settings.dropMetres, settings.distanceMetres);
+            // Decided once at summon: the headset station has to sit nearer than the world-locked shell (see BeingSettings).
+            offset = UnityEngine.XR.XRSettings.isDeviceActive
+                ? new Vector3(-settings.headsetSideMetres, settings.headsetDropMetres, settings.headsetDistanceMetres)
+                : new Vector3(-settings.sideMetres, settings.dropMetres, settings.distanceMetres);
         }
     }
 }

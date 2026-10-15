@@ -30,6 +30,7 @@ namespace CosmicSimulation
         [SerializeField] private float metresPerNotch = 0.35f;
 
         private Vector3 _home;
+        private GalaxyExplorer.XR.PressEdge _reset;
         private Quaternion _homeRotation;
         private float _yaw, _pitch;
 
@@ -72,7 +73,7 @@ namespace CosmicSimulation
             }
 
             var keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.rKey.wasPressedThisFrame)
+            if (_reset.Read(keyboard?.rKey))
             {
                 transform.SetPositionAndRotation(_home, _homeRotation);
                 var euler = _homeRotation.eulerAngles;

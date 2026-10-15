@@ -125,16 +125,18 @@ an owner decision (section 5), not a ticket.
 Q0 and Q1 come first because nothing after them can be judged without a trustworthy device run. Q2 to Q4 can run in
 parallel once the owner has answered section 5.
 
-## 5. Owner decisions
+## 5. Owner decisions — taken 15 Oct 2026 (D-016)
 
-1. **How the menu is reached in the headset.** (a) Ray-first at about 1 m, as now (recommended: it matches Meta's ray
-   band and the current layout), or (b) poke-first at 0.45 m, which means a smaller, closer panel.
-2. **When the menu is behind you.** (a) It stays put; the palm menu's Dock and the Meta recenter bring it back
-   (recommended, Meta's preference for world-locked UI), or (b) it drifts back into view after a few seconds.
-3. **The body card.** Keep it in the shell (now), or show it beside the pulled body as well.
-4. **Desktop-only actions.** Accept the labels toggle and moving or scaling the scene places as desktop-only, or add
-   headset paths (CS-378).
-5. **Palm menu.** Restyle it on `Ui2Kit` or retire it (CS-352, already open).
+The owner's answer: "do all what you recommend". So:
+
+1. **Menu reached by ray at about 1 m** (as now). Poke stays possible by stepping forward; the layout is not shrunk.
+2. **The menu stays where it is.** The Meta recenter (CS-374) and the palm menu's Dock bring it back, and a small cue
+   says where it is when it is fully out of view (CS-375).
+3. **The body card stays in the shell** for now; a card beside the pulled body is a later design pass, not a fix.
+4. **Headset paths are added** for the labels toggle (a Settings switch on both platforms) and for moving and scaling
+   the scene places by hand (CS-378).
+5. **The palm menu stays and is fixed for UI 2.0** (CS-379: About, Dock sound, Reset). Restyling it on `Ui2Kit`
+   remains CS-352, an open owner choice.
 
 ## 6. Sources
 

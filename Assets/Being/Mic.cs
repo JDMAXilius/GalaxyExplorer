@@ -31,6 +31,8 @@ namespace Cosmic.Companion
         static void ResetStatics()
         {
             chosenDevice = null;
+            Asked = false;
+            Blocked = false;
             Refresh();
         }
 
@@ -102,10 +104,14 @@ namespace Cosmic.Companion
         /// </summary>
         public static bool Blocked { get; private set; }
 
+        /// <summary>True once the system has been asked this session.</summary>
+        public static bool Asked { get; private set; }
+
         public static IEnumerator Request()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
             if (Permitted) yield break;
+            Asked = true;
             var answered = false;
             var callbacks = new UnityEngine.Android.PermissionCallbacks();
             callbacks.PermissionGranted += _ => { answered = true; Blocked = false; };

@@ -144,6 +144,22 @@ namespace GalaxyExplorer.XR
             set => manipulationType = value;
         }
 
+        /// <summary>
+        /// Settable for handlers added at run time, which no prefab could tick the box on (a view scene's place).
+        /// </summary>
+        public bool PlayGrabSounds
+        {
+            get => playGrabSounds;
+            set => playGrabSounds = value;
+        }
+
+        /// <summary>What two hands may do; settable for the same run-time handlers.</summary>
+        public TwoHandedManipulation TwoHandedType
+        {
+            get => twoHandedManipulationType;
+            set => twoHandedManipulationType = value;
+        }
+
         public bool IsManipulating => _pointers.Count > 0;
 
         /// <summary>The object most recently taken hold of and still held, or null.</summary>
@@ -165,11 +181,52 @@ namespace GalaxyExplorer.XR
             }
         }
 
+        // Every place set, newest last. A stack rather than one slot (CS-378): a destination nebula opened over the
+        // Milky Way is the place while it is open, and the map has to take the air pinches back once it closes,
+        // though nothing re-registers the map then.
+        private static readonly List<ManipulationHandler> Places = new List<ManipulationHandler>();
+
         /// <summary>
-        /// The place the player stands inside (a nebula, the Cosmic Web), which no ray from inside can hit; driven
-        /// by two air pinches (<see cref="BeginAirManipulation"/>). Set by whoever spawns the place.
+        /// The place the player stands inside or in front of (a nebula, the Cosmic Web, a view scene), which no ray
+        /// from inside can hit; driven by two air pinches (<see cref="BeginAirManipulation"/>). Set by whoever
+        /// spawns the place; reads back the newest one still alive, so a closed overlay hands back to the place
+        /// under it. Setting null forgets them all.
         /// </summary>
-        public static ManipulationHandler Place { get; set; }
+        public static ManipulationHandler Place
+        {
+            get
+            {
+                for (var i = Places.Count - 1; i >= 0; i--)
+                {
+                    var place = Places[i];
+                    if (place == null)
+                    {
+                        Places.RemoveAt(i);
+                        continue;
+                    }
+
+                    // Skipped, not dropped, while switched off: it may come back. A scene being unloaded is no
+                    // longer loaded, so the place just left cannot be pinched in the frames before it is destroyed.
+                    if (place.gameObject.activeInHierarchy && place.gameObject.scene.isLoaded)
+                    {
+                        return place;
+                    }
+                }
+
+                return null;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    Places.Clear();
+                    return;
+                }
+
+                Places.Remove(value);
+                Places.Add(value);
+            }
+        }
 
         /// <summary>
         /// Replaces <see cref="ClampScale"/> during air-only manipulation: arm's-length limits would crush a room.

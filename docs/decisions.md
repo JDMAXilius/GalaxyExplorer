@@ -6,6 +6,19 @@ you change one, update the affected docs in the same commit.
 
 ---
 
+## 2026-10-15 — Quest readiness
+
+### D-016 — Headset UI: ray-first panels, world-locked with recall, headset paths for every desktop action
+**Decision.** The owner took every recommendation in `docs/release/QUEST_VR_PLAN.md` section 5: UI 2.0 stays a
+flat world-space panel reached by ray at about 1 m (no "3D UI" rebuild); it stays where it is parked, and the Meta
+recenter and the palm menu bring it back, with a cue when it is out of view; the body card stays in the shell; the
+labels toggle and moving or scaling scene places get headset paths; the palm menu stays and is fixed for UI 2.0.
+**Why.** Meta's guidance (ray band 0.8-3 m, world-locked UI summoned back rather than chasing the head) and the
+reference apps use flat panels placed well in space; the gaps found were placement and behaviour, not dimensionality.
+**Consequence.** Phase 11 tickets CS-373 to CS-380 are built to these answers; CS-352 (palm menu restyle) stays open.
+
+---
+
 ## 2026-10-14 — Code audit
 
 ### D-015 — TouchScript and the Phase 0 scene backups are deleted

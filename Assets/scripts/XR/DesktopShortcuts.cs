@@ -84,10 +84,19 @@ namespace GalaxyExplorer.XR
                 _desktopMenu.OnToggleDesktopButtonVisibility();
             }
 
-            // The controls overlay still lives on the legacy desktop HUD.
-            if ((Pressed(keyboard, Key.H) | Pressed(keyboard, Key.F1)) && _desktopMenu != null)
+            // Under UI 2.0 help is its Help overlay (CS-370); the legacy HUD's controls overlay is hidden with it.
+            if (Pressed(keyboard, Key.H) | Pressed(keyboard, Key.F1))
             {
-                _desktopMenu.OnHelpButtonPressed();
+                var shell = CosmicSimulation.UI2.Ui2Shell.Instance;
+                if (shell != null)
+                {
+                    var help = CosmicSimulation.UI2.Ui2Shell.Overlay.Help;
+                    shell.Show(shell.Open == help ? CosmicSimulation.UI2.Ui2Shell.Overlay.None : help);
+                }
+                else if (_desktopMenu != null)
+                {
+                    _desktopMenu.OnHelpButtonPressed();
+                }
             }
 
             if (Pressed(keyboard, Key.Escape))

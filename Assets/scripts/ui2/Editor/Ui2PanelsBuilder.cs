@@ -26,32 +26,37 @@ namespace CosmicSimulation.EditorTools
             Ui2Kit.Label(main, "title", 35f, 35f, 300f, 42f, "Settings", 36f, UiTheme.Ink, FontWeight.Medium);
             var close = Ui2Kit.IconButton(main, "close", 416f, 31f, 50f, "v2_icon_close", 24f);
 
-            var sound = Ui2Kit.Row(main, "sound", 35f, 90f, 431f, 67f, "Sound", "Galaxy sounds and ambient audio",
+            // The Labels switch (CS-378) joined after the Figma frame: rows are 62 tall on a 67 pitch instead of 67 on
+            // 75 so the page keeps its 824 height. A taller panel would run into the dock below it.
+            var sound = Ui2Kit.Row(main, "sound", 35f, 86f, 431f, 62f, "Sound", "Galaxy sounds and ambient audio",
                                    null, false, out note, out value, false);
-            var soundSwitch = Ui2Kit.Switch((RectTransform)sound.transform, 363f, 14f);
-            var narration = Ui2Kit.Row(main, "narration", 35f, 165f, 431f, 67f, "Narration",
+            var soundSwitch = Ui2Kit.Switch((RectTransform)sound.transform, 363f, 12f);
+            var narration = Ui2Kit.Row(main, "narration", 35f, 153f, 431f, 62f, "Narration",
                                        "Spoken guides and information", null, false, out note, out value, false);
-            var narrationSwitch = Ui2Kit.Switch((RectTransform)narration.transform, 363f, 14f);
+            var narrationSwitch = Ui2Kit.Switch((RectTransform)narration.transform, 363f, 12f);
+            var labels = Ui2Kit.Row(main, "labels", 35f, 220f, 431f, 62f, "Labels", "Names of bodies and moons",
+                                    null, false, out note, out value, false);
+            var labelsSwitch = Ui2Kit.Switch((RectTransform)labels.transform, 363f, 12f);
 
-            Ui2Kit.Label(main, "text_size", 35f, 246f, 150f, 27f, "Text size", 22f, UiTheme.Ink);
-            Ui2Kit.Label(main, "text_size_note", 35f, 275f, 150f, 22f, "Card text", 17f, UiTheme.InkSecondary);
-            var sizes = Ui2Kit.Segmented(main, "sizes", 176f, 253f, new[] { 111f, 82f, 87f },
+            Ui2Kit.Label(main, "text_size", 35f, 295f, 150f, 27f, "Text size", 22f, UiTheme.Ink);
+            Ui2Kit.Label(main, "text_size_note", 35f, 324f, 150f, 22f, "Menu and cards", 17f, UiTheme.InkSecondary);
+            var sizes = Ui2Kit.Segmented(main, "sizes", 176f, 300f, new[] { 111f, 82f, 87f },
                                          new[] { "Standard", "Large", "Larger" });
 
-            var microphone = Ui2Kit.Row(main, "microphone", 35f, 330f, 431f, 67f, "Microphone device",
+            var microphone = Ui2Kit.Row(main, "microphone", 35f, 373f, 431f, 62f, "Microphone device",
                                         "Input for voice features", null, true, out note, out value);
             var microphoneValue = value;
-            Ui2Kit.Divider(main, 35f, 406f, 431f);
-            var help = Ui2Kit.Row(main, "help", 35f, 415f, 431f, 67f, "Help", "Replay the lessons", "v2_icon_help", true,
+            Ui2Kit.Divider(main, 35f, 444f, 431f);
+            var help = Ui2Kit.Row(main, "help", 35f, 452f, 431f, 62f, "Help", "Replay the lessons", "v2_icon_help", true,
                                   out note, out value);
-            var about = Ui2Kit.Row(main, "about", 35f, 491f, 431f, 67f, "About", "Version and credits", "v2_icon_info",
+            var about = Ui2Kit.Row(main, "about", 35f, 519f, 431f, 62f, "About", "Version and credits", "v2_icon_info",
                                    true, out note, out value);
-            Ui2Kit.Divider(main, 35f, 567f, 431f);
-            var bring = Ui2Kit.Row(main, "bring", 35f, 577f, 431f, 67f, "Bring menu here",
+            Ui2Kit.Divider(main, 35f, 590f, 431f);
+            var bring = Ui2Kit.Row(main, "bring", 35f, 598f, 431f, 62f, "Bring menu here",
                                    "Move the menu closer to you", "v2_icon_move", true, out note, out value);
-            var restore = Ui2Kit.Row(main, "restore", 35f, 652f, 431f, 67f, "Restore scene",
+            var restore = Ui2Kit.Row(main, "restore", 35f, 665f, 431f, 62f, "Restore scene",
                                      "Put objects in this place back", "v2_icon_retry", true, out note, out value);
-            var quit = Ui2Kit.Row(main, "quit", 35f, 728f, 431f, 69f, "Quit", "Close Cosmic Simulation XR",
+            var quit = Ui2Kit.Row(main, "quit", 35f, 733f, 431f, 64f, "Quit", "Close Cosmic Simulation XR",
                                   "v2_icon_quit", true, out note, out value, true, true);
 
             // Device chooser (S24).
@@ -85,6 +90,9 @@ namespace CosmicSimulation.EditorTools
             var empty = Ui2Kit.Label(devices, "empty", 35f, 597f, 431f, 44f, string.Empty, 17f, Ui2Kit.Attention,
                                      FontWeight.Regular, true);
             var devicesDone = Ui2Kit.Primary(devices, "done", 35f, 655f, 133f, 60f, "Done", null);
+
+            // Shown only while the system can still ask for the microphone (CS-373); hidden otherwise at run time.
+            var allow = Ui2Kit.Primary(devices, "allow", 180f, 655f, 286f, 60f, "Allow microphone", "v2_icon_mic");
 
             // About (S25).
             var aboutPage = Ui2Kit.Page(panel, "about");
@@ -130,6 +138,8 @@ namespace CosmicSimulation.EditorTools
             so.FindProperty("soundSwitch").objectReferenceValue = soundSwitch;
             so.FindProperty("narration").objectReferenceValue = narration;
             so.FindProperty("narrationSwitch").objectReferenceValue = narrationSwitch;
+            so.FindProperty("labels").objectReferenceValue = labels;
+            so.FindProperty("labelsSwitch").objectReferenceValue = labelsSwitch;
             Ui2Kit.Objects(so.FindProperty("sizes"), sizes);
             so.FindProperty("microphone").objectReferenceValue = microphone;
             so.FindProperty("microphoneValue").objectReferenceValue = microphoneValue;
@@ -145,6 +155,7 @@ namespace CosmicSimulation.EditorTools
             so.FindProperty("level").objectReferenceValue = level;
             so.FindProperty("empty").objectReferenceValue = empty;
             so.FindProperty("devicesDone").objectReferenceValue = devicesDone;
+            so.FindProperty("allow").objectReferenceValue = allow;
             so.FindProperty("aboutBack").objectReferenceValue = aboutBack;
             so.FindProperty("aboutClose").objectReferenceValue = aboutClose;
             so.FindProperty("version").objectReferenceValue = version;
@@ -172,8 +183,13 @@ namespace CosmicSimulation.EditorTools
             var wave = Ui2Kit.Glyph(panel, "v2_icon_wave", 27f, 98f, 44f, UiTheme.Accent);
             var phase = Ui2Kit.Label(panel, "phase", 84f, 96f, 333f, 34f, "Ready to help", 26f, UiTheme.Ink,
                                      FontWeight.SemiBold);
-            var helper = Ui2Kit.Label(panel, "helper", 84f, 131f, 333f, 24f, "Ask about what you see.", 17f,
-                                      UiTheme.InkSecondary);
+            // Two lines when it has to (the microphone notes stay beside the conversation since CS-373); a long note
+            // shrinks rather than running into the transcript 3 below it.
+            var helper = Ui2Kit.Label(panel, "helper", 84f, 131f, 333f, 34f, "Ask about what you see.", 17f,
+                                      UiTheme.InkSecondary, FontWeight.Regular, true);
+            helper.enableAutoSizing = true;
+            helper.fontSizeMin = 12f;
+            helper.fontSizeMax = 17f;
 
             // The conversation: newest at the bottom, older lines scroll up out of the masked box.
             var transcript = Ui2Builder.Box("transcript", panel, 27f, 168f, 390f, 330f);

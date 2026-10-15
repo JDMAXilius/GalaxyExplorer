@@ -17,6 +17,9 @@ namespace CosmicSimulation.Being
 
         private Cosmic.Companion.Being _being;
         private ManipulationHandler _hands;
+
+        // The UI 2.0 shell canvas's sorting order (Ui2Builder).
+        private const int ShellSortingOrder = 70;
         private string _pull;
         private float _pullUntil;
 
@@ -49,6 +52,17 @@ namespace CosmicSimulation.Being
             _hands.HostTransform = transform;
             _hands.ManipulationType = ManipulationHandler.HandMovementType.OneAndTwoHanded;
             gameObject.AddComponent<TouchNudge>();
+
+            // The shell canvas sorts at 70 and the being's shaders write no depth, so at 0 the shell always painted
+            // over it; on the same order, distance decides, and the being in front of the menu shows (CS-380).
+            if (UnityEngine.XR.XRSettings.isDeviceActive)
+            {
+                foreach (var renderer in GetComponentsInChildren<Renderer>(true))
+                {
+                    renderer.sortingOrder = ShellSortingOrder;
+                }
+            }
+
             _being.Attach(this);
         }
 

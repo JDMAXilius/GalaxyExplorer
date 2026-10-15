@@ -9,6 +9,12 @@ namespace CosmicSimulation
     /// Pulled bodies are drawn over everything else (CS-348): a pulled planet or moon is nearer than the rest, but several
     /// body shaders ignore depth, so while it is out its materials move to the end of the draw order (just under the
     /// room's dim layer at 3900) and go back when it returns home.
+    ///
+    /// "Everything else" is the scene's own renderers, all on the default sorting layer at order 0. The UI 2.0 shell
+    /// still draws after a pulled body although its UI materials sit at queue 3000 (CS-380): in the Built-in
+    /// pipeline's transparent pass the sorting layer and order outrank the material queue, and the shell's canvas is at
+    /// order 70. So the menu is kept on top by its canvas order, not by this range; never raise a pulled body's
+    /// sorting order to win a draw-order fight, or it will paint over the menu.
     /// </summary>
     public sealed class PulledDrawOrder
     {
