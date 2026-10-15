@@ -2403,7 +2403,7 @@ MonoBehaviour:
   resetButton: {fileID: 220091206728490367}
   aboutButton: {fileID: 6728876076853174219}
   utilityWindowPrefab: {fileID: 7575776504763607743, guid: 5aacb879c27b3014db4a2328291f76c9, type: 3}
-  distanceMetres: 0.8
+  distanceMetres: 1.1
   heightFractionOfHead: 0.7
   minimumHeightMetres: 0.7
   assumedEyeHeightMetres: 1.6

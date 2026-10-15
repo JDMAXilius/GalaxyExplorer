@@ -87,7 +87,7 @@ namespace GalaxyExplorer
         {
             // On a headset the camera renders to stereo eye textures, which the plain 2D downscaled targets
             // can't feed, so every layer draws straight into the eye buffer (also cheaper on a mobile GPU).
-            _useDownscaledTarget = renderIntoDownscaledTarget && !XRSettings.isDeviceActive;
+            _useDownscaledTarget = renderIntoDownscaledTarget && !GalaxyExplorer.XR.Launch.Headset;
             if (_useDownscaledTarget)
             {
                 isFirst = RenderTexturesBucket.CreateIfNeeded(galaxy.gameObject);

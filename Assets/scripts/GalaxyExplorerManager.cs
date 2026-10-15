@@ -374,7 +374,7 @@ namespace GalaxyExplorer
 
             // OpenXR starts before the first scene loads, so a running headset (Quest 3 standalone, or over
             // Quest Link in the editor/Windows player) is already active here; otherwise run as desktop.
-            Platform = XRSettings.isDeviceActive ? PlatformId.Quest3 : PlatformId.Desktop;
+            Platform = GalaxyExplorer.XR.Launch.Headset ? PlatformId.Quest3 : PlatformId.Desktop;
             if (IsDesktop)
             {
                 gameObject.AddComponent<GalaxyExplorer.XR.DesktopMouseInput>();

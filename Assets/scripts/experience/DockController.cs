@@ -59,8 +59,9 @@ namespace CosmicSimulation
         [SerializeField]
         [Tooltip("Metres in front of the player. The dock is 834 mm wide, so it is a ray-and-reach panel rather " +
                  "than a direct-touch one: Meta's hands guidance puts direct-touch UI at 42-46 cm, where this " +
-                 "plate would span about 85 degrees, and indirect UI from roughly 0.8 m to 3 m.")]
-        private float distanceMetres = 0.8f;
+                 "plate would span about 85 degrees, and indirect UI from roughly 0.8 m to 3 m. 1.1 m since the " +
+                 "UI 2.0 shell rides on it: at 0.8 m its 1.15 m frame overflowed the view (owner, 15 Oct 2026).")]
+        private float distanceMetres = 1.1f;
 
         [SerializeField]
         [Tooltip("Dock height as a fraction of the player's eye height, sampled at recentre. 0.70 of a 1.6 m " +
@@ -125,6 +126,10 @@ namespace CosmicSimulation
         private bool _recenterPending;
         private float _poseWaitedSeconds;
         private bool _posedOnce;
+
+        // Parked by the timeout rule before the headset had a pose. Over Link the first pose can take far longer
+        // than the wait, so the first real one parks the menu again, once.
+        private bool _parkedWithoutPose;
 
         // The headset's own recenter (CS-374). Every input subsystem is heard, and new ones are looked for
         // because the XR loader can start after this Start, or be restarted.
@@ -628,7 +633,9 @@ namespace CosmicSimulation
         // wherever the scene happens to put the camera, and is not tied to what the player can see.)
         private bool TryEyeHeight(out float eyeHeight)
         {
-            if (!UnityEngine.XR.XRSettings.isDeviceActive)
+            // Launch.Headset, not isDeviceActive: over Link the device reports inactive for the first couple of
+            // seconds, and the desktop rule taken from a head at zero parked the menu below the floor for good.
+            if (!GalaxyExplorer.XR.Launch.Headset)
             {
                 eyeHeight = assumedEyeHeightMetres;
                 return true;
@@ -638,6 +645,7 @@ namespace CosmicSimulation
             if (eyeHeight > trackedHeadMinimumMetres)
             {
                 _posedOnce = true;
+                _parkedWithoutPose = false;
                 return true;
             }
 
@@ -657,6 +665,7 @@ namespace CosmicSimulation
             if (_poseWaitedSeconds >= poseWaitSeconds)
             {
                 eyeHeight = assumedEyeHeightMetres;
+                _parkedWithoutPose = true;
                 return true;
             }
 
@@ -917,6 +926,12 @@ namespace CosmicSimulation
             {
                 _poseWaitedSeconds += Time.unscaledDeltaTime;
                 Recenter();
+            }
+            else if (_parkedWithoutPose && !IsBeingDragged && _camera != null &&
+                     _camera.transform.position.y > trackedHeadMinimumMetres)
+            {
+                _parkedWithoutPose = false;
+                ParkMenu();
             }
 
             // Before the UI 2.0 return: the shell rides on this dock's pose, so this is its recenter too.

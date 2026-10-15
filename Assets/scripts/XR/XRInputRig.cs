@@ -73,7 +73,7 @@ namespace GalaxyExplorer.XR
             LeftPalm = CreatePalm("Left Palm");
             RightPalm = CreatePalm("Right Palm");
 
-            if (!XRSettings.isDeviceActive)
+            if (!Launch.Headset)
             {
                 DisableTrackedDevices();
             }
