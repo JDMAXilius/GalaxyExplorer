@@ -74,7 +74,7 @@ namespace Cosmic.Companion
         public float NoiseFloor { get; private set; } = 0.002f;
 
         /// <summary>True while the level is clearly above the room's quiet: someone is talking.</summary>
-        public bool Voiced => Level > Mathf.Max(NoiseFloor * 3f, MinVoiceLevel);
+        public bool Voiced => NoiseFloor >= 0f && Level > Mathf.Max(NoiseFloor * 3f, MinVoiceLevel);
 
         /// <summary>The microphone sits at the mouth: the Quest's own, or the Link headset mic.</summary>
         public bool NearField
@@ -200,7 +200,7 @@ namespace Cosmic.Companion
             phase = 0;
             lastSample = 0f;
             tail = new float[0];
-            NoiseFloor = 0.002f;
+            NoiseFloor = -1f;
             advancedAt = Time.unscaledTime;
             pending.Clear();
             InUse = true;
@@ -287,10 +287,11 @@ namespace Cosmic.Companion
             for (var i = 0; i < available; i++) sum += read[i] * read[i];
             Level = Mathf.Sqrt(sum / available);
             var seconds = (float)available / clip.frequency;
-            // Down fast, up slowly, and not at all while someone is talking, or a long question would raise the
-            // floor until the voice no longer cleared it.
-            if (Level < NoiseFloor) NoiseFloor = Mathf.Lerp(NoiseFloor, Level, Mathf.Clamp01(seconds * 4f));
-            else if (!Voiced) NoiseFloor = Mathf.Lerp(NoiseFloor, Level, Mathf.Clamp01(seconds * 0.5f));
+            // Seeded from the first reading; then down fast, up slowly, and very slowly while someone is talking, so a
+            // long question cannot raise the floor past the voice but a room louder than the seed is still learned.
+            if (NoiseFloor < 0f) NoiseFloor = Level;
+            else if (Level < NoiseFloor) NoiseFloor = Mathf.Lerp(NoiseFloor, Level, Mathf.Clamp01(seconds * 4f));
+            else NoiseFloor = Mathf.Lerp(NoiseFloor, Level, Mathf.Clamp01(seconds * (Voiced ? 0.03f : 0.5f)));
             Resample(available, clip.frequency);
             if (!Listening) { pending.Clear(); return; }
             while (pending.Count >= FrameSamples)
@@ -333,8 +334,8 @@ namespace Cosmic.Companion
             lastSample = src[count - 1];
         }
 
-        // A triangular FIR of half-width `half` over the new samples, carried across calls: zero gain at the output
-        // rate's Nyquist and above for a 2:1 decimation, which is what keeps 12-24 kHz out of the voice band.
+        // A triangular FIR of half-width `half` over the new samples, carried across calls: for 48 to 24 kHz about
+        // -19 dB at 12 kHz and a zero at 16 kHz, which keeps most of 12-24 kHz from folding into the voice band.
         float[] LowPass(int count, int half)
         {
             var taps = 2 * half + 1;

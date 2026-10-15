@@ -59,8 +59,7 @@ namespace CosmicSimulation.UI2
         private string[] _picked = Array.Empty<string>();
         private string _saidBefore = string.Empty;
         private string _heardBefore = string.Empty;
-        private string _heardId;
-        private string _heardLine;
+        private readonly Dictionary<string, string> _heardLines = new Dictionary<string, string>();
         private int _turnStart = -1;
         private string _context;
         private Status _status = (Status)(-1);
@@ -146,8 +145,7 @@ namespace CosmicSimulation.UI2
                 // A new companion starts a new session: its first words are new, whatever the last one said.
                 _saidBefore = string.Empty;
                 _heardBefore = string.Empty;
-                _heardId = null;
-                _heardLine = null;
+                _heardLines.Clear();
                 Pick();
                 Summon();
             }
@@ -312,20 +310,25 @@ namespace CosmicSimulation.UI2
                 _heardBefore = being.Heard;
                 var line = Dim + "You: " + being.Heard + "</color>";
 
-                // The same utterance again, longer: the transcription is streaming in, so its line grows in place.
-                if (being.HeardId == _heardId && _heardLine != null)
+                // An utterance already on screen, longer: the transcription is streaming in, so its line grows in
+                // place. By id, because an earlier utterance's final text can land after the next one has started.
+                if (!string.IsNullOrEmpty(being.HeardId) && _heardLines.TryGetValue(being.HeardId, out var shown))
                 {
-                    var at = Lines.LastIndexOf(_heardLine);
+                    var at = Lines.LastIndexOf(shown);
                     if (at >= 0)
                     {
                         Lines[at] = line;
-                        _heardLine = line;
+                        _heardLines[being.HeardId] = line;
                         return;
                     }
                 }
 
-                _heardId = being.HeardId;
-                _heardLine = line;
+                if (_heardLines.Count > MaxLines)
+                {
+                    _heardLines.Clear();
+                }
+
+                _heardLines[being.HeardId ?? string.Empty] = line;
                 if (_turnStart >= 0 && _turnStart <= Lines.Count)
                 {
                     Lines.Insert(_turnStart, line);

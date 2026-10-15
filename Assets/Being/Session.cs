@@ -170,7 +170,9 @@ namespace Cosmic.Companion
                     break;
                 case "error":
                     var code = e.error?.code ?? "";
-                    if (code.Contains("cancel") || code.Contains("commit_empty")) break;
+                    // already_has_active_response: a tap's Commit raced the server's own end of the same turn, whose
+                    // answer is already coming; treating it as a failure would cancel that answer.
+                    if (code.Contains("cancel") || code.Contains("commit_empty") || code.Contains("already_has_active_response")) break;
                     Error?.Invoke(e.error?.message ?? json);
                     break;
             }
