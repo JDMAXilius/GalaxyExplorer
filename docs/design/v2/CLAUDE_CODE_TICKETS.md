@@ -85,5 +85,5 @@ The owner is sending `docs/design/v2/downloads/ChatGPT-image-tickets.zip` (ticke
 - **Desktop:** the canvas switches to screen space (`Ui2Shell.FitToScreen`), and every group is pinned to its edge. Canvas sorting order 70 keeps it above the room's dim quad (render queue 3900).
 - **Intro:** the shell shows only after `ExperienceDirector.IntroComplete`, which is the real end of the intro rather than the 45 s watchdog. The director now waits for the start module's view before adopting, so the app starts on the Milky Way.
 - **Sound:** narration starts by itself. The card's Listen plays the selection's own sound: `BodyInfo.Ambience`, else `PlanetForceSolver.AmbientClip`, else the narration.
-- **Pulled bodies:** their materials are moved to render queue 3700+ while out (`Ui2Explore.KeepPulledInFront`) so neighbours never paint over them.
+- **Pulled bodies:** their materials are moved to render queue 3700+ while out (`PulledDrawOrder.Apply`, owned by `Ui2Explore`, CS-348) so neighbours never paint over them.
 - **Figma:** the plan's monthly MCP tool-call limit was reached on 13 Oct. Pictures were cut from `docs/design/v2/screens/` instead.
