@@ -75,7 +75,6 @@ namespace CosmicSimulation.UI2
 
         private GalaxyExplorer.XR.PressEdge _escape;
 
-
         public static Ui2Shell Instance { get; private set; }
 
         public Mode Current { get; private set; } = Mode.Explore;
