@@ -60,7 +60,6 @@ namespace CosmicSimulation.UI2
         private string _heardBefore = string.Empty;
         private int _turnStart = -1;
         private string _context;
-        private float _nextContextCheck;
         private Status _status = (Status)(-1);
         private bool _wasGuide;
         private bool _requesting;
@@ -84,6 +83,14 @@ namespace CosmicSimulation.UI2
             }
 
             Ui2Shell.Instance.Changed += OnShellChanged;
+            ExperienceDirector.ExperienceStarting += OnContext;
+            ExperienceDirector.ExperienceChanged += OnContext;
+            ForceSolver.StateChanged += OnBody;
+            if (Ui2Explore.Instance != null)
+            {
+                Ui2Explore.Instance.Changed += OnCard;
+            }
+
             OnShellChanged();
         }
 
@@ -92,6 +99,36 @@ namespace CosmicSimulation.UI2
             if (Ui2Shell.Instance != null)
             {
                 Ui2Shell.Instance.Changed -= OnShellChanged;
+            }
+
+            ExperienceDirector.ExperienceStarting -= OnContext;
+            ExperienceDirector.ExperienceChanged -= OnContext;
+            ForceSolver.StateChanged -= OnBody;
+            if (Ui2Explore.Instance != null)
+            {
+                Ui2Explore.Instance.Changed -= OnCard;
+            }
+        }
+
+        private void OnContext(ExperienceModule module) => Recontext();
+
+        private void OnBody(ForceSolver solver) => Recontext();
+
+        private void OnCard() => Recontext();
+
+        // A new place, selection, preview or pulled body: suggestions for that, unless an answer is under way (the
+        // round after it is made fresh anyway).
+        private void Recontext()
+        {
+            if (!panel.activeSelf || _status == Status.Thinking || _status == Status.Speaking)
+            {
+                return;
+            }
+
+            var explore = Ui2Explore.Instance;
+            if (Context(Being.Host.Read(), explore != null ? explore.Selected : null) != _context)
+            {
+                Pick();
             }
         }
 
@@ -245,17 +282,6 @@ namespace CosmicSimulation.UI2
 
             Capture(being);
             PaintTranscript();
-
-            // A new selection, place or pulled body while the panel is up: suggestions for that.
-            if (Time.unscaledTime >= _nextContextCheck && status != Status.Thinking && status != Status.Speaking)
-            {
-                _nextContextCheck = Time.unscaledTime + 0.5f;
-                var explore = Ui2Explore.Instance;
-                if (Context(Being.Host.Read(), explore != null ? explore.Selected : null) != _context)
-                {
-                    Pick();
-                }
-            }
 
             // The bars breathe with the microphone while listening and rest otherwise.
             var loud = status == Status.Listening && being != null ? Mathf.Clamp01(being.MicLevel * 8f) : 0f;

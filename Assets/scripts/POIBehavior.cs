@@ -8,7 +8,9 @@ using GalaxyExplorer.XR;
 [RequireComponent(typeof(BoxCollider))]
 public class POIBehavior : MonoBehaviour
 {
-    private const float INITIAL_DELAY = 5f; 
+    // How long a label stays hidden after its map opens: long enough for the galaxy to arrive, short enough that the
+    // names are there when the player looks (owner asked for quicker, 14 Oct 2026; was 5 s).
+    private const float INITIAL_DELAY = 1f;
     
     [SerializeField] private List<Renderer> objectsToFade;
     [SerializeField] private TextMeshPro mainText;

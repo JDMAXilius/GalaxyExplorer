@@ -93,6 +93,15 @@ namespace CosmicSimulation
         /// </summary>
         public static event Action<ExperienceModule> ExperienceChanged;
 
+        /// <summary>
+        /// Raised the moment a switch begins, before anything loads: for UI that should name the new place at once
+        /// rather than when it has finished arriving (<see cref="ExperienceChanged"/>).
+        /// </summary>
+        public static event Action<ExperienceModule> ExperienceStarting;
+
+        /// <summary>Raised once onboarding has handed over to the first place, whether or not that opened anything new.</summary>
+        public static event Action IntroSettled;
+
         /// <summary>The destination showing over the current place, or <c>null</c> when none is.</summary>
         public ExperienceModule OpenDestinationModule { get; private set; }
 
@@ -212,6 +221,7 @@ namespace CosmicSimulation
             }
 
             OpenStartModule();
+            IntroSettled?.Invoke();
         }
 
         /// <summary>
@@ -397,6 +407,7 @@ namespace CosmicSimulation
             try
             {
                 Current = module;
+                ExperienceStarting?.Invoke(module);
 
                 // Whatever the player pulled out belongs to the place they are leaving.
                 ClearDestinations();

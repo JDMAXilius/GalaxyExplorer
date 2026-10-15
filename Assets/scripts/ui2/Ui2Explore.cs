@@ -138,6 +138,9 @@ namespace CosmicSimulation.UI2
 
         public static Ui2Explore Instance { get; private set; }
 
+        /// <summary>Raised whenever the card is repainted: a new place, body, preview or comparison.</summary>
+        public event Action Changed;
+
         /// <summary>The body or moon the card is describing, or null.</summary>
         public BodyInfo Selected => _body;
 
@@ -207,6 +210,7 @@ namespace CosmicSimulation.UI2
             _chipHome = _chipRect.anchoredPosition;
             _menuHome = _menuRect.anchoredPosition;
             ExperienceDirector.ExperienceChanged += OnPlaceChanged;
+            ExperienceDirector.ExperienceStarting += OnPlaceChanged;
             PlanetPOI.Preview = OnMarker;
             ForceSolver.StateChanged += OnBodyStateChanged;
             _drawOrder.Seed();
@@ -228,6 +232,7 @@ namespace CosmicSimulation.UI2
             ForceSolver.StateChanged -= OnBodyStateChanged;
             _drawOrder.Lower();
             ExperienceDirector.ExperienceChanged -= OnPlaceChanged;
+            ExperienceDirector.ExperienceStarting -= OnPlaceChanged;
             if (PlanetPOI.Preview == OnMarker)
             {
                 PlanetPOI.Preview = null;
@@ -797,6 +802,7 @@ namespace CosmicSimulation.UI2
 
         public void Refresh()
         {
+            Changed?.Invoke();
             var shell = Ui2Shell.Instance;
             var visible = _place != null && (shell == null || shell.ExploreVisible);
             card.gameObject.SetActive(visible);

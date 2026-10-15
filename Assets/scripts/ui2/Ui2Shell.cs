@@ -52,7 +52,6 @@ namespace CosmicSimulation.UI2
 
         private Camera _camera;
         private bool _screen;
-        private float _settled;
         private float _noticeUntil;
         private string[][] _contexts;
 
@@ -116,6 +115,8 @@ namespace CosmicSimulation.UI2
             settings.Clicked += () => Show(Open == Overlay.None ? Overlay.Settings : Overlay.None);
 
             ExperienceDirector.ExperienceChanged += OnPlaceChanged;
+            ExperienceDirector.ExperienceStarting += OnPlaceChanged;
+            ExperienceDirector.IntroSettled += Evaluate;
             EnvironmentController.ModeChanged += OnRoomChanged;
 
             if (notice != null)
@@ -131,6 +132,8 @@ namespace CosmicSimulation.UI2
         private void OnDestroy()
         {
             ExperienceDirector.ExperienceChanged -= OnPlaceChanged;
+            ExperienceDirector.ExperienceStarting -= OnPlaceChanged;
+            ExperienceDirector.IntroSettled -= Evaluate;
             EnvironmentController.ModeChanged -= OnRoomChanged;
             if (SwitchNotice.Redirect == TakeNotice)
             {
@@ -227,6 +230,8 @@ namespace CosmicSimulation.UI2
             {
                 railItems[i].Selected = i == context;
             }
+
+            Evaluate();
         }
 
         private void OnRoomChanged(EnvironmentMode mode)
@@ -235,26 +240,67 @@ namespace CosmicSimulation.UI2
             room.SetLabel(env != null && env.EffectiveMode == EnvironmentMode.Passthrough ? "Room on" : "Room off");
         }
 
+        private bool _shownOnce;
+
+        /// <summary>
+        /// Shows the shell once the intro is over and a place is open, decided when something changes (the intro
+        /// settling, a switch starting or finishing), never by watching every frame. The first time it waits a moment
+        /// so it does not flash between intro stages; after that it stays up through every switch, and the new place's
+        /// name and card arrive as the switch begins (owner's direction, 14 Oct 2026).
+        /// </summary>
+        private void Evaluate()
+        {
+            if (Intro())
+            {
+                CancelInvoke(nameof(Reveal));
+                SetFrame(false);
+                return;
+            }
+
+            if (_shownOnce)
+            {
+                SetFrame(true);
+            }
+            else if (!IsInvoking(nameof(Reveal)))
+            {
+                Invoke(nameof(Reveal), FirstRevealSeconds);
+            }
+        }
+
+        private const float FirstRevealSeconds = 1.5f;
+
+        private void Reveal()
+        {
+            if (!Intro())
+            {
+                _shownOnce = true;
+                SetFrame(true);
+            }
+        }
+
+        // The intro's real end, not IntroRunning, which gives up after a timeout while the player may still be
+        // standing at the intro's OK button.
+        private static bool Intro()
+        {
+            var director = ExperienceDirector.Instance;
+            var manager = GalaxyExplorerManager.IsInitialized ? GalaxyExplorerManager.Instance : null;
+            return director == null || !director.IntroComplete || director.Current == null ||
+                   (manager != null && manager.ViewLoaderScript != null && manager.ViewLoaderScript.IsIntro() &&
+                    !string.IsNullOrEmpty(director.Current.SceneName));
+        }
+
+        private void SetFrame(bool on)
+        {
+            if (frame.activeSelf != on)
+            {
+                frame.SetActive(on);
+                Changed?.Invoke();
+            }
+        }
+
         private void Update()
         {
             UiButton.Deliver();
-
-            // Shown once the intro is over and a place is open, held a moment so it does not flash between intro stages.
-            var director = ExperienceDirector.Instance;
-            var manager = GalaxyExplorerManager.IsInitialized ? GalaxyExplorerManager.Instance : null;
-            // The intro's real end, not IntroRunning, which gives up after a timeout while the player may
-            // still be standing at the intro's OK button.
-            var intro = director == null || !director.IntroComplete || director.Current == null ||
-                        director.IsSwitching ||
-                        (manager != null && manager.ViewLoaderScript != null && manager.ViewLoaderScript.IsIntro() &&
-                         !string.IsNullOrEmpty(director.Current.SceneName));
-            _settled = intro ? 0f : _settled + Time.unscaledDeltaTime;
-            var ready = _settled > 1.5f;
-            if (frame.activeSelf != ready)
-            {
-                frame.SetActive(ready);
-                Changed?.Invoke();
-            }
 
             if (notice != null && notice.activeSelf && Time.unscaledTime > _noticeUntil)
             {
