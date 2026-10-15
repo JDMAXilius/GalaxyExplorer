@@ -410,6 +410,7 @@ namespace CosmicSimulation
                 // Every place opens from the default view, never where the last one was orbited, panned or zoomed to
                 // (owner's direction, 14 Oct 2026): the desktop camera goes home before the new content is framed.
                 GalaxyExplorer.XR.DesktopCameraRig.Instance?.ResetView();
+                FaceViewer();
 
                 var vo = GalaxyExplorerManager.IsInitialized ? GalaxyExplorerManager.Instance.VoManager : null;
                 if (vo != null)
@@ -759,6 +760,34 @@ namespace CosmicSimulation
         /// Where a <see cref="ExperienceModule.ContentPrefab"/> spawns: under the <see cref="ViewLoader"/>, which the
         /// intro moves into place in the room, so prefabs land where scene content does.
         /// </summary>
+        /// <summary>
+        /// Headset only: puts the view straight ahead of where the player is looking, at its height and distance, facing
+        /// them, so a place opens in front of them wherever they have turned since (owner's direction, 14 Oct 2026).
+        /// </summary>
+        private static void FaceViewer()
+        {
+            var camera = Camera.main;
+            var loader = GalaxyExplorerManager.IsInitialized ? GalaxyExplorerManager.Instance.ViewLoaderScript : null;
+            if (!UnityEngine.XR.XRSettings.isDeviceActive || camera == null || loader == null)
+            {
+                return;
+            }
+
+            var head = camera.transform.position;
+            var ahead = Vector3.ProjectOnPlane(camera.transform.forward, Vector3.up);
+            if (ahead.sqrMagnitude < 1e-4f)
+            {
+                return; // looking straight up or down: no heading to face
+            }
+
+            var view = loader.transform;
+            var flat = view.position - head;
+            flat.y = 0f;
+            var position = head + ahead.normalized * Mathf.Clamp(flat.magnitude, 1f, 3f);
+            position.y = view.position.y;
+            view.SetPositionAndRotation(position, Quaternion.LookRotation(ahead.normalized, Vector3.up));
+        }
+
         private Transform ContentRoot()
         {
             if (contentRoot == null)
