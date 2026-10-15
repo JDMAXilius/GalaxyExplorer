@@ -153,6 +153,13 @@ namespace GalaxyExplorer.XR
             set => playGrabSounds = value;
         }
 
+        /// <summary>What two hands may do; settable for the same run-time handlers.</summary>
+        public TwoHandedManipulation TwoHandedType
+        {
+            get => twoHandedManipulationType;
+            set => twoHandedManipulationType = value;
+        }
+
         public bool IsManipulating => _pointers.Count > 0;
 
         /// <summary>The object most recently taken hold of and still held, or null.</summary>

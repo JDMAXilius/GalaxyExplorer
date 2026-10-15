@@ -506,7 +506,9 @@ namespace CosmicSimulation
                 return;
             }
 
-            Recenter();
+            // The menu only: the runtime may raise this on wake or a boundary redraw too, and moved content must
+            // never go home unasked (GDD 5.2); the palm menu's Dock is the full recenter.
+            ParkMenu();
         }
 
         // The parking itself, shared by a recentre, the palm menu's Dock button and the hand-over from the

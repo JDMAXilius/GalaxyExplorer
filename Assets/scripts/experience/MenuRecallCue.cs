@@ -18,7 +18,8 @@ namespace CosmicSimulation
         private const float OutOfViewSeconds = 3f;
         private const float RepeatSeconds = 60f;
 
-        private const string Message = "The menu is behind you. Show your palm and press Dock to bring it here.";
+        // One line on the notice plate (about 480 px at 18 px); "lost" also fits a player who only looked up.
+        private const string Message = "Lost the menu? Palm up and press Dock.";
 
         // The child Ui2Builder puts everything visible under; it is off until the intro has handed over.
         private const string FrameName = "frame";

@@ -49,7 +49,7 @@ namespace CosmicSimulation
         [SerializeField]
         [TextArea(1, 3)]
         [Tooltip("Shown when the intro still has the room and nowhere can be opened yet. {0} is the place's name.")]
-        private string busyMessage = "Just a moment - the introduction is still running. {0} opens as soon as it ends.";
+        private string busyMessage = "The introduction is still running. {0} opens next.";
 
         [SerializeField]
         [Tooltip("Stands in for the name when a module has none, so the sentence still reads.")]

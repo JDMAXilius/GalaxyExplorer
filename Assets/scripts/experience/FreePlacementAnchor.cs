@@ -237,6 +237,8 @@ namespace CosmicSimulation
 
                 // No ForceSolver sounds this grab, as on the prefab places.
                 handler.PlayGrabSounds = true;
+                // Move and scale, never roll: a drifting hand must not tilt a galaxy's disc or an orbital plane.
+                handler.TwoHandedType = ManipulationHandler.TwoHandedManipulation.MoveScale;
             }
 
             // Adds the anchor, captures home and makes this the open place, since the handler's host is the content.
