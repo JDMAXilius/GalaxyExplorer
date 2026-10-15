@@ -68,18 +68,8 @@ namespace CosmicSimulation
             _saidThisTime = true;
             _quietUntil = Time.unscaledTime + RepeatSeconds;
 
-            // Past UI 2.0's redirect, which would draw the line on the shell itself: the very thing out of view. The
-            // legacy notice parks in front of the head when the legacy dock is down, as it always is under UI 2.0.
-            var redirect = SwitchNotice.Redirect;
-            SwitchNotice.Redirect = null;
-            try
-            {
-                SwitchNotice.Say(Message);
-            }
-            finally
-            {
-                SwitchNotice.Redirect = redirect;
-            }
+            // The shell's notice sits under the gaze in the headset since CS-376, so it reaches a player facing away.
+            shell.Notify(Message, 6f);
         }
 
         // The intro's real end, as the shell itself judges it, and the shell actually showing.

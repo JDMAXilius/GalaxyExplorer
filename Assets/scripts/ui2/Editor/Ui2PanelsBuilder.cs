@@ -39,7 +39,7 @@ namespace CosmicSimulation.EditorTools
             var labelsSwitch = Ui2Kit.Switch((RectTransform)labels.transform, 363f, 12f);
 
             Ui2Kit.Label(main, "text_size", 35f, 295f, 150f, 27f, "Text size", 22f, UiTheme.Ink);
-            Ui2Kit.Label(main, "text_size_note", 35f, 324f, 150f, 22f, "Card text", 17f, UiTheme.InkSecondary);
+            Ui2Kit.Label(main, "text_size_note", 35f, 324f, 150f, 22f, "Menu and cards", 17f, UiTheme.InkSecondary);
             var sizes = Ui2Kit.Segmented(main, "sizes", 176f, 300f, new[] { 111f, 82f, 87f },
                                          new[] { "Standard", "Large", "Larger" });
 

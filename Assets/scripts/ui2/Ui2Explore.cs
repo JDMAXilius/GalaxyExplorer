@@ -138,6 +138,17 @@ namespace CosmicSimulation.UI2
 
         public static Ui2Explore Instance { get; private set; }
 
+        /// <summary>
+        /// The picker, the View chip and the compare size switch: small fixed controls whose labels the shell's text
+        /// size leaves alone (<see cref="ShellTextSize"/>). Serialized references, so good before Awake.
+        /// </summary>
+        public Transform[] FixedText => new[]
+        {
+            picker != null ? picker.transform : null,
+            chip != null ? chip.transform : null,
+            sizeBar != null ? sizeBar.transform : null,
+        };
+
         /// <summary>The body or moon the card is describing, or null.</summary>
         public BodyInfo Selected => _body;
 
@@ -800,7 +811,7 @@ namespace CosmicSimulation.UI2
             var shell = Ui2Shell.Instance;
             var visible = _place != null && (shell == null || shell.ExploreVisible);
             card.gameObject.SetActive(visible);
-            crumb.gameObject.SetActive(visible && (shell == null || !shell.NoticeShowing));
+            crumb.gameObject.SetActive(visible && (shell == null || !shell.NoticeInFrame));
             if (!visible)
             {
                 picker.SetActive(false);
