@@ -404,7 +404,7 @@ Which of the three tracks plays in which environment mode is not fixed here; the
 
 ## 11. Accessibility and comfort
 
-- Seated and standing both supported; dock height adapts to the head height at recenter (0.55 × head height, min 0.7 m).
+- Seated and standing both supported; dock height adapts to the head height at recenter: the code parks it at 0.70 × eye height, never below 0.7 m (`DockController.cs`, `heightFractionOfHead` and `minimumHeightMetres`; the 0.55 it started at put the tiles at the waist, CS-275).
 - No locomotion, no forced camera motion; grow-ins only.
 - Left- and right-hand symmetric; every hand action has a ray alternative.
 - Mute, narration-only mute, and a **text-size** setting (panels ×1.0/×1.25/×1.5) in the utility window. Text size scales the whole panel rather than the font alone, so the layout the panel was designed at is preserved. All three are remembered between sessions; the scale slider is not, since it describes a place rather than a preference.
