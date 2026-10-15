@@ -209,13 +209,7 @@ namespace CosmicSimulation.UI2
             ExperienceDirector.ExperienceChanged += OnPlaceChanged;
             PlanetPOI.Preview = OnMarker;
             ForceSolver.StateChanged += OnBodyStateChanged;
-            foreach (var solver in Registry<ForceSolver>.Active)
-            {
-                if (IsOut(solver))
-                {
-                    _pulledNow.Add(solver);
-                }
-            }
+            _drawOrder.Seed();
 
             InfoPanel.Suppressed = true;
             if (Ui2Shell.Instance != null)
@@ -232,7 +226,7 @@ namespace CosmicSimulation.UI2
         private void OnDestroy()
         {
             ForceSolver.StateChanged -= OnBodyStateChanged;
-            LowerPulled();
+            _drawOrder.Lower();
             ExperienceDirector.ExperienceChanged -= OnPlaceChanged;
             if (PlanetPOI.Preview == OnMarker)
             {
@@ -307,7 +301,7 @@ namespace CosmicSimulation.UI2
                 bar.gameObject.SetActive(false);
             }
 
-            KeepPulledInFront();
+            _drawOrder.Apply();
 
             // The most recently opened panel wins, so pulling a moon off a held planet shows the moon.
             _open.RemoveAll(p => p == null || !p.IsOpen);
@@ -342,28 +336,13 @@ namespace CosmicSimulation.UI2
             }
         }
 
-        // ---------- pulled bodies are drawn over everything else
-        //
-        // A pulled planet or moon is nearer than the rest, but several body shaders draw without regard to
-        // depth, so a neighbour could still paint over it. While a body is out its materials move to the end
-        // of the draw order (just under the room's dim layer at 3900) and go back when it returns home.
+        // ---------- what is out
 
-        private readonly List<ForceSolver> _pulled = new List<ForceSolver>();
-        private readonly List<ForceSolver> _pulledNow = new List<ForceSolver>();
-        private readonly Dictionary<Material, int> _raised = new Dictionary<Material, int>();
-        private readonly List<(Renderer renderer, Material[] before, Material[] now)> _copied =
-            new List<(Renderer, Material[], Material[])>();
-
-        // Which bodies are out follows ForceSolver.StateChanged rather than a scan of every body each tick
-        // (CS-343). A body destroyed while out (its place unloaded) raises nothing, so it is dropped here.
-        private bool _pulledDirty = true;
-
-        private static bool IsOut(ForceSolver solver) =>
-            solver.ForceState != ForceSolver.State.Root && solver.ForceState != ForceSolver.State.None;
+        private readonly PulledDrawOrder _drawOrder = new PulledDrawOrder();
 
         // Out, but not a far ray merely resting on a body at home: that is Dwell straight from Root, no pinch yet.
         private static bool IsPulled(ForceSolver solver) =>
-            IsOut(solver) &&
+            PulledDrawOrder.IsOut(solver) &&
             !(solver.ForceState == ForceSolver.State.Dwell && solver.PreviousForceState == ForceSolver.State.Root);
 
         private void OnBodyStateChanged(ForceSolver solver)
@@ -386,122 +365,7 @@ namespace CosmicSimulation.UI2
                 }
             }
 
-            var listed = _pulledNow.Contains(solver);
-            if (IsOut(solver) != listed)
-            {
-                if (listed)
-                {
-                    _pulledNow.Remove(solver);
-                }
-                else
-                {
-                    _pulledNow.Add(solver);
-                }
-
-                _pulledDirty = true;
-            }
-        }
-
-        private void KeepPulledInFront()
-        {
-            for (var i = _pulledNow.Count - 1; i >= 0; i--)
-            {
-                if (_pulledNow[i] == null)
-                {
-                    _pulledNow.RemoveAt(i);
-                    _pulledDirty = true;
-                }
-            }
-
-            if (!_pulledDirty)
-            {
-                return;
-            }
-
-            _pulledDirty = false;
-            var same = _pulledNow.Count == _pulled.Count;
-            for (var i = 0; same && i < _pulledNow.Count; i++)
-            {
-                same = _pulled.Contains(_pulledNow[i]);
-            }
-
-            if (same)
-            {
-                return;
-            }
-
-            LowerPulled();
-            _pulled.AddRange(_pulledNow);
-            foreach (var solver in _pulled)
-            {
-                var renderers = solver.GetComponentsInChildren<Renderer>();
-                if (renderers.Length == 0 && solver.transform.parent != null)
-                {
-                    renderers = solver.transform.parent.GetComponentsInChildren<Renderer>();
-                }
-
-                foreach (var renderer in renderers)
-                {
-                    // renderer.materials copies whatever is still a shared asset, so the assets are never written;
-                    // the copies made here are remembered and destroyed when the body goes home (CS-330).
-                    var before = renderer.sharedMaterials;
-                    var now = renderer.materials;
-                    for (var i = 0; i < now.Length; i++)
-                    {
-                        var material = now[i];
-                        if (material == null || _raised.ContainsKey(material))
-                        {
-                            continue;
-                        }
-
-                        _raised[material] = material.renderQueue;
-                        material.renderQueue = 3700 + Mathf.Clamp((material.renderQueue - 2000) / 10, 0, 150);
-                    }
-
-                    _copied.Add((renderer, before, now));
-                }
-            }
-        }
-
-        // Puts every pulled body's draw order back: the original materials onto the renderers, the copies made by
-        // KeepPulledInFront destroyed, and the queue restored on copies the renderer already owned (made by an earlier
-        // renderer.material call). A material another script assigned with Instantiate, like the Sun's, still counts
-        // as shared and is copied while the body is out, so that script's live updates pause until it goes home.
-        private void LowerPulled()
-        {
-            foreach (var (renderer, before, now) in _copied)
-            {
-                var swapped = false;
-                for (var i = 0; i < now.Length; i++)
-                {
-                    var mine = now[i] != null && (i >= before.Length || now[i] != before[i]);
-                    if (!mine)
-                    {
-                        continue;
-                    }
-
-                    _raised.Remove(now[i]);
-                    Destroy(now[i]);
-                    swapped = true;
-                }
-
-                if (swapped && renderer != null)
-                {
-                    renderer.sharedMaterials = before;
-                }
-            }
-
-            foreach (var pair in _raised)
-            {
-                if (pair.Key != null)
-                {
-                    pair.Key.renderQueue = pair.Value;
-                }
-            }
-
-            _copied.Clear();
-            _raised.Clear();
-            _pulled.Clear();
+            _drawOrder.Track(solver);
         }
 
         // ---------- picker
@@ -535,7 +399,7 @@ namespace CosmicSimulation.UI2
                     {
                         if (p != null)
                         {
-                            _entries.Add(new Entry { Id = p.Id, Name = ShortName(p) });
+                            _entries.Add(new Entry { Id = p.Id, Name = CardCopy.ShortName(p) });
                         }
                     }
                 }
@@ -768,7 +632,7 @@ namespace CosmicSimulation.UI2
                 return;
             }
 
-            Ui2Shell.Instance?.Notify("Opening " + ShortName(_preview) + "…", 3f);
+            Ui2Shell.Instance?.Notify("Opening " + CardCopy.ShortName(_preview) + "…", 3f);
             ExperienceDirector.Instance?.Switch(_preview);
         }
 
@@ -881,7 +745,7 @@ namespace CosmicSimulation.UI2
             const float Large = 0.34f;
             var sizeA = 0.28f;
             var sizeB = 0.28f;
-            if (_relative && Diameter(_subject, out var a) && Diameter(_second, out var b))
+            if (_relative && CardCopy.Diameter(_subject, out var a) && CardCopy.Diameter(_second, out var b))
             {
                 sizeA = a >= b ? Large : Mathf.Max(0.012f, Large * a / b);
                 sizeB = b >= a ? Large : Mathf.Max(0.012f, Large * b / a);
@@ -929,21 +793,6 @@ namespace CosmicSimulation.UI2
             _rig.Apply(_pairLayout);
         }
 
-        private static bool Diameter(BodyInfo info, out float kilometres)
-        {
-            kilometres = 0f;
-            foreach (var stat in info.Stats)
-            {
-                if (stat.Label != null && stat.Label.ToLowerInvariant().Contains("diameter"))
-                {
-                    return float.TryParse(stat.Value.Replace(",", string.Empty), NumberStyles.Float,
-                                          CultureInfo.InvariantCulture, out kilometres) && kilometres > 0f;
-                }
-            }
-
-            return false;
-        }
-
         // ---------- painting
 
         public void Refresh()
@@ -964,7 +813,7 @@ namespace CosmicSimulation.UI2
 
             var context = shell != null ? shell.ContextOf(_place.Id) : -1;
             var home = shell != null ? shell.ContextHome(context) : null;
-            var placeName = ShortName(_place);
+            var placeName = CardCopy.ShortName(_place);
 
             BuildEntries(context);
             picker.SetActive(_entries.Count > 0 && (!Comparing || _choosing));
@@ -1010,7 +859,7 @@ namespace CosmicSimulation.UI2
 
             if (_preview != null)
             {
-                parts.Add(ShortName(_preview));
+                parts.Add(CardCopy.ShortName(_preview));
             }
             else if (_body != null)
             {
@@ -1050,32 +899,32 @@ namespace CosmicSimulation.UI2
                 _sound = null;
                 picture = PhotoFor(_subject.Id);
                 picture2 = PhotoFor(_second.Id);
-                ShowFacts(PairFact(_subject), PairFact(_second));
+                ShowFacts(CardCopy.PairFact(_subject), CardCopy.PairFact(_second));
             }
             else if (_preview != null)
             {
-                title.text = ShortName(_preview).ToUpperInvariant();
-                body.text = Opening(_preview.Panel);
+                title.text = CardCopy.ShortName(_preview).ToUpperInvariant();
+                body.text = CardCopy.Opening(_preview.Panel);
                 _sound = _preview.Ambience != null ? _preview.Ambience : _preview.Narration;
                 picture = PhotoFor(_preview.Id) ?? _preview.DockThumbnail;
-                PlaceFacts(_preview);
+                ShowFacts(CardCopy.PlaceFacts(_preview));
                 enter.SetLabel(_preview.Kind == ExperienceKind.Destination ? "Enter nebula" : "Open");
             }
             else if (_body != null)
             {
                 title.text = _body.DisplayName.ToUpperInvariant();
-                body.text = Sentences(_body.Paragraph);
+                body.text = CardCopy.Sentences(_body.Paragraph);
                 _sound = SoundOf(_body);
                 picture = PhotoFor(_body.Id);
-                BodyFacts(_body);
+                ShowFacts(CardCopy.BodyFacts(_body));
             }
             else
             {
                 title.text = placeName.ToUpperInvariant();
-                body.text = Opening(_place.Panel);
+                body.text = CardCopy.Opening(_place.Panel);
                 _sound = _place.Ambience != null ? _place.Ambience : _place.Narration;
                 picture = PhotoFor(_place.Id) ?? _place.DockThumbnail;
-                PlaceFacts(_place);
+                ShowFacts(CardCopy.PlaceFacts(_place));
             }
 
             photoRoot.SetActive(picture != null);
@@ -1114,94 +963,9 @@ namespace CosmicSimulation.UI2
 
         // ---------- facts
 
-        private struct Fact
-        {
-            public string Label;
-            public string Value;
-            public string Unit;
-        }
+        private void ShowFacts((CardCopy.Fact? first, CardCopy.Fact? second) facts) => ShowFacts(facts.first, facts.second);
 
-        private static readonly string[] SecondFactLabels = { "orbital period", "one orbit", "orbit of the galaxy" };
-
-        /// <summary>A body's two headline facts: its diameter, then how long one orbit takes.</summary>
-        private void BodyFacts(BodyInfo info)
-        {
-            Fact? size = null;
-            Fact? orbit = null;
-            var spare = new List<Fact>();
-            foreach (var stat in info.Stats)
-            {
-                var label = (stat.Label ?? string.Empty).ToLowerInvariant();
-                var fact = new Fact
-                {
-                    Label = Sentence(stat.Label),
-                    Value = stat.Exponent == 0 ? stat.Value : stat.Value + "<sup>" + stat.Exponent + "</sup>",
-                    Unit = stat.Unit,
-                };
-                if (size == null && label == "diameter")
-                {
-                    size = fact;
-                }
-                else if (orbit == null && Array.IndexOf(SecondFactLabels, label) >= 0)
-                {
-                    fact.Label = label == "orbit of the galaxy" ? fact.Label : "Orbit";
-                    orbit = fact;
-                }
-                else
-                {
-                    spare.Add(fact);
-                }
-            }
-
-            var a = size ?? (spare.Count > 0 ? spare[0] : (Fact?)null);
-            var b = orbit ?? (spare.Count > (size == null ? 1 : 0) ? spare[size == null ? 1 : 0] : (Fact?)null);
-            ShowFacts(a, b);
-        }
-
-        private static Fact? PairFact(BodyInfo info)
-        {
-            foreach (var stat in info.Stats)
-            {
-                if (stat.Label != null && stat.Label.ToLowerInvariant() == "diameter")
-                {
-                    return new Fact { Label = info.DisplayName + " diameter", Value = stat.Value, Unit = stat.Unit };
-                }
-            }
-
-            return null;
-        }
-
-        /// <summary>A place's facts come from its second line, written "Kind - distance" in the copy files.</summary>
-        private void PlaceFacts(ExperienceModule module)
-        {
-            var line = module.SecondLine ?? string.Empty;
-            var cut = line.IndexOf(" - ", StringComparison.Ordinal);
-            if (cut <= 0 || cut + 3 >= line.Length || !char.IsDigit(line[cut + 3]))
-            {
-                ShowFacts(null, null);
-                return;
-            }
-
-            var kind = line.Substring(0, cut).Trim();
-            var distance = line.Substring(cut + 3).Trim();
-            var space = distance.IndexOf(' ');
-            var kindSpace = kind.IndexOf(' ');
-            ShowFacts(
-                new Fact
-                {
-                    Label = "Distance",
-                    Value = space > 0 ? distance.Substring(0, space) : distance,
-                    Unit = space > 0 ? distance.Substring(space + 1) : string.Empty,
-                },
-                new Fact
-                {
-                    Label = "Type",
-                    Value = kindSpace > 0 ? kind.Substring(0, kindSpace) : kind,
-                    Unit = kindSpace > 0 ? kind.Substring(kindSpace + 1) : string.Empty,
-                });
-        }
-
-        private void ShowFacts(Fact? first, Fact? second)
+        private void ShowFacts(CardCopy.Fact? first, CardCopy.Fact? second)
         {
             var facts = new[] { first, second };
             var any = first.HasValue || second.HasValue;
@@ -1232,49 +996,6 @@ namespace CosmicSimulation.UI2
             var height = (tall ? 78f : 54f) * InfoPanel.TextScale;
             factsRoot.GetComponent<LayoutElement>().preferredHeight = height;
             factSplit.sizeDelta = new Vector2(1f, height);
-        }
-
-        // The copy files write stat labels in capitals for the legacy panel; the card uses sentence case.
-        private static string Sentence(string label)
-        {
-            if (string.IsNullOrEmpty(label))
-            {
-                return string.Empty;
-            }
-
-            var lower = label.ToLowerInvariant();
-            return char.ToUpperInvariant(lower[0]) + lower.Substring(1);
-        }
-
-        private static string Opening(ScenePanelCopy copy) =>
-            copy != null && copy.Paragraphs != null && copy.Paragraphs.Length > 0 ? Sentences(copy.Paragraphs[0]) : string.Empty;
-
-        /// <summary>The card is a summary: the first sentence, and the second when the two stay short.</summary>
-        private static string Sentences(string text)
-        {
-            if (string.IsNullOrEmpty(text))
-            {
-                return string.Empty;
-            }
-
-            var first = text.IndexOf(". ", StringComparison.Ordinal);
-            if (first < 0)
-            {
-                return text;
-            }
-
-            var second = text.IndexOf(". ", first + 2, StringComparison.Ordinal);
-            var end = second > 0 && second < 150 ? second : first;
-            return text.Substring(0, end + 1);
-        }
-
-        /// <summary>"Andromeda" rather than "Andromeda (M31)": the catalogue number stays in the copy.</summary>
-        private static string ShortName(ExperienceModule module)
-        {
-            var name = !string.IsNullOrEmpty(module.DisplayName) ? module.DisplayName : module.Panel.Title;
-            var bracket = name.IndexOf(" (", StringComparison.Ordinal);
-            name = bracket > 0 ? name.Substring(0, bracket) : name;
-            return name.EndsWith(" Galaxy", StringComparison.Ordinal) ? name.Substring(0, name.Length - 7) : name;
         }
 
         private Sprite PhotoFor(string id)
