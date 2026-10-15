@@ -126,6 +126,15 @@ namespace CosmicSimulation
         private float _poseWaitedSeconds;
         private bool _posedOnce;
 
+        // The headset's own recenter (CS-374). Every input subsystem is heard, and new ones are looked for
+        // because the XR loader can start after this Start, or be restarted.
+        private readonly List<UnityEngine.XR.XRInputSubsystem> _inputSubsystems =
+            new List<UnityEngine.XR.XRInputSubsystem>();
+        private readonly List<UnityEngine.XR.XRInputSubsystem> _subsystemScratch =
+            new List<UnityEngine.XR.XRInputSubsystem>();
+        private float _nextSubsystemLook;
+        private int _originFramesToWait;
+
         public static DockController Instance { get; private set; }
 
         public IReadOnlyList<DockTile> Tiles => _tiles;
@@ -155,6 +164,16 @@ namespace CosmicSimulation
             {
                 popup.LayoutChosen -= OnLayoutChosen;
             }
+
+            foreach (var subsystem in _inputSubsystems)
+            {
+                if (subsystem != null)
+                {
+                    subsystem.trackingOriginUpdated -= OnTrackingOriginUpdated;
+                }
+            }
+
+            _inputSubsystems.Clear();
         }
 
         private void Start()
@@ -258,7 +277,7 @@ namespace CosmicSimulation
 
         // ---------- what the palm menu also does
 
-        /// <summary>Sends every pulled body home. The palm menu's Reset too, routed through the same manager.</summary>
+        /// <summary>Sends every pulled body home, through the same manager as the palm menu's legacy Reset.</summary>
         public void ResetPlaces()
         {
             if (_menus == null)
@@ -266,9 +285,11 @@ namespace CosmicSimulation
                 _menus = FindAnyObjectByType<GlobalMenuManager>(FindObjectsInactive.Include);
             }
 
+            // The legacy half only: under UI 2.0 the palm's Reset is Arrangement.Restore, and Settings' Restore
+            // calls this and then Arrangement itself, with its own rule for a comparison (CS-379).
             if (_menus != null)
             {
-                _menus.OnResetButtonPressed();
+                _menus.ResetPulledBodies();
             }
         }
 
@@ -393,7 +414,10 @@ namespace CosmicSimulation
             Moved?.Invoke();
         }
 
-        /// <summary>Puts the dock back in front of the player.</summary>
+        /// <summary>
+        /// Puts the dock back in front of the player and free-placed content home. The dock's Recenter, the
+        /// palm menu's Dock and the headset's own recenter all come here (CS-374).
+        /// </summary>
         public void Recenter()
         {
             // Before the camera guard, deliberately. Recenter means "put things back where they belong", and
@@ -401,7 +425,12 @@ namespace CosmicSimulation
             // — has no other route home in the headset (CS-107). A missing camera stops the dock re-parking; it
             // must not also strand a galaxy the player pushed across the room.
             FreePlacementAnchor.RestoreAll();
+            ParkMenu();
+        }
 
+        /// <summary>Re-parks the dock (and the UI 2.0 shell riding on it) in front of the player, moving nothing else.</summary>
+        public void ParkMenu()
+        {
             // A recentre with no camera has not been refused, it has nothing to measure from yet: whatever the
             // pending flag was stays, so a wait already under way keeps waiting.
             var result = Park();
@@ -419,19 +448,65 @@ namespace CosmicSimulation
         }
 
         /// <summary>
-        /// Brings the dock back in front of the player and nothing else: what the palm menu's Dock button
-        /// calls. Unlike <see cref="Recenter"/> it leaves pulled content where the player put it.
+        /// Shows the dock and recentres: what the palm menu's Dock button calls. The full <see cref="Recenter"/>
+        /// since CS-374, so the palm Dock and the headset's recenter cannot disagree about what comes back.
         /// </summary>
         public void BringToPlayer()
         {
             // Shown as well as moved, so the button can never be the one that does nothing. Not on a monitor,
-            // where the screen-space mirror is the dock and this one is down on purpose.
-            if (!GalaxyExplorer.GalaxyExplorerManager.IsDesktop || DesktopDock.Instance == null)
+            // where the screen-space mirror is the dock, nor under UI 2.0, whose shell is the menu and rides on this pose.
+            if ((!GalaxyExplorer.GalaxyExplorerManager.IsDesktop || DesktopDock.Instance == null) &&
+                UI2.Ui2Shell.Instance == null)
             {
                 SetVisible(true);
             }
 
-            Park();
+            Recenter();
+        }
+
+        // ---------- the headset's recenter (CS-374)
+
+        // Only a flag here: the event comes from the input subsystem's update, not from anything this class drives.
+        private void OnTrackingOriginUpdated(UnityEngine.XR.XRInputSubsystem subsystem) => _originFramesToWait = 2;
+
+        private void WatchHeadsetRecenter()
+        {
+            if (!UnityEngine.XR.XRSettings.isDeviceActive)
+            {
+                _originFramesToWait = 0;
+                return;
+            }
+
+            if (Time.unscaledTime >= _nextSubsystemLook)
+            {
+                _nextSubsystemLook = Time.unscaledTime + 1f;
+                _subsystemScratch.Clear();
+                SubsystemManager.GetSubsystems(_subsystemScratch);
+                foreach (var subsystem in _subsystemScratch)
+                {
+                    if (!_inputSubsystems.Contains(subsystem))
+                    {
+                        subsystem.trackingOriginUpdated += OnTrackingOriginUpdated;
+                        _inputSubsystems.Add(subsystem);
+                    }
+                }
+            }
+
+            // A frame after the event rather than on it: the camera only reports the head in the new space once
+            // the tracked pose driver has run again, and parking off the old pose would undo the recenter.
+            if (_originFramesToWait <= 0 || --_originFramesToWait > 0)
+            {
+                return;
+            }
+
+            // The intro owns the room, and the dock re-parks itself when the intro hands it over.
+            var director = ExperienceDirector.Instance;
+            if (director != null && director.IntroRunning)
+            {
+                return;
+            }
+
+            Recenter();
         }
 
         // The parking itself, shared by a recentre, the palm menu's Dock button and the hand-over from the
@@ -761,8 +836,9 @@ namespace CosmicSimulation
 
             _visible = visible;
 
-            // Guarded by the equality check above, so a caller that re-asserts the same state stays silent.
-            if (!quiet)
+            // Guarded by the equality check above, so a caller that re-asserts the same state stays silent. Never
+            // under UI 2.0: its shell hides this dock every frame, so a show would be followed by an audible hide (CS-379).
+            if (!quiet && UI2.Ui2Shell.Instance == null)
             {
                 AudioService.Instance?.PlayClip(visible ? AudioId.DockShow : AudioId.DockHide);
             }
@@ -840,6 +916,9 @@ namespace CosmicSimulation
                 _poseWaitedSeconds += Time.unscaledDeltaTime;
                 Recenter();
             }
+
+            // Before the UI 2.0 return: the shell rides on this dock's pose, so this is its recenter too.
+            WatchHeadsetRecenter();
 
             // Under UI 2.0 this dock is hidden and the shell owns the keys and the buttons (CS-332).
             if (UI2.Ui2Shell.Instance != null)

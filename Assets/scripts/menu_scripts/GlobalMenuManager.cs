@@ -157,6 +157,23 @@ public class GlobalMenuManager : MonoBehaviour
 
     public void OnAboutButtonPressed()
     {
+        // UI 2.0's About lives in its Settings; the legacy slate carries the reference app's links (CS-379, CS-086).
+        var shell = CosmicSimulation.UI2.Ui2Shell.Instance;
+        if (shell != null)
+        {
+            // A toggle, as the slate and the shell's own gear are.
+            if (shell.Open == CosmicSimulation.UI2.Ui2Shell.Overlay.Settings)
+            {
+                shell.Show(CosmicSimulation.UI2.Ui2Shell.Overlay.None);
+            }
+            else
+            {
+                CosmicSimulation.UI2.Ui2Settings.ShowAbout();
+            }
+
+            return;
+        }
+
         // The slate switches its own GameObject off to hide, so the reference taken from the active objects at
         // Start is null whenever it happened to be hidden then.
         if (_aboutSlate == null)
@@ -171,6 +188,21 @@ public class GlobalMenuManager : MonoBehaviour
     }
 
     public void OnResetButtonPressed()
+    {
+        // Under UI 2.0 Reset is the app's one "put it all back", which works in every place rather than only
+        // where a ForceSolverFocusManager is; a comparison keeps its two bodies, as Settings' Restore does (CS-379).
+        if (CosmicSimulation.UI2.Ui2Shell.Instance != null)
+        {
+            var explore = CosmicSimulation.UI2.Ui2Explore.Instance;
+            CosmicSimulation.Arrangement.Restore(bodies: !(explore != null && explore.Comparing));
+            return;
+        }
+
+        ResetPulledBodies();
+    }
+
+    /// <summary>The legacy Reset: pulled planets home through the focus manager, and the preview cleared.</summary>
+    public void ResetPulledBodies()
     {
         if (ForceSolverFocusManager)
         {

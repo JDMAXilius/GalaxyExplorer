@@ -204,6 +204,45 @@ namespace CosmicSimulation
             }
         }
 
+        /// <summary>
+        /// Makes an open view scene (Milky Way, Solar System, Sagittarius A*) a place two air pinches move and
+        /// scale, and R / Recenter bring home, as prefab places already are (CS-378). Pass the scene's content root,
+        /// the object carrying <c>TransformHandler</c>. Call once its zoom-in is over: the zoom drives the same
+        /// transform, and home captured mid-zoom would be a partial scale.
+        /// </summary>
+        // The handler goes on the root's first child: the root is re-pinned to its TransformSource every frame, and
+        // the child is what ZoomInOut zooms and FitViewScene frames. No collider and no router, so no ray or poke
+        // reaches it and nothing in the scene stops answering; only XRInputRig's air pinches drive it.
+        // Headset only: on a monitor the wheel and drag on empty space move the camera, and a handler here would
+        // also be the one DesktopMouseInput finds above every POI in the scene.
+        public static void CaptureScenePlace(Transform sceneContent)
+        {
+            if (sceneContent == null || sceneContent.childCount == 0 || !UnityEngine.XR.XRSettings.isDeviceActive)
+            {
+                return;
+            }
+
+            var place = sceneContent.GetChild(0);
+            if (place.GetComponentInParent<ForceSolver>(true) != null)
+            {
+                return;
+            }
+
+            if (place.GetComponent<ManipulationHandler>() == null)
+            {
+                var handler = place.gameObject.AddComponent<ManipulationHandler>();
+
+                // Off until two air pinches switch it on for the gesture (BeginAirManipulation), as on the nebulae.
+                handler.enabled = false;
+
+                // No ForceSolver sounds this grab, as on the prefab places.
+                handler.PlayGrabSounds = true;
+            }
+
+            // Adds the anchor, captures home and makes this the open place, since the handler's host is the content.
+            CaptureHome(place);
+        }
+
         // The settings slider's range (UtilityWindow), measured from the size the place was spawned at.
         private const float MinPlaceScale = 0.5f, MaxPlaceScale = 2f;
 

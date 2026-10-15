@@ -193,7 +193,8 @@ public class HandMenu : MonoBehaviour
     public void UpdateButtonsActive(bool resetIsActive, bool backIsActive)
     {
         // When the POIPlanetFocusManager is present in the currently loaded scenes, this means we are in the solar system or galactic center, so activate the  reset button
-        _resetButton?.SetActive(resetIsActive);
+        // Under UI 2.0 Reset is Arrangement.Restore, which has something to put back in every place (CS-379).
+        _resetButton?.SetActive(resetIsActive || CosmicSimulation.UI2.Ui2Shell.Instance != null);
 
         // If there is previous scene then user should able to go back, so activate the back button
         // ...unless it is the Dock button, which is always wanted.

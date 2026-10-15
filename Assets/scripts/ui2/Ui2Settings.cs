@@ -77,9 +77,11 @@ namespace CosmicSimulation.UI2
         private readonly float[] _window = new float[512];
         private bool _requesting;
         private bool _paintedPermitted;
+        private static Ui2Settings _instance;
 
         private void Start()
         {
+            _instance = this;
             var shell = Ui2Shell.Instance;
             close.Clicked += Close;
             devicesClose.Clicked += Close;
@@ -117,7 +119,8 @@ namespace CosmicSimulation.UI2
             aboutRow.Clicked += () => Go(Page.About);
             bring.Clicked += () =>
             {
-                DockController.Instance?.BringToPlayer();
+                // The menu only: the palm Dock and the headset's recenter also send moved content home (CS-374).
+                DockController.Instance?.ParkMenu();
                 shell.Notify("Menu moved in front of you.");
             };
             restore.Clicked += () => Ask("Put everything back?",
@@ -154,6 +157,22 @@ namespace CosmicSimulation.UI2
         }
 
         private static void Close() => Ui2Shell.Instance.Show(Ui2Shell.Overlay.None);
+
+        /// <summary>Opens Settings on its About page: the palm menu's About under UI 2.0 (CS-379).</summary>
+        public static void ShowAbout()
+        {
+            if (Ui2Shell.Instance == null)
+            {
+                return;
+            }
+
+            // Opening Settings lands on its main page (OnShellChanged), so the About page is chosen after.
+            Ui2Shell.Instance.Show(Ui2Shell.Overlay.Settings);
+            if (_instance != null)
+            {
+                _instance.Go(Page.About);
+            }
+        }
 
         private void OnShellChanged()
         {

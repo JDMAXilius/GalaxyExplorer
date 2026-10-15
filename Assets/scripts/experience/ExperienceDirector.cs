@@ -252,6 +252,11 @@ namespace CosmicSimulation
             ShowScenePanel(module);
             AmbienceController.PlayBed(module.Ambience);
 
+            if (!string.IsNullOrEmpty(module.SceneName))
+            {
+                StartCoroutine(HoldAdoptedViewScene(module));
+            }
+
             ExperienceChanged?.Invoke(module);
         }
 
@@ -631,7 +636,11 @@ namespace CosmicSimulation
             _fitting = StartCoroutine(FitRoutine(content, target, seconds));
         }
 
-        private IEnumerator FitViewScene(Transform content)
+        /// <summary>
+        /// Once the zoom-in is over, makes the scene a place hands can hold and, unless <paramref name="fit"/> is
+        /// off, frames it for the desktop.
+        /// </summary>
+        private IEnumerator FitViewScene(Transform content, bool fit = true)
         {
             // Just the zoom-in: TransitionManager stays in transition until narration ends.
             var zoom = FindFirstObjectByType<ZoomInOut>();
@@ -644,8 +653,37 @@ namespace CosmicSimulation
 
             if (content != null && content.gameObject.activeInHierarchy)
             {
-                // The scene root is pinned every frame (TransformHandler/LocationView), so move its child.
-                FitArrangement(content.childCount > 0 ? content.GetChild(0) : content, ViewSceneFitSeconds);
+                // Before the fit, which re-captures home at the fitted spot. Headset only, where nothing is fitted.
+                FreePlacementAnchor.CaptureScenePlace(content);
+
+                if (fit)
+                {
+                    // The scene root is pinned every frame (TransformHandler/LocationView), so move its child.
+                    FitArrangement(content.childCount > 0 ? content.GetChild(0) : content, ViewSceneFitSeconds);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The adopted start place never went through <see cref="SwitchRoutine"/>, so it is made holdable here once
+        /// its scene is in. No fit: an adopted place has never been framed, and that is left as it was.
+        /// </summary>
+        // The intro hands over while the galaxy may still be loading (see ModuleForOpenScene), so wait for it.
+        private IEnumerator HoldAdoptedViewScene(ExperienceModule module)
+        {
+            var waited = 0f;
+            while (Current == module && waited < loadTimeoutSeconds)
+            {
+                var scene = SceneManager.GetSceneByName(module.SceneName);
+                var content = scene.IsValid() && scene.isLoaded ? FindContent(scene) : null;
+                if (content != null)
+                {
+                    yield return FitViewScene(content.transform, fit: false);
+                    yield break;
+                }
+
+                waited += Time.unscaledDeltaTime;
+                yield return null;
             }
         }
 
