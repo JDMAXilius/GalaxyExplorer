@@ -37,7 +37,7 @@ Read from the backlog and the project files, not assumed:
   `OnApplicationPause` and `OnApplicationFocus` in a headset (audio paused, narration managers disabled), which is
   Meta's VRC.Quest.Functional.2. Since CS-371, `Being.OnApplicationPause` also releases the microphone on pause
   and re-arms it on return. Neither has been run on a device yet (run sheet rows H3 and I11). The later
-  mentions of a missing pause handler in this file (T2 step 4 and the risks list) are the pre-fix state.
+  mention of a missing pause handler in T2 step 4 is the pre-fix state.
 - **Automation is desktop-only.** `AppCheck.cs` drives the editor with synthetic input; nothing runs on the device.
 - **Passthrough on PC is for developers only** (Meta enables it over Link behind developer-mode toggles), so the
   real passthrough look is a device-only check.

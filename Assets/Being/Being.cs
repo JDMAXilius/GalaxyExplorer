@@ -23,7 +23,7 @@ namespace Cosmic.Companion
         Voice voice;
         Vector3 pressedAt;
         float pressedTime, window, micPeak, openAt;
-        bool greeting, answerDone, leaving, ready, speechHeard, rearm, relisten;
+        bool greeting, answerDone, leaving, ready, speechHeard, rearm, relisten, gone;
         string situated;
 
         public Phase Current { get; private set; }
@@ -140,10 +140,20 @@ namespace Cosmic.Companion
             if (window <= 0f) Stop();
         }
 
-        // Android stops a paused app's capture and may not give it back: release it, and take it again on return (CS-371).
-        void OnApplicationPause(bool paused)
+        // Android stops a paused app's capture and may not give it back, and under the Meta system menu (a focus loss,
+        // not a pause) the room should not stream to the guide: release the mic, and take it again on return (CS-371).
+        void OnApplicationPause(bool paused) => Away(paused);
+
+        void OnApplicationFocus(bool focused)
         {
-            if (paused)
+            if (UnityEngine.XR.XRSettings.isDeviceActive) Away(!focused);
+        }
+
+        void Away(bool away)
+        {
+            if (away == gone) return;
+            gone = away;
+            if (away)
             {
                 rearm = mic.Armed;
                 relisten = mic.Listening;

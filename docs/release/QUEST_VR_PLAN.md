@@ -41,11 +41,12 @@ have headset paths.
 2. **Over Quest Link the default device is the PC's, not the headset's.** With no saved choice, the app opened the
    system default. In a Windows player over Link the headset microphone is `Headset Microphone (Oculus Virtual
    Audio Device)`, which Windows does not make the default. This fits "I'm not sure which one it is".
-3. **The capture dies on pause and is never restarted.** Opening the Quest menu or taking the headset off pauses the
-   app; Android tears the input stream down, `GetPosition` stops moving, and the app kept the dead clip because it
-   was still "armed".
-4. **"Don't ask again" was not handled.** On Android 11+ a second Deny counts as "don't ask again"; the request then
-   returns at once through a callback the app did not listen to, so Enable microphone waited 30 s for nothing.
+3. **The capture can die on pause and was never restarted.** Taking the headset off pauses the app (the Meta menu is a
+   focus loss instead); Android can tear the input stream down, `GetPosition` stops moving, and the app kept the dead
+   clip because it was still "armed".
+4. **"Don't ask again" was not explained.** On Android 11+ a second Deny counts as "don't ask again"; the request
+   then returns at once with no dialog, and nothing told the player that only the headset's settings could turn the
+   microphone back on.
 5. **Turn detection may be too strict for the built-in microphone** (OpenAI's server VAD at 0.65 with a 3 s window
    that only the server's `speech_started` keeps open).
 6. Smaller ones: the Settings level meter could end the guide's capture on the shared device; no key in the APK
@@ -61,7 +62,8 @@ two fail to start on some Quest 3s. Open-source Quest projects pick `Android aud
 - The default device is the headset's own microphone unless the player picks another: `Android audio input` on the
   Quest, the Oculus virtual device over Link. Settings > Microphone shows that first row as **Automatic** and names
   the device it is using.
-- The guide releases the microphone when the app pauses and takes it again on return; a capture whose write head
+- The guide releases the microphone when the app pauses or, in the headset, loses focus (the Meta menu), and takes it
+  again on return; a capture whose write head
   stops for 2 s is restarted (up to three times), and each step writes a `Mic:` line to logcat with the device list,
   the device chosen and its sample rate.
 - "Don't ask again" is recognised: the Guide and Settings tell the player to turn the microphone on in the headset's

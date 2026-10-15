@@ -147,9 +147,11 @@ namespace Cosmic.Companion
             return null;
 #else
             if (!UnityEngine.XR.XRSettings.isDeviceActive) return null;
+            // Two passes: a Bluetooth headset is also called "Headset Microphone (...)" and must not beat the Link mic.
             foreach (var name in list)
-                if (name.IndexOf("Oculus Virtual Audio Device", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.StartsWith("Headset Microphone", StringComparison.OrdinalIgnoreCase)) return name;
+                if (name.IndexOf("Oculus Virtual Audio Device", StringComparison.OrdinalIgnoreCase) >= 0) return name;
+            foreach (var name in list)
+                if (name.StartsWith("Headset Microphone", StringComparison.OrdinalIgnoreCase)) return name;
             return null;
 #endif
         }
@@ -180,7 +182,7 @@ namespace Cosmic.Companion
         {
             if (++restarts > MaxRestarts)
             {
-                if (restarts == MaxRestarts + 1) Debug.LogError($"Mic: no samples from '{Label}' after {MaxRestarts} restarts; giving up until it is armed again.");
+                if (restarts == MaxRestarts + 1) Debug.LogWarning($"Mic: no samples from '{Label}' after {MaxRestarts} restarts; giving up until it is armed again.");
                 advancedAt = Time.unscaledTime;
                 return;
             }
@@ -197,6 +199,7 @@ namespace Cosmic.Companion
         {
             if (Listening || clip == null) return;
             Poll();
+            if (clip == null) return; // the poll restarted a stalled capture and could not arm it again
             pending.Clear();
             Listening = true;
         }

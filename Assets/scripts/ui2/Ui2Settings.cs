@@ -218,7 +218,8 @@ namespace CosmicSimulation.UI2
                 }
 
                 var device = Cosmic.Companion.Mic.Resolve();
-                microphoneValue.text = Cosmic.Companion.Mic.Devices.Length == 0 ? "None found" : device ?? "Default";
+                microphoneValue.overflowMode = TextOverflowModes.Ellipsis;
+                microphoneValue.text = Cosmic.Companion.Mic.Devices.Length == 0 ? "None found" : Friendly(device) ?? "Default";
             }
             else if (_page == Page.Devices)
             {
@@ -249,8 +250,9 @@ namespace CosmicSimulation.UI2
                 var current = i == 0 ? automatic : !automatic && _shown[i] == chosen;
                 deviceRows[i].SetLabel(i == 0 ? "Automatic" : found[i - 1]);
                 deviceRows[i].Selected = current;
+                deviceNotes[i].overflowMode = TextOverflowModes.Ellipsis;
                 deviceNotes[i].text = !current ? "Available"
-                    : i == 0 ? "Using " + (chosen ?? "the system default") : "Current device";
+                    : i == 0 ? "Using " + (Friendly(chosen) ?? "the system default") : "Current device";
             }
 
             empty.text = !Cosmic.Companion.Mic.Permitted
@@ -260,6 +262,13 @@ namespace CosmicSimulation.UI2
                 : found.Length == 0 ? "No microphone found. Connect one or check microphone access." : string.Empty;
             StopMeter();
         }
+
+        // The headset's mic by what it is, not by its driver name (the Link one does not fit a row).
+        private static string Friendly(string device) =>
+            device == null ? null
+            : device == "Android audio input" ? "the headset microphone"
+            : device.IndexOf("Oculus Virtual Audio Device", StringComparison.OrdinalIgnoreCase) >= 0 ? "the headset microphone (Link)"
+            : device;
 
         private void ChooseDevice(int index)
         {
