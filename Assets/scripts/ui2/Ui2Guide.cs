@@ -345,8 +345,11 @@ namespace CosmicSimulation.UI2
                     break;
                 case Status.PermissionNeeded:
                     heading = "Microphone";
-                    detail = "Use your microphone to ask the guide questions.";
-                    action = "Enable microphone";
+                    // After "don't ask again" the system shows no request, so the button alone cannot help (CS-371).
+                    detail = Companion.Mic.Blocked
+                        ? "Microphone access is off for this app. Turn it on in the headset's settings for this app, then try again."
+                        : "Use your microphone to ask the guide questions.";
+                    action = Companion.Mic.Blocked ? "Try again" : "Enable microphone";
                     icon = micIcon;
                     other = "Not now";
                     break;

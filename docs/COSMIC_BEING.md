@@ -33,7 +33,7 @@ The being is the one voice in the room while it is awake: music and ambience dro
 | `Being.cs` | Phases Idle, Listening, Thinking, Speaking; the tap; the listen window; summon and dismiss |
 | `Session.cs` | The Realtime protocol: `session.update` (instructions, voice, PCM formats, server VAD, tools), audio append and clear, `response.create` and `response.cancel`, events out as C# events |
 | `Realtime.cs` | One `ClientWebSocket`: connect with the bearer key, serialised sends, a receive loop, main-thread inbox |
-| `Mic.cs` | Armed while the being is out so listening starts on the next frame; 24 kHz PCM16 in 50 ms frames; level; the Android permission |
+| `Mic.cs` | Armed while the being is out so listening starts on the next frame; 24 kHz PCM16 in 50 ms frames; level; the Android permission and `Blocked` ("don't ask again"). Device: the player's choice while plugged in, else `Headset` - `Android audio input` on the Quest, the Oculus virtual device over Link, else the system default. A capture that stops advancing for 2 s is restarted (three tries); `Being` closes it on pause and re-arms it on return; `Mic:` lines in logcat name the devices, the choice and the rate (CS-371) |
 | `Voice.cs` | 24 kHz PCM16 into a streamed clip through a ring buffer; a quarter second of start buffer; the odd byte of a split sample carried, never dropped; loudness and four bands for the look |
 | `Look.cs` | Phase, loudness, bands and the player's own mic level into the points' `_Density`, `_Inward`, `_Bands`, `_Active`, spin, and the rim's glow; the press pop; the reveal |
 | `Follow.cs` | Keeps station in the head's yaw-and-pitch frame, faces the head, yields to a hand and re-reads its offset on release |

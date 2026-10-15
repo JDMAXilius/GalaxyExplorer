@@ -242,16 +242,21 @@ namespace CosmicSimulation.UI2
                     continue;
                 }
 
-                // The first row is "whatever the system uses"; the rest are the devices by name.
+                // The first row is Automatic: the headset's own mic, or the system default (CS-371); the rest are the
+                // devices by name. A chosen device that is unplugged falls back to Automatic.
                 _shown[i] = i == 0 ? null : found[i - 1];
-                var current = _shown[i] == chosen;
-                deviceRows[i].SetLabel(i == 0 ? "System default" : found[i - 1]);
+                var automatic = chosen != Cosmic.Companion.Mic.Device;
+                var current = i == 0 ? automatic : !automatic && _shown[i] == chosen;
+                deviceRows[i].SetLabel(i == 0 ? "Automatic" : found[i - 1]);
                 deviceRows[i].Selected = current;
-                deviceNotes[i].text = current ? "Current device" : "Available";
+                deviceNotes[i].text = !current ? "Available"
+                    : i == 0 ? "Using " + (chosen ?? "the system default") : "Current device";
             }
 
             empty.text = !Cosmic.Companion.Mic.Permitted
-                ? "Microphone access is off. Allow it in the headset's settings to talk to the guide."
+                ? Cosmic.Companion.Mic.Blocked
+                    ? "Microphone access is off. Turn it on in the headset's settings for this app to talk to the guide."
+                    : "Microphone access has not been given yet. Open Guide and choose Enable microphone."
                 : found.Length == 0 ? "No microphone found. Connect one or check microphone access." : string.Empty;
             StopMeter();
         }
@@ -265,6 +270,15 @@ namespace CosmicSimulation.UI2
 
             Cosmic.Companion.Mic.Device = _shown[index] ?? string.Empty;
             PaintDevices();
+        }
+
+        // The meter's capture dies with a pause on Android; the next frame on the page starts a fresh one.
+        private void OnApplicationPause(bool paused)
+        {
+            if (paused)
+            {
+                StopMeter();
+            }
         }
 
         /// <summary>Moves the level bar. The guide owns the microphone while it is out, so then the bar rests.</summary>
@@ -309,11 +323,13 @@ namespace CosmicSimulation.UI2
 
         private void StopMeter()
         {
-            if (_meter != null)
+            // Not while the guide holds the mic: it already took the device over, and End would stop its capture too.
+            if (_meter != null && !Cosmic.Companion.Mic.InUse)
             {
                 Microphone.End(_meterDevice);
-                _meter = null;
             }
+
+            _meter = null;
         }
     }
 }
